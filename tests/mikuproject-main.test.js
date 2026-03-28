@@ -53,7 +53,6 @@ function mountDom() {
     <button id="parseCsvBtn" type="button">CSV を解析</button>
     <button id="loadSampleBtn" type="button">サンプル読込</button>
     <button id="parseXmlBtn" type="button">XML を解析</button>
-    <button id="exportXmlBtn" type="button">XML を再生成</button>
     <button id="exportMermaidBtn" type="button">Mermaid を生成</button>
     <button id="downloadMermaidSvgBtn" type="button" disabled>SVG保存</button>
     <button id="exportCsvBtn" type="button">CSV を生成</button>
@@ -455,7 +454,7 @@ describe("mikuproject main", () => {
     bootPage();
 
     document.getElementById("parseXmlBtn").click();
-    document.getElementById("exportXmlBtn").click();
+    document.getElementById("downloadXmlBtn").click();
 
     const xmlText = document.getElementById("xmlInput").value;
     expect(xmlText).toContain("<?xml version=\"1.0\" encoding=\"UTF-8\"?>");
@@ -705,6 +704,10 @@ describe("mikuproject main", () => {
     bootPage();
 
     document.getElementById("parseXmlBtn").click();
+    document.getElementById("downloadXmlBtn").click();
+    const xmlInput = document.getElementById("xmlInput");
+    xmlInput.value = `${xmlInput.value}\n<!-- edited -->`;
+    xmlInput.dispatchEvent(new Event("input"));
     document.getElementById("exportCsvBtn").click();
 
     const csvText = document.getElementById("csvOutput").value;
@@ -712,6 +715,8 @@ describe("mikuproject main", () => {
     expect(csvText).toContain("1,,1,Project Summary,2026-03-16T09:00:00,2026-03-20T18:00:00,,,50,50,0,1,0,1,500,PT40H0M0S,1,,,,");
     expect(csvText).toContain("2,1,1.1,Design,2026-03-16T09:00:00,2026-03-17T18:00:00,,Miku,100,100,0,0,0,1,500,PT16H0M0S,1,,,,Design completed");
     expect(csvText).toContain("3,1,1.2,Implementation,2026-03-18T09:00:00,2026-03-20T18:00:00,2,Miku,0,0,0,0,1,1,700,PT24H0M0S,1,4,2026-03-18T09:00:00,2026-03-21T18:00:00,Implementation starts after design");
+    expect(document.getElementById("xmlInput").value).not.toContain("<!-- edited -->");
+    expect(document.getElementById("xmlSaveState").textContent).toContain("XML 保存状態: 保存済み (2026-03-16 23:12)");
     expect(document.getElementById("statusMessage").textContent).toContain("CSV + ParentID を生成しました");
   });
 
@@ -778,12 +783,18 @@ describe("mikuproject main", () => {
     bootPage();
 
     document.getElementById("parseXmlBtn").click();
+    document.getElementById("downloadXmlBtn").click();
+    const xmlInput = document.getElementById("xmlInput");
+    xmlInput.value = `${xmlInput.value}\n<!-- edited -->`;
+    xmlInput.dispatchEvent(new Event("input"));
     document.getElementById("exportXlsxBtn").click();
 
     expect(URL.createObjectURL).toHaveBeenCalled();
     expect(HTMLAnchorElement.prototype.click).toHaveBeenCalled();
     const clickedAnchor = HTMLAnchorElement.prototype.click.mock.instances.at(-1);
     expect(clickedAnchor.download).toBe("mikuproject-export-202603162312.xlsx");
+    expect(document.getElementById("xmlInput").value).not.toContain("<!-- edited -->");
+    expect(document.getElementById("xmlSaveState").textContent).toContain("XML 保存状態: 保存済み (2026-03-16 23:12)");
     expect(document.getElementById("statusMessage").textContent).toContain("XLSX ファイルをエクスポートしました");
   });
 
@@ -792,6 +803,10 @@ describe("mikuproject main", () => {
     const exportSpy = vi.spyOn(globalThis.__mikuprojectWbsXlsx, "exportWbsWorkbook");
 
     document.getElementById("parseXmlBtn").click();
+    document.getElementById("downloadXmlBtn").click();
+    const xmlInput = document.getElementById("xmlInput");
+    xmlInput.value = `${xmlInput.value}\n<!-- edited -->`;
+    xmlInput.dispatchEvent(new Event("input"));
     document.getElementById("exportWbsXlsxBtn").click();
     const defaultHolidayDates = getDefaultSampleHolidayDates();
 
@@ -808,6 +823,8 @@ describe("mikuproject main", () => {
       useBusinessDaysForDisplayRange: false,
       useBusinessDaysForProgressBand: false
     });
+    expect(document.getElementById("xmlInput").value).not.toContain("<!-- edited -->");
+    expect(document.getElementById("xmlSaveState").textContent).toContain("XML 保存状態: 保存済み (2026-03-16 23:12)");
     expect(document.getElementById("statusMessage").textContent).toContain("WBS XLSX ファイルをエクスポートしました");
     expect(document.getElementById("statusMessage").textContent).toContain(`祝日 ${SAMPLE_HOLIDAY_COUNT} 件`);
   });
@@ -1233,19 +1250,68 @@ describe("mikuproject main", () => {
     expect(document.getElementById("xmlSaveState").classList.contains("md-save-state--dirty")).toBe(true);
   });
 
+  it("exports regenerated xml instead of manual textarea edits when a model exists", async () => {
+    bootPage();
+
+    document.getElementById("parseXmlBtn").click();
+    const xmlInput = document.getElementById("xmlInput");
+    xmlInput.value = `${xmlInput.value}\n<!-- edited -->`;
+    xmlInput.dispatchEvent(new Event("input"));
+    await flushAsyncWork();
+
+    const OriginalBlob = Blob;
+    class InspectableBlob extends OriginalBlob {
+      __parts;
+
+      constructor(parts, options) {
+        super(parts, options);
+        this.__parts = parts;
+      }
+
+      text() {
+        return Promise.resolve(this.__parts.join(""));
+      }
+    }
+    globalThis.Blob = InspectableBlob;
+    URL.createObjectURL.mockClear();
+    HTMLAnchorElement.prototype.click.mockClear();
+
+    try {
+      document.getElementById("downloadXmlBtn").click();
+
+      expect(URL.createObjectURL).toHaveBeenCalled();
+      const exportedBlob = URL.createObjectURL.mock.calls.at(-1)?.[0];
+      expect(exportedBlob).toBeInstanceOf(InspectableBlob);
+      await expect(exportedBlob.text()).resolves.not.toContain("<!-- edited -->");
+      expect(document.getElementById("xmlInput").value).not.toContain("<!-- edited -->");
+      expect(document.getElementById("xmlSaveState").textContent).toContain("XML 保存状態: 保存済み (2026-03-16 23:12)");
+    } finally {
+      globalThis.Blob = OriginalBlob;
+    }
+  });
+
 
   it("downloads rendered mermaid svg", async () => {
     bootPage();
 
     document.getElementById("parseXmlBtn").click();
-    document.getElementById("exportMermaidBtn").click();
-    await flushAsyncWork();
+    document.getElementById("downloadXmlBtn").click();
+    const xmlInput = document.getElementById("xmlInput");
+    xmlInput.value = `${xmlInput.value}\n<!-- edited -->`;
+    xmlInput.dispatchEvent(new Event("input"));
+    URL.createObjectURL.mockClear();
+    HTMLAnchorElement.prototype.click.mockClear();
     document.getElementById("downloadMermaidSvgBtn").click();
+    await flushAsyncWork();
+    await flushAsyncWork();
 
     expect(URL.createObjectURL).toHaveBeenCalled();
     expect(HTMLAnchorElement.prototype.click).toHaveBeenCalled();
     const clickedAnchor = HTMLAnchorElement.prototype.click.mock.instances.at(-1);
     expect(clickedAnchor.download).toBe("mikuproject-mermaid.svg");
+    expect(document.getElementById("xmlInput").value).not.toContain("<!-- edited -->");
+    expect(document.getElementById("xmlSaveState").textContent).toContain("XML 保存状態: 保存済み (2026-03-16 23:12)");
+    expect(document.getElementById("mermaidOutput").value).toContain("gantt");
     expect(document.getElementById("statusMessage").textContent).toContain("Mermaid SVG を保存しました");
   });
 

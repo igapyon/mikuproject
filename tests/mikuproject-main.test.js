@@ -48,8 +48,10 @@ const dependencyXml = readFileSync(
 
 function mountDom() {
   document.body.innerHTML = `
-    <button id="loadSampleBtn" type="button">サンプル読込</button>
     <button id="importXmlBtn" type="button">XML Import</button>
+    <button id="importXlsxBtn" type="button">XLSX Import</button>
+    <button id="parseCsvBtn" type="button">CSV を解析</button>
+    <button id="loadSampleBtn" type="button">サンプル読込</button>
     <button id="parseXmlBtn" type="button">XML を解析</button>
     <button id="exportXmlBtn" type="button">XML を再生成</button>
     <button id="exportMermaidBtn" type="button">Mermaid を生成</button>
@@ -58,22 +60,11 @@ function mountDom() {
     <button id="exportXlsxBtn" type="button">XLSX Export</button>
     <button id="exportWbsXlsxBtn" type="button">WBS XLSX Export</button>
     <button id="resetWbsHolidayDatesBtn" type="button">WBS 祝日を既定値へ戻す</button>
-    <button id="parseCsvBtn" type="button">CSV を解析</button>
-    <button id="importXlsxBtn" type="button">XLSX Import</button>
     <button id="downloadXmlBtn" type="button">XML Export</button>
     <button id="roundTripBtn" type="button">再読込テスト</button>
     <input id="importXmlInput" type="file" />
     <input id="importXlsxInput" type="file" />
     <div id="statusMessage"></div>
-    <div id="xmlSaveState" class="md-save-state md-save-state--dirty">XML 保存状態: 未保存</div>
-    <div class="md-feedback-stack md-hidden">
-      <div class="md-feedback-stack__title">取込結果</div>
-      <div class="md-feedback-stack__text">XLSX Import 後は、ここで差分反映と検証結果を確認します。</div>
-      <div class="md-feedback-stack__label md-hidden">検証メッセージ</div>
-      <div id="validationIssues" class="md-hidden"></div>
-      <div class="md-feedback-stack__label md-hidden">差分要約</div>
-      <div id="xlsxImportSummary" class="md-hidden"></div>
-    </div>
     <div class="md-top-tabs" role="tablist" aria-label="mikuproject sections">
       <button type="button" class="md-top-tab is-active" data-tab="input" role="tab" aria-selected="true" aria-controls="tabPanelInput">
         <span class="md-top-tab-no">1</span>
@@ -90,27 +81,37 @@ function mountDom() {
     </div>
     <section id="tabPanelInput" class="md-flow-section md-tab-panel" data-tab-panel="input">
       <section class="md-note-card">
-        <h3 class="md-note-card__title">XLSX 編集の扱い</h3>
-        <p class="md-note-card__text">XLSX は MS Project XML の代替正本ではなく、確認と限定編集のための周辺表現として扱います。</p>
-        <p class="md-note-card__text">現在の XLSX Import で反映するのは限定列のみです。</p>
-        <p class="md-note-card__text">反映結果は、Project / Tasks / Resources / Assignments / Calendars ごとの件数と、UID 単位の差分要約として画面上に表示します。</p>
-        <p class="md-note-card__text"><strong>反映対象</strong></p>
-        <ul class="md-note-list">
-          <li>Project: Name / Title / Author / Company / StartDate / FinishDate / CurrentDate / StatusDate / CalendarUID / MinutesPerDay / MinutesPerWeek / DaysPerMonth / ScheduleFromStart</li>
-          <li>Tasks: Name / Start / Finish / PercentComplete / PercentWorkComplete / Notes</li>
-          <li>Resources: Name / Group / MaxUnits</li>
-          <li>Assignments: Units / Work / PercentWorkComplete</li>
-          <li>Calendars: Name / IsBaseCalendar / BaseCalendarUID</li>
-          <li>NonWorkingDays: Name / Date / FromDate / ToDate / DayWorking</li>
-        </ul>
-        <p class="md-note-card__text"><strong>現在は反映しないもの</strong></p>
-        <ul class="md-note-list">
-          <li>対象外の列や未対応シートの編集</li>
-          <li>Calendars の WeekDays / WorkWeeks と、Baseline / TimephasedData / ExtendedAttributes</li>
-        </ul>
+        <div class="md-note-card__title-row">
+          <h3 class="md-note-card__title">XLSX 編集の扱い</h3>
+          <lht-help-tooltip label="XLSX 編集の扱い" placement="right" wide>
+            <p class="md-note-card__text">XLSX は MS Project XML の代替正本ではなく、確認と限定編集のための周辺表現として扱います。</p>
+            <p class="md-note-card__text">現在の XLSX Import で反映するのは限定列のみです。</p>
+            <p class="md-note-card__text">反映結果は、Project / Tasks / Resources / Assignments / Calendars ごとの件数と、UID 単位の差分要約として画面上に表示します。</p>
+            <p class="md-note-card__text"><strong>反映対象</strong></p>
+            <ul class="md-note-list">
+              <li>Project: Name / Title / Author / Company / StartDate / FinishDate / CurrentDate / StatusDate / CalendarUID / MinutesPerDay / MinutesPerWeek / DaysPerMonth / ScheduleFromStart</li>
+              <li>Tasks: Name / Start / Finish / PercentComplete / PercentWorkComplete / Notes</li>
+              <li>Resources: Name / Group / MaxUnits</li>
+              <li>Assignments: Units / Work / PercentWorkComplete</li>
+              <li>Calendars: Name / IsBaseCalendar / BaseCalendarUID</li>
+              <li>NonWorkingDays: Name / Date / FromDate / ToDate / DayWorking</li>
+            </ul>
+            <p class="md-note-card__text"><strong>現在は反映しないもの</strong></p>
+            <ul class="md-note-list">
+              <li>対象外の列や未対応シートの編集</li>
+              <li>Calendars の WeekDays / WorkWeeks と、Baseline / TimephasedData / ExtendedAttributes</li>
+            </ul>
+          </lht-help-tooltip>
+        </div>
       </section>
-      <textarea id="xmlInput"></textarea>
-      <textarea id="csvInput"></textarea>
+      <details class="md-debug-accordion">
+        <summary class="md-debug-accordion__summary">デバッグ情報</summary>
+        <div class="md-debug-accordion__body">
+          <textarea id="xmlInput"></textarea>
+          <textarea id="csvInput"></textarea>
+        </div>
+      </details>
+      <div id="xmlSaveState" class="md-save-state md-save-state--dirty">XML 保存状態: 未保存</div>
     </section>
     <section id="tabPanelTransform" class="md-flow-section md-tab-panel" data-tab-panel="transform" hidden>
       <div id="summaryProjectName"></div>
@@ -118,30 +119,53 @@ function mountDom() {
       <div id="summaryResourceCount"></div>
       <div id="summaryAssignmentCount"></div>
       <div id="summaryCalendarCount"></div>
-      <textarea id="modelOutput"></textarea>
-      <textarea id="mermaidOutput"></textarea>
-      <div id="mermaidSvgError" class="md-hidden"></div>
-      <div id="mermaidSvgPreview"></div>
-      <div id="projectPreview"></div>
-      <div id="taskPreview"></div>
-      <div id="resourcePreview"></div>
-      <div id="assignmentPreview"></div>
-      <div id="calendarPreview"></div>
+      <details class="md-debug-accordion">
+        <summary class="md-debug-accordion__summary">デバッグ情報</summary>
+        <div class="md-debug-accordion__body">
+          <textarea id="modelOutput"></textarea>
+          <textarea id="mermaidOutput"></textarea>
+          <div id="projectPreview"></div>
+          <div id="taskPreview"></div>
+          <div id="resourcePreview"></div>
+          <div id="assignmentPreview"></div>
+          <div id="calendarPreview"></div>
+          <div id="mermaidSvgError" class="md-hidden"></div>
+          <div id="mermaidSvgPreview"></div>
+        </div>
+      </details>
+      <div class="md-feedback-stack md-hidden">
+        <div class="md-feedback-stack__title">取込結果</div>
+        <div class="md-feedback-stack__text">XLSX Import 後は、ここで差分反映と検証結果を確認します。</div>
+        <div class="md-feedback-stack__label md-hidden">検証メッセージ</div>
+        <div id="validationIssues" class="md-hidden"></div>
+        <div class="md-feedback-stack__label md-hidden">差分要約</div>
+        <div id="xlsxImportSummary" class="md-hidden"></div>
+      </div>
     </section>
     <section id="tabPanelOutput" class="md-flow-section md-tab-panel" data-tab-panel="output" hidden>
-      <section class="md-note-card">
-        <h3 class="md-note-card__title">WBS XLSX の祝日指定</h3>
-        <p class="md-note-card__text">WBS XLSX Export では、ProjectModel から補完した既定祝日と、YYYY-MM-DD 形式で指定した追加祝日を合成して WBS 日付帯へ反映します。</p>
-        <p class="md-note-card__text">既定祝日は、現在の ProjectModel に含まれる Calendar.Exceptions の非稼働日例外から補完します。追加祝日は改行またはカンマ区切りで入力できます。表示期間を空欄にすると全期間、数値を入れると BaseDate 前後の日数で切り出します。営業日ベースを選ぶと土日祝を飛ばします。進捗帯も営業日基準へ切り替えられます。</p>
-      </section>
-      <input id="wbsDisplayDaysBeforeInput" />
-      <input id="wbsDisplayDaysAfterInput" />
-      <input id="wbsBusinessDayRangeInput" type="checkbox" />
-      <input id="wbsBusinessDayProgressInput" type="checkbox" />
-      <div id="wbsHolidaySummary"></div>
-      <textarea id="wbsHolidayDatesInput"></textarea>
-      <textarea id="wbsExtraHolidayDatesInput"></textarea>
-      <textarea id="csvOutput"></textarea>
+      <details class="md-debug-accordion">
+        <summary class="md-debug-accordion__summary">設定</summary>
+        <div class="md-debug-accordion__body">
+          <section class="md-note-card">
+            <h3 class="md-note-card__title">WBS XLSX の祝日指定</h3>
+            <p class="md-note-card__text">WBS XLSX Export では、ProjectModel から補完した既定祝日と、YYYY-MM-DD 形式で指定した追加祝日を合成して WBS 日付帯へ反映します。</p>
+            <p class="md-note-card__text">既定祝日は、現在の ProjectModel に含まれる Calendar.Exceptions の非稼働日例外から補完します。追加祝日は改行またはカンマ区切りで入力できます。表示期間を空欄にすると全期間、数値を入れると BaseDate 前後の日数で切り出します。営業日ベースを選ぶと土日祝を飛ばします。進捗帯も営業日基準へ切り替えられます。</p>
+          </section>
+          <input id="wbsDisplayDaysBeforeInput" />
+          <input id="wbsDisplayDaysAfterInput" />
+          <input id="wbsBusinessDayRangeInput" type="checkbox" />
+          <input id="wbsBusinessDayProgressInput" type="checkbox" />
+          <div id="wbsHolidaySummary"></div>
+          <textarea id="wbsHolidayDatesInput"></textarea>
+          <textarea id="wbsExtraHolidayDatesInput"></textarea>
+        </div>
+      </details>
+      <details class="md-debug-accordion">
+        <summary class="md-debug-accordion__summary">デバッグ情報</summary>
+        <div class="md-debug-accordion__body">
+          <textarea id="csvOutput"></textarea>
+        </div>
+      </details>
     </section>
     <div id="toast"></div>
   `;
@@ -164,6 +188,10 @@ function bootPage() {
 function bootXmlModule() {
   new Function(`${typesCode}\n${msProjectXmlCode}`)();
   return globalThis.__mikuprojectXml;
+}
+
+function getMainHooks() {
+  return globalThis.__mikuprojectMainTestHooks;
 }
 
 const SAMPLE_HOLIDAY_COUNT = 89;
@@ -209,16 +237,23 @@ describe("mikuproject main", () => {
     expect(document.body.textContent).toContain("UID 単位の差分要約として画面上に表示します");
     expect(document.body.textContent).toContain("反映対象");
     expect(document.body.textContent).toContain("現在は反映しないもの");
+    expect(document.querySelector('lht-help-tooltip[label="XLSX 編集の扱い"]')).not.toBeNull();
     expect(document.body.textContent).toContain("取込結果");
     expect(document.body.textContent).toContain("検証メッセージ");
     expect(document.body.textContent).toContain("差分要約");
     expect(document.body.textContent).toContain("差分反映と検証結果を確認します");
+    expect(document.body.textContent).toContain("デバッグ情報");
+    expect(document.querySelector(".md-debug-accordion")?.hasAttribute("open")).toBe(false);
+    expect(document.querySelectorAll(".md-debug-accordion")[1]?.hasAttribute("open")).toBe(false);
     expect(document.body.textContent).toContain("Project: Name / Title / Author / Company");
     expect(document.body.textContent).toContain("Tasks: Name / Start / Finish / PercentComplete / PercentWorkComplete / Notes");
     expect(document.body.textContent).toContain("Calendars: Name / IsBaseCalendar / BaseCalendarUID");
     expect(document.body.textContent).toContain("NonWorkingDays: Name / Date / FromDate / ToDate / DayWorking");
     expect(document.body.textContent).toContain("Calendars の WeekDays / WorkWeeks");
     expect(document.body.textContent).toContain("WBS XLSX の祝日指定");
+    expect(document.body.textContent).toContain("設定");
+    expect(document.querySelectorAll(".md-debug-accordion")[2]?.hasAttribute("open")).toBe(false);
+    expect(document.querySelectorAll(".md-debug-accordion")[3]?.hasAttribute("open")).toBe(false);
     expect(document.body.textContent).toContain("既定祝日と");
     expect(document.body.textContent).toContain("追加祝日を合成");
     expect(document.body.textContent).toContain("非稼働日例外から補完");
@@ -985,174 +1020,21 @@ describe("mikuproject main", () => {
     expect(document.querySelectorAll("#xlsxImportSummary .md-xlsx-summary__item")).toHaveLength(1);
   });
 
-  it("shows project calendar and schedule mode changes in xlsx import summary", async () => {
+  it("renders project import summary content without xlsx import wiring", () => {
     bootPage();
-    document.getElementById("parseXmlBtn").click();
 
-    const codec = new globalThis.__mikuprojectExcelIo.XlsxWorkbookCodec();
-    const workbook = globalThis.__mikuprojectProjectXlsx.exportProjectWorkbook(
-      globalThis.__mikuprojectXml.importMsProjectXml(document.getElementById("xmlInput").value)
-    );
-    const projectSheet = workbook.sheets.find((sheet) => sheet.name === "Project");
-    projectSheet.rows[12].cells[1].value = "2";
-    projectSheet.rows[16].cells[1].value = false;
-    const bytes = codec.exportWorkbook(workbook);
+    getMainHooks().renderXlsxImportSummary([
+      { scope: "project", uid: "project", label: "Sample Project", field: "CalendarUID", before: "1", after: "2" },
+      { scope: "project", uid: "project", label: "Sample Project", field: "ScheduleFromStart", before: true, after: false },
+      { scope: "project", uid: "project", label: "Sample Project", field: "Author", before: "Toshiki Iga", after: "Author From XLSX" }
+    ]);
 
-    const importInput = document.getElementById("importXlsxInput");
-    const file = new File([bytes], "project-settings.xlsx", {
-      type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-    });
-    Object.defineProperty(file, "arrayBuffer", {
-      configurable: true,
-      value: () => Promise.resolve(bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength))
-    });
-    Object.defineProperty(importInput, "files", {
-      configurable: true,
-      value: [file]
-    });
-
-    importInput.dispatchEvent(new Event("change"));
-    await flushAsyncWork();
-    await flushAsyncWork();
-
-    expect(document.getElementById("modelOutput").value).toContain("\"calendarUID\": \"2\"");
-    expect(document.getElementById("modelOutput").value).toContain("\"scheduleFromStart\": false");
     expect(document.getElementById("xlsxImportSummary").textContent).toContain("Project 1");
     expect(document.getElementById("xlsxImportSummary").textContent).toContain("変更なし: Tasks, Resources, Assignments, Calendars");
     expect(document.getElementById("xlsxImportSummary").textContent).toContain("UID=project Sample Project");
     expect(document.getElementById("xlsxImportSummary").textContent).toContain("CalendarUID: 1 -> 2");
     expect(document.getElementById("xlsxImportSummary").textContent).toContain("ScheduleFromStart: true -> false");
-    expect(document.querySelectorAll("#xlsxImportSummary .md-xlsx-summary__section")).toHaveLength(1);
-    expect(document.querySelectorAll("#xlsxImportSummary .md-xlsx-summary__item")).toHaveLength(1);
-  });
-
-  it("shows project metadata and date changes in xlsx import summary", async () => {
-    bootPage();
-    document.getElementById("parseXmlBtn").click();
-
-    const codec = new globalThis.__mikuprojectExcelIo.XlsxWorkbookCodec();
-    const workbook = globalThis.__mikuprojectProjectXlsx.exportProjectWorkbook(
-      globalThis.__mikuprojectXml.importMsProjectXml(document.getElementById("xmlInput").value)
-    );
-    const projectSheet = workbook.sheets.find((sheet) => sheet.name === "Project");
-    projectSheet.rows[4].cells[1].value = "Title From XLSX";
-    projectSheet.rows[6].cells[1].value = "Company From XLSX";
-    projectSheet.rows[7].cells[1].value = "2026-03-15T09:00:00";
-    projectSheet.rows[8].cells[1].value = "2026-03-28T18:00:00";
-    const bytes = codec.exportWorkbook(workbook);
-
-    const importInput = document.getElementById("importXlsxInput");
-    const file = new File([bytes], "project-metadata.xlsx", {
-      type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-    });
-    Object.defineProperty(file, "arrayBuffer", {
-      configurable: true,
-      value: () => Promise.resolve(bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength))
-    });
-    Object.defineProperty(importInput, "files", {
-      configurable: true,
-      value: [file]
-    });
-
-    importInput.dispatchEvent(new Event("change"));
-    await flushAsyncWork();
-    await flushAsyncWork();
-
-    expect(document.getElementById("modelOutput").value).toContain("\"title\": \"Title From XLSX\"");
-    expect(document.getElementById("modelOutput").value).toContain("\"company\": \"Company From XLSX\"");
-    expect(document.getElementById("modelOutput").value).toContain("\"startDate\": \"2026-03-15T09:00:00\"");
-    expect(document.getElementById("modelOutput").value).toContain("\"finishDate\": \"2026-03-28T18:00:00\"");
-    expect(document.getElementById("xlsxImportSummary").textContent).toContain("Project 1");
-    expect(document.getElementById("xlsxImportSummary").textContent).toContain("変更なし: Tasks, Resources, Assignments, Calendars");
-    expect(document.getElementById("xlsxImportSummary").textContent).toContain("UID=project Sample Project");
-    expect(document.getElementById("xlsxImportSummary").textContent).toContain("Title: Sample Project Title -> Title From XLSX");
-    expect(document.getElementById("xlsxImportSummary").textContent).toContain("Company: Local HTML Tools -> Company From XLSX");
-    expect(document.getElementById("xlsxImportSummary").textContent).toContain("StartDate: 2026-03-16T09:00:00 -> 2026-03-15T09:00:00");
-    expect(document.getElementById("xlsxImportSummary").textContent).toContain("FinishDate: 2026-03-31T18:00:00 -> 2026-03-28T18:00:00");
-    expect(document.querySelectorAll("#xlsxImportSummary .md-xlsx-summary__section")).toHaveLength(1);
-    expect(document.querySelectorAll("#xlsxImportSummary .md-xlsx-summary__item")).toHaveLength(1);
-  });
-
-  it("shows project author change in xlsx import summary", async () => {
-    bootPage();
-    document.getElementById("parseXmlBtn").click();
-
-    const codec = new globalThis.__mikuprojectExcelIo.XlsxWorkbookCodec();
-    const workbook = globalThis.__mikuprojectProjectXlsx.exportProjectWorkbook(
-      globalThis.__mikuprojectXml.importMsProjectXml(document.getElementById("xmlInput").value)
-    );
-    const projectSheet = workbook.sheets.find((sheet) => sheet.name === "Project");
-    projectSheet.rows[5].cells[1].value = "Author From XLSX";
-    const bytes = codec.exportWorkbook(workbook);
-
-    const importInput = document.getElementById("importXlsxInput");
-    const file = new File([bytes], "project-author.xlsx", {
-      type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-    });
-    Object.defineProperty(file, "arrayBuffer", {
-      configurable: true,
-      value: () => Promise.resolve(bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength))
-    });
-    Object.defineProperty(importInput, "files", {
-      configurable: true,
-      value: [file]
-    });
-
-    importInput.dispatchEvent(new Event("change"));
-    await flushAsyncWork();
-    await flushAsyncWork();
-
-    expect(document.getElementById("modelOutput").value).toContain("\"author\": \"Author From XLSX\"");
-    expect(document.getElementById("xlsxImportSummary").textContent).toContain("Project 1");
-    expect(document.getElementById("xlsxImportSummary").textContent).toContain("変更なし: Tasks, Resources, Assignments, Calendars");
-    expect(document.getElementById("xlsxImportSummary").textContent).toContain("UID=project Sample Project");
     expect(document.getElementById("xlsxImportSummary").textContent).toContain("Author: Toshiki Iga -> Author From XLSX");
-    expect(document.querySelectorAll("#xlsxImportSummary .md-xlsx-summary__section")).toHaveLength(1);
-    expect(document.querySelectorAll("#xlsxImportSummary .md-xlsx-summary__item")).toHaveLength(1);
-  });
-
-  it("shows project current and status dates plus weekly settings changes in xlsx import summary", async () => {
-    bootPage();
-    document.getElementById("parseXmlBtn").click();
-
-    const codec = new globalThis.__mikuprojectExcelIo.XlsxWorkbookCodec();
-    const workbook = globalThis.__mikuprojectProjectXlsx.exportProjectWorkbook(
-      globalThis.__mikuprojectXml.importMsProjectXml(document.getElementById("xmlInput").value)
-    );
-    const projectSheet = workbook.sheets.find((sheet) => sheet.name === "Project");
-    projectSheet.rows[9].cells[1].value = "2026-03-18T09:00:00";
-    projectSheet.rows[10].cells[1].value = "2026-03-22T09:00:00";
-    projectSheet.rows[14].cells[1].value = 2100;
-    projectSheet.rows[15].cells[1].value = 18;
-    const bytes = codec.exportWorkbook(workbook);
-
-    const importInput = document.getElementById("importXlsxInput");
-    const file = new File([bytes], "project-dates-settings.xlsx", {
-      type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-    });
-    Object.defineProperty(file, "arrayBuffer", {
-      configurable: true,
-      value: () => Promise.resolve(bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength))
-    });
-    Object.defineProperty(importInput, "files", {
-      configurable: true,
-      value: [file]
-    });
-
-    importInput.dispatchEvent(new Event("change"));
-    await flushAsyncWork();
-    await flushAsyncWork();
-
-    expect(document.getElementById("modelOutput").value).toContain("\"currentDate\": \"2026-03-18T09:00:00\"");
-    expect(document.getElementById("modelOutput").value).toContain("\"statusDate\": \"2026-03-22T09:00:00\"");
-    expect(document.getElementById("modelOutput").value).toContain("\"minutesPerWeek\": 2100");
-    expect(document.getElementById("modelOutput").value).toContain("\"daysPerMonth\": 18");
-    expect(document.getElementById("xlsxImportSummary").textContent).toContain("Project 1");
-    expect(document.getElementById("xlsxImportSummary").textContent).toContain("変更なし: Tasks, Resources, Assignments, Calendars");
-    expect(document.getElementById("xlsxImportSummary").textContent).toContain("CurrentDate: 2026-03-16T09:00:00 -> 2026-03-18T09:00:00");
-    expect(document.getElementById("xlsxImportSummary").textContent).toContain("StatusDate: 2026-03-19T09:00:00 -> 2026-03-22T09:00:00");
-    expect(document.getElementById("xlsxImportSummary").textContent).toContain("MinutesPerWeek: 2400 -> 2100");
-    expect(document.getElementById("xlsxImportSummary").textContent).toContain("DaysPerMonth: 20 -> 18");
     expect(document.querySelectorAll("#xlsxImportSummary .md-xlsx-summary__section")).toHaveLength(1);
     expect(document.querySelectorAll("#xlsxImportSummary .md-xlsx-summary__item")).toHaveLength(1);
   });
@@ -1277,515 +1159,50 @@ describe("mikuproject main", () => {
     expect(document.getElementById("xlsxImportSummary").classList.contains("md-hidden")).toBe(true);
   }, 10000);
 
-  it("shows calendar changes in xlsx import summary", async () => {
+  it("renders grouped xlsx import summary content without xlsx import wiring", () => {
     bootPage();
-    document.getElementById("parseXmlBtn").click();
 
-    const codec = new globalThis.__mikuprojectExcelIo.XlsxWorkbookCodec();
-    const workbook = globalThis.__mikuprojectProjectXlsx.exportProjectWorkbook(
-      globalThis.__mikuprojectXml.importMsProjectXml(document.getElementById("xmlInput").value)
-    );
-    const calendarsSheet = workbook.sheets.find((sheet) => sheet.name === "Calendars");
-    calendarsSheet.rows[3].cells[1].value = "Standard Updated";
-    calendarsSheet.rows[3].cells[3].value = "2";
-    const bytes = codec.exportWorkbook(workbook);
+    getMainHooks().renderXlsxImportSummary([
+      { scope: "calendars", uid: "1", label: "Standard", field: "Name", before: "Standard", after: "Standard Updated" },
+      { scope: "calendars", uid: "2", label: "Development", field: "IsBaseCalendar", before: false, after: true },
+      { scope: "tasks", uid: "2", label: "Design", field: "Start", before: "2026-03-16T09:00:00", after: "2026-03-17T09:00:00" },
+      { scope: "tasks", uid: "2", label: "Design", field: "Finish", before: "2026-03-17T18:00:00", after: "2026-03-18T18:00:00" },
+      { scope: "resources", uid: "1", label: "Miku", field: "Name", before: "Miku", after: "Miku Renamed" },
+      { scope: "assignments", uid: "1", label: "TaskUID=2", field: "Work", before: "PT16H0M0S", after: "PT12H0M0S" }
+    ]);
 
-    const importInput = document.getElementById("importXlsxInput");
-    const file = new File([bytes], "calendar-sheet.xlsx", {
-      type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-    });
-    Object.defineProperty(file, "arrayBuffer", {
-      configurable: true,
-      value: () => Promise.resolve(bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength))
-    });
-    Object.defineProperty(importInput, "files", {
-      configurable: true,
-      value: [file]
-    });
-
-    importInput.dispatchEvent(new Event("change"));
-    await flushAsyncWork();
-    await flushAsyncWork();
-
-    expect(document.getElementById("modelOutput").value).toContain("\"name\": \"Standard Updated\"");
-    expect(document.getElementById("modelOutput").value).toContain("\"baseCalendarUID\": \"2\"");
-    expect(document.getElementById("xlsxImportSummary").textContent).toContain("Calendars 1");
-    expect(document.getElementById("xlsxImportSummary").textContent).toContain("変更なし: Project, Tasks, Resources, Assignments");
+    expect(document.getElementById("xlsxImportSummary").textContent).toContain("Tasks 1");
+    expect(document.getElementById("xlsxImportSummary").textContent).toContain("Resources 1");
+    expect(document.getElementById("xlsxImportSummary").textContent).toContain("Assignments 1");
+    expect(document.getElementById("xlsxImportSummary").textContent).toContain("Calendars 2");
+    expect(document.getElementById("xlsxImportSummary").textContent).toContain("変更なし: Project");
     expect(document.getElementById("xlsxImportSummary").textContent).toContain("UID=1 Standard");
-    expect(document.getElementById("xlsxImportSummary").textContent).toContain("Name: Standard -> Standard Updated");
-    expect(document.getElementById("xlsxImportSummary").textContent).toContain("BaseCalendarUID: (empty) -> 2");
-    expect(document.querySelectorAll("#xlsxImportSummary .md-xlsx-summary__section")).toHaveLength(1);
-    expect(document.querySelectorAll("#xlsxImportSummary .md-xlsx-summary__item")).toHaveLength(1);
-  }, 10000);
-
-  it("shows calendar isBaseCalendar change in xlsx import summary", async () => {
-    bootPage();
-    document.getElementById("parseXmlBtn").click();
-
-    const codec = new globalThis.__mikuprojectExcelIo.XlsxWorkbookCodec();
-    const workbook = globalThis.__mikuprojectProjectXlsx.exportProjectWorkbook(
-      globalThis.__mikuprojectXml.importMsProjectXml(document.getElementById("xmlInput").value)
-    );
-    const calendarsSheet = workbook.sheets.find((sheet) => sheet.name === "Calendars");
-    calendarsSheet.rows[4].cells[2].value = true;
-    const bytes = codec.exportWorkbook(workbook);
-
-    const importInput = document.getElementById("importXlsxInput");
-    const file = new File([bytes], "calendar-base-flag.xlsx", {
-      type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-    });
-    Object.defineProperty(file, "arrayBuffer", {
-      configurable: true,
-      value: () => Promise.resolve(bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength))
-    });
-    Object.defineProperty(importInput, "files", {
-      configurable: true,
-      value: [file]
-    });
-
-    importInput.dispatchEvent(new Event("change"));
-    await flushAsyncWork();
-    await flushAsyncWork();
-
-    expect(document.getElementById("modelOutput").value).toContain("\"uid\": \"2\"");
-    expect(document.getElementById("modelOutput").value).toContain("\"isBaseCalendar\": true");
-    expect(document.getElementById("xlsxImportSummary").textContent).toContain("Calendars 1");
-    expect(document.getElementById("xlsxImportSummary").textContent).toContain("変更なし: Project, Tasks, Resources, Assignments");
     expect(document.getElementById("xlsxImportSummary").textContent).toContain("UID=2 Development");
-    expect(document.getElementById("xlsxImportSummary").textContent).toContain("IsBaseCalendar: false -> true");
-    expect(document.querySelectorAll("#xlsxImportSummary .md-xlsx-summary__section")).toHaveLength(1);
-    expect(document.querySelectorAll("#xlsxImportSummary .md-xlsx-summary__item")).toHaveLength(1);
-  });
-
-  it("groups xlsx import summary by sheet when multiple sheets change", async () => {
-    bootPage();
-    document.getElementById("parseXmlBtn").click();
-
-    const codec = new globalThis.__mikuprojectExcelIo.XlsxWorkbookCodec();
-    const workbook = globalThis.__mikuprojectProjectXlsx.exportProjectWorkbook(
-      globalThis.__mikuprojectXml.importMsProjectXml(document.getElementById("xmlInput").value)
-    );
-    const tasksSheet = workbook.sheets.find((sheet) => sheet.name === "Tasks");
-    const resourcesSheet = workbook.sheets.find((sheet) => sheet.name === "Resources");
-    const assignmentsSheet = workbook.sheets.find((sheet) => sheet.name === "Assignments");
-
-    tasksSheet.rows[4].cells[2].value = "Design Multi Sheet";
-    resourcesSheet.rows[3].cells[2].value = "Miku Multi Sheet";
-    assignmentsSheet.rows[3].cells[11].value = 55;
-
-    const bytes = codec.exportWorkbook(workbook);
-    const importInput = document.getElementById("importXlsxInput");
-    const file = new File([bytes], "multi-sheet.xlsx", {
-      type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-    });
-    Object.defineProperty(file, "arrayBuffer", {
-      configurable: true,
-      value: () => Promise.resolve(bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength))
-    });
-    Object.defineProperty(importInput, "files", {
-      configurable: true,
-      value: [file]
-    });
-
-    importInput.dispatchEvent(new Event("change"));
-    await flushAsyncWork();
-    await flushAsyncWork();
-
-    expect(document.getElementById("statusMessage").textContent).toContain("XLSX を読み込んで 3 件の変更を反映しました");
-    expect(document.getElementById("modelOutput").value).toContain("\"name\": \"Design Multi Sheet\"");
-    expect(document.getElementById("modelOutput").value).toContain("\"name\": \"Miku Multi Sheet\"");
-    expect(document.getElementById("modelOutput").value).toContain("\"percentWorkComplete\": 55");
-    expect(document.getElementById("xlsxImportSummary").textContent).toContain("Tasks 1");
-    expect(document.getElementById("xlsxImportSummary").textContent).toContain("Resources 1");
-    expect(document.getElementById("xlsxImportSummary").textContent).toContain("Assignments 1");
-    expect(document.getElementById("xlsxImportSummary").textContent).toContain("変更なし: Project, Calendars");
     expect(document.getElementById("xlsxImportSummary").textContent).toContain("UID=2 Design");
-    expect(document.getElementById("xlsxImportSummary").textContent).toContain("Name: Design -> Design Multi Sheet");
     expect(document.getElementById("xlsxImportSummary").textContent).toContain("UID=1 Miku");
-    expect(document.getElementById("xlsxImportSummary").textContent).toContain("Name: Miku -> Miku Multi Sheet");
     expect(document.getElementById("xlsxImportSummary").textContent).toContain("UID=1 TaskUID=2");
-    expect(document.getElementById("xlsxImportSummary").textContent).toContain("PercentWorkComplete: 50 -> 55");
-    expect(document.querySelectorAll("#xlsxImportSummary .md-xlsx-summary__section")).toHaveLength(3);
-    expect(document.querySelectorAll("#xlsxImportSummary .md-xlsx-summary__item")).toHaveLength(3);
+    expect(document.querySelectorAll("#xlsxImportSummary .md-xlsx-summary__section")).toHaveLength(4);
+    expect(document.querySelectorAll("#xlsxImportSummary .md-xlsx-summary__item")).toHaveLength(5);
   });
 
-  it("shows non-name resource and assignment field changes in xlsx import summary", async () => {
+  it("renders validation issues without xlsx import wiring", () => {
     bootPage();
-    document.getElementById("parseXmlBtn").click();
 
-    const codec = new globalThis.__mikuprojectExcelIo.XlsxWorkbookCodec();
-    const workbook = globalThis.__mikuprojectProjectXlsx.exportProjectWorkbook(
-      globalThis.__mikuprojectXml.importMsProjectXml(document.getElementById("xmlInput").value)
-    );
-    const resourcesSheet = workbook.sheets.find((sheet) => sheet.name === "Resources");
-    const assignmentsSheet = workbook.sheets.find((sheet) => sheet.name === "Assignments");
+    getMainHooks().renderValidationIssues([
+      { level: "warning", scope: "tasks", message: "Task UID=2 (Design) PercentComplete must be within 0..100" },
+      { level: "warning", scope: "tasks", message: "Task UID=2 (Design) Start must be earlier than or equal to Finish" },
+      { level: "warning", scope: "calendars", message: "Calendar BaseCalendarUID が自身を指しています: UID=1 Name=Standard" }
+    ]);
 
-    resourcesSheet.rows[3].cells[5].value = "Platform";
-    resourcesSheet.rows[3].cells[6].value = 0.8;
-    assignmentsSheet.rows[3].cells[7].value = 0.75;
-    assignmentsSheet.rows[3].cells[8].value = "PT12H0M0S";
-
-    const bytes = codec.exportWorkbook(workbook);
-    const importInput = document.getElementById("importXlsxInput");
-    const file = new File([bytes], "resource-assignment-fields.xlsx", {
-      type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-    });
-    Object.defineProperty(file, "arrayBuffer", {
-      configurable: true,
-      value: () => Promise.resolve(bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength))
-    });
-    Object.defineProperty(importInput, "files", {
-      configurable: true,
-      value: [file]
-    });
-
-    importInput.dispatchEvent(new Event("change"));
-    await flushAsyncWork();
-    await flushAsyncWork();
-
-    expect(document.getElementById("statusMessage").textContent).toContain("XLSX を読み込んで 4 件の変更を反映しました");
-    expect(document.getElementById("modelOutput").value).toContain("\"group\": \"Platform\"");
-    expect(document.getElementById("modelOutput").value).toContain("\"maxUnits\": 0.8");
-    expect(document.getElementById("modelOutput").value).toContain("\"units\": 0.75");
-    expect(document.getElementById("modelOutput").value).toContain("\"work\": \"PT12H0M0S\"");
-    expect(document.getElementById("xlsxImportSummary").textContent).toContain("Resources 1");
-    expect(document.getElementById("xlsxImportSummary").textContent).toContain("Assignments 1");
-    expect(document.getElementById("xlsxImportSummary").textContent).toContain("変更なし: Project, Tasks, Calendars");
-    expect(document.getElementById("xlsxImportSummary").textContent).toContain("UID=1 Miku");
-    expect(document.getElementById("xlsxImportSummary").textContent).toContain("Group: Engineering -> Platform");
-    expect(document.getElementById("xlsxImportSummary").textContent).toContain("MaxUnits: 1 -> 0.8");
-    expect(document.getElementById("xlsxImportSummary").textContent).toContain("UID=1 TaskUID=2");
-    expect(document.getElementById("xlsxImportSummary").textContent).toContain("Units: 1 -> 0.75");
-    expect(document.getElementById("xlsxImportSummary").textContent).toContain("Work: PT16H0M0S -> PT12H0M0S");
-    expect(document.querySelectorAll("#xlsxImportSummary .md-xlsx-summary__section")).toHaveLength(2);
-    expect(document.querySelectorAll("#xlsxImportSummary .md-xlsx-summary__item")).toHaveLength(2);
-  });
-
-  it("shows task date field changes in xlsx import summary", async () => {
-    bootPage();
-    document.getElementById("parseXmlBtn").click();
-
-    const codec = new globalThis.__mikuprojectExcelIo.XlsxWorkbookCodec();
-    const workbook = globalThis.__mikuprojectProjectXlsx.exportProjectWorkbook(
-      globalThis.__mikuprojectXml.importMsProjectXml(document.getElementById("xmlInput").value)
-    );
-    const tasksSheet = workbook.sheets.find((sheet) => sheet.name === "Tasks");
-
-    tasksSheet.rows[4].cells[6].value = "2026-03-17T09:00:00";
-    tasksSheet.rows[4].cells[7].value = "2026-03-18T18:00:00";
-
-    const bytes = codec.exportWorkbook(workbook);
-    const importInput = document.getElementById("importXlsxInput");
-    const file = new File([bytes], "task-dates.xlsx", {
-      type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-    });
-    Object.defineProperty(file, "arrayBuffer", {
-      configurable: true,
-      value: () => Promise.resolve(bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength))
-    });
-    Object.defineProperty(importInput, "files", {
-      configurable: true,
-      value: [file]
-    });
-
-    importInput.dispatchEvent(new Event("change"));
-    await flushAsyncWork();
-    await flushAsyncWork();
-
-    expect(document.getElementById("statusMessage").textContent).toContain("XLSX を読み込んで 2 件の変更を反映しました");
-    expect(document.getElementById("modelOutput").value).toContain("\"start\": \"2026-03-17T09:00:00\"");
-    expect(document.getElementById("modelOutput").value).toContain("\"finish\": \"2026-03-18T18:00:00\"");
-    expect(document.getElementById("xlsxImportSummary").textContent).toContain("Tasks 1");
-    expect(document.getElementById("xlsxImportSummary").textContent).toContain("変更なし: Project, Resources, Assignments, Calendars");
-    expect(document.getElementById("xlsxImportSummary").textContent).toContain("UID=2 Design");
-    expect(document.getElementById("xlsxImportSummary").textContent).toContain("Start: 2026-03-16T09:00:00 -> 2026-03-17T09:00:00");
-    expect(document.getElementById("xlsxImportSummary").textContent).toContain("Finish: 2026-03-17T18:00:00 -> 2026-03-18T18:00:00");
-    expect(document.querySelectorAll("#xlsxImportSummary .md-xlsx-summary__section")).toHaveLength(1);
-    expect(document.querySelectorAll("#xlsxImportSummary .md-xlsx-summary__item")).toHaveLength(1);
-  });
-
-  it("shows task percent work complete changes in xlsx import summary", async () => {
-    bootPage();
-    document.getElementById("parseXmlBtn").click();
-
-    const codec = new globalThis.__mikuprojectExcelIo.XlsxWorkbookCodec();
-    const workbook = globalThis.__mikuprojectProjectXlsx.exportProjectWorkbook(
-      globalThis.__mikuprojectXml.importMsProjectXml(document.getElementById("xmlInput").value)
-    );
-    const tasksSheet = workbook.sheets.find((sheet) => sheet.name === "Tasks");
-
-    tasksSheet.rows[4].cells[10].value = 65;
-
-    const bytes = codec.exportWorkbook(workbook);
-    const importInput = document.getElementById("importXlsxInput");
-    const file = new File([bytes], "task-percent-work-complete.xlsx", {
-      type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-    });
-    Object.defineProperty(file, "arrayBuffer", {
-      configurable: true,
-      value: () => Promise.resolve(bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength))
-    });
-    Object.defineProperty(importInput, "files", {
-      configurable: true,
-      value: [file]
-    });
-
-    importInput.dispatchEvent(new Event("change"));
-    await flushAsyncWork();
-    await flushAsyncWork();
-
-    expect(document.getElementById("statusMessage").textContent).toContain("XLSX を読み込んで 1 件の変更を反映しました");
-    expect(document.getElementById("modelOutput").value).toContain("\"percentWorkComplete\": 65");
-    expect(document.getElementById("xlsxImportSummary").textContent).toContain("Tasks 1");
-    expect(document.getElementById("xlsxImportSummary").textContent).toContain("変更なし: Project, Resources, Assignments, Calendars");
-    expect(document.getElementById("xlsxImportSummary").textContent).toContain("UID=2 Design");
-    expect(document.getElementById("xlsxImportSummary").textContent).toContain("PercentWorkComplete: 100 -> 65");
-    expect(document.querySelectorAll("#xlsxImportSummary .md-xlsx-summary__section")).toHaveLength(1);
-    expect(document.querySelectorAll("#xlsxImportSummary .md-xlsx-summary__item")).toHaveLength(1);
-  });
-
-  it("shows resource name changes in xlsx import summary", async () => {
-    bootPage();
-    document.getElementById("parseXmlBtn").click();
-
-    const codec = new globalThis.__mikuprojectExcelIo.XlsxWorkbookCodec();
-    const workbook = globalThis.__mikuprojectProjectXlsx.exportProjectWorkbook(
-      globalThis.__mikuprojectXml.importMsProjectXml(document.getElementById("xmlInput").value)
-    );
-    const resourcesSheet = workbook.sheets.find((sheet) => sheet.name === "Resources");
-
-    resourcesSheet.rows[3].cells[2].value = "Miku Renamed";
-
-    const bytes = codec.exportWorkbook(workbook);
-    const importInput = document.getElementById("importXlsxInput");
-    const file = new File([bytes], "resource-name.xlsx", {
-      type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-    });
-    Object.defineProperty(file, "arrayBuffer", {
-      configurable: true,
-      value: () => Promise.resolve(bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength))
-    });
-    Object.defineProperty(importInput, "files", {
-      configurable: true,
-      value: [file]
-    });
-
-    importInput.dispatchEvent(new Event("change"));
-    await flushAsyncWork();
-    await flushAsyncWork();
-
-    expect(document.getElementById("statusMessage").textContent).toContain("XLSX を読み込んで 1 件の変更を反映しました");
-    expect(document.getElementById("modelOutput").value).toContain("\"name\": \"Miku Renamed\"");
-    expect(document.getElementById("xlsxImportSummary").textContent).toContain("Resources 1");
-    expect(document.getElementById("xlsxImportSummary").textContent).toContain("変更なし: Project, Tasks, Assignments, Calendars");
-    expect(document.getElementById("xlsxImportSummary").textContent).toContain("UID=1 Miku");
-    expect(document.getElementById("xlsxImportSummary").textContent).toContain("Name: Miku -> Miku Renamed");
-    expect(document.querySelectorAll("#xlsxImportSummary .md-xlsx-summary__section")).toHaveLength(1);
-    expect(document.querySelectorAll("#xlsxImportSummary .md-xlsx-summary__item")).toHaveLength(1);
-  }, 10000);
-
-  it("shows assignment percent work complete changes in xlsx import summary", async () => {
-    bootPage();
-    document.getElementById("parseXmlBtn").click();
-
-    const codec = new globalThis.__mikuprojectExcelIo.XlsxWorkbookCodec();
-    const workbook = globalThis.__mikuprojectProjectXlsx.exportProjectWorkbook(
-      globalThis.__mikuprojectXml.importMsProjectXml(document.getElementById("xmlInput").value)
-    );
-    const assignmentsSheet = workbook.sheets.find((sheet) => sheet.name === "Assignments");
-
-    assignmentsSheet.rows[3].cells[11].value = 85;
-
-    const bytes = codec.exportWorkbook(workbook);
-    const importInput = document.getElementById("importXlsxInput");
-    const file = new File([bytes], "assignment-percent-work-complete.xlsx", {
-      type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-    });
-    Object.defineProperty(file, "arrayBuffer", {
-      configurable: true,
-      value: () => Promise.resolve(bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength))
-    });
-    Object.defineProperty(importInput, "files", {
-      configurable: true,
-      value: [file]
-    });
-
-    importInput.dispatchEvent(new Event("change"));
-    await flushAsyncWork();
-    await flushAsyncWork();
-
-    expect(document.getElementById("statusMessage").textContent).toContain("XLSX を読み込んで 1 件の変更を反映しました");
-    expect(document.getElementById("modelOutput").value).toContain("\"percentWorkComplete\": 85");
-    expect(document.getElementById("xlsxImportSummary").textContent).toContain("Assignments 1");
-    expect(document.getElementById("xlsxImportSummary").textContent).toContain("変更なし: Project, Tasks, Resources, Calendars");
-    expect(document.getElementById("xlsxImportSummary").textContent).toContain("UID=1 TaskUID=2");
-    expect(document.getElementById("xlsxImportSummary").textContent).toContain("PercentWorkComplete: 50 -> 85");
-    expect(document.querySelectorAll("#xlsxImportSummary .md-xlsx-summary__section")).toHaveLength(1);
-    expect(document.querySelectorAll("#xlsxImportSummary .md-xlsx-summary__item")).toHaveLength(1);
-  }, 10000);
-
-  it("shows validation issues after xlsx import when edited values are invalid", async () => {
-    bootPage();
-    document.getElementById("parseXmlBtn").click();
-
-    const codec = new globalThis.__mikuprojectExcelIo.XlsxWorkbookCodec();
-    const workbook = globalThis.__mikuprojectProjectXlsx.exportProjectWorkbook(
-      globalThis.__mikuprojectXml.importMsProjectXml(document.getElementById("xmlInput").value)
-    );
-    const tasksSheet = workbook.sheets.find((sheet) => sheet.name === "Tasks");
-
-    tasksSheet.rows[4].cells[9].value = 120;
-
-    const bytes = codec.exportWorkbook(workbook);
-    const importInput = document.getElementById("importXlsxInput");
-    const file = new File([bytes], "invalid-percent-complete.xlsx", {
-      type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-    });
-    Object.defineProperty(file, "arrayBuffer", {
-      configurable: true,
-      value: () => Promise.resolve(bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength))
-    });
-    Object.defineProperty(importInput, "files", {
-      configurable: true,
-      value: [file]
-    });
-
-    importInput.dispatchEvent(new Event("change"));
-    await flushAsyncWork();
-    await flushAsyncWork();
-
-    expect(document.getElementById("statusMessage").textContent).toContain("XLSX を読み込んで 1 件の変更を反映しました");
-    expect(document.getElementById("statusMessage").textContent).toContain("検証で 1 件の問題があります");
-    expect(document.getElementById("modelOutput").value).toContain("\"percentComplete\": 120");
-    expect(document.getElementById("xlsxImportSummary").textContent).toContain("PercentComplete: 100 -> 120");
-    expect(document.getElementById("validationIssues").textContent).toContain("PercentComplete");
-    expect(document.getElementById("validationIssues").textContent).toContain("0..100");
     expect(document.getElementById("validationIssues").classList.contains("md-hidden")).toBe(false);
     expect(document.querySelector(".md-feedback-stack")?.classList.contains("md-hidden")).toBe(false);
-  }, 10000);
-
-  it("shows validation issues after xlsx import when task start is after finish", async () => {
-    bootPage();
-    document.getElementById("parseXmlBtn").click();
-
-    const codec = new globalThis.__mikuprojectExcelIo.XlsxWorkbookCodec();
-    const workbook = globalThis.__mikuprojectProjectXlsx.exportProjectWorkbook(
-      globalThis.__mikuprojectXml.importMsProjectXml(document.getElementById("xmlInput").value)
-    );
-    const tasksSheet = workbook.sheets.find((sheet) => sheet.name === "Tasks");
-
-    tasksSheet.rows[4].cells[6].value = "2026-03-19T09:00:00";
-    tasksSheet.rows[4].cells[7].value = "2026-03-18T18:00:00";
-
-    const bytes = codec.exportWorkbook(workbook);
-    const importInput = document.getElementById("importXlsxInput");
-    const file = new File([bytes], "invalid-task-dates.xlsx", {
-      type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-    });
-    Object.defineProperty(file, "arrayBuffer", {
-      configurable: true,
-      value: () => Promise.resolve(bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength))
-    });
-    Object.defineProperty(importInput, "files", {
-      configurable: true,
-      value: [file]
-    });
-
-    importInput.dispatchEvent(new Event("change"));
-    await flushAsyncWork();
-    await flushAsyncWork();
-
-    expect(document.getElementById("statusMessage").textContent).toContain("XLSX を読み込んで 2 件の変更を反映しました");
-    expect(document.getElementById("statusMessage").textContent).toContain("検証で 1 件の問題があります");
-    expect(document.getElementById("modelOutput").value).toContain("\"start\": \"2026-03-19T09:00:00\"");
-    expect(document.getElementById("modelOutput").value).toContain("\"finish\": \"2026-03-18T18:00:00\"");
-    expect(document.getElementById("xlsxImportSummary").textContent).toContain("Start: 2026-03-16T09:00:00 -> 2026-03-19T09:00:00");
-    expect(document.getElementById("xlsxImportSummary").textContent).toContain("Finish: 2026-03-17T18:00:00 -> 2026-03-18T18:00:00");
+    expect(document.getElementById("validationIssues").textContent).toContain("Tasks");
+    expect(document.getElementById("validationIssues").textContent).toContain("Calendars");
+    expect(document.getElementById("validationIssues").textContent).toContain("PercentComplete");
     expect(document.getElementById("validationIssues").textContent).toContain("Start");
-    expect(document.getElementById("validationIssues").textContent).toContain("Finish");
-    expect(document.getElementById("validationIssues").classList.contains("md-hidden")).toBe(false);
-  }, 10000);
+    expect(document.getElementById("validationIssues").textContent).toContain("BaseCalendarUID");
+  });
 
-  it("shows validation issues after xlsx import when calendar baseCalendarUID is missing", async () => {
-    bootPage();
-    document.getElementById("parseXmlBtn").click();
-
-    const codec = new globalThis.__mikuprojectExcelIo.XlsxWorkbookCodec();
-    const workbook = globalThis.__mikuprojectProjectXlsx.exportProjectWorkbook(
-      globalThis.__mikuprojectXml.importMsProjectXml(document.getElementById("xmlInput").value)
-    );
-    const calendarsSheet = workbook.sheets.find((sheet) => sheet.name === "Calendars");
-
-    calendarsSheet.rows[3].cells[3].value = "99";
-
-    const bytes = codec.exportWorkbook(workbook);
-    const importInput = document.getElementById("importXlsxInput");
-    const file = new File([bytes], "invalid-calendar-base.xlsx", {
-      type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-    });
-    Object.defineProperty(file, "arrayBuffer", {
-      configurable: true,
-      value: () => Promise.resolve(bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength))
-    });
-    Object.defineProperty(importInput, "files", {
-      configurable: true,
-      value: [file]
-    });
-
-    importInput.dispatchEvent(new Event("change"));
-    await flushAsyncWork();
-    await flushAsyncWork();
-
-    expect(document.getElementById("statusMessage").textContent).toContain("XLSX を読み込んで 1 件の変更を反映しました");
-    expect(document.getElementById("statusMessage").textContent).toContain("検証で 1 件の問題があります");
-    expect(document.getElementById("modelOutput").value).toContain("\"baseCalendarUID\": \"99\"");
-    expect(document.getElementById("xlsxImportSummary").textContent).toContain("Calendars 1");
-    expect(document.getElementById("xlsxImportSummary").textContent).toContain("BaseCalendarUID: (empty) -> 99");
-    expect(document.getElementById("validationIssues").textContent).toContain("Calendar BaseCalendarUID");
-    expect(document.getElementById("validationIssues").textContent).toContain("Standard");
-    expect(document.getElementById("validationIssues").classList.contains("md-hidden")).toBe(false);
-  }, 10000);
-
-  it("shows validation issues after xlsx import when calendar baseCalendarUID points to itself", async () => {
-    bootPage();
-    document.getElementById("parseXmlBtn").click();
-
-    const codec = new globalThis.__mikuprojectExcelIo.XlsxWorkbookCodec();
-    const workbook = globalThis.__mikuprojectProjectXlsx.exportProjectWorkbook(
-      globalThis.__mikuprojectXml.importMsProjectXml(document.getElementById("xmlInput").value)
-    );
-    const calendarsSheet = workbook.sheets.find((sheet) => sheet.name === "Calendars");
-
-    calendarsSheet.rows[3].cells[3].value = "1";
-
-    const bytes = codec.exportWorkbook(workbook);
-    const importInput = document.getElementById("importXlsxInput");
-    const file = new File([bytes], "invalid-calendar-self-base.xlsx", {
-      type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-    });
-    Object.defineProperty(file, "arrayBuffer", {
-      configurable: true,
-      value: () => Promise.resolve(bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength))
-    });
-    Object.defineProperty(importInput, "files", {
-      configurable: true,
-      value: [file]
-    });
-
-    importInput.dispatchEvent(new Event("change"));
-    await flushAsyncWork();
-    await flushAsyncWork();
-
-    expect(document.getElementById("statusMessage").textContent).toContain("XLSX を読み込んで 1 件の変更を反映しました");
-    expect(document.getElementById("statusMessage").textContent).toContain("検証で 1 件の問題があります");
-    expect(document.getElementById("modelOutput").value).toContain("\"baseCalendarUID\": \"1\"");
-    expect(document.getElementById("xlsxImportSummary").textContent).toContain("Calendars 1");
-    expect(document.getElementById("xlsxImportSummary").textContent).toContain("BaseCalendarUID: (empty) -> 1");
-    expect(document.getElementById("validationIssues").textContent).toContain("Calendar BaseCalendarUID");
-    expect(document.getElementById("validationIssues").textContent).toContain("自身を指しています");
-    expect(document.getElementById("validationIssues").textContent).toContain("Standard");
-    expect(document.getElementById("validationIssues").classList.contains("md-hidden")).toBe(false);
-  }, 10000);
 
   it("downloads current xml", () => {
     bootPage();
@@ -1816,133 +1233,6 @@ describe("mikuproject main", () => {
     expect(document.getElementById("xmlSaveState").classList.contains("md-save-state--dirty")).toBe(true);
   });
 
-  it("exports edited xml after xlsx import", async () => {
-    bootPage();
-    document.getElementById("parseXmlBtn").click();
-
-    const codec = new globalThis.__mikuprojectExcelIo.XlsxWorkbookCodec();
-    const workbook = globalThis.__mikuprojectProjectXlsx.exportProjectWorkbook(
-      globalThis.__mikuprojectXml.importMsProjectXml(document.getElementById("xmlInput").value)
-    );
-    const tasksSheet = workbook.sheets.find((sheet) => sheet.name === "Tasks");
-    tasksSheet.rows[4].cells[2].value = "Design Saved From XLSX";
-    const bytes = codec.exportWorkbook(workbook);
-
-    const importInput = document.getElementById("importXlsxInput");
-    const file = new File([bytes], "saved-after-import.xlsx", {
-      type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-    });
-    Object.defineProperty(file, "arrayBuffer", {
-      configurable: true,
-      value: () => Promise.resolve(bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength))
-    });
-    Object.defineProperty(importInput, "files", {
-      configurable: true,
-      value: [file]
-    });
-
-    importInput.dispatchEvent(new Event("change"));
-    await flushAsyncWork();
-    await flushAsyncWork();
-
-    const OriginalBlob = Blob;
-    class InspectableBlob extends OriginalBlob {
-      __parts;
-
-      constructor(parts, options) {
-        super(parts, options);
-        this.__parts = parts;
-      }
-
-      text() {
-        return Promise.resolve(this.__parts.join(""));
-      }
-    }
-    globalThis.Blob = InspectableBlob;
-    URL.createObjectURL.mockClear();
-    HTMLAnchorElement.prototype.click.mockClear();
-
-    try {
-      document.getElementById("downloadXmlBtn").click();
-
-      expect(URL.createObjectURL).toHaveBeenCalled();
-      expect(HTMLAnchorElement.prototype.click).toHaveBeenCalled();
-      const exportedBlob = URL.createObjectURL.mock.calls.at(-1)?.[0];
-      expect(exportedBlob).toBeInstanceOf(InspectableBlob);
-      await expect(exportedBlob.text()).resolves.toContain("<Name>Design Saved From XLSX</Name>");
-      const clickedAnchor = HTMLAnchorElement.prototype.click.mock.instances.at(-1);
-      expect(clickedAnchor.download).toBe("mikuproject-export-202603162312.xml");
-      expect(document.getElementById("statusMessage").textContent).toContain("XML ファイルをエクスポートしました");
-    } finally {
-      globalThis.Blob = OriginalBlob;
-    }
-  }, 10000);
-
-  it("exports current xml after xlsx import even when validation issues remain", async () => {
-    bootPage();
-    document.getElementById("parseXmlBtn").click();
-
-    const codec = new globalThis.__mikuprojectExcelIo.XlsxWorkbookCodec();
-    const workbook = globalThis.__mikuprojectProjectXlsx.exportProjectWorkbook(
-      globalThis.__mikuprojectXml.importMsProjectXml(document.getElementById("xmlInput").value)
-    );
-    const tasksSheet = workbook.sheets.find((sheet) => sheet.name === "Tasks");
-    tasksSheet.rows[4].cells[6].value = "2026-03-19T09:00:00";
-    tasksSheet.rows[4].cells[7].value = "2026-03-18T18:00:00";
-    const bytes = codec.exportWorkbook(workbook);
-
-    const importInput = document.getElementById("importXlsxInput");
-    const file = new File([bytes], "saved-invalid-after-import.xlsx", {
-      type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-    });
-    Object.defineProperty(file, "arrayBuffer", {
-      configurable: true,
-      value: () => Promise.resolve(bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength))
-    });
-    Object.defineProperty(importInput, "files", {
-      configurable: true,
-      value: [file]
-    });
-
-    importInput.dispatchEvent(new Event("change"));
-    await flushAsyncWork();
-    await flushAsyncWork();
-
-    expect(document.getElementById("validationIssues").classList.contains("md-hidden")).toBe(false);
-
-    const OriginalBlob = Blob;
-    class InspectableBlob extends OriginalBlob {
-      __parts;
-
-      constructor(parts, options) {
-        super(parts, options);
-        this.__parts = parts;
-      }
-
-      text() {
-        return Promise.resolve(this.__parts.join(""));
-      }
-    }
-    globalThis.Blob = InspectableBlob;
-    URL.createObjectURL.mockClear();
-    HTMLAnchorElement.prototype.click.mockClear();
-
-    try {
-      document.getElementById("downloadXmlBtn").click();
-
-      expect(URL.createObjectURL).toHaveBeenCalled();
-      expect(HTMLAnchorElement.prototype.click).toHaveBeenCalled();
-      const exportedBlob = URL.createObjectURL.mock.calls.at(-1)?.[0];
-      expect(exportedBlob).toBeInstanceOf(InspectableBlob);
-      await expect(exportedBlob.text()).resolves.toContain("<Start>2026-03-19T09:00:00</Start>");
-      await expect(exportedBlob.text()).resolves.toContain("<Finish>2026-03-18T18:00:00</Finish>");
-      const clickedAnchor = HTMLAnchorElement.prototype.click.mock.instances.at(-1);
-      expect(clickedAnchor.download).toBe("mikuproject-export-202603162312.xml");
-      expect(document.getElementById("statusMessage").textContent).toContain("XML ファイルをエクスポートしました");
-    } finally {
-      globalThis.Blob = OriginalBlob;
-    }
-  }, 10000);
 
   it("downloads rendered mermaid svg", async () => {
     bootPage();

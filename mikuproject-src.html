@@ -24,15 +24,6 @@
 
     <section class="md-section md-stack-md">
       <div id="statusMessage" class="md-status">未実行</div>
-      <div id="xmlSaveState" class="md-save-state md-save-state--dirty" aria-live="polite">XML 保存状態: 未保存</div>
-      <div class="md-feedback-stack md-hidden" aria-label="import feedback">
-        <div class="md-feedback-stack__title">取込結果</div>
-        <div class="md-feedback-stack__text">XLSX Import 後は、ここで差分反映と検証結果を確認します。</div>
-        <div class="md-feedback-stack__label">検証メッセージ</div>
-        <div id="validationIssues" class="md-issues md-hidden" aria-live="polite"></div>
-        <div class="md-feedback-stack__label">差分要約</div>
-        <div id="xlsxImportSummary" class="md-xlsx-summary md-hidden" aria-live="polite"></div>
-      </div>
 
       <div class="md-top-tabs" role="tablist" aria-label="mikuproject sections">
         <button type="button" class="md-top-tab is-active" data-tab="input" role="tab" aria-selected="true" aria-controls="tabPanelInput">
@@ -59,48 +50,59 @@
         </div>
 
         <div class="md-panel-actions">
-          <button id="loadSampleBtn" type="button" class="md-button md-button--primary">サンプル読込</button>
-          <button id="importXmlBtn" type="button" class="md-button md-button--surface">XML Import</button>
+          <button id="importXmlBtn" type="button" class="md-button md-button--primary">XML Import</button>
           <button id="importXlsxBtn" type="button" class="md-button md-button--surface">XLSX Import</button>
           <button id="parseCsvBtn" type="button" class="md-button md-button--surface">CSV を解析</button>
+          <button id="loadSampleBtn" type="button" class="md-button md-button--surface">サンプル読込</button>
           <input id="importXmlInput" type="file" accept=".xml,text/xml,application/xml" class="md-hidden" />
           <input id="importXlsxInput" type="file" accept=".xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" class="md-hidden" />
         </div>
 
         <section class="md-note-card" aria-label="XLSX import export notes">
-          <h3 class="md-note-card__title">XLSX 編集の扱い</h3>
-          <p class="md-note-card__text">
-            `.xlsx` は `MS Project XML` の代替正本ではなく、確認と限定編集のための周辺表現として扱います。
-          </p>
-          <p class="md-note-card__text">
-            現在の `XLSX Import` で反映するのは限定列のみです。
-          </p>
-          <p class="md-note-card__text">
-            反映結果は、`Project / Tasks / Resources / Assignments / Calendars` ごとの件数と、`UID` 単位の差分要約として画面上に表示します。
-          </p>
-          <p class="md-note-card__text"><strong>反映対象</strong></p>
-          <ul class="md-note-list">
-            <li>`Project`: `Name / Title / Author / Company / StartDate / FinishDate / CurrentDate / StatusDate / CalendarUID / MinutesPerDay / MinutesPerWeek / DaysPerMonth / ScheduleFromStart`</li>
-            <li>`Tasks`: `Name / Start / Finish / PercentComplete / PercentWorkComplete / Notes`</li>
-            <li>`Resources`: `Name / Group / MaxUnits`</li>
-            <li>`Assignments`: `Units / Work / PercentWorkComplete`</li>
-            <li>`Calendars`: `Name / IsBaseCalendar / BaseCalendarUID`</li>
-            <li>`NonWorkingDays`: `Name / Date / FromDate / ToDate / DayWorking`</li>
-          </ul>
-          <p class="md-note-card__text"><strong>現在は反映しないもの</strong></p>
-          <ul class="md-note-list">
-            <li>対象外の列や未対応シートの編集</li>
-            <li>`Calendars` の `WeekDays / WorkWeeks` と、`Baseline / TimephasedData / ExtendedAttributes`</li>
-          </ul>
+          <div class="md-note-card__title-row">
+            <h3 class="md-note-card__title">XLSX 編集の扱い</h3>
+            <lht-help-tooltip label="XLSX 編集の扱い" placement="right" wide>
+              <p class="md-note-card__text">
+                `.xlsx` は `MS Project XML` の代替正本ではなく、確認と限定編集のための周辺表現として扱います。
+              </p>
+              <p class="md-note-card__text">
+                現在の `XLSX Import` で反映するのは限定列のみです。
+              </p>
+              <p class="md-note-card__text">
+                反映結果は、`Project / Tasks / Resources / Assignments / Calendars` ごとの件数と、`UID` 単位の差分要約として画面上に表示します。
+              </p>
+              <p class="md-note-card__text"><strong>反映対象</strong></p>
+              <ul class="md-note-list">
+                <li>`Project`: `Name / Title / Author / Company / StartDate / FinishDate / CurrentDate / StatusDate / CalendarUID / MinutesPerDay / MinutesPerWeek / DaysPerMonth / ScheduleFromStart`</li>
+                <li>`Tasks`: `Name / Start / Finish / PercentComplete / PercentWorkComplete / Notes`</li>
+                <li>`Resources`: `Name / Group / MaxUnits`</li>
+                <li>`Assignments`: `Units / Work / PercentWorkComplete`</li>
+                <li>`Calendars`: `Name / IsBaseCalendar / BaseCalendarUID`</li>
+                <li>`NonWorkingDays`: `Name / Date / FromDate / ToDate / DayWorking`</li>
+              </ul>
+              <p class="md-note-card__text"><strong>現在は反映しないもの</strong></p>
+              <ul class="md-note-list">
+                <li>対象外の列や未対応シートの編集</li>
+                <li>`Calendars` の `WeekDays / WorkWeeks` と、`Baseline / TimephasedData / ExtendedAttributes`</li>
+              </ul>
+            </lht-help-tooltip>
+          </div>
         </section>
 
-        <div class="md-form-grid">
-          <lht-text-field-help field-id="xmlInput" label="MS Project XML" rows="16" placeholder="ここに XML を入力" help-text="MS Project XML を読み込みます。"></lht-text-field-help>
-        </div>
+        <details class="md-debug-accordion">
+          <summary class="md-debug-accordion__summary">デバッグ情報</summary>
+          <div class="md-debug-accordion__body">
+            <div class="md-form-grid">
+              <lht-text-field-help field-id="xmlInput" label="MS Project XML" rows="16" placeholder="ここに XML を入力" help-text="MS Project XML を読み込みます。"></lht-text-field-help>
+            </div>
 
-        <div class="md-form-grid">
-          <lht-text-field-help field-id="csvInput" label="CSV + ParentID 入力" rows="12" placeholder="ここに CSV を入力" help-text="CSV + ParentID を内部モデルへ変換します。"></lht-text-field-help>
-        </div>
+            <div class="md-form-grid">
+              <lht-text-field-help field-id="csvInput" label="CSV + ParentID 入力" rows="12" placeholder="ここに CSV を入力" help-text="CSV + ParentID を内部モデルへ変換します。"></lht-text-field-help>
+            </div>
+          </div>
+        </details>
+
+        <div id="xmlSaveState" class="md-save-state md-save-state--dirty" aria-live="polite">XML 保存状態: 未保存</div>
       </section>
 
       <section id="tabPanelTransform" class="md-flow-section md-tab-panel" data-tab-panel="transform" aria-label="transform inspect" hidden>
@@ -141,45 +143,59 @@
           </div>
         </div>
 
-        <div class="md-form-grid">
-          <lht-text-field-help field-id="modelOutput" label="内部モデル(JSON)" rows="16" readonly></lht-text-field-help>
-        </div>
-
-        <div class="md-form-grid">
-          <lht-text-field-help field-id="mermaidOutput" label="Mermaid gantt" rows="12" readonly></lht-text-field-help>
-        </div>
-
-        <section class="md-preview-card">
-          <h3 class="md-preview-card__title">Mermaid Preview</h3>
-          <p id="mermaidSvgError" class="md-mermaid-error md-hidden" aria-live="polite"></p>
-          <div class="md-mermaid-preview-wrap">
-            <div id="mermaidSvgPreview" class="md-mermaid-preview-stage">
-              <div class="md-preview-empty">Mermaid を生成すると、ここに SVG を表示します。</div>
+        <details class="md-debug-accordion">
+          <summary class="md-debug-accordion__summary">デバッグ情報</summary>
+          <div class="md-debug-accordion__body">
+            <div class="md-form-grid">
+              <lht-text-field-help field-id="modelOutput" label="内部モデル(JSON)" rows="16" readonly></lht-text-field-help>
             </div>
-          </div>
-        </section>
 
-        <div class="md-preview-grid">
-          <section class="md-preview-card">
-            <h3 class="md-preview-card__title">Project</h3>
-            <div id="projectPreview" class="md-preview-list"></div>
-          </section>
-          <section class="md-preview-card">
-            <h3 class="md-preview-card__title">Tasks</h3>
-            <div id="taskPreview" class="md-preview-list"></div>
-          </section>
-          <section class="md-preview-card">
-            <h3 class="md-preview-card__title">Resources</h3>
-            <div id="resourcePreview" class="md-preview-list"></div>
-          </section>
-          <section class="md-preview-card">
-            <h3 class="md-preview-card__title">Assignments</h3>
-            <div id="assignmentPreview" class="md-preview-list"></div>
-          </section>
-          <section class="md-preview-card">
-            <h3 class="md-preview-card__title">Calendars</h3>
-            <div id="calendarPreview" class="md-preview-list"></div>
-          </section>
+            <div class="md-form-grid">
+              <lht-text-field-help field-id="mermaidOutput" label="Mermaid gantt" rows="12" readonly></lht-text-field-help>
+            </div>
+
+            <div class="md-preview-grid">
+              <section class="md-preview-card">
+                <h3 class="md-preview-card__title">Project</h3>
+                <div id="projectPreview" class="md-preview-list"></div>
+              </section>
+              <section class="md-preview-card">
+                <h3 class="md-preview-card__title">Tasks</h3>
+                <div id="taskPreview" class="md-preview-list"></div>
+              </section>
+              <section class="md-preview-card">
+                <h3 class="md-preview-card__title">Resources</h3>
+                <div id="resourcePreview" class="md-preview-list"></div>
+              </section>
+              <section class="md-preview-card">
+                <h3 class="md-preview-card__title">Assignments</h3>
+                <div id="assignmentPreview" class="md-preview-list"></div>
+              </section>
+              <section class="md-preview-card">
+                <h3 class="md-preview-card__title">Calendars</h3>
+                <div id="calendarPreview" class="md-preview-list"></div>
+              </section>
+            </div>
+
+            <section class="md-preview-card">
+              <h3 class="md-preview-card__title">Mermaid Preview</h3>
+              <p id="mermaidSvgError" class="md-mermaid-error md-hidden" aria-live="polite"></p>
+              <div class="md-mermaid-preview-wrap">
+                <div id="mermaidSvgPreview" class="md-mermaid-preview-stage">
+                  <div class="md-preview-empty">Mermaid を生成すると、ここに SVG を表示します。</div>
+                </div>
+              </div>
+            </section>
+          </div>
+        </details>
+
+        <div class="md-feedback-stack md-hidden" aria-label="import feedback">
+          <div class="md-feedback-stack__title">取込結果</div>
+          <div class="md-feedback-stack__text">XLSX Import 後は、ここで差分反映と検証結果を確認します。</div>
+          <div class="md-feedback-stack__label">検証メッセージ</div>
+          <div id="validationIssues" class="md-issues md-hidden" aria-live="polite"></div>
+          <div class="md-feedback-stack__label">差分要約</div>
+          <div id="xlsxImportSummary" class="md-xlsx-summary md-hidden" aria-live="polite"></div>
         </div>
       </section>
 
@@ -201,66 +217,76 @@
           <button id="exportWbsXlsxBtn" type="button" class="md-button md-button--surface">WBS XLSX Export</button>
         </div>
 
-        <section class="md-note-card" aria-label="WBS xlsx export options">
-          <h3 class="md-note-card__title">WBS XLSX の祝日指定</h3>
-          <p class="md-note-card__text">
-            `WBS XLSX Export` では、`ProjectModel` から補完した既定祝日と、`YYYY-MM-DD` 形式で指定した追加祝日を合成して WBS 日付帯へ反映します。
-          </p>
-          <p class="md-note-card__text">
-            既定祝日は、現在の `ProjectModel` に含まれる `Calendar.Exceptions` の非稼働日例外から補完します。追加祝日は改行またはカンマ区切りで入力できます。表示期間を空欄にすると全期間、数値を入れると `BaseDate` 前後の日数で切り出します。営業日ベースを選ぶと土日祝を飛ばします。進捗帯も営業日基準へ切り替えられます。
-          </p>
-          <div class="md-form-grid md-form-grid--two">
-            <lht-text-field-help
-              field-id="wbsDisplayDaysBeforeInput"
-              label="表示期間: 基準日前"
-              rows="1"
-              placeholder="3"
-              help-text="空欄なら全期間表示のままです。"></lht-text-field-help>
-            <lht-text-field-help
-              field-id="wbsDisplayDaysAfterInput"
-              label="表示期間: 基準日後"
-              rows="1"
-              placeholder="7"
-              help-text="空欄なら全期間表示のままです。"></lht-text-field-help>
+        <details class="md-debug-accordion">
+          <summary class="md-debug-accordion__summary">設定</summary>
+          <div class="md-debug-accordion__body">
+            <section class="md-note-card" aria-label="WBS xlsx export options">
+              <h3 class="md-note-card__title">WBS XLSX の祝日指定</h3>
+              <p class="md-note-card__text">
+                `WBS XLSX Export` では、`ProjectModel` から補完した既定祝日と、`YYYY-MM-DD` 形式で指定した追加祝日を合成して WBS 日付帯へ反映します。
+              </p>
+              <p class="md-note-card__text">
+                既定祝日は、現在の `ProjectModel` に含まれる `Calendar.Exceptions` の非稼働日例外から補完します。追加祝日は改行またはカンマ区切りで入力できます。表示期間を空欄にすると全期間、数値を入れると `BaseDate` 前後の日数で切り出します。営業日ベースを選ぶと土日祝を飛ばします。進捗帯も営業日基準へ切り替えられます。
+              </p>
+              <div class="md-form-grid md-form-grid--two">
+                <lht-text-field-help
+                  field-id="wbsDisplayDaysBeforeInput"
+                  label="表示期間: 基準日前"
+                  rows="1"
+                  placeholder="3"
+                  help-text="空欄なら全期間表示のままです。"></lht-text-field-help>
+                <lht-text-field-help
+                  field-id="wbsDisplayDaysAfterInput"
+                  label="表示期間: 基準日後"
+                  rows="1"
+                  placeholder="7"
+                  help-text="空欄なら全期間表示のままです。"></lht-text-field-help>
+              </div>
+              <div class="md-form-grid">
+                <label class="md-checkbox-row">
+                  <input id="wbsBusinessDayRangeInput" type="checkbox" />
+                  <span>表示期間を営業日ベースで数える</span>
+                </label>
+              </div>
+              <div class="md-form-grid">
+                <label class="md-checkbox-row">
+                  <input id="wbsBusinessDayProgressInput" type="checkbox" />
+                  <span>進捗帯を営業日ベースで計算する</span>
+                </label>
+              </div>
+              <div class="md-form-grid">
+                <div id="wbsHolidaySummary" class="md-status">既定祝日: 未読込</div>
+                <lht-text-field-help
+                  field-id="wbsHolidayDatesInput"
+                  label="WBS 既定祝日"
+                  rows="3"
+                  placeholder="2026-03-20"
+                  readonly
+                  help-text="現在の ProjectModel から自動補完します。"></lht-text-field-help>
+              </div>
+              <div class="md-form-grid">
+                <lht-text-field-help
+                  field-id="wbsExtraHolidayDatesInput"
+                  label="WBS 追加祝日"
+                  rows="3"
+                  placeholder="2026-03-21&#10;2026-03-22"
+                  help-text="WBS XLSX Export のみで使用します。重複は自動でまとめます。"></lht-text-field-help>
+              </div>
+              <div class="md-panel-actions">
+                <button id="resetWbsHolidayDatesBtn" type="button" class="md-button md-button--surface">WBS 祝日を既定値へ戻す</button>
+              </div>
+            </section>
           </div>
-          <div class="md-form-grid">
-            <label class="md-checkbox-row">
-              <input id="wbsBusinessDayRangeInput" type="checkbox" />
-              <span>表示期間を営業日ベースで数える</span>
-            </label>
-          </div>
-          <div class="md-form-grid">
-            <label class="md-checkbox-row">
-              <input id="wbsBusinessDayProgressInput" type="checkbox" />
-              <span>進捗帯を営業日ベースで計算する</span>
-            </label>
-          </div>
-          <div class="md-form-grid">
-            <div id="wbsHolidaySummary" class="md-status">既定祝日: 未読込</div>
-            <lht-text-field-help
-              field-id="wbsHolidayDatesInput"
-              label="WBS 既定祝日"
-              rows="3"
-              placeholder="2026-03-20"
-              readonly
-              help-text="現在の ProjectModel から自動補完します。"></lht-text-field-help>
-          </div>
-          <div class="md-form-grid">
-            <lht-text-field-help
-              field-id="wbsExtraHolidayDatesInput"
-              label="WBS 追加祝日"
-              rows="3"
-              placeholder="2026-03-21&#10;2026-03-22"
-              help-text="WBS XLSX Export のみで使用します。重複は自動でまとめます。"></lht-text-field-help>
-          </div>
-          <div class="md-panel-actions">
-            <button id="resetWbsHolidayDatesBtn" type="button" class="md-button md-button--surface">WBS 祝日を既定値へ戻す</button>
-          </div>
-        </section>
+        </details>
 
-        <div class="md-form-grid">
-          <lht-text-field-help field-id="csvOutput" label="CSV + ParentID" rows="12" readonly></lht-text-field-help>
-        </div>
+        <details class="md-debug-accordion">
+          <summary class="md-debug-accordion__summary">デバッグ情報</summary>
+          <div class="md-debug-accordion__body">
+            <div class="md-form-grid">
+              <lht-text-field-help field-id="csvOutput" label="CSV + ParentID" rows="12" readonly></lht-text-field-help>
+            </div>
+          </div>
+        </details>
       </section>
     </section>
 

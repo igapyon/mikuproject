@@ -35,6 +35,16 @@ function bootModules() {
   };
 }
 
+function buildSampleWorkbook(mutator) {
+  const { xml, projectXlsx } = bootModules();
+  const model = xml.importMsProjectXml(xml.SAMPLE_XML);
+  const workbook = projectXlsx.exportProjectWorkbook(model);
+  if (mutator) {
+    mutator(workbook);
+  }
+  return { xml, projectXlsx, model, workbook };
+}
+
 const SAMPLE_HOLIDAY_COUNT = 89;
 const SAMPLE_FIRST_HOLIDAY_NAME = "元日（公式）";
 const SAMPLE_FIRST_HOLIDAY_DATE = "2026-01-01";
@@ -508,6 +518,116 @@ describe("mikuproject project xlsx", () => {
       { scope: "calendars", uid: "1", label: "Standard", field: "Exception1.FromDate", before: `${SAMPLE_FIRST_HOLIDAY_DATE}T00:00:00`, after: "2026-03-21T00:00:00" },
       { scope: "calendars", uid: "1", label: "Standard", field: "Exception1.ToDate", before: `${SAMPLE_FIRST_HOLIDAY_DATE}T23:59:59`, after: "2026-03-21T23:59:59" }
     ]);
+  });
+
+  it("reports assignment percent work complete import changes", () => {
+    const { projectXlsx, model, workbook } = buildSampleWorkbook((nextWorkbook) => {
+      const assignmentsSheet = nextWorkbook.sheets.find((sheet) => sheet.name === "Assignments");
+      assignmentsSheet.rows[3].cells[11].value = 85;
+    });
+
+    const result = projectXlsx.importProjectWorkbookDetailed(workbook, model);
+
+    expect(result.changes).toEqual([
+      { scope: "assignments", uid: "1", label: "TaskUID=2", field: "PercentWorkComplete", before: 50, after: 85 }
+    ]);
+  });
+
+  it("can validate imported task percent complete out of range without UI boot", () => {
+    const { xml, projectXlsx, model, workbook } = buildSampleWorkbook((nextWorkbook) => {
+      const tasksSheet = nextWorkbook.sheets.find((sheet) => sheet.name === "Tasks");
+      tasksSheet.rows[4].cells[9].value = 120;
+    });
+
+    const importedModel = projectXlsx.importProjectWorkbook(workbook, model);
+    const issues = xml.validateProjectModel(importedModel);
+
+    expect(importedModel.tasks.find((task) => task.uid === "2").percentComplete).toBe(120);
+    expect(issues).toHaveLength(1);
+    expect(issues[0].level).toBe("warning");
+    expect(issues[0].message).toContain("PercentComplete");
+    expect(issues[0].message).toContain("0..100");
+  });
+
+  it("can validate imported task start later than finish without UI boot", () => {
+    const { xml, projectXlsx, model, workbook } = buildSampleWorkbook((nextWorkbook) => {
+      const tasksSheet = nextWorkbook.sheets.find((sheet) => sheet.name === "Tasks");
+      tasksSheet.rows[4].cells[6].value = "2026-03-19T09:00:00";
+      tasksSheet.rows[4].cells[7].value = "2026-03-18T18:00:00";
+    });
+
+    const importedModel = projectXlsx.importProjectWorkbook(workbook, model);
+    const issues = xml.validateProjectModel(importedModel);
+
+    expect(importedModel.tasks.find((task) => task.uid === "2").start).toBe("2026-03-19T09:00:00");
+    expect(importedModel.tasks.find((task) => task.uid === "2").finish).toBe("2026-03-18T18:00:00");
+    expect(issues).toHaveLength(1);
+    expect(issues[0].level).toBe("warning");
+    expect(issues[0].message).toContain("Start");
+    expect(issues[0].message).toContain("Finish");
+  });
+
+  it("can validate imported missing calendar baseCalendarUID without UI boot", () => {
+    const { xml, projectXlsx, model, workbook } = buildSampleWorkbook((nextWorkbook) => {
+      const calendarsSheet = nextWorkbook.sheets.find((sheet) => sheet.name === "Calendars");
+      calendarsSheet.rows[3].cells[3].value = "99";
+    });
+
+    const importedModel = projectXlsx.importProjectWorkbook(workbook, model);
+    const issues = xml.validateProjectModel(importedModel);
+
+    expect(importedModel.calendars.find((calendar) => calendar.uid === "1").baseCalendarUID).toBe("99");
+    expect(issues).toHaveLength(1);
+    expect(issues[0].level).toBe("warning");
+    expect(issues[0].message).toContain("BaseCalendarUID");
+    expect(issues[0].message).toContain("指していません");
+  });
+
+  it("can validate imported self-referencing calendar baseCalendarUID without UI boot", () => {
+    const { xml, projectXlsx, model, workbook } = buildSampleWorkbook((nextWorkbook) => {
+      const calendarsSheet = nextWorkbook.sheets.find((sheet) => sheet.name === "Calendars");
+      calendarsSheet.rows[3].cells[3].value = "1";
+    });
+
+    const importedModel = projectXlsx.importProjectWorkbook(workbook, model);
+    const issues = xml.validateProjectModel(importedModel);
+
+    expect(importedModel.calendars.find((calendar) => calendar.uid === "1").baseCalendarUID).toBe("1");
+    expect(issues).toHaveLength(1);
+    expect(issues[0].level).toBe("warning");
+    expect(issues[0].message).toContain("BaseCalendarUID");
+    expect(issues[0].message).toContain("自身を指しています");
+  });
+
+  it("can export xml after imported xlsx edits without UI boot", () => {
+    const { xml, projectXlsx, model, workbook } = buildSampleWorkbook((nextWorkbook) => {
+      const tasksSheet = nextWorkbook.sheets.find((sheet) => sheet.name === "Tasks");
+      tasksSheet.rows[4].cells[2].value = "Design Saved From XLSX";
+    });
+
+    const importedModel = projectXlsx.importProjectWorkbook(workbook, model);
+    const exportedXml = xml.exportMsProjectXml(importedModel);
+
+    expect(exportedXml).toContain("<Name>Design Saved From XLSX</Name>");
+  });
+
+  it("can export xml after imported invalid xlsx edits without UI boot", () => {
+    const { xml, projectXlsx, model, workbook } = buildSampleWorkbook((nextWorkbook) => {
+      const tasksSheet = nextWorkbook.sheets.find((sheet) => sheet.name === "Tasks");
+      tasksSheet.rows[4].cells[6].value = "2026-03-19T09:00:00";
+      tasksSheet.rows[4].cells[7].value = "2026-03-18T18:00:00";
+    });
+
+    const importedModel = projectXlsx.importProjectWorkbook(workbook, model);
+    const issues = xml.validateProjectModel(importedModel);
+    const exportedXml = xml.exportMsProjectXml(importedModel);
+
+    expect(issues).toHaveLength(1);
+    expect(issues[0].level).toBe("warning");
+    expect(issues[0].message).toContain("Start");
+    expect(issues[0].message).toContain("Finish");
+    expect(exportedXml).toContain("<Start>2026-03-19T09:00:00</Start>");
+    expect(exportedXml).toContain("<Finish>2026-03-18T18:00:00</Finish>");
   });
 
   it("round-trips editable fields through workbook and xlsx bytes", () => {

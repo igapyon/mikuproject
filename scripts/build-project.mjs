@@ -6,6 +6,11 @@ const ROOT = process.cwd();
 
 const TARGETS = [
   {
+    id: "index",
+    srcHtml: "index-src.html",
+    outHtml: "index.html"
+  },
+  {
     id: "mikuproject",
     srcHtml: "mikuproject-src.html",
     outHtml: "mikuproject.html",
@@ -27,7 +32,7 @@ for (const target of TARGETS) {
   const srcPath = path.resolve(ROOT, target.srcHtml);
   const outPath = path.resolve(ROOT, target.outHtml);
   const source = fs.readFileSync(srcPath, "utf8");
-  const output = buildSingleHtmlFromSource(source, srcPath, ROOT);
+  const output = buildSingleHtmlFromSource(applyTemplateValues(source), srcPath, ROOT);
   fs.mkdirSync(path.dirname(outPath), { recursive: true });
   fs.writeFileSync(outPath, output, "utf8");
   console.log(`[build:project] generated ${target.outHtml}`);
@@ -83,4 +88,15 @@ function transpileTypeScript(target, tsModule) {
     fs.mkdirSync(path.dirname(jsPath), { recursive: true });
     fs.writeFileSync(jsPath, outputText, "utf8");
   }
+}
+
+function applyTemplateValues(source) {
+  return source.replaceAll("{{BUILD_DATE}}", formatBuildDate(new Date()));
+}
+
+function formatBuildDate(date) {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
 }

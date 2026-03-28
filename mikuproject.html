@@ -1618,18 +1618,9 @@ lht-index-card-link {
   display: none;
 }
 
-.md-mermaid-preview-wrap {
-  border: 1px solid var(--md-project-border);
-  border-radius: 18px;
-  background:
-    linear-gradient(180deg, rgba(251, 254, 255, 0.96) 0%, rgba(255, 255, 255, 0.98) 100%);
-  padding: 16px;
-  overflow: auto;
-  min-height: 18rem;
-}
-
 .md-mermaid-preview-stage {
   min-height: 16rem;
+  overflow: auto;
 }
 
 .md-mermaid-preview-stage svg {
@@ -1690,7 +1681,7 @@ lht-index-card-link {
         </button>
         <button type="button" class="md-top-tab" data-tab="output" role="tab" aria-selected="false" aria-controls="tabPanelOutput">
           <span class="md-top-tab-no">3</span>
-          <span class="md-top-tab-label">Export</span>
+          <span class="md-top-tab-label">Output</span>
         </button>
       </div>
 
@@ -1704,10 +1695,10 @@ lht-index-card-link {
         </div>
 
         <div class="md-panel-actions">
-          <button id="importXmlBtn" type="button" class="md-button md-button--primary">XML Import</button>
-          <button id="importXlsxBtn" type="button" class="md-button md-button--surface">XLSX Import</button>
-          <button id="parseCsvBtn" type="button" class="md-button md-button--surface">CSV を解析</button>
-          <button id="loadSampleBtn" type="button" class="md-button md-button--surface">サンプル読込</button>
+          <button id="importXmlBtn" type="button" class="md-button md-button--primary">MS Project XML</button>
+          <button id="importXlsxBtn" type="button" class="md-button md-button--surface">XLSX</button>
+          <button id="parseCsvBtn" type="button" class="md-button md-button--surface">CSV</button>
+          <button id="loadSampleBtn" type="button" class="md-button md-button--surface">サンプル</button>
           <input id="importXmlInput" type="file" accept=".xml,text/xml,application/xml" class="md-hidden" />
           <input id="importXlsxInput" type="file" accept=".xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" class="md-hidden" />
         </div>
@@ -1768,11 +1759,12 @@ lht-index-card-link {
           <p class="md-flow-section__text">内部モデル、要約、プレビューをここで確認します。</p>
         </div>
 
-        <div class="md-panel-actions">
-          <button id="parseXmlBtn" type="button" class="md-button md-button--surface">XML を解析</button>
-          <button id="exportMermaidBtn" type="button" class="md-button md-button--surface">Mermaid を生成</button>
-          <button id="roundTripBtn" type="button" class="md-button md-button--surface">再読込テスト</button>
-        </div>
+        <section>
+          <p id="mermaidSvgError" class="md-mermaid-error md-hidden" aria-live="polite"></p>
+          <div id="mermaidSvgPreview" class="md-mermaid-preview-stage">
+            <div class="md-preview-empty">Mermaid を生成すると、ここに SVG を表示します。</div>
+          </div>
+        </section>
 
         <div class="md-summary-grid">
           <div class="md-summary-card">
@@ -1800,6 +1792,10 @@ lht-index-card-link {
         <details class="md-debug-accordion">
           <summary class="md-debug-accordion__summary">デバッグ情報</summary>
           <div class="md-debug-accordion__body">
+            <div class="md-panel-actions">
+              <button id="roundTripBtn" type="button" class="md-button md-button--surface">再読込テスト</button>
+            </div>
+
             <div class="md-form-grid">
               <lht-text-field-help field-id="modelOutput" label="内部モデル(JSON)" rows="16" readonly></lht-text-field-help>
             </div>
@@ -1830,16 +1826,6 @@ lht-index-card-link {
                 <div id="calendarPreview" class="md-preview-list"></div>
               </section>
             </div>
-
-            <section class="md-preview-card">
-              <h3 class="md-preview-card__title">Mermaid Preview</h3>
-              <p id="mermaidSvgError" class="md-mermaid-error md-hidden" aria-live="polite"></p>
-              <div class="md-mermaid-preview-wrap">
-                <div id="mermaidSvgPreview" class="md-mermaid-preview-stage">
-                  <div class="md-preview-empty">Mermaid を生成すると、ここに SVG を表示します。</div>
-                </div>
-              </div>
-            </section>
           </div>
         </details>
 
@@ -1857,17 +1843,17 @@ lht-index-card-link {
         <div class="md-flow-section__header">
           <h2 class="md-flow-section__title">
             <span class="md-flow-section__step">3</span>
-            <span>Export</span>
+            <span>Output</span>
           </h2>
           <p class="md-flow-section__text">出力設定と生成結果の確認をここにまとめます。</p>
         </div>
 
         <div class="md-panel-actions">
-          <button id="downloadXmlBtn" type="button" class="md-button md-button--surface">XML Export</button>
-          <button id="downloadMermaidSvgBtn" type="button" class="md-button md-button--surface" disabled>SVG保存</button>
-          <button id="exportCsvBtn" type="button" class="md-button md-button--surface">CSV を生成</button>
-          <button id="exportXlsxBtn" type="button" class="md-button md-button--surface">XLSX Export</button>
-          <button id="exportWbsXlsxBtn" type="button" class="md-button md-button--surface">WBS XLSX Export</button>
+          <button id="downloadXmlBtn" type="button" class="md-button md-button--surface">MS Project XML</button>
+          <button id="exportXlsxBtn" type="button" class="md-button md-button--surface">XLSX</button>
+          <button id="exportWbsXlsxBtn" type="button" class="md-button md-button--surface">WBS XLSX</button>
+          <button id="downloadMermaidSvgBtn" type="button" class="md-button md-button--surface" disabled>SVG</button>
+          <button id="exportCsvBtn" type="button" class="md-button md-button--surface">CSV</button>
         </div>
 
         <details class="md-debug-accordion">
@@ -12491,6 +12477,8 @@ globalThis["mermaid"] = globalThis.__esbuild_esm_mermaid_nm["mermaid"].default;
     let lastSavedXmlText = "";
     let lastSavedXmlStamp = "";
     let currentTabId = "input";
+    let isXmlSourceDirty = true;
+    let isRefreshingTransformTab = false;
     function getElement(id) {
         const element = document.getElementById(id);
         if (!element) {
@@ -12510,7 +12498,7 @@ globalThis["mermaid"] = globalThis.__esbuild_esm_mermaid_nm["mermaid"].default;
     function getTabPanels() {
         return Array.from(document.querySelectorAll(".md-tab-panel[data-tab-panel]"));
     }
-    function setActiveTab(tabId) {
+    function setActiveTab(tabId, options = {}) {
         currentTabId = tabId;
         for (const button of getTabButtons()) {
             const isActive = button.dataset.tab === tabId;
@@ -12520,6 +12508,31 @@ globalThis["mermaid"] = globalThis.__esbuild_esm_mermaid_nm["mermaid"].default;
         }
         for (const panel of getTabPanels()) {
             panel.hidden = panel.dataset.tabPanel !== tabId;
+        }
+        if (tabId === "transform" && !options.skipTransformRefresh && !isRefreshingTransformTab) {
+            void refreshTransformTab().catch((error) => {
+                setStatus(error instanceof Error ? error.message : "Transform の更新に失敗しました");
+            });
+        }
+    }
+    async function refreshTransformTab() {
+        if (isRefreshingTransformTab) {
+            return;
+        }
+        isRefreshingTransformTab = true;
+        try {
+            if (!currentModel || isXmlSourceDirty) {
+                const xmlText = getTextArea("xmlInput").value.trim();
+                if (!xmlText) {
+                    setStatus("XML が空です");
+                    return;
+                }
+                parseCurrentXml({ silent: true });
+            }
+            await exportCurrentMermaid({ silent: true });
+        }
+        finally {
+            isRefreshingTransformTab = false;
         }
     }
     function moveTabFocus(currentButton, direction) {
@@ -12772,6 +12785,7 @@ globalThis["mermaid"] = globalThis.__esbuild_esm_mermaid_nm["mermaid"].default;
     function syncXmlTextFromModel(model) {
         const xmlText = mikuprojectXml.exportMsProjectXml(model);
         getTextArea("xmlInput").value = xmlText;
+        isXmlSourceDirty = false;
         refreshXmlSaveState();
         return xmlText;
     }
@@ -13105,7 +13119,9 @@ WorkWeek1=${formatCalendarWorkWeekSummary(calendar)}</div>
     `) : []);
     }
     function loadSample() {
+        currentModel = null;
         getTextArea("xmlInput").value = mikuprojectXml.SAMPLE_XML;
+        isXmlSourceDirty = true;
         markXmlDirty();
         setStatus("サンプル XML を読み込みました");
         setActiveTab("input");
@@ -13118,13 +13134,15 @@ WorkWeek1=${formatCalendarWorkWeekSummary(calendar)}</div>
         getTextArea("xmlInput").value = xmlText;
         markXmlDirty();
         currentModel = mikuprojectXml.importMsProjectXml(xmlText);
+        isXmlSourceDirty = false;
         const issues = mikuprojectXml.validateProjectModel(currentModel);
         updateSummary(currentModel);
         renderValidationIssues(issues);
         renderXlsxImportSummary([]);
         setStatus(issues.length > 0 ? `XML ファイルを読み込んで解析しました。検証で ${issues.length} 件の問題があります` : "XML ファイルを読み込んで解析しました");
         showToast("XML を読み込んで解析しました");
-        setActiveTab("transform");
+        setActiveTab("transform", { skipTransformRefresh: true });
+        await exportCurrentMermaid({ silent: true });
     }
     function ensureCurrentModel() {
         if (currentModel) {
@@ -13135,24 +13153,28 @@ WorkWeek1=${formatCalendarWorkWeekSummary(calendar)}</div>
             throw new Error("内部モデルがありません");
         }
         currentModel = mikuprojectXml.importMsProjectXml(xmlText);
+        isXmlSourceDirty = false;
         return currentModel;
     }
-    function parseCurrentXml() {
+    function parseCurrentXml(options = {}) {
         const xmlText = getTextArea("xmlInput").value.trim();
         if (!xmlText) {
             setStatus("XML が空です");
             return;
         }
         currentModel = mikuprojectXml.importMsProjectXml(xmlText);
+        isXmlSourceDirty = false;
         const issues = mikuprojectXml.validateProjectModel(currentModel);
         updateSummary(currentModel);
         renderValidationIssues(issues);
         renderXlsxImportSummary([]);
-        setStatus(issues.length > 0 ? `XML を解析しました。検証で ${issues.length} 件の問題があります` : "XML を内部モデルへ変換しました");
-        showToast("XML を解析しました");
-        setActiveTab("transform");
+        if (!options.silent) {
+            setStatus(issues.length > 0 ? `XML を解析しました。検証で ${issues.length} 件の問題があります` : "XML を内部モデルへ変換しました");
+            showToast("XML を解析しました");
+        }
+        setActiveTab("transform", { skipTransformRefresh: true });
     }
-    async function exportCurrentMermaid() {
+    async function exportCurrentMermaid(options = {}) {
         if (!currentModel) {
             setStatus("内部モデルがありません");
             return;
@@ -13160,9 +13182,11 @@ WorkWeek1=${formatCalendarWorkWeekSummary(calendar)}</div>
         const mermaidText = mikuprojectXml.exportMermaidGantt(currentModel);
         getTextArea("mermaidOutput").value = mermaidText;
         await renderMermaidPreview(mermaidText);
-        setStatus("内部モデルから Mermaid gantt を生成し、SVG プレビューを更新しました");
-        showToast("Mermaid を生成しました");
-        setActiveTab("transform");
+        if (!options.silent) {
+            setStatus("内部モデルから Mermaid gantt を生成し、SVG プレビューを更新しました");
+            showToast("Mermaid を生成しました");
+        }
+        setActiveTab("transform", { skipTransformRefresh: true });
     }
     function exportCurrentCsv() {
         const model = ensureCurrentModel();
@@ -13251,24 +13275,28 @@ WorkWeek1=${formatCalendarWorkWeekSummary(calendar)}</div>
         const summaryText = result.changes.length > 0
             ? `XLSX を読み込んで ${result.changes.length} 件の変更を反映しました。XML は再生成済みで、必要なら XML Export で保存できます`
             : "XLSX に反映対象の変更はありませんでした。XML は未変更です";
+        isXmlSourceDirty = false;
         setStatus(issues.length > 0 ? `${summaryText}。検証で ${issues.length} 件の問題があります` : summaryText);
         showToast("XLSX を反映しました");
-        setActiveTab("transform");
+        setActiveTab("transform", { skipTransformRefresh: true });
+        await exportCurrentMermaid({ silent: true });
     }
-    function parseCurrentCsv() {
+    async function parseCurrentCsv() {
         const csvText = getTextArea("csvInput").value.trim();
         if (!csvText) {
             setStatus("CSV が空です");
             return;
         }
         currentModel = mikuprojectXml.importCsvParentId(csvText);
+        isXmlSourceDirty = false;
         const issues = mikuprojectXml.validateProjectModel(currentModel);
         updateSummary(currentModel);
         renderValidationIssues(issues);
         renderXlsxImportSummary([]);
         setStatus(issues.length > 0 ? `CSV を解析しました。検証で ${issues.length} 件の問題があります` : "CSV + ParentID を内部モデルへ変換しました");
         showToast("CSV を解析しました");
-        setActiveTab("transform");
+        setActiveTab("transform", { skipTransformRefresh: true });
+        await exportCurrentMermaid({ silent: true });
     }
     function downloadCurrentXml() {
         const model = ensureCurrentModel();
@@ -13338,19 +13366,6 @@ WorkWeek1=${formatCalendarWorkWeekSummary(calendar)}</div>
         getElement("importXmlBtn").addEventListener("click", () => {
             getElement("importXmlInput").click();
         });
-        getElement("parseXmlBtn").addEventListener("click", () => {
-            try {
-                parseCurrentXml();
-            }
-            catch (error) {
-                setStatus(error instanceof Error ? error.message : "XML 解析に失敗しました");
-            }
-        });
-        getElement("exportMermaidBtn").addEventListener("click", () => {
-            void exportCurrentMermaid().catch((error) => {
-                setStatus(error instanceof Error ? error.message : "Mermaid 生成に失敗しました");
-            });
-        });
         getElement("downloadMermaidSvgBtn").addEventListener("click", () => {
             void downloadCurrentMermaidSvg().catch((error) => {
                 setStatus(error instanceof Error ? error.message : "SVG 保存に失敗しました");
@@ -13388,9 +13403,9 @@ WorkWeek1=${formatCalendarWorkWeekSummary(calendar)}</div>
                 setStatus(error instanceof Error ? error.message : "WBS 祝日入力のリセットに失敗しました");
             }
         });
-        getElement("parseCsvBtn").addEventListener("click", () => {
+        getElement("parseCsvBtn").addEventListener("click", async () => {
             try {
-                parseCurrentCsv();
+                await parseCurrentCsv();
             }
             catch (error) {
                 setStatus(error instanceof Error ? error.message : "CSV 解析に失敗しました");
@@ -13446,6 +13461,7 @@ WorkWeek1=${formatCalendarWorkWeekSummary(calendar)}</div>
             }
         });
         getTextArea("xmlInput").addEventListener("input", () => {
+            isXmlSourceDirty = true;
             refreshXmlSaveState();
         });
     }
@@ -13460,6 +13476,8 @@ WorkWeek1=${formatCalendarWorkWeekSummary(calendar)}</div>
         loadSample();
     }
     globalThis.__mikuprojectMainTestHooks = {
+        parseCurrentXml,
+        exportCurrentMermaid,
         renderValidationIssues,
         renderXlsxImportSummary,
         updateFeedbackVisibility

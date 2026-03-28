@@ -36,7 +36,7 @@
         </button>
         <button type="button" class="md-top-tab" data-tab="output" role="tab" aria-selected="false" aria-controls="tabPanelOutput">
           <span class="md-top-tab-no">3</span>
-          <span class="md-top-tab-label">Export</span>
+          <span class="md-top-tab-label">Output</span>
         </button>
       </div>
 
@@ -50,10 +50,10 @@
         </div>
 
         <div class="md-panel-actions">
-          <button id="importXmlBtn" type="button" class="md-button md-button--primary">XML Import</button>
-          <button id="importXlsxBtn" type="button" class="md-button md-button--surface">XLSX Import</button>
-          <button id="parseCsvBtn" type="button" class="md-button md-button--surface">CSV を解析</button>
-          <button id="loadSampleBtn" type="button" class="md-button md-button--surface">サンプル読込</button>
+          <button id="importXmlBtn" type="button" class="md-button md-button--primary">MS Project XML</button>
+          <button id="importXlsxBtn" type="button" class="md-button md-button--surface">XLSX</button>
+          <button id="parseCsvBtn" type="button" class="md-button md-button--surface">CSV</button>
+          <button id="loadSampleBtn" type="button" class="md-button md-button--surface">サンプル</button>
           <input id="importXmlInput" type="file" accept=".xml,text/xml,application/xml" class="md-hidden" />
           <input id="importXlsxInput" type="file" accept=".xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" class="md-hidden" />
         </div>
@@ -114,11 +114,12 @@
           <p class="md-flow-section__text">内部モデル、要約、プレビューをここで確認します。</p>
         </div>
 
-        <div class="md-panel-actions">
-          <button id="parseXmlBtn" type="button" class="md-button md-button--surface">XML を解析</button>
-          <button id="exportMermaidBtn" type="button" class="md-button md-button--surface">Mermaid を生成</button>
-          <button id="roundTripBtn" type="button" class="md-button md-button--surface">再読込テスト</button>
-        </div>
+        <section>
+          <p id="mermaidSvgError" class="md-mermaid-error md-hidden" aria-live="polite"></p>
+          <div id="mermaidSvgPreview" class="md-mermaid-preview-stage">
+            <div class="md-preview-empty">Mermaid を生成すると、ここに SVG を表示します。</div>
+          </div>
+        </section>
 
         <div class="md-summary-grid">
           <div class="md-summary-card">
@@ -146,6 +147,10 @@
         <details class="md-debug-accordion">
           <summary class="md-debug-accordion__summary">デバッグ情報</summary>
           <div class="md-debug-accordion__body">
+            <div class="md-panel-actions">
+              <button id="roundTripBtn" type="button" class="md-button md-button--surface">再読込テスト</button>
+            </div>
+
             <div class="md-form-grid">
               <lht-text-field-help field-id="modelOutput" label="内部モデル(JSON)" rows="16" readonly></lht-text-field-help>
             </div>
@@ -176,16 +181,6 @@
                 <div id="calendarPreview" class="md-preview-list"></div>
               </section>
             </div>
-
-            <section class="md-preview-card">
-              <h3 class="md-preview-card__title">Mermaid Preview</h3>
-              <p id="mermaidSvgError" class="md-mermaid-error md-hidden" aria-live="polite"></p>
-              <div class="md-mermaid-preview-wrap">
-                <div id="mermaidSvgPreview" class="md-mermaid-preview-stage">
-                  <div class="md-preview-empty">Mermaid を生成すると、ここに SVG を表示します。</div>
-                </div>
-              </div>
-            </section>
           </div>
         </details>
 
@@ -203,17 +198,17 @@
         <div class="md-flow-section__header">
           <h2 class="md-flow-section__title">
             <span class="md-flow-section__step">3</span>
-            <span>Export</span>
+            <span>Output</span>
           </h2>
           <p class="md-flow-section__text">出力設定と生成結果の確認をここにまとめます。</p>
         </div>
 
         <div class="md-panel-actions">
-          <button id="downloadXmlBtn" type="button" class="md-button md-button--surface">XML Export</button>
-          <button id="downloadMermaidSvgBtn" type="button" class="md-button md-button--surface" disabled>SVG保存</button>
-          <button id="exportCsvBtn" type="button" class="md-button md-button--surface">CSV を生成</button>
-          <button id="exportXlsxBtn" type="button" class="md-button md-button--surface">XLSX Export</button>
-          <button id="exportWbsXlsxBtn" type="button" class="md-button md-button--surface">WBS XLSX Export</button>
+          <button id="downloadXmlBtn" type="button" class="md-button md-button--surface">MS Project XML</button>
+          <button id="exportXlsxBtn" type="button" class="md-button md-button--surface">XLSX</button>
+          <button id="exportWbsXlsxBtn" type="button" class="md-button md-button--surface">WBS XLSX</button>
+          <button id="downloadMermaidSvgBtn" type="button" class="md-button md-button--surface" disabled>SVG</button>
+          <button id="exportCsvBtn" type="button" class="md-button md-button--surface">CSV</button>
         </div>
 
         <details class="md-debug-accordion">

@@ -557,18 +557,9 @@
   display: none;
 }
 
-.md-mermaid-preview-wrap {
-  border: 1px solid var(--md-project-border);
-  border-radius: 18px;
-  background:
-    linear-gradient(180deg, rgba(251, 254, 255, 0.96) 0%, rgba(255, 255, 255, 0.98) 100%);
-  padding: 16px;
-  overflow: auto;
-  min-height: 18rem;
-}
-
 .md-mermaid-preview-stage {
   min-height: 16rem;
+  overflow: auto;
 }
 
 .md-mermaid-preview-stage svg {

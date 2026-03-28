@@ -1009,5 +1009,10 @@ WorkWeek1=${formatCalendarWorkWeekSummary(calendar)}</div>
         clearMermaidError();
         loadSample();
     }
+    globalThis.__mikuprojectMainTestHooks = {
+        renderValidationIssues,
+        renderXlsxImportSummary,
+        updateFeedbackVisibility
+    };
     document.addEventListener("DOMContentLoaded", initialize);
 })();

@@ -12,6 +12,12 @@
 - `Mermaid` の SVG プレビューを、独立リポジトリ単体で再現できるようにする
 - `local-data/` 配下のファイルを、参照用・検証用・生成物で整理する
 - `local-data/` に置くべきでない生成物や一時ファイルがないか見直す
+- `npm test` を `scripts/run-tests.mjs` ベースへ切り替えるか検討する
+- `main.test.js` に残っている `xlsx import` の file input wiring を、UI 配線確認と import 結果確認へさらに分離する
+- `main.ts` の summary / validation / preview 描画を別モジュール化し、DOM テストをさらに軽くする
+- `build:xlsx-sample` の所要時間を個別計測し、sample workbook 生成処理の支配要因を確認する
+- `main.test.js` の初期化 DOM をケース別に最小化できるか見直す
+- CI 向けに `test:fast` と `test:full` のような実行導線を分けるか検討する
 - `mikuproject-spec.md` に残っている実装済み前提との差分を定期的に解消する
 - `.xlsx import` の次段として、どのシート・列を今後 import 対象に広げるか整理する
 - WBS 用の `ステータス` は `Task.ExtendedAttribute` で扱う前提で、`FieldID / FieldName / 値候補` を設計する

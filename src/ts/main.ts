@@ -1156,5 +1156,24 @@ WorkWeek1=${formatCalendarWorkWeekSummary(calendar)}</div>
     loadSample();
   }
 
+  (globalThis as typeof globalThis & {
+    __mikuprojectMainTestHooks?: {
+      renderValidationIssues: (issues: ValidationIssue[]) => void;
+      renderXlsxImportSummary: (changes: Array<{
+        scope: "project" | "tasks" | "resources" | "assignments" | "calendars";
+        uid: string;
+        label: string;
+        field: string;
+        before: string | number | boolean | undefined;
+        after: string | number | boolean;
+      }>) => void;
+      updateFeedbackVisibility: () => void;
+    };
+  }).__mikuprojectMainTestHooks = {
+    renderValidationIssues,
+    renderXlsxImportSummary,
+    updateFeedbackVisibility
+  };
+
   document.addEventListener("DOMContentLoaded", initialize);
 })();

@@ -1,0 +1,19 @@
+{
+  "name": "mikuproject",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Local HTML tool for MS Project XML round-trip experiments.",
+  "license": "Apache-2.0",
+  "type": "module",
+  "scripts": {
+    "build": "npm run build:app && npm test",
+    "build:app": "node scripts/build-project.mjs",
+    "build:xlsx-sample": "node scripts/build-project-xlsx-sample.mjs",
+    "test": "vitest run"
+  },
+  "devDependencies": {
+    "jsdom": "^26.1.0",
+    "typescript": "^5.8.2",
+    "vitest": "^3.2.4"
+  }
+}

@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Project xmlns="http://schemas.microsoft.com/project">
+  <Name>Minimal Project</Name>
+  <StartDate>2026-03-16T09:00:00</StartDate>
+  <FinishDate>2026-03-16T18:00:00</FinishDate>
+  <ScheduleFromStart>1</ScheduleFromStart>
+  <Tasks>
+    <Task>
+      <UID>1</UID>
+      <ID>1</ID>
+      <Name>Single Task</Name>
+      <OutlineLevel>1</OutlineLevel>
+      <OutlineNumber>1</OutlineNumber>
+      <Start>2026-03-16T09:00:00</Start>
+      <Finish>2026-03-16T18:00:00</Finish>
+      <Duration>PT8H0M0S</Duration>
+      <Milestone>0</Milestone>
+      <Summary>0</Summary>
+      <PercentComplete>0</PercentComplete>
+    </Task>
+  </Tasks>
+  <Resources />
+  <Assignments />
+</Project>

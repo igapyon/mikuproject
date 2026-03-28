@@ -1,3 +1,7 @@
+/*
+ * Copyright 2026 Toshiki Iga
+ * SPDX-License-Identifier: Apache-2.0
+ */
 (() => {
     const TEXT_ENCODER = new TextEncoder();
     const TEXT_DECODER = new TextDecoder();
@@ -5,6 +9,7 @@
     const CRC32_TABLE = buildCrc32Table();
     const NUMBER_FORMATS = ["general", "integer", "decimal", "date", "datetime", "percent"];
     const HORIZONTAL_ALIGNS = ["left", "center", "right"];
+    const VERTICAL_ALIGNS = ["top", "center", "bottom"];
     const BORDER_STYLES = ["thin"];
     const STYLE_KEY_DELIMITER = "::";
     const DEFAULT_STYLE = { numberFormat: "general" };
@@ -100,8 +105,12 @@
         if (!column) {
             return {};
         }
+        if (column.hidden !== undefined && typeof column.hidden !== "boolean") {
+            throw new Error("Column hidden must be boolean");
+        }
         return {
-            width: normalizeOptionalPositiveNumber(column.width, "Column width")
+            width: normalizeOptionalPositiveNumber(column.width, "Column width"),
+            hidden: column.hidden === true ? true : undefined
         };
     }
     function normalizeFreezePane(freezePane) {
@@ -134,6 +143,9 @@
         if (cell.horizontalAlign !== undefined && !HORIZONTAL_ALIGNS.includes(cell.horizontalAlign)) {
             throw new Error(`Unsupported cell horizontal align: ${cell.horizontalAlign}`);
         }
+        if (cell.verticalAlign !== undefined && !VERTICAL_ALIGNS.includes(cell.verticalAlign)) {
+            throw new Error(`Unsupported cell vertical align: ${cell.verticalAlign}`);
+        }
         if (cell.border !== undefined && !BORDER_STYLES.includes(cell.border)) {
             throw new Error(`Unsupported cell border: ${cell.border}`);
         }
@@ -145,6 +157,7 @@
             formula: cell.formula,
             numberFormat: cell.numberFormat,
             horizontalAlign: cell.horizontalAlign,
+            verticalAlign: cell.verticalAlign,
             wrapText: cell.wrapText === true ? true : undefined,
             bold: cell.bold === true ? true : undefined,
             fillColor: cell.fillColor ? normalizeColor(cell.fillColor) : undefined,
@@ -278,11 +291,11 @@
         return `<sheetViews><sheetView workbookViewId="0"><pane${xSplit}${ySplit}${topLeftCellAttribute} activePane="${activePane}" state="frozen"/></sheetView></sheetViews>`;
     }
     function buildColumnsXml(columns) {
-        if (!columns || columns.length === 0 || columns.every((column) => column.width === undefined)) {
+        if (!columns || columns.length === 0 || columns.every((column) => column.width === undefined && column.hidden !== true)) {
             return "";
         }
-        const cols = columns.map((column, index) => (column.width !== undefined
-            ? `<col min="${index + 1}" max="${index + 1}" width="${formatNumber(column.width)}" customWidth="1"/>`
+        const cols = columns.map((column, index) => ((column.width !== undefined || column.hidden === true)
+            ? `<col min="${index + 1}" max="${index + 1}"${column.width !== undefined ? ` width="${formatNumber(column.width)}" customWidth="1"` : ""}${column.hidden === true ? ` hidden="1"` : ""}/>`
             : "")).filter(Boolean).join("");
         return cols ? `<cols>${cols}</cols>` : "";
     }
@@ -319,7 +332,7 @@
             return `<c r="${reference}"${styleAttribute}${typeAttribute}>${formulaXml}${valueXml}</c>`;
         }
         if (cell.value === undefined) {
-            return "";
+            return styleIndex > 0 ? `<c r="${reference}"${styleAttribute}/>` : "";
         }
         if (typeof cell.value === "string") {
             return `<c r="${reference}"${styleAttribute} t="inlineStr"><is><t>${escapeXml(cell.value)}</t></is></c>`;
@@ -380,12 +393,13 @@
         return { styles, styleIndexByKey };
     }
     function getStyleDescriptor(cell) {
-        if (!cell.numberFormat && !cell.horizontalAlign && !cell.wrapText && !cell.bold && !cell.fillColor && !cell.border) {
+        if (!cell.numberFormat && !cell.horizontalAlign && !cell.verticalAlign && !cell.wrapText && !cell.bold && !cell.fillColor && !cell.border) {
             return null;
         }
         return {
             numberFormat: cell.numberFormat || "general",
             horizontalAlign: cell.horizontalAlign,
+            verticalAlign: cell.verticalAlign,
             wrapText: cell.wrapText === true ? true : undefined,
             bold: cell.bold === true ? true : undefined,
             fillColor: cell.fillColor,
@@ -396,6 +410,7 @@
         return [
             style.numberFormat,
             style.horizontalAlign || "",
+            style.verticalAlign || "",
             style.wrapText ? "wrap" : "",
             style.bold ? "bold" : "",
             style.fillColor || "",
@@ -419,12 +434,13 @@
             const fillId = fills.indexByKey.get(fillKey({ fillColor: style.fillColor })) || 0;
             const borderId = borders.indexByKey.get(borderKey({ border: style.border })) || 0;
             const applyNumberFormat = numFmtId !== 0 ? ` applyNumberFormat="1"` : "";
-            const applyAlignment = style.horizontalAlign || style.wrapText ? ` applyAlignment="1"` : "";
+            const applyAlignment = style.horizontalAlign || style.verticalAlign || style.wrapText ? ` applyAlignment="1"` : "";
             const applyFont = fontId !== 0 ? ` applyFont="1"` : "";
             const applyFill = fillId !== 0 ? ` applyFill="1"` : "";
             const applyBorder = borderId !== 0 ? ` applyBorder="1"` : "";
             const alignmentAttributes = [
                 style.horizontalAlign ? ` horizontal="${style.horizontalAlign}"` : "",
+                style.verticalAlign ? ` vertical="${style.verticalAlign}"` : "",
                 style.wrapText ? ` wrapText="1"` : ""
             ].join("");
             const alignmentNode = alignmentAttributes
@@ -569,8 +585,9 @@
             const min = Number(colElement.getAttribute("min") || "0");
             const max = Number(colElement.getAttribute("max") || "0");
             const width = parseOptionalNumber(colElement.getAttribute("width"));
+            const hidden = colElement.getAttribute("hidden") === "1" ? true : undefined;
             for (let index = min; index <= max; index += 1) {
-                columns[index - 1] = { width };
+                columns[index - 1] = { width, hidden };
             }
         }
         while (columns.length > 0 && !columns[columns.length - 1]) {
@@ -644,6 +661,9 @@
         if (style.horizontalAlign) {
             cell.horizontalAlign = style.horizontalAlign;
         }
+        if (style.verticalAlign) {
+            cell.verticalAlign = style.verticalAlign;
+        }
         if (style.wrapText) {
             cell.wrapText = true;
         }
@@ -684,9 +704,11 @@
             const borderId = Number(xfElement.getAttribute("borderId") || "0");
             const alignmentElement = findDirectChild(xfElement, "alignment");
             const horizontalAlign = alignmentElement === null || alignmentElement === void 0 ? void 0 : alignmentElement.getAttribute("horizontal");
+            const verticalAlign = alignmentElement === null || alignmentElement === void 0 ? void 0 : alignmentElement.getAttribute("vertical");
             return {
                 numberFormat: parseNumberFormatId(numFmtId),
                 horizontalAlign: horizontalAlign || undefined,
+                verticalAlign: verticalAlign || undefined,
                 wrapText: (alignmentElement === null || alignmentElement === void 0 ? void 0 : alignmentElement.getAttribute("wrapText")) === "1" ? true : undefined,
                 bold: ((_a = fonts[fontId]) === null || _a === void 0 ? void 0 : _a.bold) ? true : undefined,
                 fillColor: (_b = fills[fillId]) === null || _b === void 0 ? void 0 : _b.fillColor,

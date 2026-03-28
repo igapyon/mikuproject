@@ -1,7 +1,12 @@
+/*
+ * Copyright 2026 Toshiki Iga
+ * SPDX-License-Identifier: Apache-2.0
+ */
 (() => {
   type XlsxPrimitiveValue = string | number | boolean;
   type XlsxNumberFormat = "general" | "integer" | "decimal" | "date" | "datetime" | "percent";
   type XlsxHorizontalAlign = "left" | "center" | "right";
+  type XlsxVerticalAlign = "top" | "center" | "bottom";
   type XlsxBorderStyle = "thin";
 
   type XlsxCellModel = {
@@ -9,6 +14,7 @@
     formula?: string;
     numberFormat?: XlsxNumberFormat;
     horizontalAlign?: XlsxHorizontalAlign;
+    verticalAlign?: XlsxVerticalAlign;
     wrapText?: boolean;
     bold?: boolean;
     fillColor?: string;
@@ -22,6 +28,7 @@
 
   type XlsxColumnModel = {
     width?: number;
+    hidden?: boolean;
   };
 
   type XlsxFreezePaneModel = {
@@ -49,6 +56,7 @@
   type StyleDescriptor = {
     numberFormat: XlsxNumberFormat;
     horizontalAlign?: XlsxHorizontalAlign;
+    verticalAlign?: XlsxVerticalAlign;
     wrapText?: boolean;
     bold?: boolean;
     fillColor?: string;
@@ -78,6 +86,7 @@
   const CRC32_TABLE = buildCrc32Table();
   const NUMBER_FORMATS: XlsxNumberFormat[] = ["general", "integer", "decimal", "date", "datetime", "percent"];
   const HORIZONTAL_ALIGNS: XlsxHorizontalAlign[] = ["left", "center", "right"];
+  const VERTICAL_ALIGNS: XlsxVerticalAlign[] = ["top", "center", "bottom"];
   const BORDER_STYLES: XlsxBorderStyle[] = ["thin"];
   const STYLE_KEY_DELIMITER = "::";
   const DEFAULT_STYLE: StyleDescriptor = { numberFormat: "general" };
@@ -184,8 +193,12 @@
     if (!column) {
       return {};
     }
+    if (column.hidden !== undefined && typeof column.hidden !== "boolean") {
+      throw new Error("Column hidden must be boolean");
+    }
     return {
-      width: normalizeOptionalPositiveNumber(column.width, "Column width")
+      width: normalizeOptionalPositiveNumber(column.width, "Column width"),
+      hidden: column.hidden === true ? true : undefined
     };
   }
 
@@ -220,6 +233,9 @@
     if (cell.horizontalAlign !== undefined && !HORIZONTAL_ALIGNS.includes(cell.horizontalAlign)) {
       throw new Error(`Unsupported cell horizontal align: ${cell.horizontalAlign}`);
     }
+    if (cell.verticalAlign !== undefined && !VERTICAL_ALIGNS.includes(cell.verticalAlign)) {
+      throw new Error(`Unsupported cell vertical align: ${cell.verticalAlign}`);
+    }
     if (cell.border !== undefined && !BORDER_STYLES.includes(cell.border)) {
       throw new Error(`Unsupported cell border: ${cell.border}`);
     }
@@ -231,6 +247,7 @@
       formula: cell.formula,
       numberFormat: cell.numberFormat,
       horizontalAlign: cell.horizontalAlign,
+      verticalAlign: cell.verticalAlign,
       wrapText: cell.wrapText === true ? true : undefined,
       bold: cell.bold === true ? true : undefined,
       fillColor: cell.fillColor ? normalizeColor(cell.fillColor) : undefined,
@@ -392,12 +409,12 @@
   }
 
   function buildColumnsXml(columns: XlsxColumnModel[] | undefined): string {
-    if (!columns || columns.length === 0 || columns.every((column) => column.width === undefined)) {
+    if (!columns || columns.length === 0 || columns.every((column) => column.width === undefined && column.hidden !== true)) {
       return "";
     }
     const cols = columns.map((column, index) => (
-      column.width !== undefined
-        ? `<col min="${index + 1}" max="${index + 1}" width="${formatNumber(column.width)}" customWidth="1"/>`
+      (column.width !== undefined || column.hidden === true)
+        ? `<col min="${index + 1}" max="${index + 1}"${column.width !== undefined ? ` width="${formatNumber(column.width)}" customWidth="1"` : ""}${column.hidden === true ? ` hidden="1"` : ""}/>`
         : ""
     )).filter(Boolean).join("");
     return cols ? `<cols>${cols}</cols>` : "";
@@ -442,7 +459,7 @@
     }
 
     if (cell.value === undefined) {
-      return "";
+      return styleIndex > 0 ? `<c r="${reference}"${styleAttribute}/>` : "";
     }
 
     if (typeof cell.value === "string") {
@@ -511,12 +528,13 @@
   }
 
   function getStyleDescriptor(cell: XlsxCellModel): StyleDescriptor | null {
-    if (!cell.numberFormat && !cell.horizontalAlign && !cell.wrapText && !cell.bold && !cell.fillColor && !cell.border) {
+    if (!cell.numberFormat && !cell.horizontalAlign && !cell.verticalAlign && !cell.wrapText && !cell.bold && !cell.fillColor && !cell.border) {
       return null;
     }
     return {
       numberFormat: cell.numberFormat || "general",
       horizontalAlign: cell.horizontalAlign,
+      verticalAlign: cell.verticalAlign,
       wrapText: cell.wrapText === true ? true : undefined,
       bold: cell.bold === true ? true : undefined,
       fillColor: cell.fillColor,
@@ -528,6 +546,7 @@
     return [
       style.numberFormat,
       style.horizontalAlign || "",
+      style.verticalAlign || "",
       style.wrapText ? "wrap" : "",
       style.bold ? "bold" : "",
       style.fillColor || "",
@@ -554,12 +573,13 @@
       const fillId = fills.indexByKey.get(fillKey({ fillColor: style.fillColor })) || 0;
       const borderId = borders.indexByKey.get(borderKey({ border: style.border })) || 0;
       const applyNumberFormat = numFmtId !== 0 ? ` applyNumberFormat="1"` : "";
-      const applyAlignment = style.horizontalAlign || style.wrapText ? ` applyAlignment="1"` : "";
+      const applyAlignment = style.horizontalAlign || style.verticalAlign || style.wrapText ? ` applyAlignment="1"` : "";
       const applyFont = fontId !== 0 ? ` applyFont="1"` : "";
       const applyFill = fillId !== 0 ? ` applyFill="1"` : "";
       const applyBorder = borderId !== 0 ? ` applyBorder="1"` : "";
       const alignmentAttributes = [
         style.horizontalAlign ? ` horizontal="${style.horizontalAlign}"` : "",
+        style.verticalAlign ? ` vertical="${style.verticalAlign}"` : "",
         style.wrapText ? ` wrapText="1"` : ""
       ].join("");
       const alignmentNode = alignmentAttributes
@@ -736,8 +756,9 @@
       const min = Number(colElement.getAttribute("min") || "0");
       const max = Number(colElement.getAttribute("max") || "0");
       const width = parseOptionalNumber(colElement.getAttribute("width"));
+      const hidden = colElement.getAttribute("hidden") === "1" ? true : undefined;
       for (let index = min; index <= max; index += 1) {
-        columns[index - 1] = { width };
+        columns[index - 1] = { width, hidden };
       }
     }
     while (columns.length > 0 && !columns[columns.length - 1]) {
@@ -825,6 +846,9 @@
     if (style.horizontalAlign) {
       cell.horizontalAlign = style.horizontalAlign;
     }
+    if (style.verticalAlign) {
+      cell.verticalAlign = style.verticalAlign;
+    }
     if (style.wrapText) {
       cell.wrapText = true;
     }
@@ -870,9 +894,11 @@
       const borderId = Number(xfElement.getAttribute("borderId") || "0");
       const alignmentElement = findDirectChild(xfElement, "alignment");
       const horizontalAlign = alignmentElement?.getAttribute("horizontal") as XlsxHorizontalAlign | null;
+      const verticalAlign = alignmentElement?.getAttribute("vertical") as XlsxVerticalAlign | null;
       return {
         numberFormat: parseNumberFormatId(numFmtId),
         horizontalAlign: horizontalAlign || undefined,
+        verticalAlign: verticalAlign || undefined,
         wrapText: alignmentElement?.getAttribute("wrapText") === "1" ? true : undefined,
         bold: fonts[fontId]?.bold ? true : undefined,
         fillColor: fills[fillId]?.fillColor,

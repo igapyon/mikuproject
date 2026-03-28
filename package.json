@@ -6,7 +6,9 @@
   "license": "Apache-2.0",
   "type": "module",
   "scripts": {
-    "build": "npm run build:app && npm test",
+    "build": "npm run build:app && npm test && npm run build:xlsx-sample",
+    "build:js": "node scripts/build-project.mjs --js-only",
+    "build:html": "node scripts/build-project.mjs --html-only",
     "build:app": "node scripts/build-project.mjs",
     "build:xlsx-sample": "node scripts/build-project-xlsx-sample.mjs",
     "test": "vitest run"

@@ -3,6 +3,9 @@ import path from "node:path";
 import { buildSingleHtmlFromSource } from "./lib/single-html.mjs";
 
 const ROOT = process.cwd();
+const args = new Set(process.argv.slice(2));
+const buildJs = !args.has("--html-only");
+const buildHtml = !args.has("--js-only");
 
 const TARGETS = [
   {
@@ -27,15 +30,22 @@ const TARGETS = [
 
 const tsModule = await loadTypeScriptModule();
 
-for (const target of TARGETS) {
-  transpileTypeScript(target, tsModule);
-  const srcPath = path.resolve(ROOT, target.srcHtml);
-  const outPath = path.resolve(ROOT, target.outHtml);
-  const source = fs.readFileSync(srcPath, "utf8");
-  const output = buildSingleHtmlFromSource(applyTemplateValues(source), srcPath, ROOT);
-  fs.mkdirSync(path.dirname(outPath), { recursive: true });
-  fs.writeFileSync(outPath, output, "utf8");
-  console.log(`[build:project] generated ${target.outHtml}`);
+if (buildJs) {
+  for (const target of TARGETS) {
+    transpileTypeScript(target, tsModule);
+  }
+}
+
+if (buildHtml) {
+  for (const target of TARGETS) {
+    const srcPath = path.resolve(ROOT, target.srcHtml);
+    const outPath = path.resolve(ROOT, target.outHtml);
+    const source = fs.readFileSync(srcPath, "utf8");
+    const output = buildSingleHtmlFromSource(applyTemplateValues(source), srcPath, ROOT);
+    fs.mkdirSync(path.dirname(outPath), { recursive: true });
+    fs.writeFileSync(outPath, output, "utf8");
+    console.log(`[build:project] generated ${target.outHtml}`);
+  }
 }
 
 async function loadTypeScriptModule() {

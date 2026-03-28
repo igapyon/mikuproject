@@ -65,6 +65,15 @@ npm install
 npm run build:app
 ```
 
+`mikuproject.html` は `mikuproject-src.html` をもとに、ローカル CSS / JS と `src/vendor/mermaid/mermaid.min.js` を単一 HTML へインライン展開して生成します。
+
+`Mermaid Preview` を single-file WebApp のままオフライン再現するため、`Mermaid` ランタイムは `src/vendor/mermaid/mermaid.min.js` を同梱します。
+
+- 同梱ファイル: `src/vendor/mermaid/mermaid.min.js`
+- バージョン: `mermaid@11.12.0`
+- 取得元: `https://cdn.jsdelivr.net/npm/mermaid@11.12.0/dist/mermaid.min.js`
+- 更新手順: 上記 URL のバージョンを差し替えて `src/vendor/mermaid/mermaid.min.js` を更新し、`npm run build:app` を実行する
+
 サンプル XLSX を再生成:
 
 ```bash
@@ -91,6 +100,7 @@ npm run build
 
 - `package.json` と `package-lock.json` を持つ単独の Node.js プロジェクトとして扱える
 - ソース配置は `src/ts/`, `src/js/`, `src/css/`
+- 外部ランタイムの同梱先は `src/vendor/`
 - `npm run build:app` と `npm test` は通る
 - `local-data/` と `node_modules/` は Git 管理対象外
 
@@ -100,7 +110,7 @@ npm run build
 - 目標は XML の完全一致ではなく、意味的に往復できること
 - `XLSX Import` の反映対象は限定列のみ
 - `Calendars` の `WeekDays / Exceptions / WorkWeeks` などは現時点では反映対象外
-- Mermaid の SVG プレビューは、Mermaid ランタイムが読み込まれている環境を前提とする
+- Mermaid の SVG プレビューは `src/vendor/mermaid/mermaid.min.js` を `build:app` で内包した `mikuproject.html` を前提とする
 
 ## 関連ドキュメント
 

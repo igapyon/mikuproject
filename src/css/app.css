@@ -45,6 +45,29 @@
   flex-wrap: wrap;
 }
 
+.md-inline-help {
+  display: inline-flex;
+  align-items: center;
+}
+
+.md-inline-help lht-help-tooltip .md-tooltip {
+  background: #2e2a33;
+  color: #f7f4fb;
+}
+
+.md-inline-help lht-help-tooltip .md-note-card__title {
+  color: #8be0c7;
+}
+
+.md-inline-help lht-help-tooltip .md-note-card__text,
+.md-inline-help lht-help-tooltip .md-note-list {
+  color: #f1edf7;
+}
+
+.md-inline-help lht-help-tooltip .md-note-card__text strong {
+  color: #c7f2e5;
+}
+
 .md-button {
   display: inline-flex;
   align-items: center;
@@ -185,6 +208,86 @@
   border-radius: 18px;
   background: linear-gradient(180deg, #f3fbf9 0%, #ffffff 100%);
   padding: 16px 18px;
+}
+
+.md-settings-card {
+  border: 1px solid #cfe2dc;
+  border-radius: 24px;
+  background: linear-gradient(180deg, #f5fbfa 0%, #ffffff 100%);
+  padding: 18px 20px;
+  display: grid;
+  gap: 14px;
+}
+
+.md-settings-card__summary {
+  list-style: none;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  cursor: pointer;
+}
+
+.md-settings-card__summary::-webkit-details-marker {
+  display: none;
+}
+
+.md-settings-card__summary-main {
+  display: grid;
+  gap: 6px;
+}
+
+.md-settings-card__chevron {
+  width: 0.8rem;
+  height: 0.8rem;
+  border-right: 2px solid #43706a;
+  border-bottom: 2px solid #43706a;
+  transform: rotate(45deg);
+  transition: transform 160ms ease;
+  flex: 0 0 auto;
+  margin-right: 4px;
+}
+
+.md-settings-card[open] .md-settings-card__chevron {
+  transform: rotate(225deg);
+  margin-top: 6px;
+}
+
+.md-settings-card__body {
+  display: grid;
+  gap: 14px;
+}
+
+.md-settings-card__title {
+  margin: 0;
+  font-size: 1.02rem;
+  font-weight: 800;
+  color: #1f4f4a;
+}
+
+.md-settings-card__text {
+  margin: 0;
+  color: #55706c;
+  font-size: 0.88rem;
+  line-height: 1.55;
+}
+
+.md-settings-subcard {
+  border: 1px solid #d8e7e3;
+  border-radius: 20px;
+  background: linear-gradient(180deg, #f8fcfb 0%, #ffffff 100%);
+  padding: 16px 18px;
+}
+
+.md-settings-subcard__title {
+  margin: 0 0 10px;
+  font-size: 0.98rem;
+  font-weight: 700;
+  color: #245852;
+}
+
+.md-settings-subcard .md-note-card__text + .md-note-card__text {
+  margin-top: 8px;
 }
 
 .md-note-card__title {

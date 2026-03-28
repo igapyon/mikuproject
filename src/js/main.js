@@ -26,6 +26,8 @@
     let lastSavedXmlText = "";
     let lastSavedXmlStamp = "";
     let currentTabId = "input";
+    let isXmlSourceDirty = true;
+    let isRefreshingTransformTab = false;
     function getElement(id) {
         const element = document.getElementById(id);
         if (!element) {
@@ -45,7 +47,7 @@
     function getTabPanels() {
         return Array.from(document.querySelectorAll(".md-tab-panel[data-tab-panel]"));
     }
-    function setActiveTab(tabId) {
+    function setActiveTab(tabId, options = {}) {
         currentTabId = tabId;
         for (const button of getTabButtons()) {
             const isActive = button.dataset.tab === tabId;
@@ -55,6 +57,31 @@
         }
         for (const panel of getTabPanels()) {
             panel.hidden = panel.dataset.tabPanel !== tabId;
+        }
+        if (tabId === "transform" && !options.skipTransformRefresh && !isRefreshingTransformTab) {
+            void refreshTransformTab().catch((error) => {
+                setStatus(error instanceof Error ? error.message : "Transform の更新に失敗しました");
+            });
+        }
+    }
+    async function refreshTransformTab() {
+        if (isRefreshingTransformTab) {
+            return;
+        }
+        isRefreshingTransformTab = true;
+        try {
+            if (!currentModel || isXmlSourceDirty) {
+                const xmlText = getTextArea("xmlInput").value.trim();
+                if (!xmlText) {
+                    setStatus("XML が空です");
+                    return;
+                }
+                parseCurrentXml({ silent: true });
+            }
+            await exportCurrentMermaid({ silent: true });
+        }
+        finally {
+            isRefreshingTransformTab = false;
         }
     }
     function moveTabFocus(currentButton, direction) {
@@ -307,6 +334,7 @@
     function syncXmlTextFromModel(model) {
         const xmlText = mikuprojectXml.exportMsProjectXml(model);
         getTextArea("xmlInput").value = xmlText;
+        isXmlSourceDirty = false;
         refreshXmlSaveState();
         return xmlText;
     }
@@ -640,7 +668,9 @@ WorkWeek1=${formatCalendarWorkWeekSummary(calendar)}</div>
     `) : []);
     }
     function loadSample() {
+        currentModel = null;
         getTextArea("xmlInput").value = mikuprojectXml.SAMPLE_XML;
+        isXmlSourceDirty = true;
         markXmlDirty();
         setStatus("サンプル XML を読み込みました");
         setActiveTab("input");
@@ -653,13 +683,15 @@ WorkWeek1=${formatCalendarWorkWeekSummary(calendar)}</div>
         getTextArea("xmlInput").value = xmlText;
         markXmlDirty();
         currentModel = mikuprojectXml.importMsProjectXml(xmlText);
+        isXmlSourceDirty = false;
         const issues = mikuprojectXml.validateProjectModel(currentModel);
         updateSummary(currentModel);
         renderValidationIssues(issues);
         renderXlsxImportSummary([]);
         setStatus(issues.length > 0 ? `XML ファイルを読み込んで解析しました。検証で ${issues.length} 件の問題があります` : "XML ファイルを読み込んで解析しました");
         showToast("XML を読み込んで解析しました");
-        setActiveTab("transform");
+        setActiveTab("transform", { skipTransformRefresh: true });
+        await exportCurrentMermaid({ silent: true });
     }
     function ensureCurrentModel() {
         if (currentModel) {
@@ -670,24 +702,28 @@ WorkWeek1=${formatCalendarWorkWeekSummary(calendar)}</div>
             throw new Error("内部モデルがありません");
         }
         currentModel = mikuprojectXml.importMsProjectXml(xmlText);
+        isXmlSourceDirty = false;
         return currentModel;
     }
-    function parseCurrentXml() {
+    function parseCurrentXml(options = {}) {
         const xmlText = getTextArea("xmlInput").value.trim();
         if (!xmlText) {
             setStatus("XML が空です");
             return;
         }
         currentModel = mikuprojectXml.importMsProjectXml(xmlText);
+        isXmlSourceDirty = false;
         const issues = mikuprojectXml.validateProjectModel(currentModel);
         updateSummary(currentModel);
         renderValidationIssues(issues);
         renderXlsxImportSummary([]);
-        setStatus(issues.length > 0 ? `XML を解析しました。検証で ${issues.length} 件の問題があります` : "XML を内部モデルへ変換しました");
-        showToast("XML を解析しました");
-        setActiveTab("transform");
+        if (!options.silent) {
+            setStatus(issues.length > 0 ? `XML を解析しました。検証で ${issues.length} 件の問題があります` : "XML を内部モデルへ変換しました");
+            showToast("XML を解析しました");
+        }
+        setActiveTab("transform", { skipTransformRefresh: true });
     }
-    async function exportCurrentMermaid() {
+    async function exportCurrentMermaid(options = {}) {
         if (!currentModel) {
             setStatus("内部モデルがありません");
             return;
@@ -695,9 +731,11 @@ WorkWeek1=${formatCalendarWorkWeekSummary(calendar)}</div>
         const mermaidText = mikuprojectXml.exportMermaidGantt(currentModel);
         getTextArea("mermaidOutput").value = mermaidText;
         await renderMermaidPreview(mermaidText);
-        setStatus("内部モデルから Mermaid gantt を生成し、SVG プレビューを更新しました");
-        showToast("Mermaid を生成しました");
-        setActiveTab("transform");
+        if (!options.silent) {
+            setStatus("内部モデルから Mermaid gantt を生成し、SVG プレビューを更新しました");
+            showToast("Mermaid を生成しました");
+        }
+        setActiveTab("transform", { skipTransformRefresh: true });
     }
     function exportCurrentCsv() {
         const model = ensureCurrentModel();
@@ -786,24 +824,28 @@ WorkWeek1=${formatCalendarWorkWeekSummary(calendar)}</div>
         const summaryText = result.changes.length > 0
             ? `XLSX を読み込んで ${result.changes.length} 件の変更を反映しました。XML は再生成済みで、必要なら XML Export で保存できます`
             : "XLSX に反映対象の変更はありませんでした。XML は未変更です";
+        isXmlSourceDirty = false;
         setStatus(issues.length > 0 ? `${summaryText}。検証で ${issues.length} 件の問題があります` : summaryText);
         showToast("XLSX を反映しました");
-        setActiveTab("transform");
+        setActiveTab("transform", { skipTransformRefresh: true });
+        await exportCurrentMermaid({ silent: true });
     }
-    function parseCurrentCsv() {
+    async function parseCurrentCsv() {
         const csvText = getTextArea("csvInput").value.trim();
         if (!csvText) {
             setStatus("CSV が空です");
             return;
         }
         currentModel = mikuprojectXml.importCsvParentId(csvText);
+        isXmlSourceDirty = false;
         const issues = mikuprojectXml.validateProjectModel(currentModel);
         updateSummary(currentModel);
         renderValidationIssues(issues);
         renderXlsxImportSummary([]);
         setStatus(issues.length > 0 ? `CSV を解析しました。検証で ${issues.length} 件の問題があります` : "CSV + ParentID を内部モデルへ変換しました");
         showToast("CSV を解析しました");
-        setActiveTab("transform");
+        setActiveTab("transform", { skipTransformRefresh: true });
+        await exportCurrentMermaid({ silent: true });
     }
     function downloadCurrentXml() {
         const model = ensureCurrentModel();
@@ -873,19 +915,6 @@ WorkWeek1=${formatCalendarWorkWeekSummary(calendar)}</div>
         getElement("importXmlBtn").addEventListener("click", () => {
             getElement("importXmlInput").click();
         });
-        getElement("parseXmlBtn").addEventListener("click", () => {
-            try {
-                parseCurrentXml();
-            }
-            catch (error) {
-                setStatus(error instanceof Error ? error.message : "XML 解析に失敗しました");
-            }
-        });
-        getElement("exportMermaidBtn").addEventListener("click", () => {
-            void exportCurrentMermaid().catch((error) => {
-                setStatus(error instanceof Error ? error.message : "Mermaid 生成に失敗しました");
-            });
-        });
         getElement("downloadMermaidSvgBtn").addEventListener("click", () => {
             void downloadCurrentMermaidSvg().catch((error) => {
                 setStatus(error instanceof Error ? error.message : "SVG 保存に失敗しました");
@@ -923,9 +952,9 @@ WorkWeek1=${formatCalendarWorkWeekSummary(calendar)}</div>
                 setStatus(error instanceof Error ? error.message : "WBS 祝日入力のリセットに失敗しました");
             }
         });
-        getElement("parseCsvBtn").addEventListener("click", () => {
+        getElement("parseCsvBtn").addEventListener("click", async () => {
             try {
-                parseCurrentCsv();
+                await parseCurrentCsv();
             }
             catch (error) {
                 setStatus(error instanceof Error ? error.message : "CSV 解析に失敗しました");
@@ -981,6 +1010,7 @@ WorkWeek1=${formatCalendarWorkWeekSummary(calendar)}</div>
             }
         });
         getTextArea("xmlInput").addEventListener("input", () => {
+            isXmlSourceDirty = true;
             refreshXmlSaveState();
         });
     }
@@ -995,6 +1025,8 @@ WorkWeek1=${formatCalendarWorkWeekSummary(calendar)}</div>
         loadSample();
     }
     globalThis.__mikuprojectMainTestHooks = {
+        parseCurrentXml,
+        exportCurrentMermaid,
         renderValidationIssues,
         renderXlsxImportSummary,
         updateFeedbackVisibility

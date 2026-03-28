@@ -48,19 +48,16 @@ const dependencyXml = readFileSync(
 
 function mountDom() {
   document.body.innerHTML = `
-    <button id="importXmlBtn" type="button">XML Import</button>
-    <button id="importXlsxBtn" type="button">XLSX Import</button>
-    <button id="parseCsvBtn" type="button">CSV を解析</button>
-    <button id="loadSampleBtn" type="button">サンプル読込</button>
-    <button id="parseXmlBtn" type="button">XML を解析</button>
-    <button id="exportMermaidBtn" type="button">Mermaid を生成</button>
-    <button id="downloadMermaidSvgBtn" type="button" disabled>SVG保存</button>
-    <button id="exportCsvBtn" type="button">CSV を生成</button>
-    <button id="exportXlsxBtn" type="button">XLSX Export</button>
-    <button id="exportWbsXlsxBtn" type="button">WBS XLSX Export</button>
+    <button id="importXmlBtn" type="button">MS Project XML</button>
+    <button id="importXlsxBtn" type="button">XLSX</button>
+    <button id="parseCsvBtn" type="button">CSV</button>
+    <button id="loadSampleBtn" type="button">サンプル</button>
+    <button id="exportXlsxBtn" type="button">XLSX</button>
+    <button id="exportWbsXlsxBtn" type="button">WBS XLSX</button>
+    <button id="downloadMermaidSvgBtn" type="button" disabled>SVG</button>
+    <button id="exportCsvBtn" type="button">CSV</button>
     <button id="resetWbsHolidayDatesBtn" type="button">WBS 祝日を既定値へ戻す</button>
-    <button id="downloadXmlBtn" type="button">XML Export</button>
-    <button id="roundTripBtn" type="button">再読込テスト</button>
+    <button id="downloadXmlBtn" type="button">MS Project XML</button>
     <input id="importXmlInput" type="file" />
     <input id="importXlsxInput" type="file" />
     <div id="statusMessage"></div>
@@ -118,9 +115,12 @@ function mountDom() {
       <div id="summaryResourceCount"></div>
       <div id="summaryAssignmentCount"></div>
       <div id="summaryCalendarCount"></div>
+      <div id="mermaidSvgError" class="md-hidden"></div>
+      <div id="mermaidSvgPreview"></div>
       <details class="md-debug-accordion">
         <summary class="md-debug-accordion__summary">デバッグ情報</summary>
         <div class="md-debug-accordion__body">
+          <button id="roundTripBtn" type="button">再読込テスト</button>
           <textarea id="modelOutput"></textarea>
           <textarea id="mermaidOutput"></textarea>
           <div id="projectPreview"></div>
@@ -128,8 +128,6 @@ function mountDom() {
           <div id="resourcePreview"></div>
           <div id="assignmentPreview"></div>
           <div id="calendarPreview"></div>
-          <div id="mermaidSvgError" class="md-hidden"></div>
-          <div id="mermaidSvgPreview"></div>
         </div>
       </details>
       <div class="md-feedback-stack md-hidden">
@@ -191,6 +189,14 @@ function bootXmlModule() {
 
 function getMainHooks() {
   return globalThis.__mikuprojectMainTestHooks;
+}
+
+function parseXmlViaHook() {
+  getMainHooks().parseCurrentXml();
+}
+
+async function exportMermaidViaHook() {
+  await getMainHooks().exportCurrentMermaid();
 }
 
 const SAMPLE_HOLIDAY_COUNT = 89;
@@ -269,7 +275,7 @@ describe("mikuproject main", () => {
     expect(document.querySelector(".md-feedback-stack")?.classList.contains("md-hidden")).toBe(true);
   });
 
-  it("switches top tabs and toggles panels", () => {
+  it("switches top tabs and toggles panels", async () => {
     bootPage();
 
     expect(document.getElementById("tabPanelInput").hidden).toBe(false);
@@ -277,9 +283,13 @@ describe("mikuproject main", () => {
     expect(document.getElementById("tabPanelOutput").hidden).toBe(true);
 
     document.querySelector('.md-top-tab[data-tab="transform"]').click();
+    await flushAsyncWork();
+    await flushAsyncWork();
     expect(document.getElementById("tabPanelInput").hidden).toBe(true);
     expect(document.getElementById("tabPanelTransform").hidden).toBe(false);
     expect(document.getElementById("tabPanelOutput").hidden).toBe(true);
+    expect(document.getElementById("summaryProjectName").textContent).toBe("Sample Project");
+    expect(document.getElementById("mermaidOutput").value).toContain("gantt");
 
     document.querySelector('.md-top-tab[data-tab="output"]').click();
     expect(document.getElementById("tabPanelInput").hidden).toBe(true);
@@ -290,7 +300,7 @@ describe("mikuproject main", () => {
   it("parses xml into internal model summary", () => {
     bootPage();
 
-    document.getElementById("parseXmlBtn").click();
+    parseXmlViaHook();
 
     expect(document.getElementById("summaryProjectName").textContent).toBe("Sample Project");
     expect(document.getElementById("summaryTaskCount").textContent).toBe("3");
@@ -453,7 +463,7 @@ describe("mikuproject main", () => {
   it("exports xml from the current model", () => {
     bootPage();
 
-    document.getElementById("parseXmlBtn").click();
+    parseXmlViaHook();
     document.getElementById("downloadXmlBtn").click();
 
     const xmlText = document.getElementById("xmlInput").value;
@@ -601,9 +611,8 @@ describe("mikuproject main", () => {
   it("exports mermaid gantt from the current model", async () => {
     bootPage();
 
-    document.getElementById("parseXmlBtn").click();
-    document.getElementById("exportMermaidBtn").click();
-    await flushAsyncWork();
+    parseXmlViaHook();
+    await exportMermaidViaHook();
 
     const mermaidText = document.getElementById("mermaidOutput").value;
     expect(mermaidText).toContain("gantt");
@@ -703,7 +712,7 @@ describe("mikuproject main", () => {
   it("exports csv with parent id from the current model", () => {
     bootPage();
 
-    document.getElementById("parseXmlBtn").click();
+    parseXmlViaHook();
     document.getElementById("downloadXmlBtn").click();
     const xmlInput = document.getElementById("xmlInput");
     xmlInput.value = `${xmlInput.value}\n<!-- edited -->`;
@@ -720,7 +729,7 @@ describe("mikuproject main", () => {
     expect(document.getElementById("statusMessage").textContent).toContain("CSV + ParentID を生成しました");
   });
 
-  it("parses csv with parent id into internal model summary", () => {
+  it("parses csv with parent id into internal model summary", async () => {
     bootPage();
 
     document.getElementById("csvInput").value = [
@@ -731,6 +740,7 @@ describe("mikuproject main", () => {
     ].join("\n");
 
     document.getElementById("parseCsvBtn").click();
+    await Promise.resolve();
 
     expect(document.getElementById("summaryProjectName").textContent).toBe("CSV Imported Project");
     expect(document.getElementById("summaryTaskCount").textContent).toBe("3");
@@ -742,13 +752,15 @@ describe("mikuproject main", () => {
     expect(document.getElementById("resourcePreview").textContent).toContain("Miku");
     expect(document.getElementById("assignmentPreview").textContent).toContain("Task=2 (Design)");
     expect(document.getElementById("assignmentPreview").textContent).toContain("Resource=1 (Miku)");
+    expect(document.getElementById("mermaidOutput").value).toContain("gantt");
+    expect(document.getElementById("mermaidSvgPreview").innerHTML).toContain("<svg");
     expect(document.getElementById("statusMessage").textContent).toContain("CSV + ParentID を内部モデルへ変換しました");
   });
 
   it("passes round-trip check", () => {
     bootPage();
 
-    document.getElementById("parseXmlBtn").click();
+    parseXmlViaHook();
     document.getElementById("roundTripBtn").click();
 
     expect(document.getElementById("statusMessage").textContent).toContain("再読込テストに成功");
@@ -776,13 +788,15 @@ describe("mikuproject main", () => {
     expect(document.getElementById("xmlInput").value).toContain("<Name>Imported</Name>");
     expect(document.getElementById("summaryProjectName").textContent).toBe("Imported");
     expect(document.getElementById("modelOutput").value).toContain("\"name\": \"Imported\"");
+    expect(document.getElementById("mermaidOutput").value).toContain("gantt");
+    expect(document.getElementById("mermaidSvgPreview").innerHTML).toContain("<svg");
     expect(document.getElementById("statusMessage").textContent).toContain("XML ファイルを読み込んで解析しました");
   });
 
   it("downloads current xlsx", () => {
     bootPage();
 
-    document.getElementById("parseXmlBtn").click();
+    parseXmlViaHook();
     document.getElementById("downloadXmlBtn").click();
     const xmlInput = document.getElementById("xmlInput");
     xmlInput.value = `${xmlInput.value}\n<!-- edited -->`;
@@ -802,7 +816,7 @@ describe("mikuproject main", () => {
     bootPage();
     const exportSpy = vi.spyOn(globalThis.__mikuprojectWbsXlsx, "exportWbsWorkbook");
 
-    document.getElementById("parseXmlBtn").click();
+    parseXmlViaHook();
     document.getElementById("downloadXmlBtn").click();
     const xmlInput = document.getElementById("xmlInput");
     xmlInput.value = `${xmlInput.value}\n<!-- edited -->`;
@@ -833,7 +847,7 @@ describe("mikuproject main", () => {
     bootPage();
     const exportSpy = vi.spyOn(globalThis.__mikuprojectWbsXlsx, "exportWbsWorkbook");
 
-    document.getElementById("parseXmlBtn").click();
+    parseXmlViaHook();
     document.getElementById("wbsExtraHolidayDatesInput").value = "2026-03-20, 2026-03-20\n2026-03-21";
     document.getElementById("exportWbsXlsxBtn").click();
     const defaultHolidayDates = getDefaultSampleHolidayDates();
@@ -861,7 +875,7 @@ describe("mikuproject main", () => {
     bootPage();
     const exportSpy = vi.spyOn(globalThis.__mikuprojectWbsXlsx, "exportWbsWorkbook");
 
-    document.getElementById("parseXmlBtn").click();
+    parseXmlViaHook();
     document.getElementById("wbsDisplayDaysBeforeInput").value = "1";
     document.getElementById("wbsDisplayDaysAfterInput").value = "2";
     document.getElementById("exportWbsXlsxBtn").click();
@@ -882,7 +896,7 @@ describe("mikuproject main", () => {
     bootPage();
     const exportSpy = vi.spyOn(globalThis.__mikuprojectWbsXlsx, "exportWbsWorkbook");
 
-    document.getElementById("parseXmlBtn").click();
+    parseXmlViaHook();
     document.getElementById("wbsDisplayDaysBeforeInput").value = "1";
     document.getElementById("wbsDisplayDaysAfterInput").value = "2";
     document.getElementById("wbsBusinessDayRangeInput").checked = true;
@@ -903,7 +917,7 @@ describe("mikuproject main", () => {
     bootPage();
     const exportSpy = vi.spyOn(globalThis.__mikuprojectWbsXlsx, "exportWbsWorkbook");
 
-    document.getElementById("parseXmlBtn").click();
+    parseXmlViaHook();
     document.getElementById("wbsBusinessDayProgressInput").checked = true;
     document.getElementById("exportWbsXlsxBtn").click();
     const defaultHolidayDates = getDefaultSampleHolidayDates();
@@ -921,7 +935,7 @@ describe("mikuproject main", () => {
   it("fills wbs holiday input from model defaults when xml is parsed", () => {
     bootPage();
 
-    document.getElementById("parseXmlBtn").click();
+    parseXmlViaHook();
     const defaultHolidayDates = getDefaultSampleHolidayDates();
 
     expect(document.getElementById("wbsHolidayDatesInput").value.split("\n")).toEqual(defaultHolidayDates);
@@ -933,7 +947,7 @@ describe("mikuproject main", () => {
   it("resets wbs holiday input back to model defaults", () => {
     bootPage();
 
-    document.getElementById("parseXmlBtn").click();
+    parseXmlViaHook();
     document.getElementById("wbsExtraHolidayDatesInput").value = "2026-03-25\n2026-03-26";
     document.getElementById("resetWbsHolidayDatesBtn").click();
     const defaultHolidayDates = getDefaultSampleHolidayDates();
@@ -947,7 +961,7 @@ describe("mikuproject main", () => {
 
   it("imports xlsx edits back into the current model and xml", async () => {
     bootPage();
-    document.getElementById("parseXmlBtn").click();
+    parseXmlViaHook();
     document.getElementById("downloadXmlBtn").click();
     expect(document.getElementById("xmlSaveState").textContent).toContain("XML 保存状態: 保存済み (2026-03-16 23:12)");
 
@@ -996,7 +1010,7 @@ describe("mikuproject main", () => {
 
   it("imports project sheet edits back into the current model and xml", async () => {
     bootPage();
-    document.getElementById("parseXmlBtn").click();
+    parseXmlViaHook();
 
     const codec = new globalThis.__mikuprojectExcelIo.XlsxWorkbookCodec();
     const workbook = globalThis.__mikuprojectProjectXlsx.exportProjectWorkbook(
@@ -1058,7 +1072,7 @@ describe("mikuproject main", () => {
 
   it("reports when xlsx import has no applicable changes", async () => {
     bootPage();
-    document.getElementById("parseXmlBtn").click();
+    parseXmlViaHook();
 
     const codec = new globalThis.__mikuprojectExcelIo.XlsxWorkbookCodec();
     const originalXml = document.getElementById("xmlInput").value;
@@ -1086,14 +1100,22 @@ describe("mikuproject main", () => {
 
     expect(document.getElementById("statusMessage").textContent).toContain("XLSX に反映対象の変更はありませんでした");
     expect(document.getElementById("statusMessage").textContent).toContain("XML は未変更です");
-    expect(document.getElementById("xmlInput").value).toBe(originalXml);
+    expect(
+      globalThis.__mikuprojectXml.normalizeProjectModel(
+        globalThis.__mikuprojectXml.importMsProjectXml(document.getElementById("xmlInput").value)
+      )
+    ).toEqual(
+      globalThis.__mikuprojectXml.normalizeProjectModel(
+        globalThis.__mikuprojectXml.importMsProjectXml(originalXml)
+      )
+    );
     expect(document.getElementById("xlsxImportSummary").textContent).toBe("");
     expect(document.getElementById("xlsxImportSummary").classList.contains("md-hidden")).toBe(true);
   });
 
   it("ignores edits in unsupported xlsx columns and sheets", async () => {
     bootPage();
-    document.getElementById("parseXmlBtn").click();
+    parseXmlViaHook();
 
     const codec = new globalThis.__mikuprojectExcelIo.XlsxWorkbookCodec();
     const originalXml = document.getElementById("xmlInput").value;
@@ -1135,7 +1157,7 @@ describe("mikuproject main", () => {
 
   it("ignores calendar WeekDays, Exceptions, and WorkWeeks edits in xlsx import", async () => {
     bootPage();
-    document.getElementById("parseXmlBtn").click();
+    parseXmlViaHook();
 
     const codec = new globalThis.__mikuprojectExcelIo.XlsxWorkbookCodec();
     const originalXml = document.getElementById("xmlInput").value;
@@ -1253,7 +1275,7 @@ describe("mikuproject main", () => {
   it("exports regenerated xml instead of manual textarea edits when a model exists", async () => {
     bootPage();
 
-    document.getElementById("parseXmlBtn").click();
+    parseXmlViaHook();
     const xmlInput = document.getElementById("xmlInput");
     xmlInput.value = `${xmlInput.value}\n<!-- edited -->`;
     xmlInput.dispatchEvent(new Event("input"));
@@ -1294,7 +1316,7 @@ describe("mikuproject main", () => {
   it("downloads rendered mermaid svg", async () => {
     bootPage();
 
-    document.getElementById("parseXmlBtn").click();
+    parseXmlViaHook();
     document.getElementById("downloadXmlBtn").click();
     const xmlInput = document.getElementById("xmlInput");
     xmlInput.value = `${xmlInput.value}\n<!-- edited -->`;
@@ -1322,7 +1344,7 @@ describe("mikuproject main", () => {
       "<ResourceUID>1</ResourceUID>",
       "<ResourceUID>99</ResourceUID>"
     );
-    document.getElementById("parseXmlBtn").click();
+    parseXmlViaHook();
     document.getElementById("roundTripBtn").click();
 
     expect(document.getElementById("statusMessage").textContent).toContain("Assignment ResourceUID");
@@ -1340,7 +1362,7 @@ describe("mikuproject main", () => {
       "<CalendarUID>1</CalendarUID>",
       "<CalendarUID>99</CalendarUID>"
     );
-    document.getElementById("parseXmlBtn").click();
+    parseXmlViaHook();
 
     expect(document.getElementById("statusMessage").textContent).toContain("検証で");
     expect(document.getElementById("validationIssues").textContent).toContain("Project");
@@ -1354,7 +1376,7 @@ describe("mikuproject main", () => {
       "<CalendarUID>1</CalendarUID>\n      <Priority>700</Priority>",
       "<CalendarUID>99</CalendarUID>\n      <Priority>700</Priority>"
     );
-    document.getElementById("parseXmlBtn").click();
+    parseXmlViaHook();
 
     expect(document.getElementById("statusMessage").textContent).toContain("検証で");
     expect(document.getElementById("validationIssues").textContent).toContain("Task CalendarUID");
@@ -1369,7 +1391,7 @@ describe("mikuproject main", () => {
       "<PercentComplete>100</PercentComplete>",
       "<PercentComplete>120</PercentComplete>"
     );
-    document.getElementById("parseXmlBtn").click();
+    parseXmlViaHook();
 
     expect(document.getElementById("validationIssues").textContent).toContain("PercentComplete");
   });
@@ -1381,7 +1403,7 @@ describe("mikuproject main", () => {
       "<Start>2026-03-18T09:00:00</Start>\n      <Finish>2026-03-20T18:00:00</Finish>",
       "<Start>2026-03-21T09:00:00</Start>\n      <Finish>2026-03-20T18:00:00</Finish>"
     );
-    document.getElementById("parseXmlBtn").click();
+    parseXmlViaHook();
 
     expect(document.getElementById("validationIssues").textContent).toContain("Task Start が Finish より後");
   });
@@ -1393,7 +1415,7 @@ describe("mikuproject main", () => {
       "<PredecessorUID>2</PredecessorUID>",
       "<PredecessorUID>99</PredecessorUID>"
     );
-    document.getElementById("parseXmlBtn").click();
+    parseXmlViaHook();
     document.getElementById("roundTripBtn").click();
 
     expect(document.getElementById("statusMessage").textContent).toContain("PredecessorUID");

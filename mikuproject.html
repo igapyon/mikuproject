@@ -1061,11 +1061,15 @@ lht-index-card-link {
 
 :root {
   color-scheme: light;
-  --md-project-accent: #0f766e;
-  --md-project-accent-soft: #dff6f3;
-  --md-project-border: #d5dee7;
+  --md-project-accent: #6200ee;
+  --md-project-accent-soft: #f0edf5;
+  --md-project-border: #c8c5d0;
   --md-project-surface: rgba(255, 255, 255, 0.94);
-  --md-project-shadow: 0 24px 60px rgba(32, 54, 84, 0.12);
+  --md-project-shadow: 0 24px 60px rgba(49, 63, 95, 0.11);
+  --md-project-ink: #334a63;
+  --md-project-muted: #6a7d92;
+  --md-project-lavender: #f4f1f7;
+  --md-project-lavender-border: #ddd2f0;
 }
 
 .md-page {
@@ -1073,9 +1077,9 @@ lht-index-card-link {
   margin: 0;
   padding: 24px;
   background:
-    radial-gradient(circle at top right, rgba(172, 233, 223, 0.55), transparent 28%),
-    radial-gradient(circle at top left, rgba(206, 230, 255, 0.5), transparent 24%),
-    linear-gradient(180deg, #f5f8fb 0%, #eef3f8 100%);
+    radial-gradient(circle at top right, rgba(196, 232, 224, 0.5), transparent 28%),
+    radial-gradient(circle at top left, rgba(231, 220, 252, 0.45), transparent 24%),
+    linear-gradient(180deg, #f4f7fb 0%, #edf3f8 100%);
   color: #1c1b1f;
   box-sizing: border-box;
 }
@@ -1085,10 +1089,24 @@ lht-index-card-link {
   margin: 0 auto;
   background: var(--md-project-surface);
   backdrop-filter: blur(10px);
-  border: 1px solid rgba(215, 223, 232, 0.95);
-  border-radius: 28px;
+  border: 1px solid rgba(221, 228, 238, 0.96);
+  border-radius: 30px;
   box-shadow: var(--md-project-shadow);
   padding: 28px;
+}
+
+lht-page-hero {
+  background: linear-gradient(180deg, #f5f0ff 0%, #faf7ff 100%);
+  border-color: var(--md-project-lavender-border);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.72);
+}
+
+lht-page-hero .lht-page-hero__title {
+  color: #3b306e;
+}
+
+lht-page-hero .lht-page-hero__icon {
+  background: rgba(138, 104, 203, 0.14);
 }
 
 .md-section {
@@ -1098,6 +1116,112 @@ lht-index-card-link {
 .md-stack-md {
   display: grid;
   gap: 16px;
+}
+
+.md-flow-section {
+  border: 1px solid rgba(214, 222, 235, 0.96);
+  border-radius: 24px;
+  background: linear-gradient(180deg, #fbfcff 0%, #ffffff 100%);
+  padding: 18px 20px;
+  display: grid;
+  gap: 16px;
+}
+
+.md-flow-section__header {
+  display: grid;
+  gap: 8px;
+}
+
+.md-flow-section__title {
+  margin: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.55rem;
+  flex-wrap: wrap;
+  color: var(--md-project-ink);
+  font-size: 1.04rem;
+  font-weight: 800;
+}
+
+.md-flow-section__step {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.75rem;
+  height: 1.75rem;
+  border-radius: 999px;
+  background: rgba(98, 0, 238, 0.12);
+  color: var(--md-project-accent);
+  font-size: 0.82rem;
+  font-weight: 800;
+}
+
+.md-flow-section__text {
+  margin: 0;
+  color: var(--md-project-muted);
+  font-size: 0.88rem;
+  line-height: 1.55;
+}
+
+.md-tab-panel[hidden] {
+  display: none !important;
+}
+
+.md-top-tabs {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.md-top-tab {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.6rem;
+  min-height: 3rem;
+  border: 1px solid var(--md-project-border);
+  border-radius: 999px;
+  background: #f7f3fc;
+  color: #4a4458;
+  border-color: #ddd2f0;
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+  transition: transform 150ms ease, box-shadow 150ms ease, background 150ms ease, border-color 150ms ease;
+}
+
+.md-top-tab:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 6px 16px rgba(49, 63, 95, 0.1);
+}
+
+.md-top-tab.is-active {
+  border-color: rgba(98, 0, 238, 0.5);
+  color: #4d2aa5;
+  background: rgba(98, 0, 238, 0.14);
+  box-shadow: 0 4px 10px rgba(98, 0, 238, 0.16);
+}
+
+.md-top-tab-no {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.55rem;
+  height: 1.55rem;
+  border-radius: 999px;
+  background: #ece5f8;
+  color: #5a4b79;
+  font-size: 0.8rem;
+  font-weight: 800;
+}
+
+.md-top-tab.is-active .md-top-tab-no {
+  background: rgba(98, 0, 238, 0.22);
+  color: #4d2aa5;
+}
+
+.md-top-tab-label {
+  letter-spacing: 0.01em;
 }
 
 .md-panel-actions {
@@ -1135,38 +1259,47 @@ lht-index-card-link {
   justify-content: center;
   min-height: 2.55rem;
   border-radius: 999px;
-  padding: 0.38rem 1.02rem;
-  border: 1px solid var(--md-project-border);
+  padding: 0.6rem 1.2rem;
+  border: none;
   background: transparent;
   color: #3f3b46;
   font: inherit;
   font-weight: 600;
-  font-size: 0.9rem;
+  font-size: 0.95rem;
   cursor: pointer;
   transition: background 150ms ease, box-shadow 150ms ease, transform 150ms ease;
 }
 
 .md-button:hover {
-  transform: translateY(-1px);
-  box-shadow: 0 4px 10px rgba(15, 118, 110, 0.18);
+  box-shadow: 0 4px 10px rgba(98, 0, 238, 0.35);
 }
 
 .md-button--primary {
   background: var(--md-project-accent);
-  border-color: transparent;
   color: #fff;
+  box-shadow: 0 3px 8px rgba(98, 0, 238, 0.28);
+}
+
+.md-button--primary:hover {
+  background: #4f00c9;
 }
 
 .md-button--surface {
-  background: #fff;
+  background: var(--md-project-lavender);
+  color: #1c1b1f;
+  border: 1px solid var(--md-project-border);
+}
+
+.md-button--surface:hover {
+  background: #e6e1ee;
 }
 
 .md-status {
   border: 1px solid var(--md-project-border);
   border-radius: 16px;
-  background: linear-gradient(180deg, #fbfeff 0%, #fff 100%);
+  background: linear-gradient(180deg, #fbfcff 0%, #fff 100%);
   padding: 14px 16px;
-  color: #35515d;
+  color: #3c556a;
   font-weight: 600;
 }
 
@@ -1198,8 +1331,8 @@ lht-index-card-link {
   gap: 10px;
   padding: 10px 12px;
   border-radius: 18px;
-  background: linear-gradient(180deg, rgba(247, 250, 253, 0.92) 0%, rgba(255, 255, 255, 0.92) 100%);
-  border: 1px solid rgba(213, 222, 231, 0.75);
+  background: linear-gradient(180deg, rgba(249, 251, 255, 0.95) 0%, rgba(255, 255, 255, 0.95) 100%);
+  border: 1px solid rgba(216, 224, 236, 0.85);
 }
 
 .md-feedback-stack.md-hidden {
@@ -1272,9 +1405,9 @@ lht-index-card-link {
 }
 
 .md-settings-card {
-  border: 1px solid #cfe2dc;
+  border: 1px solid rgba(214, 222, 235, 0.96);
   border-radius: 24px;
-  background: linear-gradient(180deg, #f5fbfa 0%, #ffffff 100%);
+  background: linear-gradient(180deg, #fbfcff 0%, #ffffff 100%);
   padding: 18px 20px;
   display: grid;
   gap: 14px;
@@ -1301,8 +1434,8 @@ lht-index-card-link {
 .md-settings-card__chevron {
   width: 0.8rem;
   height: 0.8rem;
-  border-right: 2px solid #43706a;
-  border-bottom: 2px solid #43706a;
+  border-right: 2px solid #766f86;
+  border-bottom: 2px solid #766f86;
   transform: rotate(45deg);
   transition: transform 160ms ease;
   flex: 0 0 auto;
@@ -1323,20 +1456,20 @@ lht-index-card-link {
   margin: 0;
   font-size: 1.02rem;
   font-weight: 800;
-  color: #1f4f4a;
+  color: var(--md-project-ink);
 }
 
 .md-settings-card__text {
   margin: 0;
-  color: #55706c;
+  color: var(--md-project-muted);
   font-size: 0.88rem;
   line-height: 1.55;
 }
 
 .md-settings-subcard {
-  border: 1px solid #d8e7e3;
+  border: 1px solid #e0e6f2;
   border-radius: 20px;
-  background: linear-gradient(180deg, #f8fcfb 0%, #ffffff 100%);
+  background: linear-gradient(180deg, #fcfdff 0%, #ffffff 100%);
   padding: 16px 18px;
 }
 
@@ -1344,7 +1477,7 @@ lht-index-card-link {
   margin: 0 0 10px;
   font-size: 0.98rem;
   font-weight: 700;
-  color: #245852;
+  color: #3c5872;
 }
 
 .md-settings-subcard .md-note-card__text + .md-note-card__text {
@@ -1355,12 +1488,12 @@ lht-index-card-link {
   margin: 0 0 8px;
   font-size: 0.98rem;
   font-weight: 700;
-  color: #1f4f4a;
+  color: #3c5872;
 }
 
 .md-note-card__text {
   margin: 0;
-  color: #3f5f5b;
+  color: #607487;
   font-size: 0.88rem;
   line-height: 1.6;
 }
@@ -1373,7 +1506,7 @@ lht-index-card-link {
 .md-note-list {
   margin: 8px 0 0;
   padding-left: 1.2rem;
-  color: #345450;
+  color: #607487;
   font-size: 0.86rem;
 }
 
@@ -1600,51 +1733,6 @@ lht-index-card-link {
     </lht-page-hero>
 
     <section class="md-section md-stack-md">
-      <div class="md-panel-actions">
-        <button id="loadSampleBtn" type="button" class="md-button md-button--primary">サンプル読込</button>
-        <button id="importXmlBtn" type="button" class="md-button md-button--surface">XML Import</button>
-        <button id="parseXmlBtn" type="button" class="md-button md-button--surface">XML を解析</button>
-        <button id="exportXmlBtn" type="button" class="md-button md-button--surface">XML を再生成</button>
-        <button id="exportMermaidBtn" type="button" class="md-button md-button--surface">Mermaid を生成</button>
-        <button id="downloadMermaidSvgBtn" type="button" class="md-button md-button--surface" disabled>SVG保存</button>
-        <button id="exportCsvBtn" type="button" class="md-button md-button--surface">CSV を生成</button>
-        <button id="exportXlsxBtn" type="button" class="md-button md-button--surface">XLSX Export</button>
-        <button id="exportWbsXlsxBtn" type="button" class="md-button md-button--surface">WBS XLSX Export</button>
-        <button id="parseCsvBtn" type="button" class="md-button md-button--surface">CSV を解析</button>
-        <button id="importXlsxBtn" type="button" class="md-button md-button--surface">XLSX Import</button>
-        <span class="md-inline-help">
-          <lht-help-tooltip label="XLSX 編集の扱い" placement="bottom" wide>
-            <h3 class="md-note-card__title">XLSX 編集の扱い</h3>
-            <p class="md-note-card__text">
-              `.xlsx` は `MS Project XML` の代替正本ではなく、確認と限定編集のための周辺表現として扱います。
-            </p>
-            <p class="md-note-card__text">
-              現在の `XLSX Import` で反映するのは限定列のみです。
-            </p>
-            <p class="md-note-card__text">
-              反映結果は、`Project / Tasks / Resources / Assignments / Calendars` ごとの件数と、`UID` 単位の差分要約として画面上に表示します。
-            </p>
-            <p class="md-note-card__text"><strong>反映対象</strong></p>
-            <ul class="md-note-list">
-              <li>`Project`: `Name / Title / Author / Company / StartDate / FinishDate / CurrentDate / StatusDate / CalendarUID / MinutesPerDay / MinutesPerWeek / DaysPerMonth / ScheduleFromStart`</li>
-              <li>`Tasks`: `Name / Start / Finish / PercentComplete / PercentWorkComplete`</li>
-              <li>`Resources`: `Name / Group / MaxUnits`</li>
-              <li>`Assignments`: `Units / Work / PercentWorkComplete`</li>
-              <li>`Calendars`: `Name / IsBaseCalendar / BaseCalendarUID`</li>
-            </ul>
-            <p class="md-note-card__text"><strong>現在は反映しないもの</strong></p>
-            <ul class="md-note-list">
-              <li>対象外の列や未対応シートの編集</li>
-              <li>`Calendars` の `WeekDays / Exceptions / WorkWeeks` と、`Baseline / TimephasedData / ExtendedAttributes`</li>
-            </ul>
-          </lht-help-tooltip>
-        </span>
-        <button id="downloadXmlBtn" type="button" class="md-button md-button--surface">XML Export</button>
-        <button id="roundTripBtn" type="button" class="md-button md-button--surface">再読込テスト</button>
-        <input id="importXmlInput" type="file" accept=".xml,text/xml,application/xml" class="md-hidden" />
-        <input id="importXlsxInput" type="file" accept=".xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" class="md-hidden" />
-      </div>
-
       <div id="statusMessage" class="md-status">未実行</div>
       <div id="xmlSaveState" class="md-save-state md-save-state--dirty" aria-live="polite">XML 保存状態: 未保存</div>
       <div class="md-feedback-stack md-hidden" aria-label="import feedback">
@@ -1656,10 +1744,168 @@ lht-index-card-link {
         <div id="xlsxImportSummary" class="md-xlsx-summary md-hidden" aria-live="polite"></div>
       </div>
 
+      <div class="md-top-tabs" role="tablist" aria-label="mikuproject sections">
+        <button type="button" class="md-top-tab is-active" data-tab="input" role="tab" aria-selected="true" aria-controls="tabPanelInput">
+          <span class="md-top-tab-no">1</span>
+          <span class="md-top-tab-label">Input</span>
+        </button>
+        <button type="button" class="md-top-tab" data-tab="transform" role="tab" aria-selected="false" aria-controls="tabPanelTransform">
+          <span class="md-top-tab-no">2</span>
+          <span class="md-top-tab-label">Transform</span>
+        </button>
+        <button type="button" class="md-top-tab" data-tab="output" role="tab" aria-selected="false" aria-controls="tabPanelOutput">
+          <span class="md-top-tab-no">3</span>
+          <span class="md-top-tab-label">Output</span>
+        </button>
+      </div>
+
+      <section id="tabPanelInput" class="md-flow-section md-tab-panel" data-tab-panel="input" aria-label="input">
+        <div class="md-flow-section__header">
+          <h2 class="md-flow-section__title">
+            <span class="md-flow-section__step">1</span>
+            <span>Input</span>
+            <lht-help-tooltip label="Input help">
+              サンプル読込、`XML Import`、`XLSX Import`、`CSV を解析` など、入力や取込に関わる操作をここにまとめます。
+            </lht-help-tooltip>
+          </h2>
+          <p class="md-flow-section__text">まずはデータを取り込み、現在の作業対象を決めます。</p>
+        </div>
+        <div class="md-panel-actions">
+          <button id="loadSampleBtn" type="button" class="md-button md-button--primary">サンプル読込</button>
+          <button id="importXmlBtn" type="button" class="md-button md-button--surface">XML Import</button>
+          <button id="importXlsxBtn" type="button" class="md-button md-button--surface">XLSX Import</button>
+          <span class="md-inline-help">
+            <lht-help-tooltip label="XLSX 編集の扱い" placement="bottom" wide>
+              <h3 class="md-note-card__title">XLSX 編集の扱い</h3>
+              <p class="md-note-card__text">
+                `.xlsx` は `MS Project XML` の代替正本ではなく、確認と限定編集のための周辺表現として扱います。
+              </p>
+              <p class="md-note-card__text">
+                現在の `XLSX Import` で反映するのは限定列のみです。
+              </p>
+              <p class="md-note-card__text">
+                反映結果は、`Project / Tasks / Resources / Assignments / Calendars` ごとの件数と、`UID` 単位の差分要約として画面上に表示します。
+              </p>
+              <p class="md-note-card__text"><strong>反映対象</strong></p>
+              <ul class="md-note-list">
+                <li>`Project`: `Name / Title / Author / Company / StartDate / FinishDate / CurrentDate / StatusDate / CalendarUID / MinutesPerDay / MinutesPerWeek / DaysPerMonth / ScheduleFromStart`</li>
+                <li>`Tasks`: `Name / Start / Finish / PercentComplete / PercentWorkComplete`</li>
+                <li>`Resources`: `Name / Group / MaxUnits`</li>
+                <li>`Assignments`: `Units / Work / PercentWorkComplete`</li>
+                <li>`Calendars`: `Name / IsBaseCalendar / BaseCalendarUID`</li>
+              </ul>
+              <p class="md-note-card__text"><strong>現在は反映しないもの</strong></p>
+              <ul class="md-note-list">
+                <li>対象外の列や未対応シートの編集</li>
+                <li>`Calendars` の `WeekDays / Exceptions / WorkWeeks` と、`Baseline / TimephasedData / ExtendedAttributes`</li>
+              </ul>
+            </lht-help-tooltip>
+          </span>
+          <button id="parseCsvBtn" type="button" class="md-button md-button--surface">CSV を解析</button>
+          <input id="importXmlInput" type="file" accept=".xml,text/xml,application/xml" class="md-hidden" />
+          <input id="importXlsxInput" type="file" accept=".xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" class="md-hidden" />
+        </div>
+      </section>
+
+      <section id="tabPanelTransform" class="md-flow-section md-tab-panel" data-tab-panel="transform" aria-label="transform inspect" hidden>
+        <div class="md-flow-section__header">
+          <h2 class="md-flow-section__title">
+            <span class="md-flow-section__step">2</span>
+            <span>Transform / Inspect</span>
+            <lht-help-tooltip label="Transform / Inspect help">
+              取込済みデータを内部モデルへ変換し、サマリーやプレビューで内容を確認します。
+            </lht-help-tooltip>
+          </h2>
+          <p class="md-flow-section__text">変換結果を確認しながら、内容や構造をここで点検します。</p>
+        </div>
+        <div class="md-panel-actions">
+          <button id="parseXmlBtn" type="button" class="md-button md-button--surface">XML を解析</button>
+          <button id="roundTripBtn" type="button" class="md-button md-button--surface">再読込テスト</button>
+          <button id="exportMermaidBtn" type="button" class="md-button md-button--surface">Mermaid を生成</button>
+        </div>
+
+        <div class="md-summary-grid">
+          <div class="md-summary-card">
+            <div class="md-summary-label">プロジェクト名</div>
+            <div id="summaryProjectName" class="md-summary-value">-</div>
+          </div>
+          <div class="md-summary-card">
+            <div class="md-summary-label">タスク数</div>
+            <div id="summaryTaskCount" class="md-summary-value">0</div>
+          </div>
+          <div class="md-summary-card">
+            <div class="md-summary-label">リソース数</div>
+            <div id="summaryResourceCount" class="md-summary-value">0</div>
+          </div>
+          <div class="md-summary-card">
+            <div class="md-summary-label">割当数</div>
+            <div id="summaryAssignmentCount" class="md-summary-value">0</div>
+          </div>
+          <div class="md-summary-card">
+            <div class="md-summary-label">カレンダー数</div>
+            <div id="summaryCalendarCount" class="md-summary-value">0</div>
+          </div>
+        </div>
+
+        <section class="md-preview-card">
+          <h3 class="md-preview-card__title">Mermaid Preview</h3>
+          <p id="mermaidSvgError" class="md-mermaid-error md-hidden" aria-live="polite"></p>
+          <div class="md-mermaid-preview-wrap">
+            <div id="mermaidSvgPreview" class="md-mermaid-preview-stage">
+              <div class="md-preview-empty">Mermaid を生成すると、ここに SVG を表示します。</div>
+            </div>
+          </div>
+        </section>
+
+        <div class="md-preview-grid">
+          <section class="md-preview-card">
+            <h3 class="md-preview-card__title">Project</h3>
+            <div id="projectPreview" class="md-preview-list"></div>
+          </section>
+          <section class="md-preview-card">
+            <h3 class="md-preview-card__title">Tasks</h3>
+            <div id="taskPreview" class="md-preview-list"></div>
+          </section>
+          <section class="md-preview-card">
+            <h3 class="md-preview-card__title">Resources</h3>
+            <div id="resourcePreview" class="md-preview-list"></div>
+          </section>
+          <section class="md-preview-card">
+            <h3 class="md-preview-card__title">Assignments</h3>
+            <div id="assignmentPreview" class="md-preview-list"></div>
+          </section>
+          <section class="md-preview-card">
+            <h3 class="md-preview-card__title">Calendars</h3>
+            <div id="calendarPreview" class="md-preview-list"></div>
+          </section>
+        </div>
+      </section>
+
+      <section id="tabPanelOutput" class="md-flow-section md-tab-panel" data-tab-panel="output" aria-label="output" hidden>
+        <div class="md-flow-section__header">
+          <h2 class="md-flow-section__title">
+            <span class="md-flow-section__step">3</span>
+            <span>Output</span>
+            <lht-help-tooltip label="Output help">
+              変換済みの内部モデルから、`XML`、`XLSX`、`CSV + ParentID`、`Mermaid` などの出力を生成します。
+            </lht-help-tooltip>
+          </h2>
+          <p class="md-flow-section__text">確認や配布に使う出力をここから生成・保存します。</p>
+        </div>
+        <div class="md-panel-actions">
+          <button id="exportXmlBtn" type="button" class="md-button md-button--surface">XML を再生成</button>
+          <button id="downloadXmlBtn" type="button" class="md-button md-button--surface">XML Export</button>
+          <button id="downloadMermaidSvgBtn" type="button" class="md-button md-button--surface" disabled>SVG保存</button>
+          <button id="exportCsvBtn" type="button" class="md-button md-button--surface">CSV を生成</button>
+          <button id="exportXlsxBtn" type="button" class="md-button md-button--surface">XLSX Export</button>
+          <button id="exportWbsXlsxBtn" type="button" class="md-button md-button--surface">WBS XLSX Export</button>
+        </div>
+      </section>
+
       <details class="md-settings-card" aria-label="settings">
         <summary class="md-settings-card__summary">
           <span class="md-settings-card__summary-main">
-            <span class="md-settings-card__title">設定</span>
+            <span class="md-settings-card__title">4 Settings</span>
             <span class="md-settings-card__text">エクスポートや表示に関わる補助設定をここで調整します。</span>
           </span>
           <span class="md-settings-card__chevron" aria-hidden="true"></span>
@@ -1728,7 +1974,7 @@ lht-index-card-link {
       <details class="md-settings-card" aria-label="debug">
         <summary class="md-settings-card__summary">
           <span class="md-settings-card__summary-main">
-            <span class="md-settings-card__title">デバッグ</span>
+            <span class="md-settings-card__title">5 Debug</span>
             <span class="md-settings-card__text">XML の直接確認や貼り付けが必要なときだけ開きます。</span>
           </span>
           <span class="md-settings-card__chevron" aria-hidden="true"></span>
@@ -1752,62 +1998,6 @@ lht-index-card-link {
           </div>
         </div>
       </details>
-
-      <div class="md-summary-grid">
-        <div class="md-summary-card">
-          <div class="md-summary-label">プロジェクト名</div>
-          <div id="summaryProjectName" class="md-summary-value">-</div>
-        </div>
-        <div class="md-summary-card">
-          <div class="md-summary-label">タスク数</div>
-          <div id="summaryTaskCount" class="md-summary-value">0</div>
-        </div>
-        <div class="md-summary-card">
-          <div class="md-summary-label">リソース数</div>
-          <div id="summaryResourceCount" class="md-summary-value">0</div>
-        </div>
-        <div class="md-summary-card">
-          <div class="md-summary-label">割当数</div>
-          <div id="summaryAssignmentCount" class="md-summary-value">0</div>
-        </div>
-        <div class="md-summary-card">
-          <div class="md-summary-label">カレンダー数</div>
-          <div id="summaryCalendarCount" class="md-summary-value">0</div>
-        </div>
-      </div>
-
-      <section class="md-preview-card">
-        <h3 class="md-preview-card__title">Mermaid Preview</h3>
-        <p id="mermaidSvgError" class="md-mermaid-error md-hidden" aria-live="polite"></p>
-        <div class="md-mermaid-preview-wrap">
-          <div id="mermaidSvgPreview" class="md-mermaid-preview-stage">
-            <div class="md-preview-empty">Mermaid を生成すると、ここに SVG を表示します。</div>
-          </div>
-        </div>
-      </section>
-
-      <div class="md-preview-grid">
-        <section class="md-preview-card">
-          <h3 class="md-preview-card__title">Project</h3>
-          <div id="projectPreview" class="md-preview-list"></div>
-        </section>
-        <section class="md-preview-card">
-          <h3 class="md-preview-card__title">Tasks</h3>
-          <div id="taskPreview" class="md-preview-list"></div>
-        </section>
-        <section class="md-preview-card">
-          <h3 class="md-preview-card__title">Resources</h3>
-          <div id="resourcePreview" class="md-preview-list"></div>
-        </section>
-        <section class="md-preview-card">
-          <h3 class="md-preview-card__title">Assignments</h3>
-          <div id="assignmentPreview" class="md-preview-list"></div>
-        </section>
-        <section class="md-preview-card">
-          <h3 class="md-preview-card__title">Calendars</h3>
-          <div id="calendarPreview" class="md-preview-list"></div>
-        </section>
-      </div>
     </section>
 
     <lht-toast id="toast"></lht-toast>
@@ -11680,6 +11870,18 @@ globalThis["mermaid"] = globalThis.__esbuild_esm_mermaid_nm["mermaid"].default;
     function updateMermaidSvgButton() {
         getElement("downloadMermaidSvgBtn").disabled = !currentMermaidSvg;
     }
+    function activateTopTab(tabId) {
+        const buttons = Array.from(document.querySelectorAll(".md-top-tab[data-tab]"));
+        const panels = Array.from(document.querySelectorAll(".md-tab-panel[data-tab-panel]"));
+        buttons.forEach((button) => {
+            const isActive = button.dataset.tab === tabId;
+            button.classList.toggle("is-active", isActive);
+            button.setAttribute("aria-selected", isActive ? "true" : "false");
+        });
+        panels.forEach((panel) => {
+            panel.hidden = panel.dataset.tabPanel !== tabId;
+        });
+    }
     function normalizeSvgForXml(svgText) {
         if (!svgText) {
             return "";
@@ -12326,6 +12528,11 @@ WorkWeek1=${formatCalendarWorkWeekSummary(calendar)}</div>
         showToast("再読込テスト成功");
     }
     function bindEvents() {
+        Array.from(document.querySelectorAll(".md-top-tab[data-tab]")).forEach((button) => {
+            button.addEventListener("click", () => {
+                activateTopTab(button.dataset.tab || "input");
+            });
+        });
         getElement("loadSampleBtn").addEventListener("click", loadSample);
         getElement("importXmlBtn").addEventListener("click", () => {
             getElement("importXmlInput").click();
@@ -12454,6 +12661,7 @@ WorkWeek1=${formatCalendarWorkWeekSummary(calendar)}</div>
     }
     function initialize() {
         bindEvents();
+        activateTopTab("input");
         updateSummary(null);
         renderValidationIssues([]);
         renderXlsxImportSummary([]);

@@ -23,51 +23,6 @@
     </lht-page-hero>
 
     <section class="md-section md-stack-md">
-      <div class="md-panel-actions">
-        <button id="loadSampleBtn" type="button" class="md-button md-button--primary">サンプル読込</button>
-        <button id="importXmlBtn" type="button" class="md-button md-button--surface">XML Import</button>
-        <button id="parseXmlBtn" type="button" class="md-button md-button--surface">XML を解析</button>
-        <button id="exportXmlBtn" type="button" class="md-button md-button--surface">XML を再生成</button>
-        <button id="exportMermaidBtn" type="button" class="md-button md-button--surface">Mermaid を生成</button>
-        <button id="downloadMermaidSvgBtn" type="button" class="md-button md-button--surface" disabled>SVG保存</button>
-        <button id="exportCsvBtn" type="button" class="md-button md-button--surface">CSV を生成</button>
-        <button id="exportXlsxBtn" type="button" class="md-button md-button--surface">XLSX Export</button>
-        <button id="exportWbsXlsxBtn" type="button" class="md-button md-button--surface">WBS XLSX Export</button>
-        <button id="parseCsvBtn" type="button" class="md-button md-button--surface">CSV を解析</button>
-        <button id="importXlsxBtn" type="button" class="md-button md-button--surface">XLSX Import</button>
-        <span class="md-inline-help">
-          <lht-help-tooltip label="XLSX 編集の扱い" placement="bottom" wide>
-            <h3 class="md-note-card__title">XLSX 編集の扱い</h3>
-            <p class="md-note-card__text">
-              `.xlsx` は `MS Project XML` の代替正本ではなく、確認と限定編集のための周辺表現として扱います。
-            </p>
-            <p class="md-note-card__text">
-              現在の `XLSX Import` で反映するのは限定列のみです。
-            </p>
-            <p class="md-note-card__text">
-              反映結果は、`Project / Tasks / Resources / Assignments / Calendars` ごとの件数と、`UID` 単位の差分要約として画面上に表示します。
-            </p>
-            <p class="md-note-card__text"><strong>反映対象</strong></p>
-            <ul class="md-note-list">
-              <li>`Project`: `Name / Title / Author / Company / StartDate / FinishDate / CurrentDate / StatusDate / CalendarUID / MinutesPerDay / MinutesPerWeek / DaysPerMonth / ScheduleFromStart`</li>
-              <li>`Tasks`: `Name / Start / Finish / PercentComplete / PercentWorkComplete`</li>
-              <li>`Resources`: `Name / Group / MaxUnits`</li>
-              <li>`Assignments`: `Units / Work / PercentWorkComplete`</li>
-              <li>`Calendars`: `Name / IsBaseCalendar / BaseCalendarUID`</li>
-            </ul>
-            <p class="md-note-card__text"><strong>現在は反映しないもの</strong></p>
-            <ul class="md-note-list">
-              <li>対象外の列や未対応シートの編集</li>
-              <li>`Calendars` の `WeekDays / Exceptions / WorkWeeks` と、`Baseline / TimephasedData / ExtendedAttributes`</li>
-            </ul>
-          </lht-help-tooltip>
-        </span>
-        <button id="downloadXmlBtn" type="button" class="md-button md-button--surface">XML Export</button>
-        <button id="roundTripBtn" type="button" class="md-button md-button--surface">再読込テスト</button>
-        <input id="importXmlInput" type="file" accept=".xml,text/xml,application/xml" class="md-hidden" />
-        <input id="importXlsxInput" type="file" accept=".xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" class="md-hidden" />
-      </div>
-
       <div id="statusMessage" class="md-status">未実行</div>
       <div id="xmlSaveState" class="md-save-state md-save-state--dirty" aria-live="polite">XML 保存状態: 未保存</div>
       <div class="md-feedback-stack md-hidden" aria-label="import feedback">
@@ -79,10 +34,168 @@
         <div id="xlsxImportSummary" class="md-xlsx-summary md-hidden" aria-live="polite"></div>
       </div>
 
+      <div class="md-top-tabs" role="tablist" aria-label="mikuproject sections">
+        <button type="button" class="md-top-tab is-active" data-tab="input" role="tab" aria-selected="true" aria-controls="tabPanelInput">
+          <span class="md-top-tab-no">1</span>
+          <span class="md-top-tab-label">Input</span>
+        </button>
+        <button type="button" class="md-top-tab" data-tab="transform" role="tab" aria-selected="false" aria-controls="tabPanelTransform">
+          <span class="md-top-tab-no">2</span>
+          <span class="md-top-tab-label">Transform</span>
+        </button>
+        <button type="button" class="md-top-tab" data-tab="output" role="tab" aria-selected="false" aria-controls="tabPanelOutput">
+          <span class="md-top-tab-no">3</span>
+          <span class="md-top-tab-label">Output</span>
+        </button>
+      </div>
+
+      <section id="tabPanelInput" class="md-flow-section md-tab-panel" data-tab-panel="input" aria-label="input">
+        <div class="md-flow-section__header">
+          <h2 class="md-flow-section__title">
+            <span class="md-flow-section__step">1</span>
+            <span>Input</span>
+            <lht-help-tooltip label="Input help">
+              サンプル読込、`XML Import`、`XLSX Import`、`CSV を解析` など、入力や取込に関わる操作をここにまとめます。
+            </lht-help-tooltip>
+          </h2>
+          <p class="md-flow-section__text">まずはデータを取り込み、現在の作業対象を決めます。</p>
+        </div>
+        <div class="md-panel-actions">
+          <button id="loadSampleBtn" type="button" class="md-button md-button--primary">サンプル読込</button>
+          <button id="importXmlBtn" type="button" class="md-button md-button--surface">XML Import</button>
+          <button id="importXlsxBtn" type="button" class="md-button md-button--surface">XLSX Import</button>
+          <span class="md-inline-help">
+            <lht-help-tooltip label="XLSX 編集の扱い" placement="bottom" wide>
+              <h3 class="md-note-card__title">XLSX 編集の扱い</h3>
+              <p class="md-note-card__text">
+                `.xlsx` は `MS Project XML` の代替正本ではなく、確認と限定編集のための周辺表現として扱います。
+              </p>
+              <p class="md-note-card__text">
+                現在の `XLSX Import` で反映するのは限定列のみです。
+              </p>
+              <p class="md-note-card__text">
+                反映結果は、`Project / Tasks / Resources / Assignments / Calendars` ごとの件数と、`UID` 単位の差分要約として画面上に表示します。
+              </p>
+              <p class="md-note-card__text"><strong>反映対象</strong></p>
+              <ul class="md-note-list">
+                <li>`Project`: `Name / Title / Author / Company / StartDate / FinishDate / CurrentDate / StatusDate / CalendarUID / MinutesPerDay / MinutesPerWeek / DaysPerMonth / ScheduleFromStart`</li>
+                <li>`Tasks`: `Name / Start / Finish / PercentComplete / PercentWorkComplete`</li>
+                <li>`Resources`: `Name / Group / MaxUnits`</li>
+                <li>`Assignments`: `Units / Work / PercentWorkComplete`</li>
+                <li>`Calendars`: `Name / IsBaseCalendar / BaseCalendarUID`</li>
+              </ul>
+              <p class="md-note-card__text"><strong>現在は反映しないもの</strong></p>
+              <ul class="md-note-list">
+                <li>対象外の列や未対応シートの編集</li>
+                <li>`Calendars` の `WeekDays / Exceptions / WorkWeeks` と、`Baseline / TimephasedData / ExtendedAttributes`</li>
+              </ul>
+            </lht-help-tooltip>
+          </span>
+          <button id="parseCsvBtn" type="button" class="md-button md-button--surface">CSV を解析</button>
+          <input id="importXmlInput" type="file" accept=".xml,text/xml,application/xml" class="md-hidden" />
+          <input id="importXlsxInput" type="file" accept=".xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" class="md-hidden" />
+        </div>
+      </section>
+
+      <section id="tabPanelTransform" class="md-flow-section md-tab-panel" data-tab-panel="transform" aria-label="transform inspect" hidden>
+        <div class="md-flow-section__header">
+          <h2 class="md-flow-section__title">
+            <span class="md-flow-section__step">2</span>
+            <span>Transform / Inspect</span>
+            <lht-help-tooltip label="Transform / Inspect help">
+              取込済みデータを内部モデルへ変換し、サマリーやプレビューで内容を確認します。
+            </lht-help-tooltip>
+          </h2>
+          <p class="md-flow-section__text">変換結果を確認しながら、内容や構造をここで点検します。</p>
+        </div>
+        <div class="md-panel-actions">
+          <button id="parseXmlBtn" type="button" class="md-button md-button--surface">XML を解析</button>
+          <button id="roundTripBtn" type="button" class="md-button md-button--surface">再読込テスト</button>
+          <button id="exportMermaidBtn" type="button" class="md-button md-button--surface">Mermaid を生成</button>
+        </div>
+
+        <div class="md-summary-grid">
+          <div class="md-summary-card">
+            <div class="md-summary-label">プロジェクト名</div>
+            <div id="summaryProjectName" class="md-summary-value">-</div>
+          </div>
+          <div class="md-summary-card">
+            <div class="md-summary-label">タスク数</div>
+            <div id="summaryTaskCount" class="md-summary-value">0</div>
+          </div>
+          <div class="md-summary-card">
+            <div class="md-summary-label">リソース数</div>
+            <div id="summaryResourceCount" class="md-summary-value">0</div>
+          </div>
+          <div class="md-summary-card">
+            <div class="md-summary-label">割当数</div>
+            <div id="summaryAssignmentCount" class="md-summary-value">0</div>
+          </div>
+          <div class="md-summary-card">
+            <div class="md-summary-label">カレンダー数</div>
+            <div id="summaryCalendarCount" class="md-summary-value">0</div>
+          </div>
+        </div>
+
+        <section class="md-preview-card">
+          <h3 class="md-preview-card__title">Mermaid Preview</h3>
+          <p id="mermaidSvgError" class="md-mermaid-error md-hidden" aria-live="polite"></p>
+          <div class="md-mermaid-preview-wrap">
+            <div id="mermaidSvgPreview" class="md-mermaid-preview-stage">
+              <div class="md-preview-empty">Mermaid を生成すると、ここに SVG を表示します。</div>
+            </div>
+          </div>
+        </section>
+
+        <div class="md-preview-grid">
+          <section class="md-preview-card">
+            <h3 class="md-preview-card__title">Project</h3>
+            <div id="projectPreview" class="md-preview-list"></div>
+          </section>
+          <section class="md-preview-card">
+            <h3 class="md-preview-card__title">Tasks</h3>
+            <div id="taskPreview" class="md-preview-list"></div>
+          </section>
+          <section class="md-preview-card">
+            <h3 class="md-preview-card__title">Resources</h3>
+            <div id="resourcePreview" class="md-preview-list"></div>
+          </section>
+          <section class="md-preview-card">
+            <h3 class="md-preview-card__title">Assignments</h3>
+            <div id="assignmentPreview" class="md-preview-list"></div>
+          </section>
+          <section class="md-preview-card">
+            <h3 class="md-preview-card__title">Calendars</h3>
+            <div id="calendarPreview" class="md-preview-list"></div>
+          </section>
+        </div>
+      </section>
+
+      <section id="tabPanelOutput" class="md-flow-section md-tab-panel" data-tab-panel="output" aria-label="output" hidden>
+        <div class="md-flow-section__header">
+          <h2 class="md-flow-section__title">
+            <span class="md-flow-section__step">3</span>
+            <span>Output</span>
+            <lht-help-tooltip label="Output help">
+              変換済みの内部モデルから、`XML`、`XLSX`、`CSV + ParentID`、`Mermaid` などの出力を生成します。
+            </lht-help-tooltip>
+          </h2>
+          <p class="md-flow-section__text">確認や配布に使う出力をここから生成・保存します。</p>
+        </div>
+        <div class="md-panel-actions">
+          <button id="exportXmlBtn" type="button" class="md-button md-button--surface">XML を再生成</button>
+          <button id="downloadXmlBtn" type="button" class="md-button md-button--surface">XML Export</button>
+          <button id="downloadMermaidSvgBtn" type="button" class="md-button md-button--surface" disabled>SVG保存</button>
+          <button id="exportCsvBtn" type="button" class="md-button md-button--surface">CSV を生成</button>
+          <button id="exportXlsxBtn" type="button" class="md-button md-button--surface">XLSX Export</button>
+          <button id="exportWbsXlsxBtn" type="button" class="md-button md-button--surface">WBS XLSX Export</button>
+        </div>
+      </section>
+
       <details class="md-settings-card" aria-label="settings">
         <summary class="md-settings-card__summary">
           <span class="md-settings-card__summary-main">
-            <span class="md-settings-card__title">設定</span>
+            <span class="md-settings-card__title">4 Settings</span>
             <span class="md-settings-card__text">エクスポートや表示に関わる補助設定をここで調整します。</span>
           </span>
           <span class="md-settings-card__chevron" aria-hidden="true"></span>
@@ -151,7 +264,7 @@
       <details class="md-settings-card" aria-label="debug">
         <summary class="md-settings-card__summary">
           <span class="md-settings-card__summary-main">
-            <span class="md-settings-card__title">デバッグ</span>
+            <span class="md-settings-card__title">5 Debug</span>
             <span class="md-settings-card__text">XML の直接確認や貼り付けが必要なときだけ開きます。</span>
           </span>
           <span class="md-settings-card__chevron" aria-hidden="true"></span>
@@ -175,62 +288,6 @@
           </div>
         </div>
       </details>
-
-      <div class="md-summary-grid">
-        <div class="md-summary-card">
-          <div class="md-summary-label">プロジェクト名</div>
-          <div id="summaryProjectName" class="md-summary-value">-</div>
-        </div>
-        <div class="md-summary-card">
-          <div class="md-summary-label">タスク数</div>
-          <div id="summaryTaskCount" class="md-summary-value">0</div>
-        </div>
-        <div class="md-summary-card">
-          <div class="md-summary-label">リソース数</div>
-          <div id="summaryResourceCount" class="md-summary-value">0</div>
-        </div>
-        <div class="md-summary-card">
-          <div class="md-summary-label">割当数</div>
-          <div id="summaryAssignmentCount" class="md-summary-value">0</div>
-        </div>
-        <div class="md-summary-card">
-          <div class="md-summary-label">カレンダー数</div>
-          <div id="summaryCalendarCount" class="md-summary-value">0</div>
-        </div>
-      </div>
-
-      <section class="md-preview-card">
-        <h3 class="md-preview-card__title">Mermaid Preview</h3>
-        <p id="mermaidSvgError" class="md-mermaid-error md-hidden" aria-live="polite"></p>
-        <div class="md-mermaid-preview-wrap">
-          <div id="mermaidSvgPreview" class="md-mermaid-preview-stage">
-            <div class="md-preview-empty">Mermaid を生成すると、ここに SVG を表示します。</div>
-          </div>
-        </div>
-      </section>
-
-      <div class="md-preview-grid">
-        <section class="md-preview-card">
-          <h3 class="md-preview-card__title">Project</h3>
-          <div id="projectPreview" class="md-preview-list"></div>
-        </section>
-        <section class="md-preview-card">
-          <h3 class="md-preview-card__title">Tasks</h3>
-          <div id="taskPreview" class="md-preview-list"></div>
-        </section>
-        <section class="md-preview-card">
-          <h3 class="md-preview-card__title">Resources</h3>
-          <div id="resourcePreview" class="md-preview-list"></div>
-        </section>
-        <section class="md-preview-card">
-          <h3 class="md-preview-card__title">Assignments</h3>
-          <div id="assignmentPreview" class="md-preview-list"></div>
-        </section>
-        <section class="md-preview-card">
-          <h3 class="md-preview-card__title">Calendars</h3>
-          <div id="calendarPreview" class="md-preview-list"></div>
-        </section>
-      </div>
     </section>
 
     <lht-toast id="toast"></lht-toast>

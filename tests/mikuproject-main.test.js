@@ -48,43 +48,6 @@ const dependencyXml = readFileSync(
 
 function mountDom() {
   document.body.innerHTML = `
-    <button id="loadSampleBtn" type="button">サンプル読込</button>
-    <button id="importXmlBtn" type="button">XML Import</button>
-    <button id="parseXmlBtn" type="button">XML を解析</button>
-    <button id="exportXmlBtn" type="button">XML を再生成</button>
-    <button id="exportMermaidBtn" type="button">Mermaid を生成</button>
-    <button id="downloadMermaidSvgBtn" type="button" disabled>SVG保存</button>
-    <button id="exportCsvBtn" type="button">CSV を生成</button>
-    <button id="exportXlsxBtn" type="button">XLSX Export</button>
-    <button id="exportWbsXlsxBtn" type="button">WBS XLSX Export</button>
-    <button id="resetWbsHolidayDatesBtn" type="button">WBS 祝日を既定値へ戻す</button>
-    <button id="parseCsvBtn" type="button">CSV を解析</button>
-    <button id="importXlsxBtn" type="button">XLSX Import</button>
-    <span class="md-inline-help">
-      <lht-help-tooltip label="XLSX 編集の扱い" placement="bottom" wide>
-        <h3 class="md-note-card__title">XLSX 編集の扱い</h3>
-        <p class="md-note-card__text">.xlsx は MS Project XML の代替正本ではなく、確認と限定編集のための周辺表現として扱います。</p>
-        <p class="md-note-card__text">現在の XLSX Import で反映するのは限定列のみです。</p>
-        <p class="md-note-card__text">反映結果は、Project / Tasks / Resources / Assignments / Calendars ごとの件数と、UID 単位の差分要約として画面上に表示します。</p>
-        <p class="md-note-card__text"><strong>反映対象</strong></p>
-        <ul class="md-note-list">
-          <li>Project: Name / Title / Author / Company / StartDate / FinishDate / CurrentDate / StatusDate / CalendarUID / MinutesPerDay / MinutesPerWeek / DaysPerMonth / ScheduleFromStart</li>
-          <li>Tasks: Name / Start / Finish / PercentComplete / PercentWorkComplete</li>
-          <li>Resources: Name / Group / MaxUnits</li>
-          <li>Assignments: Units / Work / PercentWorkComplete</li>
-          <li>Calendars: Name / IsBaseCalendar / BaseCalendarUID</li>
-        </ul>
-        <p class="md-note-card__text"><strong>現在は反映しないもの</strong></p>
-        <ul class="md-note-list">
-          <li>対象外の列や未対応シートの編集</li>
-          <li>Calendars の WeekDays / Exceptions / WorkWeeks と、Baseline / TimephasedData / ExtendedAttributes</li>
-        </ul>
-      </lht-help-tooltip>
-    </span>
-    <button id="downloadXmlBtn" type="button">XML Export</button>
-    <button id="roundTripBtn" type="button">再読込テスト</button>
-    <input id="importXmlInput" type="file" />
-    <input id="importXlsxInput" type="file" />
     <div id="statusMessage"></div>
     <div id="xmlSaveState" class="md-save-state md-save-state--dirty">XML 保存状態: 未保存</div>
     <div class="md-feedback-stack md-hidden">
@@ -95,10 +58,87 @@ function mountDom() {
       <div class="md-feedback-stack__label md-hidden">差分要約</div>
       <div id="xlsxImportSummary" class="md-hidden"></div>
     </div>
+    <div class="md-top-tabs" role="tablist" aria-label="mikuproject sections">
+      <button type="button" class="md-top-tab is-active" data-tab="input" role="tab" aria-selected="true" aria-controls="tabPanelInput">
+        <span class="md-top-tab-no">1</span>
+        <span class="md-top-tab-label">Input</span>
+      </button>
+      <button type="button" class="md-top-tab" data-tab="transform" role="tab" aria-selected="false" aria-controls="tabPanelTransform">
+        <span class="md-top-tab-no">2</span>
+        <span class="md-top-tab-label">Transform</span>
+      </button>
+      <button type="button" class="md-top-tab" data-tab="output" role="tab" aria-selected="false" aria-controls="tabPanelOutput">
+        <span class="md-top-tab-no">3</span>
+        <span class="md-top-tab-label">Output</span>
+      </button>
+    </div>
+    <section id="tabPanelInput" class="md-flow-section md-tab-panel" data-tab-panel="input">
+      <div class="md-flow-section__header">
+        <h2 class="md-flow-section__title">
+          <span class="md-flow-section__step">1</span>
+          <span>Input</span>
+        </h2>
+        <p class="md-flow-section__text">まずはデータを取り込み、現在の作業対象を決めます。</p>
+      </div>
+      <button id="loadSampleBtn" type="button">サンプル読込</button>
+      <button id="importXmlBtn" type="button">XML Import</button>
+      <button id="importXlsxBtn" type="button">XLSX Import</button>
+      <span class="md-inline-help">
+        <lht-help-tooltip label="XLSX 編集の扱い" placement="bottom" wide>
+          <h3 class="md-note-card__title">XLSX 編集の扱い</h3>
+          <p class="md-note-card__text">.xlsx は MS Project XML の代替正本ではなく、確認と限定編集のための周辺表現として扱います。</p>
+          <p class="md-note-card__text">現在の XLSX Import で反映するのは限定列のみです。</p>
+          <p class="md-note-card__text">反映結果は、Project / Tasks / Resources / Assignments / Calendars ごとの件数と、UID 単位の差分要約として画面上に表示します。</p>
+          <p class="md-note-card__text"><strong>反映対象</strong></p>
+          <ul class="md-note-list">
+            <li>Project: Name / Title / Author / Company / StartDate / FinishDate / CurrentDate / StatusDate / CalendarUID / MinutesPerDay / MinutesPerWeek / DaysPerMonth / ScheduleFromStart</li>
+            <li>Tasks: Name / Start / Finish / PercentComplete / PercentWorkComplete</li>
+            <li>Resources: Name / Group / MaxUnits</li>
+            <li>Assignments: Units / Work / PercentWorkComplete</li>
+            <li>Calendars: Name / IsBaseCalendar / BaseCalendarUID</li>
+          </ul>
+          <p class="md-note-card__text"><strong>現在は反映しないもの</strong></p>
+          <ul class="md-note-list">
+            <li>対象外の列や未対応シートの編集</li>
+            <li>Calendars の WeekDays / Exceptions / WorkWeeks と、Baseline / TimephasedData / ExtendedAttributes</li>
+          </ul>
+        </lht-help-tooltip>
+      </span>
+      <button id="parseCsvBtn" type="button">CSV を解析</button>
+      <input id="importXmlInput" type="file" />
+      <input id="importXlsxInput" type="file" />
+    </section>
+    <section id="tabPanelTransform" class="md-flow-section md-tab-panel" data-tab-panel="transform" hidden>
+      <div class="md-flow-section__header">
+        <h2 class="md-flow-section__title">
+          <span class="md-flow-section__step">2</span>
+          <span>Transform / Inspect</span>
+        </h2>
+        <p class="md-flow-section__text">変換結果を確認しながら、内容や構造をここで点検します。</p>
+      </div>
+      <button id="parseXmlBtn" type="button">XML を解析</button>
+      <button id="roundTripBtn" type="button">再読込テスト</button>
+      <button id="exportMermaidBtn" type="button">Mermaid を生成</button>
+    </section>
+    <section id="tabPanelOutput" class="md-flow-section md-tab-panel" data-tab-panel="output" hidden>
+      <div class="md-flow-section__header">
+        <h2 class="md-flow-section__title">
+          <span class="md-flow-section__step">3</span>
+          <span>Output</span>
+        </h2>
+        <p class="md-flow-section__text">確認や配布に使う出力をここから生成・保存します。</p>
+      </div>
+      <button id="exportXmlBtn" type="button">XML を再生成</button>
+      <button id="downloadXmlBtn" type="button">XML Export</button>
+      <button id="downloadMermaidSvgBtn" type="button" disabled>SVG保存</button>
+      <button id="exportCsvBtn" type="button">CSV を生成</button>
+      <button id="exportXlsxBtn" type="button">XLSX Export</button>
+      <button id="exportWbsXlsxBtn" type="button">WBS XLSX Export</button>
+    </section>
     <details class="md-settings-card">
       <summary class="md-settings-card__summary">
         <span class="md-settings-card__summary-main">
-          <span class="md-settings-card__title">設定</span>
+          <span class="md-settings-card__title">4 Settings</span>
           <span class="md-settings-card__text">エクスポートや表示に関わる補助設定をここで調整します。</span>
         </span>
         <span class="md-settings-card__chevron" aria-hidden="true"></span>
@@ -115,13 +155,14 @@ function mountDom() {
           <div id="wbsHolidaySummary"></div>
           <textarea id="wbsHolidayDatesInput"></textarea>
           <textarea id="wbsExtraHolidayDatesInput"></textarea>
+          <button id="resetWbsHolidayDatesBtn" type="button">WBS 祝日を既定値へ戻す</button>
         </section>
       </div>
     </details>
     <details class="md-settings-card">
       <summary class="md-settings-card__summary">
         <span class="md-settings-card__summary-main">
-          <span class="md-settings-card__title">デバッグ</span>
+          <span class="md-settings-card__title">5 Debug</span>
           <span class="md-settings-card__text">XML の直接確認や貼り付けが必要なときだけ開きます。</span>
         </span>
         <span class="md-settings-card__chevron" aria-hidden="true"></span>
@@ -197,6 +238,12 @@ describe("mikuproject main", () => {
     expect(document.getElementById("xmlInput").value).toContain("<Project");
     expect(document.getElementById("statusMessage").textContent).toContain("サンプル XML");
     expect(document.body.textContent).toContain("XLSX 編集の扱い");
+    expect(document.body.textContent).toContain("Input");
+    expect(document.body.textContent).toContain("Transform / Inspect");
+    expect(document.body.textContent).toContain("Output");
+    expect(document.getElementById("tabPanelInput").hidden).toBe(false);
+    expect(document.getElementById("tabPanelTransform").hidden).toBe(true);
+    expect(document.getElementById("tabPanelOutput").hidden).toBe(true);
     expect(document.getElementById("xmlSaveState").textContent).toContain("XML 保存状態: 未保存");
     expect(document.body.textContent).toContain("現在の XLSX Import で反映するのは限定列のみです");
     expect(document.body.textContent).toContain("UID 単位の差分要約として画面上に表示します");
@@ -209,9 +256,9 @@ describe("mikuproject main", () => {
     expect(document.body.textContent).toContain("Project: Name / Title / Author / Company");
     expect(document.body.textContent).toContain("Calendars: Name / IsBaseCalendar / BaseCalendarUID");
     expect(document.body.textContent).toContain("Calendars の WeekDays / Exceptions / WorkWeeks");
-    expect(document.body.textContent).toContain("設定");
+    expect(document.body.textContent).toContain("4 Settings");
     expect(document.body.textContent).toContain("祝日設定");
-    expect(document.body.textContent).toContain("デバッグ");
+    expect(document.body.textContent).toContain("5 Debug");
     expect(document.body.textContent).toContain("既定祝日と");
     expect(document.body.textContent).toContain("追加祝日を合成");
     expect(document.body.textContent).toContain("非稼働日例外から補完");

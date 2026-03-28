@@ -220,6 +220,19 @@
     getElement<HTMLButtonElement>("downloadMermaidSvgBtn").disabled = !currentMermaidSvg;
   }
 
+  function activateTopTab(tabId: string): void {
+    const buttons = Array.from(document.querySelectorAll<HTMLElement>(".md-top-tab[data-tab]"));
+    const panels = Array.from(document.querySelectorAll<HTMLElement>(".md-tab-panel[data-tab-panel]"));
+    buttons.forEach((button) => {
+      const isActive = button.dataset.tab === tabId;
+      button.classList.toggle("is-active", isActive);
+      button.setAttribute("aria-selected", isActive ? "true" : "false");
+    });
+    panels.forEach((panel) => {
+      panel.hidden = panel.dataset.tabPanel !== tabId;
+    });
+  }
+
   function normalizeSvgForXml(svgText: string): string {
     if (!svgText) {
       return "";
@@ -938,6 +951,11 @@ WorkWeek1=${formatCalendarWorkWeekSummary(calendar)}</div>
   }
 
   function bindEvents(): void {
+    Array.from(document.querySelectorAll<HTMLButtonElement>(".md-top-tab[data-tab]")).forEach((button) => {
+      button.addEventListener("click", () => {
+        activateTopTab(button.dataset.tab || "input");
+      });
+    });
     getElement<HTMLButtonElement>("loadSampleBtn").addEventListener("click", loadSample);
     getElement<HTMLButtonElement>("importXmlBtn").addEventListener("click", () => {
       getElement<HTMLInputElement>("importXmlInput").click();
@@ -1053,6 +1071,7 @@ WorkWeek1=${formatCalendarWorkWeekSummary(calendar)}</div>
 
   function initialize(): void {
     bindEvents();
+    activateTopTab("input");
     updateSummary(null);
     renderValidationIssues([]);
     renderXlsxImportSummary([]);

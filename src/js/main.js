@@ -138,6 +138,18 @@
     function updateMermaidSvgButton() {
         getElement("downloadMermaidSvgBtn").disabled = !currentMermaidSvg;
     }
+    function activateTopTab(tabId) {
+        const buttons = Array.from(document.querySelectorAll(".md-top-tab[data-tab]"));
+        const panels = Array.from(document.querySelectorAll(".md-tab-panel[data-tab-panel]"));
+        buttons.forEach((button) => {
+            const isActive = button.dataset.tab === tabId;
+            button.classList.toggle("is-active", isActive);
+            button.setAttribute("aria-selected", isActive ? "true" : "false");
+        });
+        panels.forEach((panel) => {
+            panel.hidden = panel.dataset.tabPanel !== tabId;
+        });
+    }
     function normalizeSvgForXml(svgText) {
         if (!svgText) {
             return "";
@@ -784,6 +796,11 @@ WorkWeek1=${formatCalendarWorkWeekSummary(calendar)}</div>
         showToast("再読込テスト成功");
     }
     function bindEvents() {
+        Array.from(document.querySelectorAll(".md-top-tab[data-tab]")).forEach((button) => {
+            button.addEventListener("click", () => {
+                activateTopTab(button.dataset.tab || "input");
+            });
+        });
         getElement("loadSampleBtn").addEventListener("click", loadSample);
         getElement("importXmlBtn").addEventListener("click", () => {
             getElement("importXmlInput").click();
@@ -912,6 +929,7 @@ WorkWeek1=${formatCalendarWorkWeekSummary(calendar)}</div>
     }
     function initialize() {
         bindEvents();
+        activateTopTab("input");
         updateSummary(null);
         renderValidationIssues([]);
         renderXlsxImportSummary([]);

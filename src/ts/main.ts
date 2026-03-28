@@ -298,7 +298,7 @@
   }
 
   function updateMermaidSvgButton(): void {
-    getElement<HTMLButtonElement>("downloadMermaidSvgBtn").disabled = !currentMermaidSvg;
+    getElement<HTMLButtonElement>("downloadMermaidSvgBtn").disabled = !currentModel;
   }
 
   function normalizeSvgForXml(svgText: string): string {
@@ -400,6 +400,13 @@
 
   function refreshXmlSaveState(): void {
     updateXmlSaveState(getTextArea("xmlInput").value !== lastSavedXmlText);
+  }
+
+  function syncXmlTextFromModel(model: ProjectModel): string {
+    const xmlText = mikuprojectXml.exportMsProjectXml(model);
+    getTextArea("xmlInput").value = xmlText;
+    refreshXmlSaveState();
+    return xmlText;
   }
 
   function renderPreviewList(containerId: string, items: string[]): void {
@@ -697,6 +704,7 @@
   }
 
   function updateSummary(model: ProjectModel | null): void {
+    updateMermaidSvgButton();
     syncWbsHolidayDatesInput(model);
     getElement<HTMLElement>("summaryProjectName").textContent = model?.project.name || "-";
     getElement<HTMLElement>("summaryTaskCount").textContent = String(model?.tasks.length || 0);
@@ -823,20 +831,6 @@ WorkWeek1=${formatCalendarWorkWeekSummary(calendar)}</div>
     setActiveTab("transform");
   }
 
-  function exportCurrentModel(): void {
-    if (!currentModel) {
-      setStatus("内部モデルがありません");
-      return;
-    }
-    getTextArea("xmlInput").value = mikuprojectXml.exportMsProjectXml(currentModel);
-    markXmlDirty();
-    renderValidationIssues([]);
-    renderXlsxImportSummary([]);
-    setStatus("内部モデルから XML を再生成しました");
-    showToast("XML を再生成しました");
-    setActiveTab("output");
-  }
-
   async function exportCurrentMermaid(): Promise<void> {
     if (!currentModel) {
       setStatus("内部モデルがありません");
@@ -851,11 +845,9 @@ WorkWeek1=${formatCalendarWorkWeekSummary(calendar)}</div>
   }
 
   function exportCurrentCsv(): void {
-    if (!currentModel) {
-      setStatus("内部モデルがありません");
-      return;
-    }
-    getTextArea("csvOutput").value = mikuprojectXml.exportCsvParentId(currentModel);
+    const model = ensureCurrentModel();
+    syncXmlTextFromModel(model);
+    getTextArea("csvOutput").value = mikuprojectXml.exportCsvParentId(model);
     setStatus("内部モデルから CSV + ParentID を生成しました");
     showToast("CSV を生成しました");
     setActiveTab("output");
@@ -863,6 +855,7 @@ WorkWeek1=${formatCalendarWorkWeekSummary(calendar)}</div>
 
   function exportCurrentXlsx(): void {
     const model = ensureCurrentModel();
+    syncXmlTextFromModel(model);
     const workbook = mikuprojectProjectXlsx.exportProjectWorkbook(model);
     const codec = new mikuprojectExcelIo.XlsxWorkbookCodec();
     const bytes = codec.exportWorkbook(workbook);
@@ -885,6 +878,7 @@ WorkWeek1=${formatCalendarWorkWeekSummary(calendar)}</div>
 
   function exportCurrentWbsXlsx(): void {
     const model = ensureCurrentModel();
+    syncXmlTextFromModel(model);
     const defaultHolidayDates = parseWbsDefaultHolidayDates();
     const additionalHolidayDates = parseWbsAdditionalHolidayDates();
     const displayDaysBeforeBaseDate = parseWbsDisplayDaysBeforeBaseDate();
@@ -968,11 +962,8 @@ WorkWeek1=${formatCalendarWorkWeekSummary(calendar)}</div>
   }
 
   function downloadCurrentXml(): void {
-    const xmlText = getTextArea("xmlInput").value.trim();
-    if (!xmlText) {
-      setStatus("出力する XML がありません");
-      return;
-    }
+    const model = ensureCurrentModel();
+    const xmlText = syncXmlTextFromModel(model);
     const blob = new Blob([`${xmlText}\n`], { type: "application/xml;charset=utf-8" });
     const objectUrl = URL.createObjectURL(blob);
     const link = document.createElement("a");
@@ -996,7 +987,12 @@ WorkWeek1=${formatCalendarWorkWeekSummary(calendar)}</div>
     setActiveTab("output");
   }
 
-  function downloadCurrentMermaidSvg(): void {
+  async function downloadCurrentMermaidSvg(): Promise<void> {
+    const model = ensureCurrentModel();
+    syncXmlTextFromModel(model);
+    const mermaidText = mikuprojectXml.exportMermaidGantt(model);
+    getTextArea("mermaidOutput").value = mermaidText;
+    await renderMermaidPreview(mermaidText);
     if (!currentMermaidSvg) {
       setStatus("出力する SVG がありません");
       return;
@@ -1043,24 +1039,15 @@ WorkWeek1=${formatCalendarWorkWeekSummary(calendar)}</div>
         setStatus(error instanceof Error ? error.message : "XML 解析に失敗しました");
       }
     });
-    getElement<HTMLButtonElement>("exportXmlBtn").addEventListener("click", () => {
-      try {
-        exportCurrentModel();
-      } catch (error) {
-        setStatus(error instanceof Error ? error.message : "XML 再生成に失敗しました");
-      }
-    });
     getElement<HTMLButtonElement>("exportMermaidBtn").addEventListener("click", () => {
       void exportCurrentMermaid().catch((error) => {
         setStatus(error instanceof Error ? error.message : "Mermaid 生成に失敗しました");
       });
     });
     getElement<HTMLButtonElement>("downloadMermaidSvgBtn").addEventListener("click", () => {
-      try {
-        downloadCurrentMermaidSvg();
-      } catch (error) {
+      void downloadCurrentMermaidSvg().catch((error) => {
         setStatus(error instanceof Error ? error.message : "SVG 保存に失敗しました");
-      }
+      });
     });
     getElement<HTMLButtonElement>("exportCsvBtn").addEventListener("click", () => {
       try {

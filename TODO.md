@@ -1,0 +1,63 @@
+# TODO
+
+## mikuproject
+
+- `MS Project XML` を意味の基軸として扱う
+- `ProjectModel` を内部の中立表現として扱う
+- `.xlsx` は確認・可視化・帳票化のための周辺表現として扱う
+- `.xlsx` 編集結果を `ProjectModel` へ戻し、必要に応じて `MS Project XML` へ再出力できる構成を目指す
+- `MS Project XML` を中心に据えたまま、`.xlsx` 入出力を追加する
+- `.xlsx` の正本化は避け、内部モデル `ProjectModel` を中心に扱う
+- まずは `.xlsx export` を優先し、`ProjectModel -> .xlsx` を成立させる
+- その後に `.xlsx import` を検討し、`.xlsx -> ProjectModel` を設計する
+- `.xlsx` は、構造忠実な汎用 workbook と、表示専用の WBS workbook を分けて扱う
+- 初期検討時のみ `local-data/WBS_Template_analysis.md` を参照し、その後は依存しない
+- `mikuproject-spec.md` に `.xlsx` 対応方針を追記する
+- `.xlsx` 入出力で保持する最小フィールド集合を定義する
+- `mikuproject-spec.md` では、現在の editable 列 coverage をシート別の一覧で追えるように保つ
+- round-trip の観点で、`xml -> model -> xlsx` と `xlsx -> model -> xml` の扱いを切り分ける
+- `.xlsx import` では編集可能な列を限定し、部分更新として `ProjectModel` へ反映する
+- まずは `Tasks` シートを起点に、限定列 import を成立させる
+- `Start / Finish / PercentComplete / PercentWorkComplete` など、戻しやすい項目から優先対応する
+- `Tasks` で import 実績を作った後に `Resources / Assignments` へ対象を広げる
+- `Resources` では `Name / Group / MaxUnits` などの戻しやすい項目から優先対応する
+- `Assignments` では `Units / Work / PercentWorkComplete` などの戻しやすい項目から優先対応する
+- `Project` シートでは `Name / Title / Author / Company / StartDate / FinishDate / CurrentDate / StatusDate / CalendarUID / MinutesPerDay / MinutesPerWeek / DaysPerMonth / ScheduleFromStart` を限定 import 対象として扱う
+- `Calendars` シートでは、まず `Name / IsBaseCalendar / BaseCalendarUID` のみを限定 import 対象として扱う
+- 複雑な `Calendar / Baseline / TimephasedData / ExtendedAttributes` は後段で扱う
+- `.xlsx` 対応用のテストデータとテスト戦略を追加する
+- `ProjectModel -> workbook -> .xlsx -> workbook -> ProjectModel` の統合経路を継続的に確認する
+- `project-xlsx.ts` で `ProjectModel -> XlsxWorkbookModel` の変換方針を詰める
+- `project-xlsx.ts` で結合セルを使う箇所を設計する
+- `Project` シートに結合付きの見出し行やセクション見出しを追加する
+- `Tasks / Resources / Assignments / Calendars` シートのレイアウト方針を整理する
+- 上記シート粒度が `MS Project XML` / `ProjectModel` の構造に由来することを明記する
+- Excel 側の独自都合ではなく、まずは `MS Project XML` の構造に忠実な workbook 構成を優先する
+- WBS 帳票的な見せ方は、別ビュー・別 workbook として export を継続改善する
+- `WBS XLSX Export` は表示専用 workbook として、上部サマリ、凡例、Week/BaseDate ガイド、日付帯の視認性改善を継続する
+- `WBS XLSX Export` では、`ProjectModel` 由来の既定祝日と、UI から入力した追加祝日を分けて扱えるように保つ
+- WBS sample 生成では、`Calendar.Exceptions` のうち非稼働日例外を祝日候補として日付帯へ反映する
+- `build-project-xlsx-sample.mjs` を静的 workbook 直書きから `project-xlsx.ts` 利用へ切り替える
+- `MS Project XML -> ProjectModel -> XlsxWorkbookModel -> .xlsx` のサンプル生成経路へ寄せる
+- UI 上で `.xlsx import` の反映件数と差分要約を分かるようにする
+- 次は `.xlsx import` の差分要約を、行単位またはシート単位でさらに見やすく整理する
+- 次は `Resources / Assignments` の import 差分も UI 上で追いやすくする
+- `.xlsx import` の差分要約は、同一行の複数変更を1ブロックで見せる
+- 次はシート別の件数表示や、更新対象ごとの折りたたみなし一覧を検討する
+- `.xlsx import` の差分要約には、`Tasks / Resources / Assignments` の件数も先頭表示する
+- 次は変更が 0 件だったシートをどこまで表示するかを整理する
+- 変更があったシートを前面に出し、変更なしのシートは補助表示へ下げる
+- 次は `Resources / Assignments` にも変更があるケースの UI 表示確認を追加する
+- 画面上の `.xlsx import` 説明文は、実際の編集可能列と差分要約の見え方に合わせて保守する
+- 次は `Tasks.Start / Finish` のような日付変更が UI 差分要約で分かることを固定する
+- `.xlsx import` 後に、更新済み XML を `XML Export` で保存できる導線を画面上で分かるようにする
+- `.xlsx import` で変更が 0 件だった場合は、XML が未変更であることを明示する
+- 対象外列や未対応シートを編集しても反映しないことを、画面文言とテストで明確にする
+- `Calendars` の `WeekDays / Exceptions / WorkWeeks` は、当面は反映対象外として扱う
+- 現在の editable 列 coverage を保ちながら、次段でどのシート・列を import 対象に広げるかを整理する
+- 画面上の `.xlsx import` 説明は、`反映対象` と `現在は反映しないもの` を分けて読めるように保つ
+- 次は `Calendars` など未対応シートを本当に import 対象へ広げるか、引き続き無視対象に留めるかを整理する
+- `.xlsx import` 後に validation メッセージが必要なケースも UI テストで固定する
+- `Calendars.BaseCalendarUID` のような参照系 warning も、`.xlsx import` の差分要約と validation を並べて確認できるように保つ
+- `.xlsx import` による `Start > Finish` のような日付整合性エラーも UI テストで固定する
+- validation が残る状態でも `XML Export` でその時点の XML を保存できることをテストで固定する

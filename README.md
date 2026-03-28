@@ -23,19 +23,27 @@
 
 `XLSX Import` は自由編集をそのまま受け入れるのではなく、限定列の部分更新として扱います。
 
+`mikuproject-sample.xlsx` は `MS Project XML` との対応関係を確認するための構造忠実 workbook として扱います。列やシートの対応関係は崩さず、見た目改善は可読性補助に留めます。これに対して `mikuproject-wbs-sample.xlsx` は人が読むための表示重視 workbook として扱います。
+
 ## リポジトリ構成
 
 - `mikuproject.html`: 生成済みの単一 HTML アプリ
 - `mikuproject-src.html`: HTML ソース
 - `package.json`: Node.js ベースの開発設定
 - `src/ts/`: TypeScript ソース
-- `src/js/`: ブラウザ実行用 JavaScript
+- `src/js/`: `src/ts/` から生成し、Git 管理も行うブラウザ実行用 JavaScript
 - `src/css/`: アプリ用 CSS
 - `tests/`: Vitest ベースのテスト
 - `testdata/`: XML テストデータ
 - `scripts/`: ビルド補助スクリプト
 - `mikuproject-spec.md`: 現行仕様メモ
 - `mikuproject-gap-notes.md`: 保持項目や互換性のギャップメモ
+
+## ドキュメントの役割
+
+- `README.md`: このリポジトリの入口です。概要、使い方、ビルド方法、運用ルールを簡潔にまとめます。
+- `mikuproject-spec.md`: 仕様と設計判断の置き場です。データモデル、入出力方針、対応範囲、制約を継続的に整理します。
+- `TODO.md`: まだ終わっていない作業だけを書きます。方針メモや完了済み事項は原則ここに残しません。
 
 ## 使い方
 
@@ -59,10 +67,16 @@
 npm install
 ```
 
+TypeScript 由来のブラウザ実行 JavaScript を再生成:
+
+```bash
+npm run build:js
+```
+
 単一 HTML を再生成:
 
 ```bash
-npm run build:app
+npm run build:html
 ```
 
 `mikuproject.html` は `mikuproject-src.html` をもとに、ローカル CSS / JS と `src/vendor/mermaid/mermaid.min.js` を単一 HTML へインライン展開して生成します。
@@ -94,14 +108,29 @@ npm run build
 
 `npm run build` は `build:app` と `test` を順に実行します。
 
-[scripts/build-project.mjs](/Users/igapyon/Documents/git/mikuproject/scripts/build-project.mjs) は `src/ts/` から `src/js/` を生成し、[mikuproject-src.html](/Users/igapyon/Documents/git/mikuproject/mikuproject-src.html) をもとに [mikuproject.html](/Users/igapyon/Documents/git/mikuproject/mikuproject.html) を再生成します。
+スクリプトの役割は次のとおりです。
+
+- `npm run build:js`: `src/ts/` から `src/js/` を生成します。
+- `npm run build:html`: `index-src.html` と `mikuproject-src.html` から `index.html` と `mikuproject.html` を生成します。
+- `npm run build:xlsx-sample`: `local-data/` 配下へサンプル XLSX を生成します。
+- `npm run build:app`: `build:js`、`build:html`、`build:xlsx-sample` を順に実行します。
+
+[scripts/build-project.mjs](/Users/igapyon/Documents/git/mikuproject/scripts/build-project.mjs) は `--js-only` と `--html-only` を受け取り、JavaScript 生成と HTML 生成を切り替えます。
+
+`src/ts/` を正本として扱い、`src/js/` はそこから生成する中間生成物として扱います。ただし、現状では `src/js/` も Git 管理します。ブラウザ実行、テスト、`build:xlsx-sample` は `src/js/` を参照します。
+
+運用ルール:
+
+- アプリロジックの修正は原則 `src/ts/` で行います。
+- `src/js/` は手編集の正本としては扱いません。
+- `src/ts/` を更新した場合は `npm run build:js` を実行し、`src/js/` の差分もあわせて扱います。
 
 ## 現在の状態
 
 - `package.json` と `package-lock.json` を持つ単独の Node.js プロジェクトとして扱える
 - ソース配置は `src/ts/`, `src/js/`, `src/css/`
 - 外部ランタイムの同梱先は `src/vendor/`
-- `npm run build:app` と `npm test` は通る
+- `npm run build:js`、`npm run build:html`、`npm test` は通る
 - `local-data/` と `node_modules/` は Git 管理対象外
 
 ## 制約
@@ -110,7 +139,7 @@ npm run build
 - 目標は XML の完全一致ではなく、意味的に往復できること
 - `XLSX Import` の反映対象は限定列のみ
 - `Calendars` の `WeekDays / Exceptions / WorkWeeks` などは現時点では反映対象外
-- Mermaid の SVG プレビューは `src/vendor/mermaid/mermaid.min.js` を `build:app` で内包した `mikuproject.html` を前提とする
+- Mermaid の SVG プレビューは `src/vendor/mermaid/mermaid.min.js` を `build:html` で内包した `mikuproject.html` を前提とする
 
 ## 関連ドキュメント
 

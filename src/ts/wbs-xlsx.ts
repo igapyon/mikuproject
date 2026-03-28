@@ -1,8 +1,13 @@
+/*
+ * Copyright 2026 Toshiki Iga
+ * SPDX-License-Identifier: Apache-2.0
+ */
 (() => {
   type WbsXlsxCellLike = {
     value?: string | number | boolean;
     numberFormat?: "general" | "integer" | "decimal" | "date" | "datetime" | "percent";
     horizontalAlign?: "left" | "center" | "right";
+    verticalAlign?: "top" | "center" | "bottom";
     wrapText?: boolean;
     bold?: boolean;
     fillColor?: string;
@@ -12,7 +17,7 @@
   type WbsXlsxWorkbookLike = {
     sheets: Array<{
       name: string;
-      columns?: Array<{ width?: number }>;
+      columns?: Array<{ width?: number; hidden?: boolean }>;
       mergedRanges?: string[];
       rows: Array<{
         height?: number;
@@ -113,6 +118,7 @@
       "開始",
       "終了",
       "期間",
+      "タスク詳細",
       "進捗",
       "作業進捗",
       "マイル",
@@ -126,15 +132,11 @@
     const dividerColumnIndex = fixedHeaders.length + 1;
     const dateBandStartColumnIndex = dividerColumnIndex + 1;
     const totalColumns = fixedHeaders.length + 1 + dateBand.length;
-    const lastColumnRef = columnName(totalColumns);
     const rows = [
       sheetTitleRow("WBS", totalColumns),
-      sheetSubtitleRow(model.project.name || "Project", totalColumns)
+      emptyRow(totalColumns, 22)
     ];
-    const mergedRanges = [
-      `A1:${lastColumnRef}1`,
-      `A2:${lastColumnRef}2`
-    ];
+    const mergedRanges = [];
     const projectInfoBlock = projectInfoRows(
       model.project,
       calendarNameByUid,
@@ -163,25 +165,10 @@
     );
     overlayRows(rows, 2, summaryBlock.rows, totalColumns);
     mergedRanges.push(...summaryBlock.mergedRanges);
-    rows.push(emptyRow(totalColumns, 28));
-    rows.push(taskViewRow((model.project.currentDate || "-").slice(0, 10) || "-", totalColumns));
     const weekBandRanges = buildWeekBandRanges(dateBand, dateBandStartColumnIndex, rows.length + 1);
     rows.push(weekBandRow(fixedHeaders.length + 1, weekBandRanges, dateBand.length));
-    rows.push(todayGuideRow(fixedHeaders.length + 1, dateBand, model.project.currentDate, holidaySet));
-    rows.push(headerRow([
-      ...fixedHeaders.map((label) => label === "名称"
-        ? {
-            value: label,
-            bold: true,
-            fillColor: headerFillForLabel(label),
-            border: "thin" as const,
-            horizontalAlign: "left" as const
-          }
-        : label),
-      dividerCell(),
-      ...dateBand.map((day) => dateNumberCell(day, model.project.currentDate, holidaySet))
-    ]));
-    rows.push(weekdayRow(fixedHeaders.length + 1, dateBand, model.project.currentDate, holidaySet));
+    rows.push(dateBandHeaderRow(fixedHeaders.length + 1, dateBand, model.project.currentDate, holidaySet));
+    rows.push(weekdayHeaderRow(fixedHeaders, dateBand, model.project.currentDate, holidaySet));
     rows.push(...model.tasks.map((task) => ({
       height: taskRowHeight(task),
       cells: [
@@ -190,10 +177,11 @@
         identifierCell(task, task.wbs || task.outlineNumber),
         kindCell(task),
         identifierCell(task, task.outlineLevel),
-        taskCell(task, formatTaskLabel(task)),
+        taskCell(task, formatTaskLabel(task), "center"),
         taskCell(task, formatWbsDate(task.start), "center"),
         taskCell(task, formatWbsDate(task.finish), "center"),
         taskCell(task, formatDurationLabel(task, holidaySet, options.useBusinessDaysForProgressBand), "center"),
+        detailCell(task, task.notes),
         progressCell(task, task.percentComplete),
         progressCell(task, task.percentWorkComplete),
         flagCell(task, task.milestone, "Mil"),
@@ -218,9 +206,9 @@
           name: "WBS",
           columns: [
             { width: 8 }, { width: 8 }, { width: 12 }, { width: 10 }, { width: 10 }, { width: 42 },
-            { width: 20 }, { width: 18 }, { width: 12 }, { width: 14 },
-            { width: 18 }, { width: 12 }, { width: 12 }, { width: 12 },
-            { width: 16 }, { width: 12 }, { width: 20 }, { width: 18 }, { width: 3 },
+            { width: 20 }, { width: 18 }, { width: 12 }, { width: 28 }, { width: 14 },
+            { width: 18, hidden: true }, { width: 12, hidden: true }, { width: 12, hidden: true }, { width: 12, hidden: true },
+            { width: 16 }, { width: 12, hidden: true }, { width: 20, hidden: true }, { width: 18, hidden: true }, { width: 3 },
             ...dateBand.map(() => ({ width: 6 }))
           ],
           mergedRanges,
@@ -315,7 +303,7 @@
   function referenceCell(
     task: TaskModel,
     value: string | undefined,
-    horizontalAlign: "left" | "center" | "right" = "left"
+    horizontalAlign: "left" | "center" | "right" = "center"
   ): WbsXlsxCellLike {
     const displayValue = displayReferenceValue(value);
     const placeholder = displayValue === "-";
@@ -323,6 +311,7 @@
       value: displayValue,
       border: "thin",
       horizontalAlign: placeholder ? "center" : horizontalAlign,
+      verticalAlign: "center",
       bold: task.summary || task.milestone || false,
       fillColor: placeholder
         ? PLACEHOLDER_FILL
@@ -339,62 +328,12 @@
         {
           value: title,
           bold: true,
-          fillColor: "#EEF4FA",
-          border: "thin",
           horizontalAlign: "left"
         },
-        ...Array.from({ length: Math.max(0, columnCount - 1) }, () => ({}))
+        ...Array.from({ length: Math.max(0, columnCount - 1) }, () => ({
+          fillColor: "#EEF4FA"
+        }))
       ]
-    };
-  }
-
-  function sheetSubtitleRow(title: string, columnCount: number) {
-    return {
-      height: 22,
-      cells: [
-        {
-          value: title,
-          bold: true,
-          fillColor: "#F6F9FC",
-          border: "thin",
-          horizontalAlign: "left"
-        },
-        ...Array.from({ length: Math.max(0, columnCount - 1) }, () => ({}))
-      ]
-    };
-  }
-
-  function taskViewRow(baseDate: string, columnCount: number) {
-    return {
-      height: 26,
-      cells: Array.from({ length: columnCount }, (_, index) => {
-        if (index === 5) {
-          return {
-            value: "タスク表",
-            bold: true,
-            fillColor: "#E6F1FB",
-            border: "thin" as const,
-            horizontalAlign: "center" as const
-          };
-        }
-        if (index === 6) {
-          return {
-            value: `基準日 ${baseDate}`,
-            bold: true,
-            fillColor: "#E6F1FB",
-            border: "thin" as const,
-            horizontalAlign: "center" as const
-          };
-        }
-        if (index > 5 && index < 12) {
-          return {
-            value: "",
-            fillColor: "#E6F1FB",
-            border: "thin" as const
-          };
-        }
-        return {};
-      })
     };
   }
 
@@ -457,23 +396,24 @@
       { value: "週末", fillColor: WEEKEND_BAND_FILL },
       { value: "祝日", fillColor: HOLIDAY_BAND_FILL },
       { value: "━:フェーズ", fillColor: PHASE_FILL },
-      { value: "■:タスク", fillColor: ACTIVE_BAND_FILL },
+      { value: "■:進捗済みタスク", fillColor: PROGRESS_BAND_FILL },
+      { value: "□:予定タスク", fillColor: ACTIVE_BAND_FILL },
       { value: "◆:マイルストーン", fillColor: MILESTONE_FILL },
       { value: "Mil:マイルストーン", fillColor: "#FBE4EC" },
       { value: "Sum:サマリ", fillColor: "#F7EAF0" },
       { value: "Crit:クリティカル", fillColor: "#F3E1E9" },
       { value: "-:未設定", fillColor: PLACEHOLDER_FILL }
     ];
-    const startColumnRef = columnName(6);
-    const endColumnRef = columnName(7);
+    const startColumnRef = columnName(1);
+    const endColumnRef = columnName(3);
     return {
       mergedRanges: [
         `${startColumnRef}${startRowNumber}:${endColumnRef}${startRowNumber}`,
         ...items.map((_, index) => `${startColumnRef}${startRowNumber + index + 1}:${endColumnRef}${startRowNumber + index + 1}`)
       ],
       rows: [
-        blockHeaderRow(columnCount, 5, "凡例"),
-        ...items.map((item) => mergedLabelRow(columnCount, 5, item.value, item.fillColor))
+        blockHeaderRow(columnCount, 0, "凡例"),
+        ...items.map((item) => mergedLabelRow(columnCount, 0, item.value, item.fillColor))
       ]
     };
   }
@@ -497,35 +437,20 @@
       height: 24,
       cells: [
         ...Array.from({ length: fixedColumnCount }, (_, index) => {
-          if (index === 5) {
+          if (index === 18) {
             return {
               value: "週",
               bold: true,
               border: "thin" as const,
-              horizontalAlign: "right" as const,
+              horizontalAlign: "center" as const,
               fillColor: "#E3EEF9"
             };
           }
-          if (index === 6) {
-            return {
-              value: "",
-              border: "thin" as const,
-              fillColor: "#E3EEF9"
-            };
+          if (index === 19) {
+            return dividerCell();
           }
-          if (index > 5 && index < 9) {
-            return {
-              value: "",
-              border: "thin" as const,
-              fillColor: "#E3EEF9"
-            };
-          }
-          if (index === 5 || index === 9) {
-            return {
-              value: "",
-              border: "thin" as const,
-              fillColor: "#E3EEF9"
-            };
+          if (index < 18) {
+            return {};
           }
           return {};
         }),
@@ -551,7 +476,7 @@
     useBusinessDaysForProgressBand?: boolean
   ) {
     const displayWeeks = displayDays > 0 ? Math.ceil(displayDays / 7) : 0;
-    const items: Array<{ label: string; value: string | number; fillColor: string }> = [
+    const scheduleItems: Array<{ label: string; value: string | number; fillColor: string }> = [
       { label: "表示日", value: displayDays, fillColor: SUMMARY_SCHEDULE_FILL },
       { label: "表示週", value: displayWeeks, fillColor: SUMMARY_SCHEDULE_FILL },
       { label: "営業日", value: businessDays, fillColor: SUMMARY_SCHEDULE_FILL },
@@ -559,18 +484,28 @@
       { label: "後日数", value: displayDaysAfterBaseDate ?? "-", fillColor: SUMMARY_SCHEDULE_FILL },
       { label: "表示", value: useBusinessDaysForDisplayRange ? "営業日" : "暦日", fillColor: SUMMARY_SCHEDULE_FILL },
       { label: "進捗", value: useBusinessDaysForProgressBand ? "営業日" : "暦日", fillColor: SUMMARY_SCHEDULE_FILL },
+      { label: "基準日", value: (baseDate || "-").slice(0, 10), fillColor: SUMMARY_SCHEDULE_FILL }
+    ];
+    const countItems: Array<{ label: string; value: string | number; fillColor: string }> = [
       { label: "タスク", value: taskCount, fillColor: SUMMARY_ASSIGNMENT_FILL },
       { label: "リソース", value: resourceCount, fillColor: SUMMARY_ASSIGNMENT_FILL },
       { label: "割当", value: assignmentCount, fillColor: SUMMARY_ASSIGNMENT_FILL },
-      { label: "カレンダ", value: calendarCount, fillColor: SUMMARY_ASSIGNMENT_FILL },
-      { label: "基準日", value: (baseDate || "-").slice(0, 10), fillColor: SUMMARY_SCHEDULE_FILL }
+      { label: "カレンダ", value: calendarCount, fillColor: SUMMARY_ASSIGNMENT_FILL }
     ];
+    const blockRows = [blockHeaderRow(columnCount, startColumnIndex, "サマリ")];
+    for (const item of scheduleItems) {
+      blockRows.push(summaryPairRow(columnCount, startColumnIndex, item.label, item.value, item.fillColor));
+    }
+    for (let index = 0; index < countItems.length; index += 1) {
+      const rowIndex = 1 + index;
+      while (blockRows.length <= rowIndex) {
+        blockRows.push(emptyRow(columnCount, 22));
+      }
+      overlaySummaryPair(blockRows[rowIndex], startColumnIndex + 3, countItems[index].label, countItems[index].value, countItems[index].fillColor);
+    }
     return {
       mergedRanges: [`${columnName(startColumnIndex + 1)}${startRowNumber}:${columnName(startColumnIndex + 2)}${startRowNumber}`],
-      rows: [
-        blockHeaderRow(columnCount, startColumnIndex, "サマリ"),
-        ...items.map((item) => summaryPairRow(columnCount, startColumnIndex, item.label, item.value, item.fillColor))
-      ]
+      rows: blockRows
     };
   }
 
@@ -658,6 +593,18 @@
     return { height: 22, cells };
   }
 
+  function overlaySummaryPair(
+    row: { height?: number; cells: WbsXlsxCellLike[] },
+    startColumnIndex: number,
+    label: string,
+    value: string | number,
+    fillColor: string
+  ) {
+    row.cells[startColumnIndex] = summaryStatCell(label, fillColor, false);
+    row.cells[startColumnIndex + 1] = summaryStatCell(value, fillColor, true);
+    row.height = Math.max(row.height || 22, 22);
+  }
+
   function mergedLabelRow(
     columnCount: number,
     startColumnIndex: number,
@@ -701,12 +648,14 @@
             bold: true,
             fillColor: headerFillForLabel(label),
             border: "thin" as const,
-            horizontalAlign: "center" as const
+            horizontalAlign: "center" as const,
+            verticalAlign: "center" as const
           };
         }
         return {
           border: "thin" as const,
           horizontalAlign: "center" as const,
+          verticalAlign: "center" as const,
           ...label
         };
       })
@@ -728,12 +677,41 @@
     };
   }
 
+  function dateBandHeaderRow(
+    fixedColumnCount: number,
+    dateBand: string[],
+    currentDate: string | undefined,
+    holidaySet: Set<string>
+  ) {
+    return {
+      height: 24,
+      cells: [
+        ...Array.from({ length: fixedColumnCount }, () => ({} as WbsXlsxCellLike)),
+        ...dateBand.map((day) => dateNumberCell(day, currentDate, holidaySet))
+      ]
+    };
+  }
+
+  function weekdayHeaderRow(
+    fixedHeaders: string[],
+    dateBand: string[],
+    currentDate: string | undefined,
+    holidaySet: Set<string>
+  ) {
+    return headerRow([
+      ...fixedHeaders,
+      dividerCell(),
+      ...dateBand.map((day) => weekdayCell(day, currentDate, holidaySet))
+    ]);
+  }
+
   function dividerCell(): WbsXlsxCellLike {
     return {
       value: "",
       fillColor: DIVIDER_FILL,
       border: "thin",
-      horizontalAlign: "center"
+      horizontalAlign: "center",
+      verticalAlign: "center"
     };
   }
 
@@ -747,6 +725,9 @@
     if (label === "開始" || label === "終了" || label === "期間") {
       return HEADER_SCHEDULE_FILL;
     }
+    if (label === "タスク詳細") {
+      return HEADER_FILL;
+    }
     if (label === "進捗" || label === "作業進捗" || label === "マイル" || label === "サマリ" || label === "クリティカル") {
       return HEADER_STATUS_FILL;
     }
@@ -754,65 +735,6 @@
       return HEADER_ASSIGNMENT_FILL;
     }
     return HEADER_FILL;
-  }
-
-  function todayGuideRow(
-    fixedColumnCount: number,
-    dateBand: string[],
-    currentDate: string | undefined,
-    holidaySet: Set<string>
-  ) {
-    return {
-      height: 24,
-      cells: [
-        ...Array.from({ length: fixedColumnCount }, (_, index) => {
-          if (index === 5) {
-            return {
-              value: "基準日",
-              bold: true,
-              border: "thin" as const,
-              horizontalAlign: "right" as const,
-              fillColor: "#FFEFC2"
-            };
-          }
-          if (index === 6) {
-            return {
-              value: "",
-              border: "thin" as const,
-              fillColor: "#FFEFC2"
-            };
-          }
-          if (index > 5 && index < 9) {
-            return {
-              value: "",
-              border: "thin" as const,
-              fillColor: "#FFEFC2"
-            };
-          }
-          if (index === 5 || index === 9) {
-            return {
-              value: "",
-              border: "thin" as const,
-              fillColor: "#FFEFC2"
-            };
-          }
-          return {};
-        }),
-        ...dateBand.map((day, index) => ({
-          value: isSameDay(day, currentDate) ? "▼基準日" : "",
-          bold: true,
-          border: "thin" as const,
-          horizontalAlign: "center" as const,
-          fillColor: isSameDay(day, currentDate)
-            ? TODAY_BAND_FILL
-            : (holidaySet.has(day)
-              ? HOLIDAY_BAND_FILL
-              : (isWeekStart(day)
-                ? WEEK_START_BAND_FILL
-                : (index < 3 ? BASEDATE_GUIDE_TAIL_FILL : BAND_FILL)))
-        }))
-      ]
-    };
   }
 
   function cell(value: string | number | boolean | undefined): WbsXlsxCellLike {
@@ -837,7 +759,8 @@
       value,
       border: "thin",
       horizontalAlign,
-      wrapText: horizontalAlign === "left" ? true : undefined,
+      verticalAlign: "center",
+      wrapText: typeof value === "string" ? true : undefined,
       bold: task.summary || task.milestone || false,
       fillColor: task.summary
         ? PHASE_FILL
@@ -849,15 +772,35 @@
     };
   }
 
+  function detailCell(task: TaskModel, value: string | undefined): WbsXlsxCellLike {
+    const normalized = value?.trim() || "";
+    const placeholder = !normalized;
+    return {
+      value: placeholder ? "-" : normalized,
+      border: "thin",
+      horizontalAlign: placeholder ? "center" : "left",
+      verticalAlign: "center",
+      wrapText: placeholder ? undefined : true,
+      bold: task.summary || task.milestone || false,
+      fillColor: placeholder
+        ? PLACEHOLDER_FILL
+        : (task.summary
+          ? PHASE_FILL
+          : (task.milestone ? MILESTONE_FILL : NAME_COLUMN_FILL))
+    };
+  }
+
   function taskRowHeight(task: TaskModel): number | undefined {
     const labelLength = formatTaskLabel(task).length;
-    if (labelLength > 36) {
+    const notesLength = (task.notes || "").trim().length;
+    const maxLength = Math.max(labelLength, notesLength);
+    if (maxLength > 72) {
+      return 46;
+    }
+    if (maxLength > 36) {
       return 34;
     }
-    if (labelLength > 24) {
-      return 28;
-    }
-    return undefined;
+    return 34;
   }
 
   function kindCell(task: TaskModel): WbsXlsxCellLike {
@@ -865,6 +808,7 @@
       value: classifyTaskKind(task),
       border: "thin",
       horizontalAlign: "center",
+      verticalAlign: "center",
       bold: true,
       fillColor: task.summary ? PHASE_FILL : (task.milestone ? MILESTONE_FILL : TASK_KIND_FILL)
     };
@@ -878,6 +822,7 @@
       value,
       border: "thin",
       horizontalAlign: "center",
+      verticalAlign: "center",
       bold: task.summary || task.milestone || false,
       fillColor: task.summary ? PHASE_FILL : (task.milestone ? MILESTONE_FILL : IDENTIFIER_FILL)
     };
@@ -888,6 +833,7 @@
       value: enabled ? marker : "",
       border: "thin",
       horizontalAlign: "center",
+      verticalAlign: "center",
       bold: !!enabled,
       fillColor: task.summary ? PHASE_FILL : (task.milestone ? MILESTONE_FILL : undefined)
     };
@@ -899,6 +845,8 @@
       value: progressValue,
       border: "thin",
       horizontalAlign: "center",
+      verticalAlign: "center",
+      wrapText: true,
       bold: task.summary || task.milestone || false,
       fillColor: task.summary ? PHASE_FILL : (task.milestone ? MILESTONE_FILL : PROGRESS_COLUMN_FILL)
     };
@@ -911,7 +859,7 @@
     const clamped = Math.max(0, Math.min(100, Math.round(value)));
     const filled = Math.round(clamped / 10);
     const bar = `${"#".repeat(filled)}${"-".repeat(10 - filled)}`;
-    return `${String(clamped).padStart(3, " ")}% [${bar}]`;
+    return `${String(clamped).padStart(3, " ")}%\n[${bar}]`;
   }
 
   function formatDurationLabel(
@@ -942,6 +890,7 @@
       bold: true,
       border: "thin",
       horizontalAlign: "center",
+      verticalAlign: "center",
       fillColor: isToday ? TODAY_BAND_FILL : (isHoliday ? HOLIDAY_BAND_FILL : (isWeekendDay ? WEEKEND_BAND_FILL : (monthStart ? MONTH_START_HEADER_FILL : (weekStart ? WEEK_START_BAND_FILL : HEADER_FILL))))
     };
   }
@@ -957,6 +906,7 @@
       bold: true,
       border: "thin",
       horizontalAlign: "center",
+      verticalAlign: "center",
       fillColor: isToday ? TODAY_BAND_FILL : (isHoliday ? HOLIDAY_BAND_FILL : (isWeekendDay ? WEEKEND_BAND_FILL : (monthStart ? MONTH_START_HEADER_FILL : (weekStart ? WEEK_START_BAND_FILL : HEADER_FILL))))
     };
   }
@@ -975,9 +925,10 @@
     const weekStart = isWeekStart(day);
     const complete = active && isCompletedDay(task, day, holidaySet, useBusinessDaysForProgressBand);
     return {
-      value: active ? activeBandMarker(task) : "",
+      value: active ? activeBandMarker(task, complete) : "",
       border: "thin",
       horizontalAlign: "center",
+      verticalAlign: "center",
       fillColor: active
         ? (complete
           ? (isToday ? TODAY_PROGRESS_BAND_FILL : PROGRESS_BAND_FILL)
@@ -986,14 +937,14 @@
     };
   }
 
-  function activeBandMarker(task: TaskModel): string {
+  function activeBandMarker(task: TaskModel, complete: boolean): string {
     if (task.summary) {
       return "━";
     }
     if (task.milestone) {
       return "◆";
     }
-    return "■";
+    return complete ? "■" : "□";
   }
 
   function buildDateBand(startDate: string | undefined, finishDate: string | undefined): string[] {

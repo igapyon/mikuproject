@@ -160,6 +160,40 @@ describe("mikuproject excel io", () => {
     expect(imported).toEqual(workbook);
   });
 
+  it("round-trips hidden columns", () => {
+    const excelIo = bootExcelIoModule();
+    const codec = new excelIo.XlsxWorkbookCodec();
+    const workbook = {
+      sheets: [
+        {
+          name: "HiddenCols",
+          columns: [
+            { width: 12 },
+            { width: 18, hidden: true },
+            { hidden: true }
+          ],
+          rows: [
+            {
+              cells: [
+                { value: "Visible" },
+                { value: "Hidden" },
+                { value: "HiddenNoWidth" }
+              ]
+            }
+          ]
+        }
+      ]
+    };
+
+    const bytes = codec.exportWorkbook(workbook);
+    const imported = codec.importWorkbook(bytes);
+    const sheetXml = decodeUtf8(codec.unpackEntries(bytes)["xl/worksheets/sheet1.xml"]);
+
+    expect(imported).toEqual(workbook);
+    expect(sheetXml).toContain('min="2" max="2" width="18" customWidth="1" hidden="1"');
+    expect(sheetXml).toContain('min="3" max="3" hidden="1"');
+  });
+
   it("round-trips wrapped text alignment", () => {
     const excelIo = bootExcelIoModule();
     const codec = new excelIo.XlsxWorkbookCodec();
@@ -388,6 +422,32 @@ describe("mikuproject excel io", () => {
     expect(decodeUtf8(entries["xl/worksheets/sheet1.xml"])).toContain("ht=\"32\"");
     expect(decodeUtf8(entries["xl/worksheets/sheet1.xml"])).toContain("customHeight=\"1\"");
     expect(decodeUtf8(entries["xl/worksheets/sheet1.xml"])).toContain(" s=\"1\"");
+  });
+
+  it("writes empty styled cells when a fill-only cell is present", () => {
+    const excelIo = bootExcelIoModule();
+    const codec = new excelIo.XlsxWorkbookCodec();
+    const bytes = codec.exportWorkbook({
+      sheets: [
+        {
+          name: "StyledGap",
+          rows: [
+            {
+              cells: [
+                { value: "Header", fillColor: "#BFD7EA", border: "thin" },
+                { fillColor: "#BFD7EA", border: "thin" }
+              ]
+            }
+          ]
+        }
+      ]
+    });
+
+    const sheetXml = decodeUtf8(codec.unpackEntries(bytes)["xl/worksheets/sheet1.xml"]);
+
+    expect(sheetXml).toContain('r="A1"');
+    expect(sheetXml).toContain('r="B1"');
+    expect(sheetXml).toContain('<c r="B1" s="1"/>');
   });
 
   it("writes font, fill, and border definitions when style options are present", () => {

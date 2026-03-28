@@ -1,3 +1,7 @@
+/*
+ * Copyright 2026 Toshiki Iga
+ * SPDX-License-Identifier: Apache-2.0
+ */
 (() => {
   const mikuprojectXml = (globalThis as typeof globalThis & {
     __mikuprojectXml?: {
@@ -83,6 +87,7 @@
   let mermaidRenderCount = 0;
   let lastSavedXmlText = "";
   let lastSavedXmlStamp = "";
+  let currentTabId: "input" | "transform" | "output" = "input";
 
   function getElement<T extends HTMLElement>(id: string): T {
     const element = document.getElementById(id);
@@ -98,6 +103,81 @@
 
   function getInput(id: string): HTMLInputElement {
     return getElement<HTMLInputElement>(id);
+  }
+
+  function getTabButtons(): HTMLButtonElement[] {
+    return Array.from(document.querySelectorAll<HTMLButtonElement>(".md-top-tab[data-tab]"));
+  }
+
+  function getTabPanels(): HTMLElement[] {
+    return Array.from(document.querySelectorAll<HTMLElement>(".md-tab-panel[data-tab-panel]"));
+  }
+
+  function setActiveTab(tabId: "input" | "transform" | "output"): void {
+    currentTabId = tabId;
+    for (const button of getTabButtons()) {
+      const isActive = button.dataset.tab === tabId;
+      button.classList.toggle("is-active", isActive);
+      button.setAttribute("aria-selected", isActive ? "true" : "false");
+      button.tabIndex = isActive ? 0 : -1;
+    }
+    for (const panel of getTabPanels()) {
+      panel.hidden = panel.dataset.tabPanel !== tabId;
+    }
+  }
+
+  function moveTabFocus(currentButton: HTMLButtonElement, direction: -1 | 1): void {
+    const buttons = getTabButtons();
+    const currentIndex = buttons.indexOf(currentButton);
+    if (currentIndex < 0) {
+      return;
+    }
+    const nextIndex = (currentIndex + direction + buttons.length) % buttons.length;
+    const nextButton = buttons[nextIndex];
+    nextButton.focus();
+    const nextTab = nextButton.dataset.tab;
+    if (nextTab === "input" || nextTab === "transform" || nextTab === "output") {
+      setActiveTab(nextTab);
+    }
+  }
+
+  function bindTabs(): void {
+    const buttons = getTabButtons();
+    if (buttons.length === 0) {
+      return;
+    }
+    for (const button of buttons) {
+      button.addEventListener("click", () => {
+        const tabId = button.dataset.tab;
+        if (tabId === "input" || tabId === "transform" || tabId === "output") {
+          setActiveTab(tabId);
+        }
+      });
+      button.addEventListener("keydown", (event) => {
+        if (event.key === "ArrowRight" || event.key === "ArrowDown") {
+          event.preventDefault();
+          moveTabFocus(button, 1);
+          return;
+        }
+        if (event.key === "ArrowLeft" || event.key === "ArrowUp") {
+          event.preventDefault();
+          moveTabFocus(button, -1);
+          return;
+        }
+        if (event.key === "Home") {
+          event.preventDefault();
+          buttons[0].focus();
+          setActiveTab("input");
+          return;
+        }
+        if (event.key === "End") {
+          event.preventDefault();
+          buttons[buttons.length - 1].focus();
+          setActiveTab("output");
+        }
+      });
+    }
+    setActiveTab(currentTabId);
   }
 
   function parseHolidayDateList(raw: string): string[] {
@@ -191,6 +271,7 @@
     updateWbsHolidaySummary(holidayDates);
     setStatus(`WBS 祝日入力を既定値へ戻しました${holidayDates.length > 0 ? ` (${holidayDates.length} 件)` : ""}`);
     showToast("WBS 祝日を既定値へ戻しました");
+    setActiveTab("output");
   }
 
   function showToast(message: string): void {
@@ -218,19 +299,6 @@
 
   function updateMermaidSvgButton(): void {
     getElement<HTMLButtonElement>("downloadMermaidSvgBtn").disabled = !currentMermaidSvg;
-  }
-
-  function activateTopTab(tabId: string): void {
-    const buttons = Array.from(document.querySelectorAll<HTMLElement>(".md-top-tab[data-tab]"));
-    const panels = Array.from(document.querySelectorAll<HTMLElement>(".md-tab-panel[data-tab-panel]"));
-    buttons.forEach((button) => {
-      const isActive = button.dataset.tab === tabId;
-      button.classList.toggle("is-active", isActive);
-      button.setAttribute("aria-selected", isActive ? "true" : "false");
-    });
-    panels.forEach((panel) => {
-      panel.hidden = panel.dataset.tabPanel !== tabId;
-    });
   }
 
   function normalizeSvgForXml(svgText: string): string {
@@ -707,6 +775,7 @@ WorkWeek1=${formatCalendarWorkWeekSummary(calendar)}</div>
     getTextArea("xmlInput").value = mikuprojectXml.SAMPLE_XML;
     markXmlDirty();
     setStatus("サンプル XML を読み込みました");
+    setActiveTab("input");
   }
 
   async function importXmlFromFile(file: File | null | undefined): Promise<void> {
@@ -723,6 +792,7 @@ WorkWeek1=${formatCalendarWorkWeekSummary(calendar)}</div>
     renderXlsxImportSummary([]);
     setStatus(issues.length > 0 ? `XML ファイルを読み込んで解析しました。検証で ${issues.length} 件の問題があります` : "XML ファイルを読み込んで解析しました");
     showToast("XML を読み込んで解析しました");
+    setActiveTab("transform");
   }
 
   function ensureCurrentModel(): ProjectModel {
@@ -750,6 +820,7 @@ WorkWeek1=${formatCalendarWorkWeekSummary(calendar)}</div>
     renderXlsxImportSummary([]);
     setStatus(issues.length > 0 ? `XML を解析しました。検証で ${issues.length} 件の問題があります` : "XML を内部モデルへ変換しました");
     showToast("XML を解析しました");
+    setActiveTab("transform");
   }
 
   function exportCurrentModel(): void {
@@ -763,6 +834,7 @@ WorkWeek1=${formatCalendarWorkWeekSummary(calendar)}</div>
     renderXlsxImportSummary([]);
     setStatus("内部モデルから XML を再生成しました");
     showToast("XML を再生成しました");
+    setActiveTab("output");
   }
 
   async function exportCurrentMermaid(): Promise<void> {
@@ -775,6 +847,7 @@ WorkWeek1=${formatCalendarWorkWeekSummary(calendar)}</div>
     await renderMermaidPreview(mermaidText);
     setStatus("内部モデルから Mermaid gantt を生成し、SVG プレビューを更新しました");
     showToast("Mermaid を生成しました");
+    setActiveTab("transform");
   }
 
   function exportCurrentCsv(): void {
@@ -785,6 +858,7 @@ WorkWeek1=${formatCalendarWorkWeekSummary(calendar)}</div>
     getTextArea("csvOutput").value = mikuprojectXml.exportCsvParentId(currentModel);
     setStatus("内部モデルから CSV + ParentID を生成しました");
     showToast("CSV を生成しました");
+    setActiveTab("output");
   }
 
   function exportCurrentXlsx(): void {
@@ -806,6 +880,7 @@ WorkWeek1=${formatCalendarWorkWeekSummary(calendar)}</div>
     );
     setStatus("XLSX ファイルをエクスポートしました");
     showToast("XLSX を保存しました");
+    setActiveTab("output");
   }
 
   function exportCurrentWbsXlsx(): void {
@@ -847,6 +922,7 @@ WorkWeek1=${formatCalendarWorkWeekSummary(calendar)}</div>
     const progressBandText = useBusinessDaysForProgressBand ? " / 進捗帯 営業日" : "";
     setStatus(`WBS XLSX ファイルをエクスポートしました${effectiveHolidayDates.length > 0 ? ` (祝日 ${effectiveHolidayDates.length} 件)` : ""}${displayRangeText}${progressBandText}`);
     showToast("WBS XLSX を保存しました");
+    setActiveTab("output");
   }
 
   async function importXlsxFromFile(file: File | null | undefined): Promise<void> {
@@ -872,6 +948,7 @@ WorkWeek1=${formatCalendarWorkWeekSummary(calendar)}</div>
       : "XLSX に反映対象の変更はありませんでした。XML は未変更です";
     setStatus(issues.length > 0 ? `${summaryText}。検証で ${issues.length} 件の問題があります` : summaryText);
     showToast("XLSX を反映しました");
+    setActiveTab("transform");
   }
 
   function parseCurrentCsv(): void {
@@ -887,6 +964,7 @@ WorkWeek1=${formatCalendarWorkWeekSummary(calendar)}</div>
     renderXlsxImportSummary([]);
     setStatus(issues.length > 0 ? `CSV を解析しました。検証で ${issues.length} 件の問題があります` : "CSV + ParentID を内部モデルへ変換しました");
     showToast("CSV を解析しました");
+    setActiveTab("transform");
   }
 
   function downloadCurrentXml(): void {
@@ -915,6 +993,7 @@ WorkWeek1=${formatCalendarWorkWeekSummary(calendar)}</div>
     markXmlSavedCurrent();
     setStatus("XML ファイルをエクスポートしました");
     showToast("XML を保存しました");
+    setActiveTab("output");
   }
 
   function downloadCurrentMermaidSvg(): void {
@@ -925,6 +1004,7 @@ WorkWeek1=${formatCalendarWorkWeekSummary(calendar)}</div>
     downloadBlob(new Blob([currentMermaidSvg], { type: "image/svg+xml;charset=utf-8" }), "mikuproject-mermaid.svg");
     setStatus("Mermaid SVG を保存しました");
     showToast("SVG を保存しました");
+    setActiveTab("output");
   }
 
   function runRoundTripCheck(): void {
@@ -948,14 +1028,10 @@ WorkWeek1=${formatCalendarWorkWeekSummary(calendar)}</div>
     }
     setStatus("再読込テストに成功しました");
     showToast("再読込テスト成功");
+    setActiveTab("transform");
   }
 
   function bindEvents(): void {
-    Array.from(document.querySelectorAll<HTMLButtonElement>(".md-top-tab[data-tab]")).forEach((button) => {
-      button.addEventListener("click", () => {
-        activateTopTab(button.dataset.tab || "input");
-      });
-    });
     getElement<HTMLButtonElement>("loadSampleBtn").addEventListener("click", loadSample);
     getElement<HTMLButtonElement>("importXmlBtn").addEventListener("click", () => {
       getElement<HTMLInputElement>("importXmlInput").click();
@@ -1070,8 +1146,8 @@ WorkWeek1=${formatCalendarWorkWeekSummary(calendar)}</div>
   }
 
   function initialize(): void {
+    bindTabs();
     bindEvents();
-    activateTopTab("input");
     updateSummary(null);
     renderValidationIssues([]);
     renderXlsxImportSummary([]);

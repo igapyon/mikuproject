@@ -60,6 +60,27 @@ function mountDom() {
     <button id="resetWbsHolidayDatesBtn" type="button">WBS 祝日を既定値へ戻す</button>
     <button id="parseCsvBtn" type="button">CSV を解析</button>
     <button id="importXlsxBtn" type="button">XLSX Import</button>
+    <span class="md-inline-help">
+      <lht-help-tooltip label="XLSX 編集の扱い" placement="bottom" wide>
+        <h3 class="md-note-card__title">XLSX 編集の扱い</h3>
+        <p class="md-note-card__text">.xlsx は MS Project XML の代替正本ではなく、確認と限定編集のための周辺表現として扱います。</p>
+        <p class="md-note-card__text">現在の XLSX Import で反映するのは限定列のみです。</p>
+        <p class="md-note-card__text">反映結果は、Project / Tasks / Resources / Assignments / Calendars ごとの件数と、UID 単位の差分要約として画面上に表示します。</p>
+        <p class="md-note-card__text"><strong>反映対象</strong></p>
+        <ul class="md-note-list">
+          <li>Project: Name / Title / Author / Company / StartDate / FinishDate / CurrentDate / StatusDate / CalendarUID / MinutesPerDay / MinutesPerWeek / DaysPerMonth / ScheduleFromStart</li>
+          <li>Tasks: Name / Start / Finish / PercentComplete / PercentWorkComplete</li>
+          <li>Resources: Name / Group / MaxUnits</li>
+          <li>Assignments: Units / Work / PercentWorkComplete</li>
+          <li>Calendars: Name / IsBaseCalendar / BaseCalendarUID</li>
+        </ul>
+        <p class="md-note-card__text"><strong>現在は反映しないもの</strong></p>
+        <ul class="md-note-list">
+          <li>対象外の列や未対応シートの編集</li>
+          <li>Calendars の WeekDays / Exceptions / WorkWeeks と、Baseline / TimephasedData / ExtendedAttributes</li>
+        </ul>
+      </lht-help-tooltip>
+    </span>
     <button id="downloadXmlBtn" type="button">XML Export</button>
     <button id="roundTripBtn" type="button">再読込テスト</button>
     <input id="importXmlInput" type="file" />
@@ -74,49 +95,52 @@ function mountDom() {
       <div class="md-feedback-stack__label md-hidden">差分要約</div>
       <div id="xlsxImportSummary" class="md-hidden"></div>
     </div>
-    <section class="md-note-card">
-      <h3 class="md-note-card__title">XLSX 編集の扱い</h3>
-      <p class="md-note-card__text">XLSX は MS Project XML の代替正本ではなく、確認と限定編集のための周辺表現として扱います。</p>
-      <p class="md-note-card__text">現在の XLSX Import で反映するのは限定列のみです。</p>
-      <p class="md-note-card__text">反映結果は、Project / Tasks / Resources / Assignments / Calendars ごとの件数と、UID 単位の差分要約として画面上に表示します。</p>
-      <p class="md-note-card__text"><strong>反映対象</strong></p>
-      <ul class="md-note-list">
-        <li>Project: Name / Title / Author / Company / StartDate / FinishDate / CurrentDate / StatusDate / CalendarUID / MinutesPerDay / MinutesPerWeek / DaysPerMonth / ScheduleFromStart</li>
-        <li>Tasks: Name / Start / Finish / PercentComplete / PercentWorkComplete</li>
-        <li>Resources: Name / Group / MaxUnits</li>
-        <li>Assignments: Units / Work / PercentWorkComplete</li>
-        <li>Calendars: Name / IsBaseCalendar / BaseCalendarUID</li>
-      </ul>
-      <p class="md-note-card__text"><strong>現在は反映しないもの</strong></p>
-      <ul class="md-note-list">
-        <li>対象外の列や未対応シートの編集</li>
-        <li>Calendars の WeekDays / Exceptions / WorkWeeks と、Baseline / TimephasedData / ExtendedAttributes</li>
-      </ul>
-    </section>
-    <section class="md-note-card">
-      <h3 class="md-note-card__title">WBS XLSX の祝日指定</h3>
-      <p class="md-note-card__text">WBS XLSX Export では、ProjectModel から補完した既定祝日と、YYYY-MM-DD 形式で指定した追加祝日を合成して WBS 日付帯へ反映します。</p>
-      <p class="md-note-card__text">既定祝日は、現在の ProjectModel に含まれる Calendar.Exceptions の非稼働日例外から補完します。追加祝日は改行またはカンマ区切りで入力できます。表示期間を空欄にすると全期間、数値を入れると BaseDate 前後の日数で切り出します。営業日ベースを選ぶと土日祝を飛ばします。進捗帯も営業日基準へ切り替えられます。</p>
-    </section>
-    <input id="wbsDisplayDaysBeforeInput" />
-    <input id="wbsDisplayDaysAfterInput" />
-    <input id="wbsBusinessDayRangeInput" type="checkbox" />
-    <input id="wbsBusinessDayProgressInput" type="checkbox" />
-    <div id="wbsHolidaySummary"></div>
-    <textarea id="wbsHolidayDatesInput"></textarea>
-    <textarea id="wbsExtraHolidayDatesInput"></textarea>
-    <textarea id="xmlInput"></textarea>
+    <details class="md-settings-card">
+      <summary class="md-settings-card__summary">
+        <span class="md-settings-card__summary-main">
+          <span class="md-settings-card__title">設定</span>
+          <span class="md-settings-card__text">エクスポートや表示に関わる補助設定をここで調整します。</span>
+        </span>
+        <span class="md-settings-card__chevron" aria-hidden="true"></span>
+      </summary>
+      <div class="md-settings-card__body">
+        <section class="md-settings-subcard">
+          <h3 class="md-settings-subcard__title">祝日設定</h3>
+          <p class="md-note-card__text">WBS XLSX Export では、ProjectModel から補完した既定祝日と、YYYY-MM-DD 形式で指定した追加祝日を合成して WBS 日付帯へ反映します。</p>
+          <p class="md-note-card__text">既定祝日は、現在の ProjectModel に含まれる Calendar.Exceptions の非稼働日例外から補完します。追加祝日は改行またはカンマ区切りで入力できます。表示期間を空欄にすると全期間、数値を入れると BaseDate 前後の日数で切り出します。営業日ベースを選ぶと土日祝を飛ばします。進捗帯も営業日基準へ切り替えられます。</p>
+          <input id="wbsDisplayDaysBeforeInput" />
+          <input id="wbsDisplayDaysAfterInput" />
+          <input id="wbsBusinessDayRangeInput" type="checkbox" />
+          <input id="wbsBusinessDayProgressInput" type="checkbox" />
+          <div id="wbsHolidaySummary"></div>
+          <textarea id="wbsHolidayDatesInput"></textarea>
+          <textarea id="wbsExtraHolidayDatesInput"></textarea>
+        </section>
+      </div>
+    </details>
+    <details class="md-settings-card">
+      <summary class="md-settings-card__summary">
+        <span class="md-settings-card__summary-main">
+          <span class="md-settings-card__title">デバッグ</span>
+          <span class="md-settings-card__text">XML の直接確認や貼り付けが必要なときだけ開きます。</span>
+        </span>
+        <span class="md-settings-card__chevron" aria-hidden="true"></span>
+      </summary>
+      <div class="md-settings-card__body">
+        <textarea id="xmlInput"></textarea>
+        <textarea id="modelOutput"></textarea>
+        <textarea id="csvOutput"></textarea>
+        <textarea id="csvInput"></textarea>
+        <textarea id="mermaidOutput"></textarea>
+      </div>
+    </details>
     <div id="summaryProjectName"></div>
     <div id="summaryTaskCount"></div>
     <div id="summaryResourceCount"></div>
     <div id="summaryAssignmentCount"></div>
     <div id="summaryCalendarCount"></div>
-    <textarea id="modelOutput"></textarea>
-    <textarea id="mermaidOutput"></textarea>
     <div id="mermaidSvgError" class="md-hidden"></div>
     <div id="mermaidSvgPreview"></div>
-    <textarea id="csvOutput"></textarea>
-    <textarea id="csvInput"></textarea>
     <div id="projectPreview"></div>
     <div id="taskPreview"></div>
     <div id="resourcePreview"></div>
@@ -185,7 +209,9 @@ describe("mikuproject main", () => {
     expect(document.body.textContent).toContain("Project: Name / Title / Author / Company");
     expect(document.body.textContent).toContain("Calendars: Name / IsBaseCalendar / BaseCalendarUID");
     expect(document.body.textContent).toContain("Calendars の WeekDays / Exceptions / WorkWeeks");
-    expect(document.body.textContent).toContain("WBS XLSX の祝日指定");
+    expect(document.body.textContent).toContain("設定");
+    expect(document.body.textContent).toContain("祝日設定");
+    expect(document.body.textContent).toContain("デバッグ");
     expect(document.body.textContent).toContain("既定祝日と");
     expect(document.body.textContent).toContain("追加祝日を合成");
     expect(document.body.textContent).toContain("非稼働日例外から補完");
@@ -524,10 +550,10 @@ describe("mikuproject main", () => {
     expect(mermaidText).toContain("gantt");
     expect(mermaidText).toContain("title Sample Project");
     expect(mermaidText).toContain("dateFormat YYYY-MM-DDTHH:mm:ss");
-    expect(mermaidText).toContain("section Project Summary");
-    expect(mermaidText).toContain("Design :done, task_2, 2026-03-16T09:00:00, 2026-03-17T18:00:00");
-    expect(mermaidText).toContain("Implementation :crit, task_3, after task_2, 24h");
-    expect(mermaidText).toContain("%% dependency(native): Implementation after Design (task_3 after task_2)");
+    expect(mermaidText).toContain("section 1 Project Summary");
+    expect(mermaidText).toContain("1.1 Design :done, task_2, 2026-03-16T09:00:00, 2026-03-17T18:00:00");
+    expect(mermaidText).toContain("1.2 Implementation :crit, task_3, after task_2, 24h");
+    expect(mermaidText).toContain("%% dependency(native): Implementation after 1.1 Design (task_3 after task_2)");
     expect(document.getElementById("mermaidSvgPreview").innerHTML).toContain("<svg");
     expect(document.getElementById("downloadMermaidSvgBtn").disabled).toBe(false);
     expect(document.getElementById("statusMessage").textContent).toContain("SVG プレビューを更新しました");
@@ -608,10 +634,10 @@ describe("mikuproject main", () => {
 
     const mermaidText = xmlTools.exportMermaidGantt(model);
 
-    expect(mermaidText).toContain("Ship :task_3, 2026-03-18T09:00:00, 2026-03-18T18:00:00");
-    expect(mermaidText).toContain("%% dependency: Ship after Prep (type=FS, lag=2h) [task_3 after task_1]");
-    expect(mermaidText).toContain("%% dependency(pseudo): Ship ~= after Prep + 2h");
-    expect(mermaidText).toContain("%% dependency: Ship after Review (type=SS) [task_3 after task_2]");
+    expect(mermaidText).toContain("3 Ship :task_3, 2026-03-18T09:00:00, 2026-03-18T18:00:00");
+    expect(mermaidText).toContain("%% dependency: Ship after 1 Prep (type=FS, lag=2h) [task_3 after task_1]");
+    expect(mermaidText).toContain("%% dependency(pseudo): Ship ~= after 1 Prep + 2h");
+    expect(mermaidText).toContain("%% dependency: Ship after 2 Review (type=SS) [task_3 after task_2]");
     expect(mermaidText).toContain("%% dependency(note): Ship has multiple predecessors");
   });
 

@@ -616,11 +616,19 @@
                 continue;
             }
             const sectionName = summaryStack.length > 0
-                ? normalizeMermaidText(summaryStack[summaryStack.length - 1].name, "Summary")
+                ? normalizeMermaidText(formatMermaidTaskLabel(summaryStack[summaryStack.length - 1]), "Summary")
                 : normalizeMermaidText(projectName, "Tasks");
             sectionMap.set(task.uid, sectionName);
         }
         return sectionMap;
+    }
+    function formatMermaidTaskLabel(task) {
+        const wbs = String(task.wbs || task.outlineNumber || "").trim();
+        const name = String(task.name || "").trim();
+        if (wbs && name) {
+            return `${wbs} ${name}`;
+        }
+        return wbs || name || `Task ${task.uid}`;
     }
     function exportMermaidGantt(model) {
         const lines = [
@@ -630,7 +638,7 @@
             "  axisFormat %m/%d"
         ];
         const sectionMap = buildTaskSectionMap(model.tasks, model.project.name);
-        const taskNameMap = new Map(model.tasks.map((task) => [task.uid, normalizeMermaidText(task.name, `Task ${task.uid}`)]));
+        const taskNameMap = new Map(model.tasks.map((task) => [task.uid, normalizeMermaidText(formatMermaidTaskLabel(task), `Task ${task.uid}`)]));
         const exportedTasks = model.tasks.filter((task) => !task.summary && task.start && task.finish);
         let currentSection = "";
         for (const task of exportedTasks) {
@@ -666,7 +674,7 @@
             const fields = useNativeDependency
                 ? [...tags, taskId, `after ${nativeDependencyTarget}`, nativeDuration]
                 : [...tags, taskId, task.start, task.finish].filter(Boolean);
-            lines.push(`  ${normalizeMermaidText(task.name, `Task ${task.uid}`)} :${fields.join(", ")}`);
+            lines.push(`  ${normalizeMermaidText(formatMermaidTaskLabel(task), `Task ${task.uid}`)} :${fields.join(", ")}`);
             for (const predecessor of task.predecessors) {
                 const predecessorTaskId = `task_${normalizeMermaidTaskId(predecessor.predecessorUid, "x")}`;
                 const predecessorName = taskNameMap.get(predecessor.predecessorUid) || `Task ${predecessor.predecessorUid}`;

@@ -245,6 +245,25 @@
             return candidate;
         }
     }
+    function applyMermaidSvgTheme(svgText) {
+        if (!svgText) {
+            return svgText;
+        }
+        const styleBlock = [
+            "<style>",
+            ".section0, .section1, .section2, .section3, .section4 { fill: #f7f9ff !important; }",
+            ".task, .task0, .task1, .task2, .task3, .task4, .active, .active0, .active1, .active2, .active3, .done, .done0, .done1, .done2, .done3 { fill: #8f95e8 !important; stroke: #5d63cf !important; }",
+            ".milestone, .milestone0, .milestone1, .milestone2, .milestone3 { fill: #8f95e8 !important; stroke: #5d63cf !important; }",
+            ".grid .tick line, .tick line { stroke: #707b94 !important; }",
+            ".today { stroke: #ff3b30 !important; }",
+            ".taskText, .taskTextOutsideRight, .taskTextOutsideLeft, .sectionTitle, .titleText, text { fill: #1d2740; }",
+            "</style>"
+        ].join("");
+        if (svgText.includes(".task0") || svgText.includes(".section0")) {
+            return svgText.replace(/(<svg\b[^>]*>)/i, `$1${styleBlock}`);
+        }
+        return svgText;
+    }
     function downloadBlob(blob, filename) {
         const objectUrl = URL.createObjectURL(blob);
         const link = document.createElement("a");
@@ -254,6 +273,32 @@
         link.click();
         document.body.removeChild(link);
         window.setTimeout(() => URL.revokeObjectURL(objectUrl), 0);
+    }
+    function getMermaidRenderConfig() {
+        return {
+            startOnLoad: false,
+            securityLevel: "strict",
+            theme: "default",
+            themeVariables: {
+                sectionBkgColor: "#f7f9ff",
+                altSectionBkgColor: "#f7f9ff",
+                sectionBkgColor2: "#f7f9ff",
+                sectionBkgColor3: "#f7f9ff",
+                sectionBkgColor4: "#f7f9ff",
+                taskBkgColor: "#8f95e8",
+                taskBorderColor: "#5d63cf",
+                taskTextColor: "#1d2740",
+                activeTaskBkgColor: "#8f95e8",
+                activeTaskBorderColor: "#5d63cf",
+                doneTaskBkgColor: "#8f95e8",
+                doneTaskBorderColor: "#5d63cf",
+                milestoneBkgColor: "#8f95e8",
+                milestoneBorderColor: "#5d63cf",
+                gridColor: "#707b94",
+                lineColor: "#707b94",
+                todayLineColor: "#ff3b30"
+            }
+        };
     }
     async function renderMermaidPreview(source) {
         if (!mermaidApi) {
@@ -265,14 +310,10 @@
         }
         clearMermaidError();
         const renderId = `mikuprojectMermaidRender${++mermaidRenderCount}`;
-        mermaidApi.initialize({
-            startOnLoad: false,
-            securityLevel: "strict",
-            theme: "default"
-        });
+        mermaidApi.initialize(getMermaidRenderConfig());
         try {
             const result = await mermaidApi.render(renderId, source);
-            currentMermaidSvg = normalizeSvgForXml(result.svg);
+            currentMermaidSvg = applyMermaidSvgTheme(normalizeSvgForXml(result.svg));
             setMermaidPreviewMarkup(currentMermaidSvg);
             updateMermaidSvgButton();
         }

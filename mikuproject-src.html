@@ -303,13 +303,15 @@
               </div>
               <div class="md-form-grid">
                 <div id="wbsHolidaySummary" class="md-status">既定祝日: 未読込</div>
-                <lht-text-field-help
-                  field-id="wbsHolidayDatesInput"
-                  label="WBS 既定祝日"
+                <label class="md-label" for="wbsHolidayDatesInput">WBS 既定祝日</label>
+                <textarea
+                  id="wbsHolidayDatesInput"
+                  class="md-textarea"
                   rows="3"
                   placeholder="2026-03-20"
                   readonly
-                  help-text="現在の ProjectModel から自動補完します。画面上では直接編集しません。"></lht-text-field-help>
+                ></textarea>
+                <div class="md-caption">現在の ProjectModel から自動補完します。画面上では直接編集しません。</div>
               </div>
               </section>
             </div>

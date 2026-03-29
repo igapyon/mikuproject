@@ -190,30 +190,17 @@
       box-shadow: 0 10px 28px rgba(20, 46, 68, 0.08);
     }
     .shot-frame {
-      display: grid;
-      place-items: center;
+      display: block;
       width: 100%;
-      min-height: 220px;
       border-radius: 12px;
-      border: 1px dashed var(--outline-2);
-      background:
-        linear-gradient(135deg, rgba(47, 110, 165, 0.08), rgba(34, 87, 127, 0.03)),
-        repeating-linear-gradient(
-          -45deg,
-          rgba(255, 255, 255, 0.5),
-          rgba(255, 255, 255, 0.5) 10px,
-          rgba(47, 110, 165, 0.03) 10px,
-          rgba(47, 110, 165, 0.03) 20px
-        );
-      color: var(--secondary-text);
-      text-align: center;
-      padding: 20px;
-      line-height: 1.6;
-      font-weight: 700;
+      border: 1px solid var(--outline-2);
+      overflow: hidden;
+      background: #ffffff;
     }
-    .shot-frame code {
-      display: inline-block;
-      margin-top: 6px;
+    .shot-frame img {
+      display: block;
+      width: 100%;
+      height: auto;
     }
     .shot-card figcaption {
       margin-top: 10px;
@@ -232,12 +219,13 @@
     <section aria-label="What is this">
       <h2>What is this?</h2>
       <p class="lead">
-        <code>mikuproject</code> は、<code>MS Project XML</code> をローカルで読み込み、内部の <code>ProjectModel</code> に変換し、再度 <code>MS Project XML</code> や補助表現へ出力する Single-file Web App です。
+        <code>mikuproject</code> は、<code>MS Project XML</code> を基軸に、変換・可視化・限定編集を行う single-file web app です。
       </p>
       <ul>
-        <li>ブラウザ内でローカルに動作し、サーバ通信を前提にしません。</li>
-        <li><code>MS Project XML</code> を意味の基軸として扱います。</li>
-        <li><code>.xlsx</code> は確認・可視化・限定編集のための周辺表現として扱います。</li>
+        <li><code>MS Project XML</code> を基軸にした変換・可視化・限定編集を重視しています。</li>
+        <li>生成AI 連携を意識した projection の出力と草案の再取込を持ちます。</li>
+        <li>人が読むための <code>WBS Excel ブック (.xlsx)</code> 帳票出力を持ちます。</li>
+        <li>Web ブラウザさえあればインストール不要・ネットワーク不要で利用できます。</li>
       </ul>
     </section>
 
@@ -251,15 +239,15 @@
             <li><code>MS Project XML</code> を読み込み、内部モデルへ変換します。</li>
             <li>内部モデルを JSON とサマリとして確認できます。</li>
             <li><code>MS Project XML</code> を再生成できます。</li>
-            <li>Mermaid gantt テキストを生成できます。</li>
+            <li>Mermaid gantt の preview、Markdown、SVG を出力できます。</li>
           </ul>
         </div>
         <div class="panel">
           <ul>
             <li><code>Project / Tasks / Resources / Assignments / Calendars</code> workbook を <code>XLSX Export / Import</code> できます。</li>
-            <li>表示専用の <code>WBS XLSX Export</code> を持ちます。</li>
+            <li>人が読むための <code>WBS Excel ブック (.xlsx)</code> を出力できます。</li>
             <li><code>CSV + ParentID</code> の生成と解析を行えます。</li>
-            <li><code>XLSX Import</code> 後の差分要約と validation を確認できます。</li>
+            <li>生成AI向け JSON projection の出力と草案 JSON の取込ができます。</li>
           </ul>
         </div>
       </div>
@@ -270,11 +258,9 @@
     <section aria-label="Use cases">
       <h2>Use Cases</h2>
       <ul>
-        <li><code>MS Project XML</code> の round-trip をローカルで確認したい。</li>
-        <li>XML の中身を内部モデルとして確認したい。</li>
-        <li><code>.xlsx</code> で限定的に編集し、XML へ戻したい。</li>
-        <li>WBS 形式の workbook を補助資料として出力したい。</li>
-        <li>依存関係やタスク構造を Mermaid や CSV に変換して確認したい。</li>
+        <li>管理用の Excel ブックに必要な情報を入力し、<code>WBS Excel ブック (.xlsx)</code> 形式へ変換したい。</li>
+        <li>生成AI に専用プロンプトを与えて WBS 草案を作成し、その結果を取り込んで <code>WBS Excel ブック (.xlsx)</code> にしたい。</li>
+        <li><code>MS Project</code> のデータを <code>MS Project XML</code> 形式でエクスポートし、それを <code>WBS Excel ブック (.xlsx)</code> 形式へ変換したい。</li>
       </ul>
     </section>
 
@@ -284,84 +270,53 @@
       <h2>How to use</h2>
       <ol>
         <li>Web ブラウザで <code>mikuproject.html</code> を開きます。</li>
-        <li><code>MS Project XML</code> を読み込むか、サンプル XML を使います。</li>
-        <li>内部モデル、プレビュー、Mermaid、CSV、XLSX を必要に応じて確認します。</li>
-        <li><code>XLSX Import</code> を使う場合は、差分要約と validation を確認した上で XML を再出力します。</li>
+        <li><code>Load from file</code> から project ファイルを読み込むか、サンプルを使います。</li>
+        <li>内部モデル、validation、Mermaid プレビューを確認します。</li>
+        <li>必要に応じて <code>MS Project XML</code>、<code>XLSX</code>、<code>WBS Excel ブック (.xlsx)</code>、Mermaid、CSV を保存します。</li>
       </ol>
       <div class="link-row">
-        <a class="link-btn" href="./mikuproject.html?v=202603280000">Open mikuproject</a>
+        <a class="link-btn" href="./mikuproject.html">Open mikuproject</a>
         <a class="link-btn-secondary" href="./README.md">README</a>
+        <a class="link-btn-secondary" href="./docs/architecture.md">Architecture</a>
         <a class="link-btn-secondary" href="./docs/spec.md">Spec</a>
       </div>
     </section>
 
     <hr class="divider" />
 
-    <section aria-label="Project notes">
-      <h2>Project Notes</h2>
-      <div class="panel-grid">
-        <div class="panel">
-          <p>
-            正本は <code>MS Project XML</code> です。<code>.xlsx</code> は確認と限定編集のための補助表現であり、自由編集の正本としては扱いません。
-          </p>
-        </div>
-        <div class="panel">
-          <p>
-            現時点では、<code>Calendars</code> の <code>WeekDays / Exceptions / WorkWeeks</code> など一部の項目は <code>XLSX Import</code> の反映対象外です。
-          </p>
-        </div>
-      </div>
-      <p class="sub">
-        このページは紹介用の入口です。実際の操作 UI は <code>mikuproject.html</code> 側にあります。
-      </p>
-    </section>
-
-    <hr class="divider" />
-
     <section aria-label="Screenshots">
       <h2>Screenshots</h2>
-      <p>
-        スクリーンショットは後から差し込めるように枠だけ先に用意しています。画像を追加する場合は、たとえば <code>docs/screenshots/</code> 配下へ置く構成が扱いやすいです。
-      </p>
       <div class="gallery">
         <figure class="shot-card">
           <div class="shot-frame">
-            Main Screen
-            <br />
-            <code>docs/screenshots/mikuproject-main.png</code>
+            <img src="./docs/screenshots/screen01.png" alt="mikuproject Input screen" />
           </div>
           <figcaption>
-            XML 読込、内部モデル確認、Mermaid、CSV、XLSX の各操作を行うメイン画面用の枠です。
+            Input 画面。<code>Load from file</code>、<code>サンプル</code>、<code>生成AI連携</code> から入力を受け付けます。
           </figcaption>
         </figure>
         <figure class="shot-card">
           <div class="shot-frame">
-            XLSX Import Summary
-            <br />
-            <code>docs/screenshots/mikuproject-xlsx-import.png</code>
+            <img src="./docs/screenshots/screen02.png" alt="mikuproject Overview screen" />
           </div>
           <figcaption>
-            差分要約と validation を確認できる `XLSX Import` 後の画面用の枠です。
+            Overview 画面。内部モデル、validation、Mermaid プレビューを確認します。
           </figcaption>
         </figure>
         <figure class="shot-card">
           <div class="shot-frame">
-            WBS XLSX Export
-            <br />
-            <code>docs/screenshots/mikuproject-wbs.png</code>
+            <img src="./docs/screenshots/screen03.png" alt="mikuproject Output screen" />
           </div>
           <figcaption>
-            WBS workbook 出力の用途や見た目を説明するためのスクリーンショット枠です。
+            Output 画面。<code>MS Project XML</code>、<code>XLSX</code>、<code>JSON</code>、<code>CSV</code>、<code>WBS XLSX</code>、Mermaid、SVG を保存できます。
           </figcaption>
         </figure>
         <figure class="shot-card">
           <div class="shot-frame">
-            Mermaid Preview
-            <br />
-            <code>docs/screenshots/mikuproject-mermaid.png</code>
+            <img src="./docs/screenshots/excel01.png" alt="WBS Excel workbook output" />
           </div>
           <figcaption>
-            Mermaid gantt テキスト生成と SVG プレビューの説明に使う枠です。
+            人が読むための <code>WBS Excel ブック (.xlsx)</code> 帳票出力の例です。
           </figcaption>
         </figure>
       </div>

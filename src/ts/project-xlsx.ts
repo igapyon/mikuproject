@@ -211,6 +211,44 @@
   }
 
   function buildResourcesSheet(model: ProjectModel) {
+    const resourceRows = model.resources.length > 0
+      ? model.resources.map((resource, index) => ({
+        cells: [
+          countCell(resource.uid, index),
+          countCell(resource.id, index),
+          editableCell(entityNameCell(resource.name, index)),
+          countCell(resource.type, index),
+          textCell(resource.initials, index),
+          editableCell(textCell(resource.group, index)),
+          editableCell(countCell(resource.maxUnits, index)),
+          referenceCell(resource.calendarUID, index),
+          textCell(resource.standardRate, index),
+          textCell(resource.overtimeRate, index),
+          countCell(resource.costPerUse, index),
+          workCell(resource.work, index),
+          workCell(resource.actualWork, index),
+          workCell(resource.remainingWork, index)
+        ]
+      }))
+      : [{
+        cells: [
+          countCell(undefined, 0),
+          countCell(undefined, 0),
+          editableCell(entityNameCell(undefined, 0)),
+          countCell(undefined, 0),
+          textCell(undefined, 0),
+          editableCell(textCell(undefined, 0)),
+          editableCell(countCell(undefined, 0)),
+          referenceCell(undefined, 0),
+          textCell(undefined, 0),
+          textCell(undefined, 0),
+          countCell(undefined, 0),
+          workCell(undefined, 0),
+          workCell(undefined, 0),
+          workCell(undefined, 0)
+        ]
+      }];
+
     return {
       name: "Resources",
       columns: [
@@ -224,24 +262,7 @@
         sectionTitleRow("Resources", 14, SHEET_THEMES.resources.section),
         sectionTitleRow("Resource List", 14, SHEET_THEMES.resources.section),
         headerRow([...SHEET_HEADERS.Resources], SHEET_THEMES.resources.header),
-        ...model.resources.map((resource, index) => ({
-          cells: [
-            countCell(resource.uid, index),
-            countCell(resource.id, index),
-            editableCell(entityNameCell(resource.name, index)),
-            countCell(resource.type, index),
-            textCell(resource.initials, index),
-            editableCell(textCell(resource.group, index)),
-            editableCell(countCell(resource.maxUnits, index)),
-            referenceCell(resource.calendarUID, index),
-            textCell(resource.standardRate, index),
-            textCell(resource.overtimeRate, index),
-            countCell(resource.costPerUse, index),
-            workCell(resource.work, index),
-            workCell(resource.actualWork, index),
-            workCell(resource.remainingWork, index)
-          ]
-        }))
+        ...resourceRows
       ]
     };
   }
@@ -249,6 +270,39 @@
   function buildAssignmentsSheet(model: ProjectModel) {
     const taskNameByUid = new Map(model.tasks.map((task) => [task.uid, task.name]));
     const resourceNameByUid = new Map(model.resources.map((resource) => [resource.uid, resource.name]));
+    const assignmentRows = model.assignments.length > 0
+      ? model.assignments.map((assignment, index) => ({
+        cells: [
+          countCell(assignment.uid, index),
+          referenceCell(assignment.taskUid, index),
+          entityNameCell(taskNameByUid.get(assignment.taskUid), index),
+          referenceCell(assignment.resourceUid, index),
+          entityNameCell(resourceNameByUid.get(assignment.resourceUid), index),
+          dateTimeCell(assignment.start, index),
+          dateTimeCell(assignment.finish, index),
+          editableCell(countCell(assignment.units, index)),
+          editableCell(workCell(assignment.work, index)),
+          workCell(assignment.actualWork, index),
+          workCell(assignment.remainingWork, index),
+          editableCell(percentCell(assignment.percentWorkComplete, index))
+        ]
+      }))
+      : [{
+        cells: [
+          countCell(undefined, 0),
+          referenceCell(undefined, 0),
+          entityNameCell(undefined, 0),
+          referenceCell(undefined, 0),
+          entityNameCell(undefined, 0),
+          dateTimeCell(undefined, 0),
+          dateTimeCell(undefined, 0),
+          editableCell(countCell(undefined, 0)),
+          editableCell(workCell(undefined, 0)),
+          workCell(undefined, 0),
+          workCell(undefined, 0),
+          editableCell(percentCell(undefined, 0))
+        ]
+      }];
 
     return {
       name: "Assignments",
@@ -262,22 +316,7 @@
         sectionTitleRow("Assignments", 12, SHEET_THEMES.assignments.section),
         sectionTitleRow("Assignment List", 12, SHEET_THEMES.assignments.section),
         headerRow([...SHEET_HEADERS.Assignments], SHEET_THEMES.assignments.header),
-        ...model.assignments.map((assignment, index) => ({
-          cells: [
-            countCell(assignment.uid, index),
-            referenceCell(assignment.taskUid, index),
-            entityNameCell(taskNameByUid.get(assignment.taskUid), index),
-            referenceCell(assignment.resourceUid, index),
-            entityNameCell(resourceNameByUid.get(assignment.resourceUid), index),
-            dateTimeCell(assignment.start, index),
-            dateTimeCell(assignment.finish, index),
-            editableCell(countCell(assignment.units, index)),
-            editableCell(workCell(assignment.work, index)),
-            workCell(assignment.actualWork, index),
-            workCell(assignment.remainingWork, index),
-            editableCell(percentCell(assignment.percentWorkComplete, index))
-          ]
-        }))
+        ...assignmentRows
       ]
     };
   }
@@ -532,11 +571,9 @@
   }
 
   function editableCell(cellLike: XlsxCellLike): XlsxCellLike {
-    if (cellLike.value === undefined) {
-      return cellLike;
-    }
     return {
       ...cellLike,
+      border: cellLike.border || "thin",
       fillColor: EDITABLE_FILL
     };
   }

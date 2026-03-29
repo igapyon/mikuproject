@@ -211,6 +211,30 @@ import 時の扱いも `XLSX Import` と完全に揃える。
 
 `mikuproject_workbook_json` の import も、この表と同じ反映対象列・キー・部分更新ルールを使う。
 
+`Tasks` シートの header ごとの扱いは次のとおり。
+
+| Tasks Header | 扱い |
+| --- | --- |
+| `UID` | 表示のみ |
+| `ID` | 表示のみ |
+| `Name` | import 可 |
+| `OutlineLevel` | 表示のみ |
+| `OutlineNumber` | 表示のみ |
+| `WBS` | 表示のみ |
+| `Start` | import 可 |
+| `Finish` | import 可 |
+| `Duration` | 表示のみ |
+| `PercentComplete` | import 可 |
+| `PercentWorkComplete` | import 可 |
+| `Milestone` | 表示のみ |
+| `Summary` | 表示のみ |
+| `Critical` | 表示のみ |
+| `CalendarUID` | 表示のみ |
+| `Predecessors` | 表示のみ |
+| `Notes` | import 可 |
+
+`Resources` と `Assignments` が 0 件の workbook では、どの列が import 対象か分かるように、editable 列だけ着色されたダミー行を 1 行出してよい。これは表示補助であり、`UID` 等のキーが空なので import 時には無視される。
+
 ### Calendar 編集方針
 
 `Calendars / Exceptions` は、業務上は重要だが壊しやすい領域でもあるため、当面は `mikuproject` の画面上で直接編集しない方針とする。

@@ -16,6 +16,13 @@
 - `local-data/` に置くべきでない生成物や一時ファイルがないか見直す
 - `npm test` を `scripts/run-tests.mjs` ベースへ切り替えるか検討する
 - `main.test.js` に残っている `xlsx import` の file input wiring を、UI 配線確認と import 結果確認へさらに分離する
+- `XLSX Import` の実地回帰観点を明文化し、少なくとも次を継続確認する
+  - export した `.xlsx` をそのまま import できる
+  - Excel で 1 セル変更した `.xlsx` を import できる
+  - 同じファイル名で保存し直した `.xlsx` を連続 import できる
+  - 空 editable セルを埋めた変更を import できる
+  - `Name / Start / Finish / PercentComplete / PercentWorkComplete / Notes` など主要 editable 列が戻る
+  - `Milestone / Summary / Critical` など表示専用列は戻らない
 - `main.ts` の summary / validation / preview 描画を別モジュール化し、DOM テストをさらに軽くする
 - `phase_detail_view scoped` の `phase UID / root UID / max depth` 指定を、より選びやすい UI に改善する
 - `task_edit_view` の projection を実装する

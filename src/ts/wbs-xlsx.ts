@@ -435,7 +435,7 @@
   ) {
     const scheduleMode = project.scheduleFromStart ? "開始基準" : "終了基準";
     const items: Array<{ label: string; value: string | number; fillColor: string }> = [
-      { label: "題名", value: truncateWbsReference(project.title || "-", 18) || "-", fillColor: SUMMARY_ASSIGNMENT_FILL },
+      { label: "プロジェクト名", value: truncateWbsReference(project.name || "-", 18) || "-", fillColor: SUMMARY_ASSIGNMENT_FILL },
       { label: "カレンダ", value: formatCalendarLabel(project.calendarUID, calendarNameByUid), fillColor: SUMMARY_ASSIGNMENT_FILL },
       { label: "基準", value: scheduleMode, fillColor: SUMMARY_ASSIGNMENT_FILL },
       { label: "開始日", value: formatWbsDate(project.startDate), fillColor: SUMMARY_SCHEDULE_FILL },

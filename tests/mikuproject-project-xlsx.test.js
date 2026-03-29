@@ -82,9 +82,9 @@ describe("mikuproject project xlsx", () => {
     expect(workbook.sheets[0].rows[3].cells[0].value).toBe("Name");
     expect(workbook.sheets[0].rows[3].cells[1].value).toBe("mikuproject開発");
     expect(workbook.sheets[0].rows[3].cells[1].fillColor).toBe(EDITABLE_FILL);
-    expect(workbook.sheets[0].rows[4].cells[1].fillColor).toBe("#FAF6FF");
-    expect(workbook.sheets[0].rows[5].cells[1].fillColor).toBe("#FAF6FF");
-    expect(workbook.sheets[0].rows[6].cells[1].fillColor).toBe("#FAF6FF");
+    expect(workbook.sheets[0].rows[4].cells[1].fillColor).toBe(EDITABLE_FILL);
+    expect(workbook.sheets[0].rows[5].cells[1].fillColor).toBe(EDITABLE_FILL);
+    expect(workbook.sheets[0].rows[6].cells[1].fillColor).toBe(EDITABLE_FILL);
     expect(workbook.sheets[0].rows[7].cells[1].value).toBe("2026-03-16");
     expect(workbook.sheets[0].rows[11].cells[0].value).toBe("Settings");
     expect(workbook.sheets[0].rows[12].cells[1].fillColor).toBe(EDITABLE_FILL);
@@ -137,7 +137,8 @@ describe("mikuproject project xlsx", () => {
     expect(tasksSheet.rows[5].cells[15].value).toBe("");
     expect(tasksSheet.rows[5].cells[15].fillColor).toBe("#EEF7F4");
     expect(tasksSheet.rows[5].cells[16].value).toBeUndefined();
-    expect(tasksSheet.rows[5].cells[16].fillColor).toBeUndefined();
+    expect(tasksSheet.rows[5].cells[16].fillColor).toBe(EDITABLE_FILL);
+    expect(tasksSheet.rows[5].cells[16].border).toBe("thin");
 
     expect(resourcesSheet.mergedRanges).toEqual([]);
     expect(resourcesSheet.rows[0].cells[0].value).toBe("Resources");
@@ -160,7 +161,12 @@ describe("mikuproject project xlsx", () => {
       "ActualWork",
       "RemainingWork"
     ]);
-    expect(resourcesSheet.rows).toHaveLength(3);
+    expect(resourcesSheet.rows).toHaveLength(4);
+    expect(resourcesSheet.rows[3].cells[0].value).toBeUndefined();
+    expect(resourcesSheet.rows[3].cells[2].fillColor).toBe(EDITABLE_FILL);
+    expect(resourcesSheet.rows[3].cells[5].fillColor).toBe(EDITABLE_FILL);
+    expect(resourcesSheet.rows[3].cells[6].fillColor).toBe(EDITABLE_FILL);
+    expect(resourcesSheet.rows[3].cells[2].border).toBe("thin");
 
     expect(assignmentsSheet.mergedRanges).toEqual([]);
     expect(assignmentsSheet.rows[0].cells[0].value).toBe("Assignments");
@@ -181,7 +187,12 @@ describe("mikuproject project xlsx", () => {
       "RemainingWork",
       "PercentWorkComplete"
     ]);
-    expect(assignmentsSheet.rows).toHaveLength(3);
+    expect(assignmentsSheet.rows).toHaveLength(4);
+    expect(assignmentsSheet.rows[3].cells[0].value).toBeUndefined();
+    expect(assignmentsSheet.rows[3].cells[7].fillColor).toBe(EDITABLE_FILL);
+    expect(assignmentsSheet.rows[3].cells[8].fillColor).toBe(EDITABLE_FILL);
+    expect(assignmentsSheet.rows[3].cells[11].fillColor).toBe(EDITABLE_FILL);
+    expect(assignmentsSheet.rows[3].cells[7].border).toBe("thin");
 
     expect(calendarsSheet.mergedRanges).toEqual([]);
     expect(calendarsSheet.rows[0].cells[0].value).toBe("Calendars");
@@ -509,7 +520,7 @@ describe("mikuproject project xlsx", () => {
   it("reports assignment percent work complete import changes", () => {
     const { projectXlsx, model, workbook } = buildSampleWorkbook((nextWorkbook) => {
       const assignmentsSheet = nextWorkbook.sheets.find((sheet) => sheet.name === "Assignments");
-      expect(assignmentsSheet.rows).toHaveLength(3);
+      expect(assignmentsSheet.rows).toHaveLength(4);
     });
 
     const result = projectXlsx.importProjectWorkbookDetailed(workbook, model);

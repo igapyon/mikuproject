@@ -130,8 +130,8 @@ describe("mikuproject wbs xlsx", () => {
     const projectInfoHeaderIndex = findRowIndexByCellValue(sheet, "プロジェクト", 0);
     expect(projectInfoHeaderIndex).toBe(2);
     expect(sheet.rows[projectInfoHeaderIndex].cells[0].fontSize).toBe(14);
-    expect(sheet.rows[projectInfoHeaderIndex + 1].cells[0].value).toBe("題名");
-    expect(sheet.rows[projectInfoHeaderIndex + 1].cells[2].value).toBe("-");
+    expect(sheet.rows[projectInfoHeaderIndex + 1].cells[0].value).toBe("プロジェクト名");
+    expect(sheet.rows[projectInfoHeaderIndex + 1].cells[2].value).toBe("mikuproject開発");
     expect(sheet.rows[projectInfoHeaderIndex + 2].cells[0].value).toBe("カレンダ");
     expect(sheet.rows[projectInfoHeaderIndex + 2].cells[2].value).toBe("1 Standard");
     expect(sheet.rows[projectInfoHeaderIndex + 3].cells[0].value).toBe("基準");
@@ -710,7 +710,7 @@ describe("mikuproject wbs xlsx", () => {
     const { xml, wbsXlsx } = bootModules();
     const model = xml.importMsProjectXml(xml.SAMPLE_XML);
 
-    model.project.title = "Sample Project Title Very Long";
+    model.project.name = "Sample Project Name Very Long";
     model.calendars[0].name = "Standard Calendar Very Long";
     model.tasks[2].predecessors = [{ predecessorUid: "1", type: 1, lag: "0" }];
 
@@ -721,6 +721,7 @@ describe("mikuproject wbs xlsx", () => {
     const secondTaskRow = sheet.rows[headerRowIndex + 3];
     const thirdTaskRow = sheet.rows[headerRowIndex + 4];
 
+    expect(sheet.rows[projectInfoHeaderIndex + 1].cells[0].value).toBe("プロジェクト名");
     expect(sheet.rows[projectInfoHeaderIndex + 1].cells[2].value).toBe("Sample Project ...");
     expect(secondTaskRow.cells[15].value).toBe("-");
     expect(secondTaskRow.cells[16].value).toBe("1 Standa...");

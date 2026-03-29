@@ -45,6 +45,7 @@
       XlsxWorkbookCodec: new () => {
         exportWorkbook: (workbook: unknown) => Uint8Array;
         importWorkbook: (bytes: Uint8Array) => unknown;
+        importWorkbookAsync?: (bytes: Uint8Array) => Promise<unknown>;
       };
     };
   }).__mikuprojectExcelIo;
@@ -1358,7 +1359,9 @@ WorkWeek1=${formatCalendarWorkWeekSummary(calendar)}</div>
     const baseModel = ensureCurrentModel();
     const bytes = new Uint8Array(await file.arrayBuffer());
     const codec = new mikuprojectExcelIo.XlsxWorkbookCodec();
-    const workbook = codec.importWorkbook(bytes);
+    const workbook = typeof codec.importWorkbookAsync === "function"
+      ? await codec.importWorkbookAsync(bytes)
+      : codec.importWorkbook(bytes);
     const result = mikuprojectProjectXlsx.importProjectWorkbookDetailed(workbook, baseModel);
     currentModel = result.model;
     const issues = mikuprojectXml.validateProjectModel(currentModel);
@@ -1491,8 +1494,16 @@ WorkWeek1=${formatCalendarWorkWeekSummary(calendar)}</div>
 
   function bindEvents(): void {
     getElement<HTMLButtonElement>("loadSampleBtn").addEventListener("click", loadSample);
+    getElement<HTMLInputElement>("importFileInput").addEventListener("click", (event) => {
+      const input = event.target as HTMLInputElement | null;
+      if (input) {
+        input.value = "";
+      }
+    });
     getElement<HTMLButtonElement>("importFileBtn").addEventListener("click", () => {
-      getElement<HTMLInputElement>("importFileInput").click();
+      const input = getElement<HTMLInputElement>("importFileInput");
+      input.value = "";
+      input.click();
     });
     getElement<HTMLButtonElement>("downloadMermaidSvgBtn").addEventListener("click", () => {
       void downloadCurrentMermaidSvg().catch((error) => {
@@ -1594,9 +1605,13 @@ WorkWeek1=${formatCalendarWorkWeekSummary(calendar)}</div>
     getElement<HTMLInputElement>("importFileInput").addEventListener("change", async (event) => {
       const input = event.target as HTMLInputElement | null;
       const file = input?.files && input.files[0];
+      if (file) {
+        setStatus(`${file.name} を読み込んでいます...`);
+      }
       try {
         await importFromFile(file);
       } catch (error) {
+        console.error("[mikuproject] file import failed", error);
         setStatus(error instanceof Error ? error.message : "ファイル読込に失敗しました");
       } finally {
         if (input) {

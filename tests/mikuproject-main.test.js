@@ -275,6 +275,7 @@ async function flushAsyncWork() {
   await Promise.resolve();
 }
 
+
 describe("mikuproject main", () => {
   beforeEach(() => {
     document.body.innerHTML = "";
@@ -980,6 +981,21 @@ describe("mikuproject main", () => {
     expect(document.getElementById("xlsxImportSummary").textContent).toContain("反映後の XML は更新済みです");
     expect(document.querySelectorAll("#xlsxImportSummary .md-xlsx-summary__section")).toHaveLength(1);
     expect(document.querySelectorAll("#xlsxImportSummary .md-xlsx-summary__item")).toHaveLength(1);
+  });
+
+  it("clears file input value before reselecting the same file", () => {
+    bootPage();
+
+    const importInput = document.getElementById("importFileInput");
+    Object.defineProperty(importInput, "value", {
+      configurable: true,
+      writable: true,
+      value: "same-file.xlsx"
+    });
+
+    importInput.dispatchEvent(new Event("click"));
+
+    expect(importInput.value).toBe("");
   });
 
   it("imports workbook json edits back into the current model and xml", async () => {

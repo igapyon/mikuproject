@@ -17,6 +17,7 @@
                 parent_uid: null,
                 position: 0,
                 is_summary: true,
+                percent_complete: 100,
                 planned_start: "2026-03-16",
                 planned_finish: "2026-03-17"
             },
@@ -26,6 +27,7 @@
                 parent_uid: "draft-100",
                 position: 0,
                 is_milestone: true,
+                percent_complete: 100,
                 planned_start: "2026-03-16",
                 planned_finish: "2026-03-16"
             },
@@ -34,6 +36,7 @@
                 name: "初期実装（MS Project XML 調査・基軸フォーマット選定・内部モデルの概要確定）",
                 parent_uid: "draft-100",
                 position: 1,
+                percent_complete: 100,
                 planned_start: "2026-03-16",
                 planned_finish: "2026-03-16"
             },
@@ -42,6 +45,7 @@
                 name: "round-trip拡張（MS Project XML → 内部JSON形式 → MS Project XML の往復対応）",
                 parent_uid: "draft-100",
                 position: 2,
+                percent_complete: 100,
                 planned_start: "2026-03-17",
                 planned_finish: "2026-03-17"
             },
@@ -51,6 +55,7 @@
                 parent_uid: null,
                 position: 1,
                 is_summary: true,
+                percent_complete: 25,
                 planned_start: "2026-03-19",
                 planned_finish: "2026-03-25"
             },
@@ -59,6 +64,7 @@
                 name: "ユーザー操作フローの見直し【架空】",
                 parent_uid: "draft-150",
                 position: 0,
+                percent_complete: 50,
                 planned_start: "2026-03-19",
                 planned_finish: "2026-03-23"
             },
@@ -1057,7 +1063,10 @@
   
     */
     function buildSampleXml() {
-        return exportMsProjectXml(importProjectDraftView(SAMPLE_PROJECT_DRAFT_VIEW));
+        const sampleModel = importProjectDraftView(SAMPLE_PROJECT_DRAFT_VIEW);
+        sampleModel.project.currentDate = "2026-03-23T09:00:00";
+        sampleModel.project.statusDate = "2026-03-23T09:00:00";
+        return exportMsProjectXml(sampleModel);
     }
     function textContent(parent, tagName) {
         const element = parent.getElementsByTagName(tagName)[0];
@@ -1632,6 +1641,9 @@
             position: typeof task.position === "number" && Number.isFinite(task.position) ? task.position : index,
             isSummary: Boolean(task.is_summary),
             isMilestone: Boolean(task.is_milestone),
+            percentComplete: typeof task.percent_complete === "number" && Number.isFinite(task.percent_complete)
+                ? Math.max(0, Math.min(100, task.percent_complete))
+                : 0,
             plannedDuration: task.planned_duration || undefined,
             plannedDurationHours: typeof task.planned_duration_hours === "number" && Number.isFinite(task.planned_duration_hours)
                 ? task.planned_duration_hours
@@ -1690,7 +1702,7 @@
                     duration: task.plannedDuration || (typeof task.plannedDurationHours === "number" ? `PT${task.plannedDurationHours}H` : "PT0H0M0S"),
                     milestone: task.isMilestone,
                     summary: task.isSummary || hasChildren,
-                    percentComplete: 0,
+                    percentComplete: task.percentComplete,
                     predecessors: task.predecessorUids.map((predecessorUid) => ({ predecessorUid })),
                     extendedAttributes: [],
                     baselines: [],

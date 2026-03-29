@@ -359,8 +359,8 @@ describe("mikuproject main", () => {
           planned_start: "2026-04-01"
         },
         tasks: [
-          { uid: "draft-1", name: "要件定義", parent_uid: null, position: 0, is_summary: true },
-          { uid: "draft-2", name: "ヒアリング", parent_uid: "draft-1", position: 0, planned_finish: "2026-04-01" },
+          { uid: "draft-1", name: "要件定義", parent_uid: null, position: 0, is_summary: true, percent_complete: 100 },
+          { uid: "draft-2", name: "ヒアリング", parent_uid: "draft-1", position: 0, percent_complete: 50, planned_finish: "2026-04-01" },
           { uid: "draft-3", name: "整理期間", parent_uid: "draft-1", position: 1, planned_start: "2026-04-02", planned_finish: "2026-04-03" },
           { uid: "draft-4", name: "要件確定", parent_uid: "draft-1", position: 2, is_milestone: true, predecessors: ["draft-2"], planned_start: "2026-04-08T18:00:00", planned_finish: "2026-04-08T18:00:00" }
         ]
@@ -381,6 +381,8 @@ describe("mikuproject main", () => {
     expect(document.getElementById("xmlInput").value).toContain("<UID>3</UID>");
     expect(document.getElementById("modelOutput").value).toContain("\"name\": \"ヒアリング\"");
     expect(document.getElementById("modelOutput").value).toContain("\"milestone\": false");
+    expect(document.getElementById("modelOutput").value).toContain("\"percentComplete\": 100");
+    expect(document.getElementById("modelOutput").value).toContain("\"percentComplete\": 50");
     expect(document.getElementById("modelOutput").value).toContain("\"start\": \"2026-04-01T09:00:00\"");
     expect(document.getElementById("modelOutput").value).toContain("\"finish\": \"2026-04-01T18:00:00\"");
     expect(document.getElementById("modelOutput").value).toContain("\"name\": \"整理期間\"");
@@ -853,7 +855,7 @@ describe("mikuproject main", () => {
     expect(document.getElementById("xlsxImportSummary").textContent).toContain("変更なし: Project, Resources, Assignments, Calendars");
     expect(document.getElementById("xlsxImportSummary").textContent).toContain("UID=3 初期実装（MS Project XML 調査・基軸フォーマット選定・内部モデルの概要確定）");
     expect(document.getElementById("xlsxImportSummary").textContent).toContain("Name: 初期実装（MS Project XML 調査・基軸フォーマット選定・内部モデルの概要確定） -> 初期実装 Imported From XLSX");
-    expect(document.getElementById("xlsxImportSummary").textContent).toContain("PercentComplete: 0 -> 77");
+    expect(document.getElementById("xlsxImportSummary").textContent).toContain("PercentComplete: 100 -> 77");
     expect(document.getElementById("xlsxImportSummary").textContent).toContain("反映後の XML は更新済みです");
     expect(document.querySelectorAll("#xlsxImportSummary .md-xlsx-summary__section")).toHaveLength(1);
     expect(document.querySelectorAll("#xlsxImportSummary .md-xlsx-summary__item")).toHaveLength(1);

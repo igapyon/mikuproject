@@ -45,7 +45,7 @@ function buildSampleWorkbook(mutator) {
   return { xml, projectXlsx, model, workbook };
 }
 
-const SAMPLE_HOLIDAY_COUNT = 90;
+const SAMPLE_HOLIDAY_COUNT = 1;
 const SAMPLE_FIRST_HOLIDAY_NAME = "春分の日";
 const SAMPLE_FIRST_HOLIDAY_DATE = "2026-03-20";
 const EDITABLE_FILL = "#FDE7C7";

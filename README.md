@@ -58,7 +58,7 @@
 - `MS Project XML` ファイルの読込
 - `XLSX` ファイルの限定 import
 - `CSV + ParentID` ファイルの読込
-- サンプル XML の読込
+- `project_draft_view` ベースで生成したサンプル XML の読込
 - 生成AIが返した `project_draft_view` の JSON ファイル読込または JSON 貼り付け取込
 
 ### Overview
@@ -66,6 +66,7 @@
 - 内部モデルの要約確認
 - validation メッセージの確認
 - Mermaid gantt プレビューの確認
+- Mermaid gantt の `done / active / normal` 状態色と phase 背景の確認
 - `Project / Tasks / Resources / Assignments / Calendars` の preview 確認
 
 ### Output
@@ -166,6 +167,7 @@ npm run build
 
 - 既存 project 向けには `project_overview_view` と `phase_detail_view` を出力します。
 - 新規生成向けには、生成AIが返した `project_draft_view` を取り込めます。
+- 現時点で UI から実装済みなのは上記 3 つです。`task_edit_view` と Patch JSON 適用は設計メモ段階で、まだ実装していません。
 - 詳細な考え方は `docs/mikuproject-ai-json-spec.md` と `docs/msprojectxml-ai-integration.md` に置いています。
 
 ## 関連ドキュメント

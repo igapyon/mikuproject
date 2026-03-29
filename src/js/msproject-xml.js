@@ -1203,13 +1203,15 @@
     }
     function buildDefaultJapaneseHolidayExceptions(project) {
         const start = parseDateOnly(project.startDate) || parseDateOnly(project.finishDate) || new Date();
-        const finishLimit = addDateYears(start, 5);
+        const finishLimit = parseDateOnly(project.finishDate) || start;
+        const rangeStart = start.getTime() <= finishLimit.getTime() ? start : finishLimit;
+        const rangeFinish = start.getTime() <= finishLimit.getTime() ? finishLimit : start;
         const exceptions = [];
-        for (let year = start.getFullYear(); year <= finishLimit.getFullYear(); year += 1) {
+        for (let year = rangeStart.getFullYear(); year <= rangeFinish.getFullYear(); year += 1) {
             const holidays = buildJapaneseHolidayMapForYear(year);
             for (const [dateText, name] of holidays.entries()) {
                 const date = parseDateOnly(dateText);
-                if (!date || date.getTime() < start.getTime() || date.getTime() > finishLimit.getTime()) {
+                if (!date || date.getTime() < rangeStart.getTime() || date.getTime() > rangeFinish.getTime()) {
                     continue;
                 }
                 exceptions.push({

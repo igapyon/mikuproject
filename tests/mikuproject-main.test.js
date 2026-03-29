@@ -198,7 +198,7 @@ async function exportMermaidViaHook() {
   await getMainHooks().exportCurrentMermaid();
 }
 
-const SAMPLE_HOLIDAY_COUNT = 90;
+const SAMPLE_HOLIDAY_COUNT = 1;
 const SAMPLE_FIRST_HOLIDAY_NAME = "春分の日";
 const SAMPLE_FIRST_HOLIDAY_DATE = "2026-03-20";
 
@@ -445,6 +445,8 @@ describe("mikuproject main", () => {
     expect(xmlText).toContain("<Name>Standard</Name>");
     expect(xmlText).toContain("<Name>架空検討フェーズ【架空】</Name>");
     expect(xmlText).toContain("<Name>v1.0 リリース</Name>");
+    expect(xmlText).toContain("<FromDate>2026-03-20T00:00:00</FromDate>");
+    expect(xmlText).not.toContain("<FromDate>2031-02-24T00:00:00</FromDate>");
   });
 
   it("exports mermaid gantt from the current model", async () => {

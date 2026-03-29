@@ -23,6 +23,8 @@
     const WEEK_START_BAND_FILL = "#E3EEF9";
     const MONTH_BOUNDARY_WEEK_FILL = "#D6E7F8";
     const MONTH_START_HEADER_FILL = "#DCEAF7";
+    const SATURDAY_HEADER_FILL = "#8EA9DB";
+    const SUNDAY_HEADER_FILL = "#E6B8AF";
     const TODAY_BAND_FILL = "#FFE6A7";
     const TODAY_ACTIVE_BAND_FILL = "#F3C96B";
     const TODAY_PROGRESS_BAND_FILL = "#D89A2B";
@@ -34,6 +36,7 @@
     const PROGRESS_COLUMN_FILL = "#FCF8FB";
     const REFERENCE_COLUMN_FILL = "#F8FBFB";
     const WBS_LAYOUT = createWbsSheetLayoutHelper();
+    const pxWidth = (pixels) => Math.round((pixels / 7) * 100) / 100;
     function collectWbsHolidayDates(model) {
         const holidaySet = new Set();
         for (const calendar of model.calendars) {
@@ -136,19 +139,17 @@
         const dividerColumnIndex = fixedHeaders.length + 1;
         const dateBandStartColumnIndex = dividerColumnIndex;
         const totalColumns = fixedHeaders.length + 1 + dateBand.length;
-        const rows = [
-            sheetTitleRow("WBS", totalColumns),
-            emptyRow(totalColumns, 22)
-        ];
+        const rows = [];
         const mergedRanges = [];
         const projectInfoBlock = projectInfoRows(model.project, calendarNameByUid, holidaySet.size, totalColumns, 0, rows.length + 1);
-        overlayRows(rows, 2, projectInfoBlock.rows, totalColumns);
+        overlayRows(rows, 0, projectInfoBlock.rows, totalColumns);
+        const exportTimestampRow = rows[1] || (rows[1] = emptyRow(totalColumns));
+        exportTimestampRow.cells[9] = {
+            value: formatWbsExportTimestamp(new Date()),
+            horizontalAlign: "left",
+            verticalAlign: "center"
+        };
         mergedRanges.push(...projectInfoBlock.mergedRanges);
-        const summaryBlock = displaySummaryRows(dateBand.length, countBusinessDays(dateBand, holidaySet, nonWorkingDayTypes), model.project.currentDate, model.tasks.length, model.resources.length, model.assignments.length, model.calendars.length, totalColumns, 5, 3, options.displayDaysBeforeBaseDate, options.displayDaysAfterBaseDate, options.useBusinessDaysForDisplayRange, options.useBusinessDaysForProgressBand);
-        overlayRows(rows, 2, summaryBlock.rows, totalColumns);
-        mergedRanges.push(...summaryBlock.mergedRanges);
-        const weekBandRanges = buildWeekBandRanges(dateBand, dateBandStartColumnIndex, rows.length + 1);
-        rows.push(weekBandRow(fixedHeaders.length + 1, weekBandRanges, dateBand.length));
         rows.push(dateBandHeaderRow(fixedHeaders.length + 1, dateBand, model.project.currentDate, holidaySet, nonWorkingDayTypes));
         rows.push(weekdayHeaderRow(fixedHeaders, dateBand, model.project.currentDate, holidaySet, nonWorkingDayTypes));
         rows.push(...model.tasks.map((task) => ({
@@ -180,16 +181,20 @@
         rows.push(emptyRow(totalColumns, 28));
         const legendBlock = legendRows(totalColumns, rows.length + 1);
         rows.push(...legendBlock.rows);
-        mergedRanges.push(...weekBandRanges.map((item) => item.range), ...legendBlock.mergedRanges);
+        mergedRanges.push(...legendBlock.mergedRanges);
+        rows.push(emptyRow(totalColumns, 28));
+        const summaryBlock = displaySummaryRows(dateBand.length, countBusinessDays(dateBand, holidaySet, nonWorkingDayTypes), model.project.currentDate, model.tasks.length, model.resources.length, model.assignments.length, model.calendars.length, totalColumns, 0, rows.length + 1, options.displayDaysBeforeBaseDate, options.displayDaysAfterBaseDate, options.useBusinessDaysForDisplayRange, options.useBusinessDaysForProgressBand);
+        rows.push(...summaryBlock.rows);
+        mergedRanges.push(...summaryBlock.mergedRanges);
         return {
             sheets: [
                 {
                     name: "WBS",
                     columns: [
-                        { width: 8 }, { width: 8 }, { width: 12 }, { width: 10 }, { width: 10 }, { width: 42 },
-                        { width: 20 }, { width: 18 }, { width: 12 }, { width: 28 }, { width: 14 },
+                        { width: pxWidth(45) }, { width: pxWidth(45) }, { width: pxWidth(65) }, { width: pxWidth(60) }, { width: pxWidth(45) }, { width: 42 },
+                        { width: pxWidth(85) }, { width: pxWidth(85) }, { width: pxWidth(65) }, { width: 28 }, { width: 14 },
                         { width: 18, hidden: true }, { width: 12, hidden: true }, { width: 12, hidden: true }, { width: 12, hidden: true },
-                        { width: 16 }, { width: 12, hidden: true }, { width: 20, hidden: true }, { width: 18, hidden: true }, { width: 3 },
+                        { width: pxWidth(85) }, { width: 12, hidden: true }, { width: 20, hidden: true }, { width: 18, hidden: true }, { width: 3 },
                         ...dateBand.map(() => ({ width: 6 }))
                     ],
                     mergedRanges,
@@ -309,11 +314,9 @@
         };
     }
     function projectInfoRows(project, calendarNameByUid, holidayCount, columnCount, startColumnIndex, startRowNumber) {
-        const scheduleMode = project.scheduleFromStart ? "開始基準" : "終了基準";
         const items = [
             { label: "プロジェクト名", value: truncateWbsReference(project.name || "-", 18) || "-", fillColor: SUMMARY_ASSIGNMENT_FILL },
             { label: "カレンダ", value: formatCalendarLabel(project.calendarUID, calendarNameByUid), fillColor: SUMMARY_ASSIGNMENT_FILL },
-            { label: "基準", value: scheduleMode, fillColor: SUMMARY_ASSIGNMENT_FILL },
             { label: "開始日", value: formatWbsDate(project.startDate), fillColor: SUMMARY_SCHEDULE_FILL },
             { label: "終了日", value: formatWbsDate(project.finishDate), fillColor: SUMMARY_SCHEDULE_FILL },
             { label: "現在日", value: formatWbsDate(project.currentDate), fillColor: SUMMARY_SCHEDULE_FILL },
@@ -321,17 +324,17 @@
         ];
         return {
             mergedRanges: [
-                WBS_LAYOUT.range(WBS_LAYOUT.reference(startRowNumber, startColumnIndex), WBS_LAYOUT.reference(startRowNumber, startColumnIndex + 3)),
+                WBS_LAYOUT.range(WBS_LAYOUT.reference(startRowNumber, startColumnIndex), WBS_LAYOUT.reference(startRowNumber, startColumnIndex + 4)),
                 ...items.map((_, index) => {
                     const rowNumber = startRowNumber + index + 1;
                     return [
                         WBS_LAYOUT.range(WBS_LAYOUT.reference(rowNumber, startColumnIndex), WBS_LAYOUT.reference(rowNumber, startColumnIndex + 1)),
-                        WBS_LAYOUT.range(WBS_LAYOUT.reference(rowNumber, startColumnIndex + 2), WBS_LAYOUT.reference(rowNumber, startColumnIndex + 3))
+                        WBS_LAYOUT.range(WBS_LAYOUT.reference(rowNumber, startColumnIndex + 2), WBS_LAYOUT.reference(rowNumber, startColumnIndex + 4))
                     ];
                 }).flat()
             ],
             rows: [
-                projectBlockHeaderRow(columnCount, startColumnIndex, "プロジェクト"),
+                projectBlockHeaderRow(columnCount, startColumnIndex, "プロジェクト情報"),
                 ...items.map((item) => projectPairRow(columnCount, startColumnIndex, item.label, item.value, item.fillColor))
             ]
         };
@@ -428,15 +431,18 @@
         for (const item of scheduleItems) {
             blockRows.push(summaryPairRow(columnCount, startColumnIndex, item.label, item.value, item.fillColor));
         }
-        for (let index = 0; index < countItems.length; index += 1) {
-            const rowIndex = 1 + index;
-            while (blockRows.length <= rowIndex) {
-                blockRows.push(emptyRow(columnCount, 22));
-            }
-            overlaySummaryPair(blockRows[rowIndex], startColumnIndex + 3, countItems[index].label, countItems[index].value, countItems[index].fillColor);
+        for (const item of countItems) {
+            blockRows.push(summaryPairRow(columnCount, startColumnIndex, item.label, item.value, item.fillColor));
+        }
+        const mergedRanges = [
+            WBS_LAYOUT.range(WBS_LAYOUT.reference(startRowNumber, startColumnIndex), WBS_LAYOUT.reference(startRowNumber, startColumnIndex + 2))
+        ];
+        for (let index = 1; index < blockRows.length; index += 1) {
+            const rowNumber = startRowNumber + index;
+            mergedRanges.push(WBS_LAYOUT.range(WBS_LAYOUT.reference(rowNumber, startColumnIndex + 1), WBS_LAYOUT.reference(rowNumber, startColumnIndex + 2)));
         }
         return {
-            mergedRanges: [WBS_LAYOUT.range(WBS_LAYOUT.reference(startRowNumber, startColumnIndex), WBS_LAYOUT.reference(startRowNumber, startColumnIndex + 1))],
+            mergedRanges,
             rows: blockRows
         };
     }
@@ -455,6 +461,11 @@
             border: "thin",
             fillColor: HEADER_ID_FILL
         };
+        cells[startColumnIndex + 2] = {
+            value: "",
+            border: "thin",
+            fillColor: HEADER_ID_FILL
+        };
         return { height: 24, cells };
     }
     function projectBlockHeaderRow(columnCount, startColumnIndex, title) {
@@ -467,7 +478,7 @@
             fontSize: 14,
             fillColor: HEADER_ID_FILL
         };
-        for (let offset = 1; offset < 4; offset += 1) {
+        for (let offset = 1; offset < 5; offset += 1) {
             cells[startColumnIndex + offset] = {
                 value: "",
                 border: "thin",
@@ -502,12 +513,22 @@
             border: "thin",
             fillColor
         };
+        cells[startColumnIndex + 4] = {
+            value: "",
+            border: "thin",
+            fillColor
+        };
         return { height: 22, cells };
     }
     function summaryPairRow(columnCount, startColumnIndex, label, value, fillColor) {
         const cells = Array.from({ length: columnCount }, () => ({}));
         cells[startColumnIndex] = summaryStatCell(label, fillColor, false);
         cells[startColumnIndex + 1] = summaryStatCell(value, fillColor, true);
+        cells[startColumnIndex + 2] = {
+            value: "",
+            border: "thin",
+            fillColor
+        };
         return { height: 22, cells };
     }
     function overlaySummaryPair(row, startColumnIndex, label, value, fillColor) {
@@ -525,6 +546,11 @@
             fillColor
         };
         cells[startColumnIndex + 1] = {
+            value: "",
+            border: "thin",
+            fillColor
+        };
+        cells[startColumnIndex + 2] = {
             value: "",
             border: "thin",
             fillColor
@@ -742,6 +768,14 @@
     function formatWbsDate(value) {
         return value ? value.slice(0, 10) : "-";
     }
+    function formatWbsExportTimestamp(value) {
+        const year = value.getFullYear();
+        const month = String(value.getMonth() + 1).padStart(2, "0");
+        const day = String(value.getDate()).padStart(2, "0");
+        const hours = String(value.getHours()).padStart(2, "0");
+        const minutes = String(value.getMinutes()).padStart(2, "0");
+        return `出力日時 ${year}-${month}-${day} ${hours}:${minutes}`;
+    }
     function dateNumberCell(day, currentDate, holidaySet, nonWorkingDayTypes) {
         const isToday = isSameDay(day, currentDate);
         const isWeekendDay = isWeeklyNonWorkingDay(day, nonWorkingDayTypes);
@@ -763,13 +797,16 @@
         const isHoliday = holidaySet.has(day);
         const weekStart = isWeekStart(day);
         const monthStart = isMonthStart(day);
+        const target = parseDateOnly(day);
+        const dayType = target ? (target.getDay() === 0 ? 1 : target.getDay() + 1) : 0;
+        const weekendHeaderFill = dayType === 7 ? SATURDAY_HEADER_FILL : (dayType === 1 ? SUNDAY_HEADER_FILL : WEEKEND_BAND_FILL);
         return {
             value: formatWeekdayValue(day),
             bold: true,
             border: "thin",
             horizontalAlign: "center",
             verticalAlign: "center",
-            fillColor: isToday ? TODAY_BAND_FILL : (isHoliday ? HOLIDAY_BAND_FILL : (isWeekendDay ? WEEKEND_BAND_FILL : (monthStart ? MONTH_START_HEADER_FILL : (weekStart ? WEEK_START_BAND_FILL : HEADER_FILL))))
+            fillColor: isHoliday ? HOLIDAY_BAND_FILL : (isWeekendDay ? weekendHeaderFill : (isToday ? TODAY_BAND_FILL : (monthStart ? MONTH_START_HEADER_FILL : (weekStart ? WEEK_START_BAND_FILL : HEADER_FILL))))
         };
     }
     function dateBandCell(task, day, currentDate, holidaySet, nonWorkingDayTypes, useBusinessDaysForProgressBand) {

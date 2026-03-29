@@ -160,7 +160,7 @@
                 identifierCell(task, task.wbs || task.outlineNumber),
                 kindCell(task),
                 identifierCell(task, task.outlineLevel),
-                taskCell(task, formatTaskLabel(task), "center"),
+                taskCell(task, formatTaskLabel(task), "left"),
                 taskCell(task, formatWbsDate(task.start), "center"),
                 taskCell(task, formatWbsDate(task.finish), "center"),
                 taskCell(task, formatDurationLabel(task, holidaySet, nonWorkingDayTypes, options.useBusinessDaysForProgressBand), "center"),
@@ -683,7 +683,7 @@
         return {
             value: placeholder ? "-" : normalized,
             border: "thin",
-            horizontalAlign: placeholder ? "center" : "left",
+            horizontalAlign: "left",
             verticalAlign: "center",
             wrapText: placeholder ? undefined : true,
             bold: task.summary || task.milestone || false,

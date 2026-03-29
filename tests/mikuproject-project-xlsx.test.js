@@ -21,13 +21,17 @@ const msProjectXmlCode = readFileSync(
   path.resolve(__dirname, "../src/js/msproject-xml.js"),
   "utf8"
 );
+const projectWorkbookSchemaCode = readFileSync(
+  path.resolve(__dirname, "../src/js/project-workbook-schema.js"),
+  "utf8"
+);
 const projectXlsxCode = readFileSync(
   path.resolve(__dirname, "../src/js/project-xlsx.js"),
   "utf8"
 );
 
 function bootModules() {
-  new Function(`${typesCode}\n${excelIoCode}\n${msProjectXmlCode}\n${projectXlsxCode}`)();
+  new Function(`${typesCode}\n${excelIoCode}\n${msProjectXmlCode}\n${projectWorkbookSchemaCode}\n${projectXlsxCode}`)();
   return {
     excelIo: globalThis.__mikuprojectExcelIo,
     xml: globalThis.__mikuprojectXml,

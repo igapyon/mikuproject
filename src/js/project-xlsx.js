@@ -3,6 +3,11 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 (() => {
+    const workbookSchema = globalThis.__mikuprojectProjectWorkbookSchema;
+    if (!workbookSchema) {
+        throw new Error("mikuproject Project Workbook Schema module is not loaded");
+    }
+    const { HEADER_ROW_INDEX, DATA_ROW_START_INDEX, PROJECT_FIELD_ORDER, PROJECT_EDITABLE_FIELDS, SHEET_HEADERS } = workbookSchema;
     const HEADER_FILL = "#D9EAF7";
     const SECTION_FILL = "#BFD7EA";
     const LABEL_FILL = "#EDF5FB";
@@ -62,7 +67,7 @@
             return;
         }
         const valueByField = new Map();
-        for (const row of projectSheet.rows.slice(3)) {
+        for (const row of projectSheet.rows.slice(DATA_ROW_START_INDEX)) {
             const field = readStringCell(row.cells[0]);
             if (!field) {
                 continue;
@@ -90,23 +95,9 @@
             titleRow("Project", SHEET_THEMES.project.section),
             titleRow("Basic Info", SHEET_THEMES.project.section),
             headerRow(["Field", "Value"], SHEET_THEMES.project.header),
-            keyValueRow("Name", project.name, SHEET_THEMES.project.label),
-            keyValueRow("Title", project.title, SHEET_THEMES.project.label),
-            keyValueRow("Author", project.author, SHEET_THEMES.project.label),
-            keyValueRow("Company", project.company, SHEET_THEMES.project.label),
-            keyValueRow("StartDate", project.startDate, SHEET_THEMES.project.label),
-            keyValueRow("FinishDate", project.finishDate, SHEET_THEMES.project.label),
-            keyValueRow("CurrentDate", project.currentDate, SHEET_THEMES.project.label),
-            keyValueRow("StatusDate", project.statusDate, SHEET_THEMES.project.label),
+            ...PROJECT_FIELD_ORDER.slice(0, 8).map((field) => keyValueRow(field, readProjectFieldValue(project, field), SHEET_THEMES.project.label)),
             titleRow("Settings", SHEET_THEMES.project.section),
-            keyValueRow("CalendarUID", project.calendarUID, SHEET_THEMES.project.label),
-            keyValueRow("MinutesPerDay", project.minutesPerDay, SHEET_THEMES.project.label),
-            keyValueRow("MinutesPerWeek", project.minutesPerWeek, SHEET_THEMES.project.label),
-            keyValueRow("DaysPerMonth", project.daysPerMonth, SHEET_THEMES.project.label),
-            keyValueRow("ScheduleFromStart", project.scheduleFromStart, SHEET_THEMES.project.label),
-            keyValueRow("OutlineCodes", project.outlineCodes.length, SHEET_THEMES.project.label),
-            keyValueRow("WBSMasks", project.wbsMasks.length, SHEET_THEMES.project.label),
-            keyValueRow("ExtendedAttributes", project.extendedAttributes.length, SHEET_THEMES.project.label)
+            ...PROJECT_FIELD_ORDER.slice(8).map((field) => keyValueRow(field, readProjectFieldValue(project, field), SHEET_THEMES.project.label))
         ];
         return {
             name: "Project",
@@ -129,11 +120,7 @@
             rows: [
                 sectionTitleRow("Tasks", 17, SHEET_THEMES.tasks.section),
                 sectionTitleRow("Task List", 17, SHEET_THEMES.tasks.section),
-                headerRow([
-                    "UID", "ID", "Name", "OutlineLevel", "OutlineNumber", "WBS",
-                    "Start", "Finish", "Duration", "PercentComplete", "PercentWorkComplete",
-                    "Milestone", "Summary", "Critical", "CalendarUID", "Predecessors", "Notes"
-                ], SHEET_THEMES.tasks.header),
+                headerRow([...SHEET_HEADERS.Tasks], SHEET_THEMES.tasks.header),
                 ...model.tasks.map((task, index) => ({
                     cells: [
                         countCell(task.uid, index),
@@ -171,11 +158,7 @@
             rows: [
                 sectionTitleRow("Resources", 14, SHEET_THEMES.resources.section),
                 sectionTitleRow("Resource List", 14, SHEET_THEMES.resources.section),
-                headerRow([
-                    "UID", "ID", "Name", "Type", "Initials", "Group", "MaxUnits",
-                    "CalendarUID", "StandardRate", "OvertimeRate", "CostPerUse",
-                    "Work", "ActualWork", "RemainingWork"
-                ], SHEET_THEMES.resources.header),
+                headerRow([...SHEET_HEADERS.Resources], SHEET_THEMES.resources.header),
                 ...model.resources.map((resource, index) => ({
                     cells: [
                         countCell(resource.uid, index),
@@ -211,10 +194,7 @@
             rows: [
                 sectionTitleRow("Assignments", 12, SHEET_THEMES.assignments.section),
                 sectionTitleRow("Assignment List", 12, SHEET_THEMES.assignments.section),
-                headerRow([
-                    "UID", "TaskUID", "TaskName", "ResourceUID", "ResourceName", "Start",
-                    "Finish", "Units", "Work", "ActualWork", "RemainingWork", "PercentWorkComplete"
-                ], SHEET_THEMES.assignments.header),
+                headerRow([...SHEET_HEADERS.Assignments], SHEET_THEMES.assignments.header),
                 ...model.assignments.map((assignment, index) => ({
                     cells: [
                         countCell(assignment.uid, index),
@@ -245,9 +225,7 @@
             rows: [
                 sectionTitleRow("Calendars", 7, SHEET_THEMES.calendars.section),
                 sectionTitleRow("Calendar List", 7, SHEET_THEMES.calendars.section),
-                headerRow([
-                    "UID", "Name", "IsBaseCalendar", "BaseCalendarUID", "WeekDays", "Exceptions", "WorkWeeks"
-                ], SHEET_THEMES.calendars.header),
+                headerRow([...SHEET_HEADERS.Calendars], SHEET_THEMES.calendars.header),
                 ...model.calendars.map((calendar, index) => ({
                     cells: [
                         countCell(calendar.uid, index),
@@ -285,9 +263,7 @@
             rows: [
                 sectionTitleRow("NonWorkingDays", 8, SHEET_THEMES.nonWorkingDays.section),
                 sectionTitleRow("Calendar Exceptions", 8, SHEET_THEMES.nonWorkingDays.section),
-                headerRow([
-                    "CalendarUID", "Index", "CalendarName", "Name", "Date", "FromDate", "ToDate", "DayWorking"
-                ], SHEET_THEMES.nonWorkingDays.header),
+                headerRow([...SHEET_HEADERS.NonWorkingDays], SHEET_THEMES.nonWorkingDays.header),
                 ...rows
             ]
         };
@@ -511,21 +487,45 @@
         return ["OutlineCodes", "WBSMasks", "ExtendedAttributes", "MinutesPerDay", "MinutesPerWeek", "DaysPerMonth"].includes(label);
     }
     function isEditableProjectLabel(label) {
-        return [
-            "Name",
-            "Title",
-            "Author",
-            "Company",
-            "StartDate",
-            "FinishDate",
-            "CurrentDate",
-            "StatusDate",
-            "CalendarUID",
-            "MinutesPerDay",
-            "MinutesPerWeek",
-            "DaysPerMonth",
-            "ScheduleFromStart"
-        ].includes(label);
+        return PROJECT_EDITABLE_FIELDS.includes(label);
+    }
+    function readProjectFieldValue(project, field) {
+        switch (field) {
+            case "Name":
+                return project.name;
+            case "Title":
+                return project.title;
+            case "Author":
+                return project.author;
+            case "Company":
+                return project.company;
+            case "StartDate":
+                return project.startDate;
+            case "FinishDate":
+                return project.finishDate;
+            case "CurrentDate":
+                return project.currentDate;
+            case "StatusDate":
+                return project.statusDate;
+            case "CalendarUID":
+                return project.calendarUID;
+            case "MinutesPerDay":
+                return project.minutesPerDay;
+            case "MinutesPerWeek":
+                return project.minutesPerWeek;
+            case "DaysPerMonth":
+                return project.daysPerMonth;
+            case "ScheduleFromStart":
+                return project.scheduleFromStart;
+            case "OutlineCodes":
+                return project.outlineCodes.length;
+            case "WBSMasks":
+                return project.wbsMasks.length;
+            case "ExtendedAttributes":
+                return project.extendedAttributes.length;
+            default:
+                return undefined;
+        }
     }
     function cloneProjectModel(model) {
         return JSON.parse(JSON.stringify(model));
@@ -535,13 +535,13 @@
         if (!tasksSheet) {
             return;
         }
-        const columnIndexByLabel = readHeaderMap(tasksSheet, 2);
+        const columnIndexByLabel = readHeaderMap(tasksSheet, HEADER_ROW_INDEX);
         const uidColumnIndex = columnIndexByLabel.get("UID");
         if (uidColumnIndex === undefined) {
             return;
         }
         const taskByUid = new Map(model.tasks.map((task) => [task.uid, task]));
-        for (const row of tasksSheet.rows.slice(3)) {
+        for (const row of tasksSheet.rows.slice(DATA_ROW_START_INDEX)) {
             const uid = readStringCell(row.cells[uidColumnIndex]);
             if (!uid) {
                 continue;
@@ -564,13 +564,13 @@
         if (!resourcesSheet) {
             return;
         }
-        const columnIndexByLabel = readHeaderMap(resourcesSheet, 2);
+        const columnIndexByLabel = readHeaderMap(resourcesSheet, HEADER_ROW_INDEX);
         const uidColumnIndex = columnIndexByLabel.get("UID");
         if (uidColumnIndex === undefined) {
             return;
         }
         const resourceByUid = new Map(model.resources.map((resource) => [resource.uid, resource]));
-        for (const row of resourcesSheet.rows.slice(3)) {
+        for (const row of resourcesSheet.rows.slice(DATA_ROW_START_INDEX)) {
             const uid = readStringCell(row.cells[uidColumnIndex]);
             if (!uid) {
                 continue;
@@ -590,13 +590,13 @@
         if (!assignmentsSheet) {
             return;
         }
-        const columnIndexByLabel = readHeaderMap(assignmentsSheet, 2);
+        const columnIndexByLabel = readHeaderMap(assignmentsSheet, HEADER_ROW_INDEX);
         const uidColumnIndex = columnIndexByLabel.get("UID");
         if (uidColumnIndex === undefined) {
             return;
         }
         const assignmentByUid = new Map(model.assignments.map((assignment) => [assignment.uid, assignment]));
-        for (const row of assignmentsSheet.rows.slice(3)) {
+        for (const row of assignmentsSheet.rows.slice(DATA_ROW_START_INDEX)) {
             const uid = readStringCell(row.cells[uidColumnIndex]);
             if (!uid) {
                 continue;
@@ -616,13 +616,13 @@
         if (!calendarsSheet) {
             return;
         }
-        const columnIndexByLabel = readHeaderMap(calendarsSheet, 2);
+        const columnIndexByLabel = readHeaderMap(calendarsSheet, HEADER_ROW_INDEX);
         const uidColumnIndex = columnIndexByLabel.get("UID");
         if (uidColumnIndex === undefined) {
             return;
         }
         const calendarByUid = new Map(model.calendars.map((calendar) => [calendar.uid, calendar]));
-        for (const row of calendarsSheet.rows.slice(3)) {
+        for (const row of calendarsSheet.rows.slice(DATA_ROW_START_INDEX)) {
             const uid = readStringCell(row.cells[uidColumnIndex]);
             if (!uid) {
                 continue;
@@ -642,14 +642,14 @@
         if (!nonWorkingDaysSheet) {
             return;
         }
-        const columnIndexByLabel = readHeaderMap(nonWorkingDaysSheet, 2);
+        const columnIndexByLabel = readHeaderMap(nonWorkingDaysSheet, HEADER_ROW_INDEX);
         const calendarUidColumnIndex = columnIndexByLabel.get("CalendarUID");
         const indexColumnIndex = columnIndexByLabel.get("Index");
         if (calendarUidColumnIndex === undefined || indexColumnIndex === undefined) {
             return;
         }
         const calendarByUid = new Map(model.calendars.map((calendar) => [calendar.uid, calendar]));
-        for (const row of nonWorkingDaysSheet.rows.slice(3)) {
+        for (const row of nonWorkingDaysSheet.rows.slice(DATA_ROW_START_INDEX)) {
             const calendarUid = readStringCell(row.cells[calendarUidColumnIndex]);
             const indexValue = readNumberCell(row.cells[indexColumnIndex]);
             if (!calendarUid || !indexValue) {

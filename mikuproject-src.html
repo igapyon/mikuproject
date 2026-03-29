@@ -67,19 +67,18 @@
         </div>
 
         <div class="md-panel-actions">
-          <button id="importXmlBtn" type="button" class="md-button md-button--primary">MS Project XML</button>
           <span class="md-button-with-help">
-            <button id="importXlsxBtn" type="button" class="md-button md-button--tonal">XLSX</button>
+            <button id="importFileBtn" type="button" class="md-button md-button--primary">Load from file</button>
             <span class="md-button-help-anchor">
-              <lht-help-tooltip label="XLSX 編集の扱い" placement="right" wide>
+              <lht-help-tooltip label="Load from file の説明" placement="right" wide>
                 <p class="md-note-card__text">
-                  `.xlsx` は `MS Project XML` の代替正本ではなく、確認と限定編集のための周辺表現として扱います。
+                  `Load from file` は、`.xml` / `.xlsx` / `.json` / `.editjson` / `.csv` を拡張子で判別して取り込みます。
                 </p>
                 <p class="md-note-card__text">
-                  現在の `XLSX Import` で反映するのは限定列のみです。
+                  `.xlsx` と `mikuproject_workbook_json (.json)` は `MS Project XML` の代替正本ではなく、確認と限定編集のための周辺表現として扱います。
                 </p>
                 <p class="md-note-card__text">
-                  反映結果は、`Project / Tasks / Resources / Assignments / Calendars` ごとの件数と、`UID` 単位の差分要約として画面上に表示します。
+                  `project_draft_view (.editjson)` は生成AI 向けの編集用 JSON として扱います。反映結果は、`Project / Tasks / Resources / Assignments / Calendars` ごとの件数と、`UID` 単位の差分要約として画面上に表示します。
                 </p>
                 <p class="md-note-card__text"><strong>反映対象</strong></p>
                 <ul class="md-note-list">
@@ -98,29 +97,24 @@
               </lht-help-tooltip>
             </span>
           </span>
-          <button id="parseCsvBtn" type="button" class="md-button md-button--tonal">CSV</button>
           <button id="loadSampleBtn" type="button" class="md-button md-button--surface">サンプル</button>
-          <input id="importXmlInput" type="file" accept=".xml,text/xml,application/xml" class="md-hidden" />
-          <input id="importXlsxInput" type="file" accept=".xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" class="md-hidden" />
-          <input id="importCsvInput" type="file" accept=".csv,text/csv,text/plain" class="md-hidden" />
-          <input id="importProjectDraftInput" type="file" accept=".json,application/json,text/plain" class="md-hidden" />
+          <input id="importFileInput" type="file" accept=".xml,.xlsx,.json,.editjson,.csv,text/xml,application/xml,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/json,text/csv,text/plain" class="md-hidden" />
         </div>
 
         <section class="md-note-card md-note-card--accent" aria-label="AI draft generation">
           <div class="md-note-card__title-row">
             <h3 class="md-note-card__title">新規生成AI連携</h3>
             <lht-help-tooltip label="新規生成AI連携の説明" wide>
-              (i) まず生成AIに 生成AIプロンプト を読み込ませます。<br><br>
+              (i) まず生成AIに 生成AIプロンプト を読み込ませます。ファイル取込は画面上部の `Load from file` を使います。生成AIが返す `project_draft_view` は workbook JSON と区別するため当面 `.editjson`、`mikuproject_workbook_json` は `.json` として扱います。<br><br>
               (ii) その前提で生成AIに `project_draft_view` を作らせます。<br><br>
               (iii) 返ってきた JSON を、ここでファイル読込または貼り付けで取り込みます。
             </lht-help-tooltip>
             <a class="md-inline-link md-inline-link--compact" href="https://raw.githubusercontent.com/igapyon/mikuproject/refs/heads/devel/docs/mikuproject-ai-json-spec.md" target="_blank" rel="noopener noreferrer">生成AIプロンプト</a>
           </div>
           <p class="md-note-card__text">
-            生成AIとの会話は別途行います。生成AIが返した `project_draft_view` は、JSON ファイルとして開くか、JSON テキストを貼り付けてここから取り込みます。
+            生成AIとの会話は別途行います。生成AIが返した `project_draft_view` は、上部の `Load from file` から `.editjson` を開くか、JSON テキストを貼り付けてここから取り込みます。
           </p>
           <div class="md-panel-actions">
-            <button id="importProjectDraftFileBtn" type="button" class="md-button md-button--tonal">JSON ファイルを開く</button>
             <button id="importProjectDraftBtn" type="button" class="md-button md-button--tonal">貼り付けた JSON を取り込む</button>
             <button id="loadProjectDraftSampleBtn" type="button" class="md-button md-button--surface">サンプル</button>
           </div>
@@ -222,9 +216,11 @@
 
         <div class="md-feedback-stack md-hidden" aria-label="import feedback">
           <div class="md-feedback-stack__title">取込結果</div>
-          <div class="md-feedback-stack__text">XLSX Import 後は、ここで差分反映と検証結果を確認します。</div>
+          <div class="md-feedback-stack__text">取込後は、ここで差分反映・warning・検証結果を確認します。</div>
           <div class="md-feedback-stack__label">検証メッセージ</div>
           <div id="validationIssues" class="md-issues md-hidden" aria-live="polite"></div>
+          <div class="md-feedback-stack__label">取込 warning</div>
+          <div id="importWarnings" class="md-issues md-hidden" aria-live="polite"></div>
           <div class="md-feedback-stack__label">差分要約</div>
           <div id="xlsxImportSummary" class="md-xlsx-summary md-hidden" aria-live="polite"></div>
         </div>
@@ -239,12 +235,18 @@
           <p class="md-flow-section__text">出力設定と生成結果の確認をここにまとめます。</p>
         </div>
 
-        <div class="md-panel-actions">
-          <button id="downloadXmlBtn" type="button" class="md-button md-button--primary">MS Project XML</button>
-          <button id="exportXlsxBtn" type="button" class="md-button md-button--tonal">XLSX</button>
-          <button id="exportWbsXlsxBtn" type="button" class="md-button md-button--tonal">WBS XLSX</button>
-          <button id="downloadMermaidSvgBtn" type="button" class="md-button md-button--surface" disabled>SVG</button>
-          <button id="exportCsvBtn" type="button" class="md-button md-button--tonal">CSV</button>
+        <div class="md-output-actions">
+          <div class="md-panel-actions">
+            <button id="downloadXmlBtn" type="button" class="md-button md-button--primary">MS Project XML</button>
+            <button id="exportXlsxBtn" type="button" class="md-button md-button--tonal">XLSX</button>
+            <button id="exportWorkbookJsonBtn" type="button" class="md-button md-button--tonal">JSON</button>
+            <button id="exportCsvBtn" type="button" class="md-button md-button--tonal">CSV</button>
+          </div>
+          <div class="md-panel-actions">
+            <button id="exportWbsXlsxBtn" type="button" class="md-button md-button--tonal">WBS XLSX</button>
+            <button id="exportMermaidMdBtn" type="button" class="md-button md-button--tonal">Mermaid</button>
+            <button id="downloadMermaidSvgBtn" type="button" class="md-button md-button--surface" disabled>SVG</button>
+          </div>
         </div>
 
         <section class="md-note-card md-note-card--accent" aria-label="AI integration exports">
@@ -322,6 +324,10 @@
           <summary class="md-debug-accordion__summary">デバッグ情報</summary>
           <div class="md-debug-accordion__body">
             <div class="md-form-grid">
+              <lht-text-field-help field-id="workbookJsonOutput" label="mikuproject_workbook_json" rows="16" readonly></lht-text-field-help>
+            </div>
+
+            <div class="md-form-grid">
               <lht-text-field-help field-id="aiBundleOutput" label="ai_projection_bundle" rows="16" readonly></lht-text-field-help>
             </div>
             <div class="md-form-grid">
@@ -341,7 +347,9 @@
   <script src="src/js/types.js"></script>
   <script src="src/js/excel-io.js"></script>
   <script src="src/js/msproject-xml.js"></script>
+  <script src="src/js/project-workbook-schema.js"></script>
   <script src="src/js/project-xlsx.js"></script>
+  <script src="src/js/project-workbook-json.js"></script>
   <script src="src/js/wbs-xlsx.js"></script>
   <script src="src/vendor/mermaid/mermaid.min.js"></script>
   <script src="src/js/main.js"></script>

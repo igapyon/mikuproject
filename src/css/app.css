@@ -317,6 +317,11 @@
   align-items: center;
 }
 
+.md-output-actions {
+  display: grid;
+  gap: 12px;
+}
+
 .md-button-with-help {
   display: inline-flex;
   align-items: center;

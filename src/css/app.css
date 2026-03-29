@@ -173,14 +173,16 @@
   border: 1px solid rgba(148, 163, 184, 0.18);
   border-radius: 18px;
   background: linear-gradient(180deg, rgba(255, 255, 255, 0.98) 0%, rgba(245, 248, 252, 0.94) 100%);
-  padding: 18px 20px;
+  padding: 20px 22px;
   display: grid;
-  gap: 16px;
+  gap: 18px;
 }
 
 .md-flow-section__header {
   display: grid;
   gap: 8px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid rgba(148, 163, 184, 0.12);
 }
 
 .md-flow-section__title {
@@ -312,6 +314,7 @@
   display: flex;
   gap: 12px;
   flex-wrap: wrap;
+  align-items: center;
 }
 
 .md-button-with-help {
@@ -378,6 +381,12 @@
   box-shadow: 0 8px 20px rgba(103, 80, 164, 0.22);
 }
 
+.md-button--tonal {
+  background: linear-gradient(180deg, #f2edf8 0%, #ebe6f3 100%);
+  border-color: rgba(124, 98, 171, 0.26);
+  color: #3f315f;
+}
+
 .md-button--surface {
   background: #d9e2ec;
 }
@@ -417,10 +426,10 @@
 .md-feedback-stack {
   display: grid;
   gap: 10px;
-  padding: 10px 12px;
+  padding: 14px 16px;
   border-radius: 18px;
-  background: linear-gradient(180deg, rgba(247, 250, 253, 0.92) 0%, rgba(255, 255, 255, 0.92) 100%);
-  border: 1px solid rgba(213, 222, 231, 0.75);
+  background: linear-gradient(180deg, rgba(247, 250, 253, 0.96) 0%, rgba(255, 255, 255, 0.94) 100%);
+  border: 1px solid rgba(213, 222, 231, 0.82);
 }
 
 .md-feedback-stack.md-hidden {
@@ -490,6 +499,23 @@
   border-radius: 18px;
   background: rgba(255, 255, 255, 0.72);
   padding: 16px 18px;
+}
+
+.md-note-card--accent {
+  border-color: rgba(157, 134, 205, 0.28);
+  background: linear-gradient(180deg, rgba(249, 245, 255, 0.96) 0%, rgba(244, 239, 252, 0.9) 100%);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.6);
+}
+
+.md-note-card--subtle {
+  border-color: rgba(167, 185, 210, 0.24);
+  background: linear-gradient(180deg, rgba(250, 252, 255, 0.98) 0%, rgba(244, 247, 251, 0.96) 100%);
+}
+
+.md-note-card--feature {
+  border-color: rgba(168, 227, 224, 0.68);
+  background: linear-gradient(180deg, rgba(243, 254, 252, 0.98) 0%, rgba(233, 249, 246, 0.94) 100%);
+  box-shadow: 0 8px 18px rgba(74, 122, 118, 0.08);
 }
 
 .md-note-card__title-row {
@@ -656,6 +682,69 @@ md-outlined-select.md-outlined-field:focus-within::part(container) {
 
 .md-debug-accordion__body .md-form-grid + .md-form-grid {
   margin-top: 16px;
+}
+
+.ms-settings-card {
+  margin-top: 16px;
+}
+
+.ms-settings-accordion {
+  border: 1px solid #d6d1e0;
+  border-radius: 16px;
+  background: #f6f2fb;
+  overflow: hidden;
+}
+
+.ms-settings-summary {
+  list-style: none;
+  cursor: pointer;
+  user-select: none;
+  font-size: 0.92rem;
+  font-weight: 700;
+  color: #4f495a;
+  padding: 14px 18px;
+  background: #eee8f6;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.ms-settings-summary::-webkit-details-marker {
+  display: none;
+}
+
+.ms-settings-summary::after {
+  content: "";
+  width: 0.52rem;
+  height: 0.52rem;
+  border-right: 1.5px solid #766f86;
+  border-bottom: 1.5px solid #766f86;
+  transform: rotate(45deg);
+  transition: transform 150ms ease;
+}
+
+.ms-settings-accordion[open] > .ms-settings-summary::after {
+  transform: rotate(225deg);
+}
+
+.ms-settings-accordion[open] > .ms-settings-summary {
+  border-bottom: 1px solid #d9d3e5;
+}
+
+.ms-settings-body {
+  padding: 16px 18px 18px;
+}
+
+.ms-settings-block {
+  display: grid;
+  gap: 4px;
+}
+
+.ms-settings-subtitle {
+  margin: 0 0 4px;
+  font-size: 1rem;
+  font-weight: 700;
+  color: #4e495d;
 }
 
 .md-xlsx-summary {
@@ -825,6 +914,9 @@ md-outlined-select.md-outlined-field:focus-within::part(container) {
 .md-mermaid-preview-stage {
   min-height: 16rem;
   overflow: auto;
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.8);
+  padding: 12px;
 }
 
 .md-mermaid-preview-stage svg {

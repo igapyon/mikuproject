@@ -47,7 +47,7 @@
         </button>
         <button type="button" class="md-top-tab ms-top-tab" data-tab="transform" role="tab" aria-selected="false" aria-controls="tabPanelTransform">
           <span class="md-top-tab-no ms-top-tab-no">2</span>
-          <span class="md-top-tab-label ms-top-tab-label">Transform</span>
+          <span class="md-top-tab-label ms-top-tab-label">Overview</span>
         </button>
         <button type="button" class="md-top-tab ms-top-tab" data-tab="output" role="tab" aria-selected="false" aria-controls="tabPanelOutput">
           <span class="md-top-tab-no ms-top-tab-no">3</span>
@@ -69,7 +69,7 @@
         <div class="md-panel-actions">
           <button id="importXmlBtn" type="button" class="md-button md-button--primary">MS Project XML</button>
           <span class="md-button-with-help">
-            <button id="importXlsxBtn" type="button" class="md-button md-button--surface">XLSX</button>
+            <button id="importXlsxBtn" type="button" class="md-button md-button--tonal">XLSX</button>
             <span class="md-button-help-anchor">
               <lht-help-tooltip label="XLSX 編集の扱い" placement="right" wide>
                 <p class="md-note-card__text">
@@ -98,7 +98,7 @@
               </lht-help-tooltip>
             </span>
           </span>
-          <button id="parseCsvBtn" type="button" class="md-button md-button--surface">CSV</button>
+          <button id="parseCsvBtn" type="button" class="md-button md-button--tonal">CSV</button>
           <button id="loadSampleBtn" type="button" class="md-button md-button--surface">サンプル</button>
           <input id="importXmlInput" type="file" accept=".xml,text/xml,application/xml" class="md-hidden" />
           <input id="importXlsxInput" type="file" accept=".xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" class="md-hidden" />
@@ -106,7 +106,7 @@
           <input id="importProjectDraftInput" type="file" accept=".json,application/json,text/plain" class="md-hidden" />
         </div>
 
-        <section class="md-note-card" aria-label="AI draft generation">
+        <section class="md-note-card md-note-card--accent" aria-label="AI draft generation">
           <div class="md-note-card__title-row">
             <h3 class="md-note-card__title">新規生成AI連携</h3>
             <lht-help-tooltip label="新規生成AI連携の説明" wide>
@@ -120,8 +120,8 @@
             生成AIとの会話は別途行います。生成AIが返した `project_draft_view` は、JSON ファイルとして開くか、JSON テキストを貼り付けてここから取り込みます。
           </p>
           <div class="md-panel-actions">
-            <button id="importProjectDraftFileBtn" type="button" class="md-button md-button--surface">JSON ファイルを開く</button>
-            <button id="importProjectDraftBtn" type="button" class="md-button md-button--surface">貼り付けた JSON を取り込む</button>
+            <button id="importProjectDraftFileBtn" type="button" class="md-button md-button--tonal">JSON ファイルを開く</button>
+            <button id="importProjectDraftBtn" type="button" class="md-button md-button--tonal">貼り付けた JSON を取り込む</button>
           </div>
           <div class="md-form-grid">
             <lht-text-field-help field-id="projectDraftImportInput" label="生成AIが返した JSON" rows="14" help-text="生成AIが返した `project_draft_view` の JSON テキストを貼り付けます。最後に json フェンスを持つ応答全体でもかまいません。"></lht-text-field-help>
@@ -140,16 +140,16 @@
         <div id="xmlSaveState" class="md-save-state md-save-state--dirty" aria-live="polite">XML 保存状態: 未保存</div>
       </section>
 
-      <section id="tabPanelTransform" class="md-flow-section md-tab-panel" data-tab-panel="transform" aria-label="transform inspect" hidden>
+      <section id="tabPanelTransform" class="md-flow-section md-tab-panel" data-tab-panel="transform" aria-label="overview" hidden>
         <div class="md-flow-section__header">
           <h2 class="md-flow-section__title">
             <span class="md-flow-section__step">2</span>
-            <span>Transform / Inspect</span>
+            <span>Overview</span>
           </h2>
-          <p class="md-flow-section__text">内部モデル、要約、プレビューをここで確認します。</p>
+          <p class="md-flow-section__text">内部モデル、要約、検証結果、プレビューをここで確認します。</p>
         </div>
 
-        <section>
+        <section class="md-note-card md-note-card--feature">
           <p id="mermaidSvgError" class="md-mermaid-error md-hidden" aria-live="polite"></p>
           <div id="mermaidSvgPreview" class="md-mermaid-preview-stage">
             <div class="md-preview-empty">Mermaid を生成すると、ここに SVG を表示します。</div>
@@ -183,7 +183,7 @@
           <summary class="md-debug-accordion__summary">デバッグ情報</summary>
           <div class="md-debug-accordion__body">
             <div class="md-panel-actions">
-              <button id="roundTripBtn" type="button" class="md-button md-button--surface">再読込テスト</button>
+              <button id="roundTripBtn" type="button" class="md-button md-button--tonal">再読込テスト</button>
             </div>
 
             <div class="md-form-grid">
@@ -239,14 +239,14 @@
         </div>
 
         <div class="md-panel-actions">
-          <button id="downloadXmlBtn" type="button" class="md-button md-button--surface">MS Project XML</button>
-          <button id="exportXlsxBtn" type="button" class="md-button md-button--surface">XLSX</button>
-          <button id="exportWbsXlsxBtn" type="button" class="md-button md-button--surface">WBS XLSX</button>
+          <button id="downloadXmlBtn" type="button" class="md-button md-button--primary">MS Project XML</button>
+          <button id="exportXlsxBtn" type="button" class="md-button md-button--tonal">XLSX</button>
+          <button id="exportWbsXlsxBtn" type="button" class="md-button md-button--tonal">WBS XLSX</button>
           <button id="downloadMermaidSvgBtn" type="button" class="md-button md-button--surface" disabled>SVG</button>
-          <button id="exportCsvBtn" type="button" class="md-button md-button--surface">CSV</button>
+          <button id="exportCsvBtn" type="button" class="md-button md-button--tonal">CSV</button>
         </div>
 
-        <section class="md-note-card" aria-label="AI integration exports">
+        <section class="md-note-card md-note-card--accent" aria-label="AI integration exports">
           <div class="md-note-card__title-row">
             <h3 class="md-note-card__title">生成AI連携</h3>
           </div>
@@ -254,10 +254,10 @@
             既存 project を生成AIへ渡すための projection JSON をここから生成します。
           </p>
           <div class="md-panel-actions">
-            <button id="exportProjectOverviewBtn" type="button" class="md-button md-button--surface">project_overview_view</button>
-            <button id="exportPhaseDetailFullBtn" type="button" class="md-button md-button--surface">phase_detail_view full</button>
+            <button id="exportProjectOverviewBtn" type="button" class="md-button md-button--tonal">project_overview_view</button>
+            <button id="exportPhaseDetailFullBtn" type="button" class="md-button md-button--tonal">phase_detail_view full</button>
           </div>
-          <section class="md-note-card" aria-label="AI scoped phase detail">
+          <section class="md-note-card md-note-card--subtle" aria-label="AI scoped phase detail">
             <h4 class="md-note-card__title">phase_detail_view scoped</h4>
             <p class="md-note-card__text">
               phase の一部だけを生成AIへ渡したい時に使います。
@@ -268,16 +268,17 @@
               <lht-text-field-help field-id="phaseDetailMaxDepthInput" label="何階層下まで含めるか" rows="1" placeholder="空欄なら全階層" help-text="起点 task から何階層下まで含めるかを指定します。0 は起点 task のみです。"></lht-text-field-help>
             </div>
             <div class="md-panel-actions">
-              <button id="exportPhaseDetailBtn" type="button" class="md-button md-button--surface">phase_detail_view scoped</button>
+              <button id="exportPhaseDetailBtn" type="button" class="md-button md-button--tonal">phase_detail_view scoped</button>
             </div>
           </section>
         </section>
 
-        <details class="md-debug-accordion">
-          <summary class="md-debug-accordion__summary">設定</summary>
-          <div class="md-debug-accordion__body">
-            <section class="md-note-card" aria-label="WBS xlsx export options">
-              <h3 class="md-note-card__title">WBS XLSX の祝日指定</h3>
+        <section class="ms-settings-card" aria-label="Output settings">
+          <details class="ms-settings-accordion">
+            <summary class="ms-settings-summary">設定</summary>
+            <div class="ms-settings-body">
+              <section class="ms-settings-block" aria-label="WBS xlsx export options">
+                <h3 class="ms-settings-subtitle">WBS XLSX の祝日指定</h3>
               <p class="md-note-card__text">
                 `WBS XLSX Export` では、`ProjectModel` から補完した既定祝日と、`YYYY-MM-DD` 形式で指定した追加祝日を合成して WBS 日付帯へ反映します。
               </p>
@@ -331,9 +332,10 @@
               <div class="md-panel-actions">
                 <button id="resetWbsHolidayDatesBtn" type="button" class="md-button md-button--surface">WBS 祝日を既定値へ戻す</button>
               </div>
-            </section>
-          </div>
-        </details>
+              </section>
+            </div>
+          </details>
+        </section>
 
         <details class="md-debug-accordion">
           <summary class="md-debug-accordion__summary">デバッグ情報</summary>

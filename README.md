@@ -1,6 +1,6 @@
 # mikuproject
 
-`mikuproject` は、`MS Project XML` を読み込み、内部の `ProjectModel` へ変換し、再び `MS Project XML` や補助表現へ出力するためのローカル HTML ツールです。
+`mikuproject` は、`MS Project XML` を読み込み、内部モデル・`XLSX`・生成AI向け `JSON` を行き来しながら、プロジェクト計画を確認・編集するためのローカル HTML ツールです。
 
 `MS Project XML` を意味の基軸として扱い、`.xlsx` は確認・可視化・限定編集のための周辺表現として扱います。
 
@@ -10,9 +10,11 @@
 - `ProjectModel` への変換と内容確認
 - `MS Project XML` の再生成
 - Mermaid gantt テキスト生成
-- `CSV + ParentID` 生成と解析
+- `CSV + ParentID` のファイル読込とダウンロード
 - 構造忠実な `Project / Tasks / Resources / Assignments / Calendars` workbook の `XLSX Export / Import`
 - 表示専用の `WBS XLSX Export`
+- 生成AI向け `project_overview_view` / `phase_detail_view` の出力
+- 生成AIが返した `project_draft_view` の取込
 
 ## 現在の考え方
 
@@ -47,17 +49,33 @@
 
 ## 使い方
 
-もっとも簡単なのは、生成済みの [mikuproject.html](/Users/igapyon/Documents/git/mikuproject/mikuproject.html) をブラウザで開く方法です。
+もっとも簡単なのは、生成済みの [mikuproject.html](mikuproject.html) をブラウザで開く方法です。
 
 画面上では主に次の操作を行えます。
 
-- `XML Import`
-- `XML を解析`
-- `XML を再生成`
-- `XLSX Export`
-- `XLSX Import`
-- `WBS XLSX Export`
-- `Mermaid を生成`
+### Input
+
+- `MS Project XML` ファイルの読込
+- `XLSX` ファイルの限定 import
+- `CSV + ParentID` ファイルの読込
+- サンプル XML の読込
+- 生成AIが返した `project_draft_view` の JSON ファイル読込または JSON 貼り付け取込
+
+### Overview
+
+- 内部モデルの要約確認
+- validation メッセージの確認
+- Mermaid gantt プレビューの確認
+- `Project / Tasks / Resources / Assignments / Calendars` の preview 確認
+
+### Output
+
+- `MS Project XML` の保存
+- `XLSX` の保存
+- `WBS XLSX` の保存
+- `CSV + ParentID` の保存
+- Mermaid SVG の保存
+- 生成AI向け `project_overview_view` / `phase_detail_view` JSON の保存
 
 ## 開発
 
@@ -115,7 +133,7 @@ npm run build
 - `npm run build:xlsx-sample`: `local-data/` 配下へサンプル XLSX を生成します。
 - `npm run build:app`: `build:js`、`build:html`、`build:xlsx-sample` を順に実行します。
 
-[scripts/build-project.mjs](/Users/igapyon/Documents/git/mikuproject/scripts/build-project.mjs) は `--js-only` と `--html-only` を受け取り、JavaScript 生成と HTML 生成を切り替えます。
+[scripts/build-project.mjs](scripts/build-project.mjs) は `--js-only` と `--html-only` を受け取り、JavaScript 生成と HTML 生成を切り替えます。
 
 `src/ts/` を正本として扱い、`src/js/` はそこから生成する中間生成物として扱います。ただし、現状では `src/js/` も Git 管理します。ブラウザ実行、テスト、`build:xlsx-sample` は `src/js/` を参照します。
 
@@ -138,13 +156,23 @@ npm run build
 - `MS Project` 実機は未保有
 - 目標は XML の完全一致ではなく、意味的に往復できること
 - `XLSX Import` の反映対象は限定列のみ
+- `CSV + ParentID` は現在ファイルベースの補助入出力として扱う
 - `Calendars` の `WeekDays / Exceptions / WorkWeeks` などは現時点では反映対象外
 - Mermaid の SVG プレビューは `src/vendor/mermaid/mermaid.min.js` を `build:html` で内包した `mikuproject.html` を前提とする
 
+## 生成AI連携
+
+`mikuproject` は、生成AIとの直接連携に `MS Project XML` ではなく `JSON` を使います。
+
+- 既存 project 向けには `project_overview_view` と `phase_detail_view` を出力します。
+- 新規生成向けには、生成AIが返した `project_draft_view` を取り込めます。
+- 詳細な考え方は `docs/mikuproject-ai-json-spec.md` と `docs/msprojectxml-ai-integration.md` に置いています。
+
 ## 関連ドキュメント
 
-- [docs/spec.md](/Users/igapyon/Documents/git/mikuproject/docs/spec.md)
-- [docs/gap-notes.md](/Users/igapyon/Documents/git/mikuproject/docs/gap-notes.md)
-- [docs/msprojectxml-ai-integration.md](/Users/igapyon/Documents/git/mikuproject/docs/msprojectxml-ai-integration.md)
-- [docs/TODO.md](/Users/igapyon/Documents/git/mikuproject/docs/TODO.md)
-- [LICENSE](/Users/igapyon/Documents/git/mikuproject/LICENSE)
+- [docs/spec.md](docs/spec.md)
+- [docs/gap-notes.md](docs/gap-notes.md)
+- [docs/mikuproject-ai-json-spec.md](docs/mikuproject-ai-json-spec.md)
+- [docs/msprojectxml-ai-integration.md](docs/msprojectxml-ai-integration.md)
+- [docs/TODO.md](docs/TODO.md)
+- [LICENSE](LICENSE)

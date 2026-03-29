@@ -258,10 +258,6 @@
     return parseHolidayDateList(getTextArea("wbsHolidayDatesInput").value.trim());
   }
 
-  function parseWbsAdditionalHolidayDates(): string[] {
-    return parseHolidayDateList(getTextArea("wbsExtraHolidayDatesInput").value.trim());
-  }
-
   function parseOptionalNonNegativeInteger(raw: string): number | undefined {
     const value = raw.trim();
     if (!value) {
@@ -283,11 +279,11 @@
   }
 
   function useBusinessDaysForWbsDisplayRange(): boolean {
-    return getInput("wbsBusinessDayRangeInput").checked;
+    return true;
   }
 
   function useBusinessDaysForWbsProgressBand(): boolean {
-    return getInput("wbsBusinessDayProgressInput").checked;
+    return true;
   }
 
   function updateWbsHolidaySummary(holidayDates: string[]): void {
@@ -303,24 +299,12 @@
     const input = getTextArea("wbsHolidayDatesInput");
     if (!model) {
       input.value = "";
-      getTextArea("wbsExtraHolidayDatesInput").value = "";
       updateWbsHolidaySummary([]);
       return;
     }
     const holidayDates = mikuprojectWbsXlsx.collectWbsHolidayDates(model);
     input.value = holidayDates.join("\n");
     updateWbsHolidaySummary(holidayDates);
-  }
-
-  function resetWbsHolidayDatesInput(): void {
-    const model = ensureCurrentModel();
-    const holidayDates = mikuprojectWbsXlsx.collectWbsHolidayDates(model);
-    getTextArea("wbsHolidayDatesInput").value = holidayDates.join("\n");
-    getTextArea("wbsExtraHolidayDatesInput").value = "";
-    updateWbsHolidaySummary(holidayDates);
-    setStatus(`WBS 祝日入力を既定値へ戻しました${holidayDates.length > 0 ? ` (${holidayDates.length} 件)` : ""}`);
-    showToast("WBS 祝日を既定値へ戻しました");
-    setActiveTab("output");
   }
 
   function showToast(message: string): void {
@@ -939,6 +923,32 @@ WorkWeek1=${formatCalendarWorkWeekSummary(calendar)}</div>
     setActiveTab("output");
   }
 
+  function exportCurrentAiProjectionBundle(): void {
+    const model = ensureCurrentModel();
+    syncXmlTextFromModel(model);
+    const projectOverview = mikuprojectXml.exportProjectOverviewView(model) as {
+      phases?: Array<{ uid?: string }>;
+    };
+    const phaseDetailViewsFull = (projectOverview.phases || [])
+      .map((phase) => phase?.uid)
+      .filter((uid): uid is string => Boolean(uid))
+      .map((phaseUid) => mikuprojectXml.exportPhaseDetailView(model, phaseUid, { mode: "full" }));
+    const bundle = {
+      view_type: "ai_projection_bundle",
+      project_overview_view: projectOverview,
+      phase_detail_views_full: phaseDetailViewsFull
+    };
+    const bundleText = JSON.stringify(bundle, null, 2);
+    getTextArea("aiBundleOutput").value = bundleText;
+    downloadBlob(
+      new Blob([`${bundleText}\n`], { type: "application/json;charset=utf-8" }),
+      "mikuproject-full-bundle.json"
+    );
+    setStatus(`AI 連携用まとめ JSON を生成して保存しました (phase_detail_view full ${phaseDetailViewsFull.length} 件)`);
+    showToast("AI 連携用まとめ JSON を保存しました");
+    setActiveTab("output");
+  }
+
   function extractLastJsonBlock(value: string): string {
     const matches = Array.from(value.matchAll(/```json\s*([\s\S]*?)```/g));
     if (matches.length > 0) {
@@ -1040,22 +1050,17 @@ WorkWeek1=${formatCalendarWorkWeekSummary(calendar)}</div>
     const model = ensureCurrentModel();
     syncXmlTextFromModel(model);
     const defaultHolidayDates = parseWbsDefaultHolidayDates();
-    const additionalHolidayDates = parseWbsAdditionalHolidayDates();
     const displayDaysBeforeBaseDate = parseWbsDisplayDaysBeforeBaseDate();
     const displayDaysAfterBaseDate = parseWbsDisplayDaysAfterBaseDate();
     const useBusinessDaysForDisplayRange = useBusinessDaysForWbsDisplayRange();
     const useBusinessDaysForProgressBand = useBusinessDaysForWbsProgressBand();
-    const effectiveHolidayDates = Array.from(new Set([...defaultHolidayDates, ...additionalHolidayDates]));
     const workbook = mikuprojectWbsXlsx.exportWbsWorkbook(model, {
-      holidayDates: effectiveHolidayDates,
+      holidayDates: defaultHolidayDates,
       displayDaysBeforeBaseDate,
       displayDaysAfterBaseDate,
       useBusinessDaysForDisplayRange,
       useBusinessDaysForProgressBand
     });
-    if (defaultHolidayDates.length === 0 && effectiveHolidayDates.length > 0) {
-      getTextArea("wbsHolidayDatesInput").value = effectiveHolidayDates.join("\n");
-    }
     const codec = new mikuprojectExcelIo.XlsxWorkbookCodec();
     const bytes = codec.exportWorkbook(workbook);
     const now = new Date();
@@ -1071,10 +1076,10 @@ WorkWeek1=${formatCalendarWorkWeekSummary(calendar)}</div>
       `mikuproject-wbs-${stamp}.xlsx`
     );
     const displayRangeText = displayDaysBeforeBaseDate !== undefined || displayDaysAfterBaseDate !== undefined
-      ? ` / 表示期間 ${useBusinessDaysForDisplayRange ? "営業日" : "暦日"} 基準日前 ${displayDaysBeforeBaseDate || 0} 日, 基準日後 ${displayDaysAfterBaseDate || 0} 日`
+      ? ` / 表示期間 営業日 基準日前 ${displayDaysBeforeBaseDate || 0} 日, 基準日後 ${displayDaysAfterBaseDate || 0} 日`
       : "";
-    const progressBandText = useBusinessDaysForProgressBand ? " / 進捗帯 営業日" : "";
-    setStatus(`WBS XLSX ファイルをエクスポートしました${effectiveHolidayDates.length > 0 ? ` (祝日 ${effectiveHolidayDates.length} 件)` : ""}${displayRangeText}${progressBandText}`);
+    const progressBandText = " / 進捗帯 営業日";
+    setStatus(`WBS XLSX ファイルをエクスポートしました${defaultHolidayDates.length > 0 ? ` (祝日 ${defaultHolidayDates.length} 件)` : ""}${displayRangeText}${progressBandText}`);
     showToast("WBS XLSX を保存しました");
     setActiveTab("output");
   }
@@ -1218,6 +1223,13 @@ WorkWeek1=${formatCalendarWorkWeekSummary(calendar)}</div>
         setStatus(error instanceof Error ? error.message : "project_overview_view 生成に失敗しました");
       }
     });
+    getElement<HTMLButtonElement>("exportAiBundleBtn").addEventListener("click", () => {
+      try {
+        exportCurrentAiProjectionBundle();
+      } catch (error) {
+        setStatus(error instanceof Error ? error.message : "AI 連携用まとめ JSON 生成に失敗しました");
+      }
+    });
     getElement<HTMLButtonElement>("importProjectDraftFileBtn").addEventListener("click", () => {
       getElement<HTMLInputElement>("importProjectDraftInput").click();
     });
@@ -1254,13 +1266,6 @@ WorkWeek1=${formatCalendarWorkWeekSummary(calendar)}</div>
         exportCurrentWbsXlsx();
       } catch (error) {
         setStatus(error instanceof Error ? error.message : "WBS XLSX エクスポートに失敗しました");
-      }
-    });
-    getElement<HTMLButtonElement>("resetWbsHolidayDatesBtn").addEventListener("click", () => {
-      try {
-        resetWbsHolidayDatesInput();
-      } catch (error) {
-        setStatus(error instanceof Error ? error.message : "WBS 祝日入力のリセットに失敗しました");
       }
     });
     getElement<HTMLButtonElement>("parseCsvBtn").addEventListener("click", async () => {

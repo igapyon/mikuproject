@@ -20,6 +20,13 @@
 - UI の微調整として、`Input / Overview / Output` の各カードの余白・見出し・ボタン階層を見直し、`miku` 系テーマの統一感をさらに整える
 - `Overview` タブの summary / validation / preview の情報密度を見直し、どこを見る画面なのかをより直感的に伝わる構成へ調整する
 - `Output` タブの生成AI連携と各種 export ボタンの優先度表現を見直し、主操作と補助操作の区別をより明確にする
+- 新規 project 作成時に、明示的な calendar 指定がなければ、既定 calendar 1 つへ `WeekDays` の土日非稼働と `Exceptions` の日本祝日を自動設定する
+- 上記の既定 calendar の名前を当面 `Standard` とし、calendar が存在しない新規 project にだけ自動補完する
+- 既定 calendar 自動補完時に、`Project.CalendarUID` をその calendar の `UID` へ設定する
+- 上記の既定 calendar に含める祝日例外の生成範囲を、project の `StartDate` から 5 年先までに制限する
+- `WBS XLSX Export` で、期間帯の表示から非稼働日を除外する営業日ベース表示を実装する
+- `WBS XLSX Export` の進捗帯表示でも、同じ非稼働日基準を使うようにする
+- WBS 上で土日と祝日を別色表示する場合も、`MS Project XML` 正本へ独自の非稼働日種別を追加せず、`WeekDays / Exceptions` の由来で描き分ける
 - `build:xlsx-sample` の所要時間を個別計測し、sample workbook 生成処理の支配要因を確認する
 - `main.test.js` の初期化 DOM をケース別に最小化できるか見直す
 - CI 向けに `test:fast` と `test:full` のような実行導線を分けるか検討する
@@ -28,7 +35,7 @@
 - WBS 用の `ステータス` は `Task.ExtendedAttribute` で扱う前提で、`FieldID / FieldName / 値候補` を設計する
 - `TaskStatus` 用 `ExtendedAttribute` を `mikuproject-sample.xlsx` と `WBS workbook` のどちらまで見せるか決める
 - `TaskStatus` 用 `ExtendedAttribute` の値候補と、`PercentComplete` / `Active` との関係を整理する
-- `Calendars` の `WeekDays / Exceptions / WorkWeeks` を今後も非対応で維持するか再判断する
+- 画面では `Calendars / Exceptions` を read-only 確認に留める前提で、`XLSX Import` 側の `WeekDays / Exceptions / WorkWeeks` 編集導線をどこまで整えるか整理する
 - `Calendar / Baseline / TimephasedData / ExtendedAttributes` をどの順で扱うか優先順位を決める
 - `mikuproject-sample.xlsx` の `Project` シートで、構造忠実方針を崩さない範囲の見た目調整を続ける
 - `mikuproject-sample.xlsx` の `Resources / Assignments / NonWorkingDays` で、強調色が過剰にならない最終バランスを調整する

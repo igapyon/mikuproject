@@ -56,12 +56,12 @@ function mountDom() {
     <button id="exportWbsXlsxBtn" type="button">WBS XLSX</button>
     <button id="downloadMermaidSvgBtn" type="button" disabled>SVG</button>
     <button id="exportCsvBtn" type="button">CSV</button>
+    <button id="exportAiBundleBtn" type="button">project_overview + all phase_detail full</button>
     <button id="exportProjectOverviewBtn" type="button">project_overview_view</button>
     <button id="exportPhaseDetailFullBtn" type="button">phase_detail_view full</button>
     <button id="exportPhaseDetailBtn" type="button">phase_detail_view</button>
     <button id="importProjectDraftFileBtn" type="button">project_draft_view JSON</button>
     <button id="importProjectDraftBtn" type="button">project_draft_view を取り込む</button>
-    <button id="resetWbsHolidayDatesBtn" type="button">WBS 祝日を既定値へ戻す</button>
     <button id="downloadXmlBtn" type="button">MS Project XML</button>
     <input id="importXmlInput" type="file" />
     <input id="importXlsxInput" type="file" />
@@ -138,8 +138,8 @@ function mountDom() {
         <div class="md-debug-accordion__body">
           <section class="md-note-card">
             <h3 class="md-note-card__title">WBS XLSX の祝日指定</h3>
-            <p class="md-note-card__text">WBS XLSX Export では、ProjectModel から補完した既定祝日と、YYYY-MM-DD 形式で指定した追加祝日を合成して WBS 日付帯へ反映します。</p>
-            <p class="md-note-card__text">既定祝日は、現在の ProjectModel に含まれる Calendar.Exceptions の非稼働日例外から補完します。追加祝日は改行またはカンマ区切りで入力できます。表示期間を空欄にすると全期間、数値を入れると BaseDate 前後の日数で切り出します。営業日ベースを選ぶと土日祝を飛ばします。進捗帯も営業日基準へ切り替えられます。</p>
+            <p class="md-note-card__text">WBS XLSX Export では、ProjectModel から補完した既定祝日を WBS 日付帯へ反映します。</p>
+            <p class="md-note-card__text">既定祝日は、現在の ProjectModel に含まれる Calendar.Exceptions の非稼働日例外から補完します。画面では Calendars / Exceptions を直接編集せず、必要な変更は MS Project XML または XLSX Import 側で扱います。表示期間を空欄にすると全期間、数値を入れると BaseDate 前後の営業日で切り出します。進捗帯も営業日基準で計算します。</p>
           </section>
           <input id="wbsDisplayDaysBeforeInput" />
           <input id="wbsDisplayDaysAfterInput" />
@@ -147,13 +147,13 @@ function mountDom() {
           <input id="wbsBusinessDayProgressInput" type="checkbox" />
           <div id="wbsHolidaySummary"></div>
           <textarea id="wbsHolidayDatesInput"></textarea>
-          <textarea id="wbsExtraHolidayDatesInput"></textarea>
         </div>
       </details>
       <details class="md-debug-accordion">
         <summary class="md-debug-accordion__summary">デバッグ情報</summary>
         <div class="md-debug-accordion__body">
           <textarea id="projectDraftImportInput"></textarea>
+          <textarea id="aiBundleOutput"></textarea>
           <textarea id="projectOverviewOutput"></textarea>
           <input id="phaseDetailUidInput" />
           <input id="phaseDetailRootUidInput" />
@@ -247,19 +247,15 @@ describe("mikuproject main", () => {
     expect(document.body.textContent).toContain("設定");
     expect(document.querySelectorAll(".md-debug-accordion")[2]?.hasAttribute("open")).toBe(false);
     expect(document.querySelectorAll(".md-debug-accordion")[3]?.hasAttribute("open")).toBe(false);
-    expect(document.body.textContent).toContain("既定祝日と");
-    expect(document.body.textContent).toContain("追加祝日を合成");
+    expect(document.body.textContent).toContain("ProjectModel から補完した既定祝日");
     expect(document.body.textContent).toContain("非稼働日例外から補完");
-    expect(document.body.textContent).toContain("BaseDate 前後の日数で切り出します");
-    expect(document.body.textContent).toContain("営業日ベースを選ぶと土日祝を飛ばします");
-    expect(document.body.textContent).toContain("進捗帯も営業日基準へ切り替えられます");
+    expect(document.body.textContent).toContain("必要な変更は MS Project XML または XLSX Import 側で扱います");
+    expect(document.body.textContent).toContain("BaseDate 前後の営業日で切り出します");
+    expect(document.body.textContent).toContain("進捗帯も営業日基準で計算します");
     expect(document.getElementById("wbsHolidayDatesInput").value).toBe("");
-    expect(document.getElementById("wbsExtraHolidayDatesInput").value).toBe("");
     expect(document.getElementById("wbsHolidaySummary").textContent).toBe("既定祝日: 0 件");
     expect(document.getElementById("wbsDisplayDaysBeforeInput").value).toBe("");
     expect(document.getElementById("wbsDisplayDaysAfterInput").value).toBe("");
-    expect(document.getElementById("wbsBusinessDayRangeInput").checked).toBe(false);
-    expect(document.getElementById("wbsBusinessDayProgressInput").checked).toBe(false);
     expect(document.querySelector(".md-feedback-stack")?.classList.contains("md-hidden")).toBe(true);
   });
 
@@ -310,6 +306,28 @@ describe("mikuproject main", () => {
     expect(HTMLAnchorElement.prototype.click.mock.calls.length - anchorClickCalls).toBeGreaterThanOrEqual(2);
   });
 
+  it("exports ai projection bundle", () => {
+    bootPage();
+
+    document.getElementById("xmlInput").value = hierarchyXml;
+    parseXmlViaHook();
+    const createObjectUrlCalls = URL.createObjectURL.mock.calls.length;
+    const anchorClickCalls = HTMLAnchorElement.prototype.click.mock.calls.length;
+
+    document.getElementById("exportAiBundleBtn").click();
+
+    const bundle = JSON.parse(document.getElementById("aiBundleOutput").value);
+    expect(bundle.view_type).toBe("ai_projection_bundle");
+    expect(bundle.project_overview_view.view_type).toBe("project_overview_view");
+    expect(Array.isArray(bundle.project_overview_view.phases)).toBe(true);
+    expect(Array.isArray(bundle.phase_detail_views_full)).toBe(true);
+    expect(bundle.phase_detail_views_full.length).toBeGreaterThan(0);
+    expect(bundle.phase_detail_views_full.every((item) => item.view_type === "phase_detail_view")).toBe(true);
+    expect(bundle.phase_detail_views_full.every((item) => item.scope?.mode === "full")).toBe(true);
+    expect(URL.createObjectURL.mock.calls.length - createObjectUrlCalls).toBeGreaterThanOrEqual(1);
+    expect(HTMLAnchorElement.prototype.click.mock.calls.length - anchorClickCalls).toBeGreaterThanOrEqual(1);
+  });
+
   it("exports scoped phase_detail_view", () => {
     bootPage();
 
@@ -354,8 +372,14 @@ describe("mikuproject main", () => {
 
     expect(document.getElementById("summaryProjectName").textContent).toBe("新規基幹刷新");
     expect(document.getElementById("summaryTaskCount").textContent).toBe("3");
+    expect(document.getElementById("summaryCalendarCount").textContent).toBe("1");
     expect(document.getElementById("xmlInput").value).toContain("<Name>新規基幹刷新</Name>");
-    expect(document.getElementById("modelOutput").value).toContain("\"uid\": \"draft-3\"");
+    expect(document.getElementById("xmlInput").value).toContain("<CalendarUID>1</CalendarUID>");
+    expect(document.getElementById("xmlInput").value).toContain("<Name>Standard</Name>");
+    expect(document.getElementById("xmlInput").value).toContain("<UID>3</UID>");
+    expect(document.getElementById("modelOutput").value).toContain("\"uid\": \"3\"");
+    expect(document.getElementById("modelOutput").value).not.toContain("\"uid\": \"draft-3\"");
+    expect(document.getElementById("modelOutput").value).toContain("\"name\": \"Standard\"");
   });
 
   it("parses xml into internal model summary", () => {
@@ -824,7 +848,9 @@ describe("mikuproject main", () => {
     expect(document.getElementById("summaryTaskCount").textContent).toBe("3");
     expect(document.getElementById("summaryResourceCount").textContent).toBe("1");
     expect(document.getElementById("summaryAssignmentCount").textContent).toBe("2");
+    expect(document.getElementById("summaryCalendarCount").textContent).toBe("1");
     expect(document.getElementById("modelOutput").value).toContain("\"name\": \"CSV Imported Project\"");
+    expect(document.getElementById("modelOutput").value).toContain("\"name\": \"Standard\"");
     expect(document.getElementById("taskPreview").textContent).toContain("Implementation");
     expect(document.getElementById("taskPreview").textContent).toContain("Predecessors=2");
     expect(document.getElementById("resourcePreview").textContent).toContain("Miku");
@@ -865,7 +891,9 @@ describe("mikuproject main", () => {
 
     expect(document.getElementById("xmlInput").value).toContain("<Name>Imported</Name>");
     expect(document.getElementById("summaryProjectName").textContent).toBe("Imported");
+    expect(document.getElementById("summaryCalendarCount").textContent).toBe("1");
     expect(document.getElementById("modelOutput").value).toContain("\"name\": \"Imported\"");
+    expect(document.getElementById("modelOutput").value).toContain("\"name\": \"Standard\"");
     expect(document.getElementById("mermaidOutput").value).toContain("gantt");
     expect(document.getElementById("mermaidSvgPreview").innerHTML).toContain("<svg");
     expect(document.getElementById("statusMessage").textContent).toContain("XML ファイルを読み込んで解析しました");
@@ -907,46 +935,17 @@ describe("mikuproject main", () => {
     const clickedAnchor = HTMLAnchorElement.prototype.click.mock.instances.at(-1);
     expect(clickedAnchor.download).toBe("mikuproject-wbs-202603162312.xlsx");
     expect(document.getElementById("wbsHolidayDatesInput").value.split("\n")).toEqual(defaultHolidayDates);
-    expect(document.getElementById("wbsExtraHolidayDatesInput").value).toBe("");
     expect(exportSpy.mock.calls.at(-1)?.[1]).toEqual({
       holidayDates: defaultHolidayDates,
       displayDaysBeforeBaseDate: undefined,
       displayDaysAfterBaseDate: undefined,
-      useBusinessDaysForDisplayRange: false,
-      useBusinessDaysForProgressBand: false
+      useBusinessDaysForDisplayRange: true,
+      useBusinessDaysForProgressBand: true
     });
     expect(document.getElementById("xmlInput").value).not.toContain("<!-- edited -->");
     expect(document.getElementById("xmlSaveState").textContent).toContain("XML 保存状態: 保存済み (2026-03-16 23:12)");
     expect(document.getElementById("statusMessage").textContent).toContain("WBS XLSX ファイルをエクスポートしました");
     expect(document.getElementById("statusMessage").textContent).toContain(`祝日 ${SAMPLE_HOLIDAY_COUNT} 件`);
-  });
-
-  it("downloads current wbs xlsx with configured holidays", async () => {
-    bootPage();
-    const exportSpy = vi.spyOn(globalThis.__mikuprojectWbsXlsx, "exportWbsWorkbook");
-
-    parseXmlViaHook();
-    document.getElementById("wbsExtraHolidayDatesInput").value = "2026-03-20, 2026-03-20\n2026-03-21";
-    document.getElementById("exportWbsXlsxBtn").click();
-    const defaultHolidayDates = getDefaultSampleHolidayDates();
-
-    expect(exportSpy).toHaveBeenCalled();
-    expect(exportSpy.mock.calls.at(-1)?.[1]).toEqual({
-      holidayDates: [...defaultHolidayDates, "2026-03-21"],
-      displayDaysBeforeBaseDate: undefined,
-      displayDaysAfterBaseDate: undefined,
-      useBusinessDaysForDisplayRange: false,
-      useBusinessDaysForProgressBand: false
-    });
-    const workbook = exportSpy.mock.results.at(-1)?.value;
-    const sheet = workbook.sheets[0];
-    const projectInfoHeaderIndex = sheet.rows.findIndex((row) => row.cells[0]?.value === "プロジェクト");
-    expect(sheet.rows[projectInfoHeaderIndex + 7].cells[2].value).toBe(SAMPLE_HOLIDAY_COUNT + 1);
-    const headerRowIndex = sheet.rows.findIndex((row) => row.cells[0]?.value === "UID");
-    const dateRowIndex = headerRowIndex - 1;
-    const holidayColumnIndex = sheet.rows[dateRowIndex].cells.findIndex((cell) => cell.value === "3/20");
-    expect(sheet.rows[dateRowIndex].cells[holidayColumnIndex].fillColor).toBe("#FCE4EC");
-    expect(document.getElementById("statusMessage").textContent).toContain(`祝日 ${SAMPLE_HOLIDAY_COUNT + 1} 件`);
   });
 
   it("downloads current wbs xlsx with configured display range", async () => {
@@ -964,10 +963,10 @@ describe("mikuproject main", () => {
       holidayDates: defaultHolidayDates,
       displayDaysBeforeBaseDate: 1,
       displayDaysAfterBaseDate: 2,
-      useBusinessDaysForDisplayRange: false,
-      useBusinessDaysForProgressBand: false
+      useBusinessDaysForDisplayRange: true,
+      useBusinessDaysForProgressBand: true
     });
-    expect(document.getElementById("statusMessage").textContent).toContain("表示期間 暦日 基準日前 1 日, 基準日後 2 日");
+    expect(document.getElementById("statusMessage").textContent).toContain("表示期間 営業日 基準日前 1 日, 基準日後 2 日");
   });
 
   it("downloads current wbs xlsx with business-day display range", async () => {
@@ -977,7 +976,6 @@ describe("mikuproject main", () => {
     parseXmlViaHook();
     document.getElementById("wbsDisplayDaysBeforeInput").value = "1";
     document.getElementById("wbsDisplayDaysAfterInput").value = "2";
-    document.getElementById("wbsBusinessDayRangeInput").checked = true;
     document.getElementById("exportWbsXlsxBtn").click();
     const defaultHolidayDates = getDefaultSampleHolidayDates();
 
@@ -986,7 +984,7 @@ describe("mikuproject main", () => {
       displayDaysBeforeBaseDate: 1,
       displayDaysAfterBaseDate: 2,
       useBusinessDaysForDisplayRange: true,
-      useBusinessDaysForProgressBand: false
+      useBusinessDaysForProgressBand: true
     });
     expect(document.getElementById("statusMessage").textContent).toContain("表示期間 営業日 基準日前 1 日, 基準日後 2 日");
   });
@@ -996,7 +994,6 @@ describe("mikuproject main", () => {
     const exportSpy = vi.spyOn(globalThis.__mikuprojectWbsXlsx, "exportWbsWorkbook");
 
     parseXmlViaHook();
-    document.getElementById("wbsBusinessDayProgressInput").checked = true;
     document.getElementById("exportWbsXlsxBtn").click();
     const defaultHolidayDates = getDefaultSampleHolidayDates();
 
@@ -1004,7 +1001,7 @@ describe("mikuproject main", () => {
       holidayDates: defaultHolidayDates,
       displayDaysBeforeBaseDate: undefined,
       displayDaysAfterBaseDate: undefined,
-      useBusinessDaysForDisplayRange: false,
+      useBusinessDaysForDisplayRange: true,
       useBusinessDaysForProgressBand: true
     });
     expect(document.getElementById("statusMessage").textContent).toContain("進捗帯 営業日");
@@ -1017,24 +1014,8 @@ describe("mikuproject main", () => {
     const defaultHolidayDates = getDefaultSampleHolidayDates();
 
     expect(document.getElementById("wbsHolidayDatesInput").value.split("\n")).toEqual(defaultHolidayDates);
-    expect(document.getElementById("wbsExtraHolidayDatesInput").value).toBe("");
     expect(document.getElementById("wbsHolidaySummary").textContent).toContain(`既定祝日: ${SAMPLE_HOLIDAY_COUNT} 件`);
     expect(document.getElementById("wbsHolidaySummary").textContent).toContain("2026-03-20");
-  });
-
-  it("resets wbs holiday input back to model defaults", () => {
-    bootPage();
-
-    parseXmlViaHook();
-    document.getElementById("wbsExtraHolidayDatesInput").value = "2026-03-25\n2026-03-26";
-    document.getElementById("resetWbsHolidayDatesBtn").click();
-    const defaultHolidayDates = getDefaultSampleHolidayDates();
-
-    expect(document.getElementById("wbsHolidayDatesInput").value.split("\n")).toEqual(defaultHolidayDates);
-    expect(document.getElementById("wbsExtraHolidayDatesInput").value).toBe("");
-    expect(document.getElementById("wbsHolidaySummary").textContent).toContain(`既定祝日: ${SAMPLE_HOLIDAY_COUNT} 件`);
-    expect(document.getElementById("statusMessage").textContent).toContain("WBS 祝日入力を既定値へ戻しました");
-    expect(document.getElementById("statusMessage").textContent).toContain(`${SAMPLE_HOLIDAY_COUNT} 件`);
   });
 
   it("imports xlsx edits back into the current model and xml", async () => {
@@ -2131,6 +2112,7 @@ describe("mikuproject main", () => {
     const model = xmlTools.importCsvParentId(csv);
 
     expect(model.project.name).toBe("CSV Imported Project");
+    expect(model.project.calendarUID).toBe("1");
     expect(model.tasks).toHaveLength(4);
     expect(model.tasks[0].summary).toBe(true);
     expect(model.tasks[1].outlineNumber).toBe("1.1");
@@ -2140,6 +2122,10 @@ describe("mikuproject main", () => {
     expect(model.assignments).toHaveLength(4);
     expect(model.assignments[1].resourceUid).toBe("1");
     expect(model.assignments[2].resourceUid).toBe("2");
+    expect(model.calendars).toHaveLength(1);
+    expect(model.calendars[0].name).toBe("Standard");
+    expect(model.calendars[0].weekDays).toHaveLength(7);
+    expect(model.calendars[0].exceptions.length).toBeGreaterThan(0);
   });
 
   it("imports extended task fields in csv with parent id", () => {

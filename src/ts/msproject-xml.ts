@@ -956,6 +956,189 @@
     return Number.isFinite(timestamp) ? timestamp : null;
   }
 
+  function parseDateOnly(value: string | undefined): Date | null {
+    const text = String(value || "").trim().slice(0, 10);
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(text)) {
+      return null;
+    }
+    const parsed = new Date(`${text}T00:00:00`);
+    return Number.isNaN(parsed.getTime()) ? null : parsed;
+  }
+
+  function formatDateOnly(value: Date): string {
+    const year = value.getFullYear();
+    const month = String(value.getMonth() + 1).padStart(2, "0");
+    const day = String(value.getDate()).padStart(2, "0");
+    return `${year}-${month}-${day}`;
+  }
+
+  function addDateDays(base: Date, days: number): Date {
+    const next = new Date(base.getTime());
+    next.setDate(next.getDate() + days);
+    return next;
+  }
+
+  function addDateYears(base: Date, years: number): Date {
+    const next = new Date(base.getTime());
+    next.setFullYear(next.getFullYear() + years);
+    return next;
+  }
+
+  function toMsDayType(value: Date): number {
+    const day = value.getDay();
+    return day === 0 ? 1 : day + 1;
+  }
+
+  function buildNthWeekdayOfMonth(year: number, monthIndex: number, jsWeekday: number, nth: number): Date {
+    const first = new Date(year, monthIndex, 1);
+    const offset = (jsWeekday - first.getDay() + 7) % 7;
+    return new Date(year, monthIndex, 1 + offset + ((nth - 1) * 7));
+  }
+
+  function calculateVernalEquinoxDay(year: number): number {
+    return Math.floor(20.8431 + (0.242194 * (year - 1980)) - Math.floor((year - 1980) / 4));
+  }
+
+  function calculateAutumnalEquinoxDay(year: number): number {
+    return Math.floor(23.2488 + (0.242194 * (year - 1980)) - Math.floor((year - 1980) / 4));
+  }
+
+  function buildJapaneseHolidayMapForYear(year: number): Map<string, string> {
+    const holidays = new Map<string, string>();
+    const addHoliday = (date: Date, name: string) => {
+      holidays.set(formatDateOnly(date), name);
+    };
+    addHoliday(new Date(year, 0, 1), "元日");
+    addHoliday(buildNthWeekdayOfMonth(year, 0, 1, 2), "成人の日");
+    addHoliday(new Date(year, 1, 11), "建国記念の日");
+    addHoliday(new Date(year, 1, 23), "天皇誕生日");
+    addHoliday(new Date(year, 2, calculateVernalEquinoxDay(year)), "春分の日");
+    addHoliday(new Date(year, 3, 29), "昭和の日");
+    addHoliday(new Date(year, 4, 3), "憲法記念日");
+    addHoliday(new Date(year, 4, 4), "みどりの日");
+    addHoliday(new Date(year, 4, 5), "こどもの日");
+    addHoliday(buildNthWeekdayOfMonth(year, 6, 1, 3), "海の日");
+    addHoliday(new Date(year, 7, 11), "山の日");
+    addHoliday(buildNthWeekdayOfMonth(year, 8, 1, 3), "敬老の日");
+    addHoliday(new Date(year, 8, calculateAutumnalEquinoxDay(year)), "秋分の日");
+    addHoliday(buildNthWeekdayOfMonth(year, 9, 1, 2), "スポーツの日");
+    addHoliday(new Date(year, 10, 3), "文化の日");
+    addHoliday(new Date(year, 10, 23), "勤労感謝の日");
+
+    const baseHolidayDates = Array.from(holidays.keys()).sort();
+    for (const dateText of baseHolidayDates) {
+      const date = parseDateOnly(dateText);
+      if (!date || date.getDay() !== 0) {
+        continue;
+      }
+      let substitute = addDateDays(date, 1);
+      while (holidays.has(formatDateOnly(substitute))) {
+        substitute = addDateDays(substitute, 1);
+      }
+      holidays.set(formatDateOnly(substitute), "休日");
+    }
+
+    const sortedDates = Array.from(holidays.keys()).sort();
+    for (let index = 0; index < sortedDates.length - 1; index += 1) {
+      const current = parseDateOnly(sortedDates[index]);
+      const next = parseDateOnly(sortedDates[index + 1]);
+      if (!current || !next) {
+        continue;
+      }
+      const gapDays = Math.floor((next.getTime() - current.getTime()) / 86400000);
+      if (gapDays !== 2) {
+        continue;
+      }
+      const between = addDateDays(current, 1);
+      const betweenText = formatDateOnly(between);
+      if (holidays.has(betweenText) || between.getDay() === 0) {
+        continue;
+      }
+      holidays.set(betweenText, "休日");
+    }
+
+    return new Map(Array.from(holidays.entries()).sort((left, right) => left[0].localeCompare(right[0])));
+  }
+
+  function buildDefaultWorkingTimes(project: ProjectInfo): WorkingTimeModel[] {
+    const start = project.defaultStartTime || "09:00:00";
+    const finish = project.defaultFinishTime || "18:00:00";
+    if (start < "12:00:00" && finish > "13:00:00") {
+      return [
+        { fromTime: start, toTime: "12:00:00" },
+        { fromTime: "13:00:00", toTime: finish }
+      ];
+    }
+    return [{ fromTime: start, toTime: finish }];
+  }
+
+  function buildDefaultStandardWeekDays(project: ProjectInfo): WeekDayModel[] {
+    const workingTimes = buildDefaultWorkingTimes(project);
+    return Array.from({ length: 7 }, (_, index) => {
+      const dayType = index + 1;
+      const dayWorking = dayType !== 1 && dayType !== 7;
+      return {
+        dayType,
+        dayWorking,
+        workingTimes: dayWorking ? workingTimes.map((item) => ({ ...item })) : []
+      };
+    });
+  }
+
+  function buildDefaultJapaneseHolidayExceptions(project: ProjectInfo): CalendarExceptionModel[] {
+    const start = parseDateOnly(project.startDate) || parseDateOnly(project.finishDate) || new Date();
+    const finishLimit = addDateYears(start, 5);
+    const exceptions: CalendarExceptionModel[] = [];
+    for (let year = start.getFullYear(); year <= finishLimit.getFullYear(); year += 1) {
+      const holidays = buildJapaneseHolidayMapForYear(year);
+      for (const [dateText, name] of holidays.entries()) {
+        const date = parseDateOnly(dateText);
+        if (!date || date.getTime() < start.getTime() || date.getTime() > finishLimit.getTime()) {
+          continue;
+        }
+        exceptions.push({
+          name,
+          fromDate: `${dateText}T00:00:00`,
+          toDate: `${dateText}T23:59:59`,
+          dayWorking: false,
+          workingTimes: []
+        });
+      }
+    }
+    return exceptions;
+  }
+
+  function findFallbackCalendarUid(model: ProjectModel): string | undefined {
+    const baseCalendar = model.calendars.find((calendar) => calendar.isBaseCalendar);
+    return baseCalendar?.uid || model.calendars[0]?.uid;
+  }
+
+  function allocateDefaultCalendarUid(model: ProjectModel): string {
+    const usedUids = new Set(model.calendars.map((calendar) => String(calendar.uid)));
+    let candidate = 1;
+    while (usedUids.has(String(candidate))) {
+      candidate += 1;
+    }
+    return String(candidate);
+  }
+
+  function ensureDefaultProjectCalendar(model: ProjectModel): ProjectModel {
+    if (model.calendars.length === 0) {
+      const uid = allocateDefaultCalendarUid(model);
+      model.calendars.push({
+        uid,
+        name: "Standard",
+        isBaseCalendar: true,
+        isBaselineCalendar: true,
+        weekDays: buildDefaultStandardWeekDays(model.project),
+        exceptions: buildDefaultJapaneseHolidayExceptions(model.project),
+        workWeeks: []
+      });
+      model.project.calendarUID = uid;
+    }
+    return model;
+  }
+
   function parseWeekDays(parent: Element): WeekDayModel[] {
     return Array.from(parent.getElementsByTagName("WeekDays")[0]?.getElementsByTagName("WeekDay") || []).map((weekDay) => ({
       dayType: parseNumber(textContent(weekDay, "DayType"), 0),
@@ -1379,10 +1562,14 @@
       }
     }
     const projectStart = data.project.planned_start || data.project.planned_finish || toIsoLocalString(new Date());
+    const draftUidMap = new Map<string, string>();
+    inputTasks.forEach((task, index) => {
+      draftUidMap.set(String(task.uid || "").trim(), String(index + 1));
+    });
     const normalizedTasks = inputTasks.map((task, index) => ({
-      uid: String(task.uid || "").trim(),
+      uid: draftUidMap.get(String(task.uid || "").trim()) || String(index + 1),
       name: String(task.name || "").trim(),
-      parentUid: task.parent_uid == null || task.parent_uid === "" ? null : String(task.parent_uid),
+      parentUid: task.parent_uid == null || task.parent_uid === "" ? null : (draftUidMap.get(String(task.parent_uid)) || null),
       position: typeof task.position === "number" && Number.isFinite(task.position) ? task.position : index,
       isSummary: Boolean(task.is_summary),
       isMilestone: Boolean(task.is_milestone),
@@ -1402,7 +1589,7 @@
             return item?.task_uid ? [item.task_uid] : [];
           })
           : [])
-      ].map((item) => String(item))
+      ].map((item) => draftUidMap.get(String(item)) || String(item))
     }));
     const byParent = new Map<string | null, typeof normalizedTasks>();
     for (const task of normalizedTasks) {
@@ -1446,7 +1633,7 @@
     }
     walk(null, []);
     const taskFinishes = orderedTasks.map((task) => task.finish).filter(Boolean).sort();
-    return {
+    return ensureDefaultProjectCalendar({
       project: {
         name: data.project.name.trim(),
         startDate: projectStart,
@@ -1460,7 +1647,7 @@
       resources: [],
       assignments: [],
       calendars: []
-    };
+    });
   }
 
   function exportProjectOverviewView(model: ProjectModel) {
@@ -2062,7 +2249,7 @@
 
     const taskStarts = tasks.map((task) => task.start).filter(Boolean).sort();
     const taskFinishes = tasks.map((task) => task.finish).filter(Boolean).sort();
-    return {
+    return ensureDefaultProjectCalendar({
       project: {
         name: "CSV Imported Project",
         startDate: taskStarts[0] || "",
@@ -2076,7 +2263,7 @@
       resources,
       assignments,
       calendars: []
-    };
+    });
   }
 
   function importMsProjectXml(xmlText: string): ProjectModel {
@@ -2087,7 +2274,7 @@
     const resources = Array.from(projectElement.getElementsByTagName("Resources")[0]?.getElementsByTagName("Resource") || []);
     const assignments = Array.from(projectElement.getElementsByTagName("Assignments")[0]?.getElementsByTagName("Assignment") || []);
 
-    return {
+    return ensureDefaultProjectCalendar({
       project: {
         name: textContent(projectElement, "Name"),
         title: textContent(projectElement, "Title") || undefined,
@@ -2324,7 +2511,7 @@
           value: textContent(timephasedData, "Value") || undefined
         }))
       }))
-    };
+    });
   }
 
   function appendTextElement(doc: XMLDocument, parent: Element, name: string, value: string | number | boolean | undefined): void {
@@ -2367,57 +2554,58 @@
   }
 
   function exportMsProjectXml(model: ProjectModel): string {
+    const normalizedModel = ensureDefaultProjectCalendar(normalizeProjectModel(model));
     const doc = document.implementation.createDocument("", "Project", null);
     const project = doc.documentElement;
     project.setAttribute("xmlns", "http://schemas.microsoft.com/project");
 
-    appendTextElement(doc, project, "Name", model.project.name);
-    appendTextElement(doc, project, "Title", model.project.title);
-    appendTextElement(doc, project, "Company", model.project.company);
-    appendTextElement(doc, project, "Author", model.project.author);
-    appendTextElement(doc, project, "CreationDate", model.project.creationDate);
-    appendTextElement(doc, project, "LastSaved", model.project.lastSaved);
-    appendTextElement(doc, project, "SaveVersion", model.project.saveVersion);
-    appendTextElement(doc, project, "CurrentDate", model.project.currentDate);
-    appendTextElement(doc, project, "StartDate", model.project.startDate);
-    appendTextElement(doc, project, "FinishDate", model.project.finishDate);
-    appendTextElement(doc, project, "ScheduleFromStart", model.project.scheduleFromStart);
-    appendTextElement(doc, project, "DefaultStartTime", model.project.defaultStartTime);
-    appendTextElement(doc, project, "DefaultFinishTime", model.project.defaultFinishTime);
-    appendTextElement(doc, project, "MinutesPerDay", model.project.minutesPerDay);
-    appendTextElement(doc, project, "MinutesPerWeek", model.project.minutesPerWeek);
-    appendTextElement(doc, project, "DaysPerMonth", model.project.daysPerMonth);
-    appendTextElement(doc, project, "StatusDate", model.project.statusDate);
-    appendTextElement(doc, project, "WeekStartDay", model.project.weekStartDay);
-    appendTextElement(doc, project, "WorkFormat", model.project.workFormat);
-    appendTextElement(doc, project, "DurationFormat", model.project.durationFormat);
-    appendTextElement(doc, project, "CurrencyCode", model.project.currencyCode);
-    appendTextElement(doc, project, "CurrencyDigits", model.project.currencyDigits);
-    appendTextElement(doc, project, "CurrencySymbol", model.project.currencySymbol);
-    appendTextElement(doc, project, "CurrencySymbolPosition", model.project.currencySymbolPosition);
-    appendTextElement(doc, project, "FYStartDate", model.project.fyStartDate);
-    appendTextElement(doc, project, "FiscalYearStart", model.project.fiscalYearStart);
-    appendTextElement(doc, project, "CriticalSlackLimit", model.project.criticalSlackLimit);
-    appendTextElement(doc, project, "DefaultTaskType", model.project.defaultTaskType);
-    appendTextElement(doc, project, "DefaultFixedCostAccrual", model.project.defaultFixedCostAccrual);
-    appendTextElement(doc, project, "DefaultStandardRate", model.project.defaultStandardRate);
-    appendTextElement(doc, project, "DefaultOvertimeRate", model.project.defaultOvertimeRate);
-    appendTextElement(doc, project, "DefaultTaskEVMethod", model.project.defaultTaskEVMethod);
-    appendTextElement(doc, project, "NewTaskStartDate", model.project.newTaskStartDate);
-    appendTextElement(doc, project, "NewTasksAreManual", model.project.newTasksAreManual);
-    appendTextElement(doc, project, "NewTasksEffortDriven", model.project.newTasksEffortDriven);
-    appendTextElement(doc, project, "NewTasksEstimated", model.project.newTasksEstimated);
-    appendTextElement(doc, project, "ActualsInSync", model.project.actualsInSync);
-    appendTextElement(doc, project, "EditableActualCosts", model.project.editableActualCosts);
-    appendTextElement(doc, project, "HonorConstraints", model.project.honorConstraints);
-    appendTextElement(doc, project, "InsertedProjectsLikeSummary", model.project.insertedProjectsLikeSummary);
-    appendTextElement(doc, project, "MultipleCriticalPaths", model.project.multipleCriticalPaths);
-    appendTextElement(doc, project, "TaskUpdatesResource", model.project.taskUpdatesResource);
-    appendTextElement(doc, project, "UpdateManuallyScheduledTasksWhenEditingLinks", model.project.updateManuallyScheduledTasksWhenEditingLinks);
-    appendTextElement(doc, project, "CalendarUID", model.project.calendarUID);
-    if (model.project.outlineCodes.length > 0) {
+    appendTextElement(doc, project, "Name", normalizedModel.project.name);
+    appendTextElement(doc, project, "Title", normalizedModel.project.title);
+    appendTextElement(doc, project, "Company", normalizedModel.project.company);
+    appendTextElement(doc, project, "Author", normalizedModel.project.author);
+    appendTextElement(doc, project, "CreationDate", normalizedModel.project.creationDate);
+    appendTextElement(doc, project, "LastSaved", normalizedModel.project.lastSaved);
+    appendTextElement(doc, project, "SaveVersion", normalizedModel.project.saveVersion);
+    appendTextElement(doc, project, "CurrentDate", normalizedModel.project.currentDate);
+    appendTextElement(doc, project, "StartDate", normalizedModel.project.startDate);
+    appendTextElement(doc, project, "FinishDate", normalizedModel.project.finishDate);
+    appendTextElement(doc, project, "ScheduleFromStart", normalizedModel.project.scheduleFromStart);
+    appendTextElement(doc, project, "DefaultStartTime", normalizedModel.project.defaultStartTime);
+    appendTextElement(doc, project, "DefaultFinishTime", normalizedModel.project.defaultFinishTime);
+    appendTextElement(doc, project, "MinutesPerDay", normalizedModel.project.minutesPerDay);
+    appendTextElement(doc, project, "MinutesPerWeek", normalizedModel.project.minutesPerWeek);
+    appendTextElement(doc, project, "DaysPerMonth", normalizedModel.project.daysPerMonth);
+    appendTextElement(doc, project, "StatusDate", normalizedModel.project.statusDate);
+    appendTextElement(doc, project, "WeekStartDay", normalizedModel.project.weekStartDay);
+    appendTextElement(doc, project, "WorkFormat", normalizedModel.project.workFormat);
+    appendTextElement(doc, project, "DurationFormat", normalizedModel.project.durationFormat);
+    appendTextElement(doc, project, "CurrencyCode", normalizedModel.project.currencyCode);
+    appendTextElement(doc, project, "CurrencyDigits", normalizedModel.project.currencyDigits);
+    appendTextElement(doc, project, "CurrencySymbol", normalizedModel.project.currencySymbol);
+    appendTextElement(doc, project, "CurrencySymbolPosition", normalizedModel.project.currencySymbolPosition);
+    appendTextElement(doc, project, "FYStartDate", normalizedModel.project.fyStartDate);
+    appendTextElement(doc, project, "FiscalYearStart", normalizedModel.project.fiscalYearStart);
+    appendTextElement(doc, project, "CriticalSlackLimit", normalizedModel.project.criticalSlackLimit);
+    appendTextElement(doc, project, "DefaultTaskType", normalizedModel.project.defaultTaskType);
+    appendTextElement(doc, project, "DefaultFixedCostAccrual", normalizedModel.project.defaultFixedCostAccrual);
+    appendTextElement(doc, project, "DefaultStandardRate", normalizedModel.project.defaultStandardRate);
+    appendTextElement(doc, project, "DefaultOvertimeRate", normalizedModel.project.defaultOvertimeRate);
+    appendTextElement(doc, project, "DefaultTaskEVMethod", normalizedModel.project.defaultTaskEVMethod);
+    appendTextElement(doc, project, "NewTaskStartDate", normalizedModel.project.newTaskStartDate);
+    appendTextElement(doc, project, "NewTasksAreManual", normalizedModel.project.newTasksAreManual);
+    appendTextElement(doc, project, "NewTasksEffortDriven", normalizedModel.project.newTasksEffortDriven);
+    appendTextElement(doc, project, "NewTasksEstimated", normalizedModel.project.newTasksEstimated);
+    appendTextElement(doc, project, "ActualsInSync", normalizedModel.project.actualsInSync);
+    appendTextElement(doc, project, "EditableActualCosts", normalizedModel.project.editableActualCosts);
+    appendTextElement(doc, project, "HonorConstraints", normalizedModel.project.honorConstraints);
+    appendTextElement(doc, project, "InsertedProjectsLikeSummary", normalizedModel.project.insertedProjectsLikeSummary);
+    appendTextElement(doc, project, "MultipleCriticalPaths", normalizedModel.project.multipleCriticalPaths);
+    appendTextElement(doc, project, "TaskUpdatesResource", normalizedModel.project.taskUpdatesResource);
+    appendTextElement(doc, project, "UpdateManuallyScheduledTasksWhenEditingLinks", normalizedModel.project.updateManuallyScheduledTasksWhenEditingLinks);
+    appendTextElement(doc, project, "CalendarUID", normalizedModel.project.calendarUID);
+    if (normalizedModel.project.outlineCodes.length > 0) {
       const outlineCodesElement = doc.createElement("OutlineCodes");
-      for (const outlineCode of model.project.outlineCodes) {
+      for (const outlineCode of normalizedModel.project.outlineCodes) {
         const outlineCodeElement = doc.createElement("OutlineCode");
         appendTextElement(doc, outlineCodeElement, "FieldID", outlineCode.fieldID);
         appendTextElement(doc, outlineCodeElement, "FieldName", outlineCode.fieldName);
@@ -2453,9 +2641,9 @@
       }
       project.appendChild(outlineCodesElement);
     }
-    if (model.project.wbsMasks.length > 0) {
+    if (normalizedModel.project.wbsMasks.length > 0) {
       const wbsMasksElement = doc.createElement("WBSMasks");
-      for (const wbsMask of model.project.wbsMasks) {
+      for (const wbsMask of normalizedModel.project.wbsMasks) {
         const wbsMaskElement = doc.createElement("WBSMask");
         appendTextElement(doc, wbsMaskElement, "Level", wbsMask.level);
         appendTextElement(doc, wbsMaskElement, "Mask", wbsMask.mask);
@@ -2465,9 +2653,9 @@
       }
       project.appendChild(wbsMasksElement);
     }
-    if (model.project.extendedAttributes.length > 0) {
+    if (normalizedModel.project.extendedAttributes.length > 0) {
       const extendedAttributesElement = doc.createElement("ExtendedAttributes");
-      for (const attribute of model.project.extendedAttributes) {
+      for (const attribute of normalizedModel.project.extendedAttributes) {
         const extendedAttributeElement = doc.createElement("ExtendedAttribute");
         appendTextElement(doc, extendedAttributeElement, "FieldID", attribute.fieldID);
         appendTextElement(doc, extendedAttributeElement, "FieldName", attribute.fieldName);
@@ -2481,7 +2669,7 @@
     }
 
     const calendarsElement = doc.createElement("Calendars");
-    for (const calendar of model.calendars) {
+    for (const calendar of normalizedModel.calendars) {
       const calendarElement = doc.createElement("Calendar");
       appendTextElement(doc, calendarElement, "UID", calendar.uid);
       appendTextElement(doc, calendarElement, "Name", calendar.name);
@@ -2519,7 +2707,7 @@
     project.appendChild(calendarsElement);
 
     const tasksElement = doc.createElement("Tasks");
-    for (const task of model.tasks) {
+    for (const task of normalizedModel.tasks) {
       const taskElement = doc.createElement("Task");
       appendTextElement(doc, taskElement, "UID", task.uid);
       appendTextElement(doc, taskElement, "ID", task.id);
@@ -2592,7 +2780,7 @@
     project.appendChild(tasksElement);
 
     const resourcesElement = doc.createElement("Resources");
-    for (const resource of model.resources) {
+    for (const resource of normalizedModel.resources) {
       const resourceElement = doc.createElement("Resource");
       appendTextElement(doc, resourceElement, "UID", resource.uid);
       appendTextElement(doc, resourceElement, "ID", resource.id);
@@ -2645,7 +2833,7 @@
     project.appendChild(resourcesElement);
 
     const assignmentsElement = doc.createElement("Assignments");
-    for (const assignment of model.assignments) {
+    for (const assignment of normalizedModel.assignments) {
       const assignmentElement = doc.createElement("Assignment");
       appendTextElement(doc, assignmentElement, "UID", assignment.uid);
       appendTextElement(doc, assignmentElement, "TaskUID", assignment.taskUid);

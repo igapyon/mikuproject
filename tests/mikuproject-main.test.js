@@ -356,12 +356,13 @@ describe("mikuproject main", () => {
         view_type: "project_draft_view",
         project: {
           name: "新規基幹刷新",
-          planned_start: "2026-04-01T09:00:00"
+          planned_start: "2026-04-01"
         },
         tasks: [
           { uid: "draft-1", name: "要件定義", parent_uid: null, position: 0, is_summary: true },
-          { uid: "draft-2", name: "ヒアリング", parent_uid: "draft-1", position: 0, planned_finish: "2026-04-01T09:00:00" },
-          { uid: "draft-3", name: "要件確定", parent_uid: "draft-1", position: 1, is_milestone: true, predecessors: ["draft-2"], planned_start: "2026-04-08T18:00:00", planned_finish: "2026-04-08T18:00:00" }
+          { uid: "draft-2", name: "ヒアリング", parent_uid: "draft-1", position: 0, planned_finish: "2026-04-01" },
+          { uid: "draft-3", name: "整理期間", parent_uid: "draft-1", position: 1, planned_start: "2026-04-02", planned_finish: "2026-04-03" },
+          { uid: "draft-4", name: "要件確定", parent_uid: "draft-1", position: 2, is_milestone: true, predecessors: ["draft-2"], planned_start: "2026-04-08T18:00:00", planned_finish: "2026-04-08T18:00:00" }
         ]
       }, null, 2),
       "```"
@@ -372,7 +373,7 @@ describe("mikuproject main", () => {
     await flushAsyncWork();
 
     expect(document.getElementById("summaryProjectName").textContent).toBe("新規基幹刷新");
-    expect(document.getElementById("summaryTaskCount").textContent).toBe("3");
+    expect(document.getElementById("summaryTaskCount").textContent).toBe("4");
     expect(document.getElementById("summaryCalendarCount").textContent).toBe("1");
     expect(document.getElementById("xmlInput").value).toContain("<Name>新規基幹刷新</Name>");
     expect(document.getElementById("xmlInput").value).toContain("<CalendarUID>1</CalendarUID>");
@@ -381,11 +382,14 @@ describe("mikuproject main", () => {
     expect(document.getElementById("modelOutput").value).toContain("\"name\": \"ヒアリング\"");
     expect(document.getElementById("modelOutput").value).toContain("\"milestone\": false");
     expect(document.getElementById("modelOutput").value).toContain("\"start\": \"2026-04-01T09:00:00\"");
-    expect(document.getElementById("modelOutput").value).toContain("\"finish\": \"2026-04-01T09:00:00\"");
+    expect(document.getElementById("modelOutput").value).toContain("\"finish\": \"2026-04-01T18:00:00\"");
+    expect(document.getElementById("modelOutput").value).toContain("\"name\": \"整理期間\"");
+    expect(document.getElementById("modelOutput").value).toContain("\"start\": \"2026-04-02T09:00:00\"");
+    expect(document.getElementById("modelOutput").value).toContain("\"finish\": \"2026-04-03T18:00:00\"");
     expect(document.getElementById("modelOutput").value).toContain("\"name\": \"要件確定\"");
     expect(document.getElementById("modelOutput").value).toContain("\"milestone\": true");
-    expect(document.getElementById("modelOutput").value).toContain("\"uid\": \"3\"");
-    expect(document.getElementById("modelOutput").value).not.toContain("\"uid\": \"draft-3\"");
+    expect(document.getElementById("modelOutput").value).toContain("\"uid\": \"4\"");
+    expect(document.getElementById("modelOutput").value).not.toContain("\"uid\": \"draft-4\"");
     expect(document.getElementById("modelOutput").value).toContain("\"name\": \"Standard\"");
   });
 

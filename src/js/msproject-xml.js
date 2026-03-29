@@ -1566,6 +1566,12 @@
         parsed.setTime(parsed.getTime() + (hours * 60 * 60 * 1000));
         return toIsoLocalString(parsed);
     }
+    function isDateOnlyText(value) {
+        return typeof value === "string" && /^\d{4}-\d{2}-\d{2}$/.test(value.trim());
+    }
+    function withTimeOnDate(dateText, timeText) {
+        return `${dateText}T${timeText}`;
+    }
     function buildProjectDraftRequest(input) {
         return {
             view_type: "project_draft_request",
@@ -1659,9 +1665,18 @@
             siblings.forEach((task, index) => {
                 const currentPath = [...outlinePath, index + 1];
                 const outlineNumber = currentPath.join(".");
-                const start = task.plannedStart || task.plannedFinish || projectStart;
-                const finish = task.plannedFinish
+                let start = task.plannedStart || task.plannedFinish || projectStart;
+                let finish = task.plannedFinish
                     || (typeof task.plannedDurationHours === "number" ? addHoursToDateTime(start, task.plannedDurationHours) : start);
+                const dateOnlyTaskRange = !task.isMilestone
+                    && isDateOnlyText(start)
+                    && isDateOnlyText(finish)
+                    && task.plannedDuration == null
+                    && typeof task.plannedDurationHours !== "number";
+                if (dateOnlyTaskRange) {
+                    start = withTimeOnDate(start, "09:00:00");
+                    finish = withTimeOnDate(finish, "18:00:00");
+                }
                 const hasChildren = (byParent.get(task.uid) || []).length > 0;
                 orderedTasks.push({
                     uid: task.uid,

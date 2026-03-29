@@ -123,7 +123,7 @@ describe("mikuproject project xlsx", () => {
       "Notes"
     ]);
     expect(tasksSheet.rows[3].cells[2].value).toBe("基盤整備");
-    expect(tasksSheet.rows[3].cells[6].value).toBe("2026-03-16");
+    expect(tasksSheet.rows[3].cells[6].value).toBe("2026-03-16 09:00:00");
     expect(tasksSheet.rows[3].cells[2].bold).toBe(true);
     expect(tasksSheet.rows[3].cells[2].fillColor).toBe(EDITABLE_FILL);
     expect(tasksSheet.rows[3].cells[12].fillColor).toBe("#E6F2E0");

@@ -2334,13 +2334,15 @@ md-outlined-select.md-outlined-field:focus-within::part(container) {
               </div>
               <div class="md-form-grid">
                 <div id="wbsHolidaySummary" class="md-status">既定祝日: 未読込</div>
-                <lht-text-field-help
-                  field-id="wbsHolidayDatesInput"
-                  label="WBS 既定祝日"
+                <label class="md-label" for="wbsHolidayDatesInput">WBS 既定祝日</label>
+                <textarea
+                  id="wbsHolidayDatesInput"
+                  class="md-textarea"
                   rows="3"
                   placeholder="2026-03-20"
                   readonly
-                  help-text="現在の ProjectModel から自動補完します。画面上では直接編集しません。"></lht-text-field-help>
+                ></textarea>
+                <div class="md-caption">現在の ProjectModel から自動補完します。画面上では直接編集しません。</div>
               </div>
               </section>
             </div>
@@ -7083,6 +7085,12 @@ if (!customElements.get("lht-page-menu")) {
         parsed.setTime(parsed.getTime() + (hours * 60 * 60 * 1000));
         return toIsoLocalString(parsed);
     }
+    function isDateOnlyText(value) {
+        return typeof value === "string" && /^\d{4}-\d{2}-\d{2}$/.test(value.trim());
+    }
+    function withTimeOnDate(dateText, timeText) {
+        return `${dateText}T${timeText}`;
+    }
     function buildProjectDraftRequest(input) {
         return {
             view_type: "project_draft_request",
@@ -7176,9 +7184,18 @@ if (!customElements.get("lht-page-menu")) {
             siblings.forEach((task, index) => {
                 const currentPath = [...outlinePath, index + 1];
                 const outlineNumber = currentPath.join(".");
-                const start = task.plannedStart || task.plannedFinish || projectStart;
-                const finish = task.plannedFinish
+                let start = task.plannedStart || task.plannedFinish || projectStart;
+                let finish = task.plannedFinish
                     || (typeof task.plannedDurationHours === "number" ? addHoursToDateTime(start, task.plannedDurationHours) : start);
+                const dateOnlyTaskRange = !task.isMilestone
+                    && isDateOnlyText(start)
+                    && isDateOnlyText(finish)
+                    && task.plannedDuration == null
+                    && typeof task.plannedDurationHours !== "number";
+                if (dateOnlyTaskRange) {
+                    start = withTimeOnDate(start, "09:00:00");
+                    finish = withTimeOnDate(finish, "18:00:00");
+                }
                 const hasChildren = (byParent.get(task.uid) || []).length > 0;
                 orderedTasks.push({
                     uid: task.uid,
@@ -14005,6 +14022,25 @@ globalThis["mermaid"] = globalThis.__esbuild_esm_mermaid_nm["mermaid"].default;
             return candidate;
         }
     }
+    function applyMermaidSvgTheme(svgText) {
+        if (!svgText) {
+            return svgText;
+        }
+        const styleBlock = [
+            "<style>",
+            ".section0, .section1, .section2, .section3, .section4 { fill: #f7f9ff !important; }",
+            ".task, .task0, .task1, .task2, .task3, .task4, .active, .active0, .active1, .active2, .active3, .done, .done0, .done1, .done2, .done3 { fill: #8f95e8 !important; stroke: #5d63cf !important; }",
+            ".milestone, .milestone0, .milestone1, .milestone2, .milestone3 { fill: #8f95e8 !important; stroke: #5d63cf !important; }",
+            ".grid .tick line, .tick line { stroke: #707b94 !important; }",
+            ".today { stroke: #ff3b30 !important; }",
+            ".taskText, .taskTextOutsideRight, .taskTextOutsideLeft, .sectionTitle, .titleText, text { fill: #1d2740; }",
+            "</style>"
+        ].join("");
+        if (svgText.includes(".task0") || svgText.includes(".section0")) {
+            return svgText.replace(/(<svg\b[^>]*>)/i, `$1${styleBlock}`);
+        }
+        return svgText;
+    }
     function downloadBlob(blob, filename) {
         const objectUrl = URL.createObjectURL(blob);
         const link = document.createElement("a");
@@ -14014,6 +14050,32 @@ globalThis["mermaid"] = globalThis.__esbuild_esm_mermaid_nm["mermaid"].default;
         link.click();
         document.body.removeChild(link);
         window.setTimeout(() => URL.revokeObjectURL(objectUrl), 0);
+    }
+    function getMermaidRenderConfig() {
+        return {
+            startOnLoad: false,
+            securityLevel: "strict",
+            theme: "default",
+            themeVariables: {
+                sectionBkgColor: "#f7f9ff",
+                altSectionBkgColor: "#f7f9ff",
+                sectionBkgColor2: "#f7f9ff",
+                sectionBkgColor3: "#f7f9ff",
+                sectionBkgColor4: "#f7f9ff",
+                taskBkgColor: "#8f95e8",
+                taskBorderColor: "#5d63cf",
+                taskTextColor: "#1d2740",
+                activeTaskBkgColor: "#8f95e8",
+                activeTaskBorderColor: "#5d63cf",
+                doneTaskBkgColor: "#8f95e8",
+                doneTaskBorderColor: "#5d63cf",
+                milestoneBkgColor: "#8f95e8",
+                milestoneBorderColor: "#5d63cf",
+                gridColor: "#707b94",
+                lineColor: "#707b94",
+                todayLineColor: "#ff3b30"
+            }
+        };
     }
     async function renderMermaidPreview(source) {
         if (!mermaidApi) {
@@ -14025,14 +14087,10 @@ globalThis["mermaid"] = globalThis.__esbuild_esm_mermaid_nm["mermaid"].default;
         }
         clearMermaidError();
         const renderId = `mikuprojectMermaidRender${++mermaidRenderCount}`;
-        mermaidApi.initialize({
-            startOnLoad: false,
-            securityLevel: "strict",
-            theme: "default"
-        });
+        mermaidApi.initialize(getMermaidRenderConfig());
         try {
             const result = await mermaidApi.render(renderId, source);
-            currentMermaidSvg = normalizeSvgForXml(result.svg);
+            currentMermaidSvg = applyMermaidSvgTheme(normalizeSvgForXml(result.svg));
             setMermaidPreviewMarkup(currentMermaidSvg);
             updateMermaidSvgButton();
         }

@@ -19,6 +19,7 @@
 - AI は説明文を返してよいです
 - 既存編集向けの Patch JSON は将来案として設計中です
 - `MS Project XML` は保存と互換のための外部形式ですが、AI は直接扱いません
+- workbook JSON と AI 向け編集用 JSON を混同しないため、当面 `project_draft_view` などの編集用 JSON には `.editjson` 拡張子を推奨します
 
 重要方針:
 - 全体 JSON の再出力は禁止です
@@ -34,6 +35,12 @@ projection JSON の代表例:
 - `task_edit_view`: 個別 task を安全に編集するための作業ビュー。現時点では未実装です
 - `project_draft_request`: 全く新規の project 草案を AI に生成させるための入力。現時点では設計メモ寄りです
 - `project_draft_view`: 新規 project 草案の全量出力。現時点では import 済みです
+
+ファイル拡張子の運用:
+- `mikuproject_workbook_json` は `.json` を推奨します
+- `project_draft_view` は `.editjson` を推奨します
+- `.editjson` は、将来 `task_edit_view` や Patch JSON などの AI 向け編集用 JSON 群にも拡張できる広めの拡張子として扱います
+- 拡張子は判別補助であり、必要に応じて中身の `view_type` / `format` でも判定します
 
 `phase_detail_view` は、安全な変更候補の抽出や、次に必要な `task_edit_view` の特定にも使えます。
 `phase_detail_view` には、phase 全体をそのまま渡す `full` モードと、対象を絞る `scoped` モードの両方がありえます。

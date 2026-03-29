@@ -1,0 +1,18 @@
+{
+  "format": "mikuproject_workbook_json",
+  "version": 1,
+  "sheets": {
+    "Project": [],
+    "Tasks": [
+      {
+        "UID": "3",
+        "Name": "初期実装 Imported From JSON File",
+        "PercentComplete": 55
+      }
+    ],
+    "Resources": [],
+    "Assignments": [],
+    "Calendars": [],
+    "NonWorkingDays": []
+  }
+}

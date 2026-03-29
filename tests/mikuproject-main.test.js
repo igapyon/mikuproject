@@ -21,8 +21,16 @@ const msProjectXmlCode = readFileSync(
   path.resolve(__dirname, "../src/js/msproject-xml.js"),
   "utf8"
 );
+const projectWorkbookSchemaCode = readFileSync(
+  path.resolve(__dirname, "../src/js/project-workbook-schema.js"),
+  "utf8"
+);
 const projectXlsxCode = readFileSync(
   path.resolve(__dirname, "../src/js/project-xlsx.js"),
+  "utf8"
+);
+const projectWorkbookJsonCode = readFileSync(
+  path.resolve(__dirname, "../src/js/project-workbook-json.js"),
   "utf8"
 );
 const wbsXlsxCode = readFileSync(
@@ -45,29 +53,29 @@ const dependencyXml = readFileSync(
   path.resolve(__dirname, "../testdata/dependency.xml"),
   "utf8"
 );
+const workbookImportSampleJson = readFileSync(
+  path.resolve(__dirname, "../testdata/workbook-import-sample.json"),
+  "utf8"
+);
 
 function mountDom() {
   document.body.innerHTML = `
-    <button id="importXmlBtn" type="button">MS Project XML</button>
-    <button id="importXlsxBtn" type="button">XLSX</button>
-    <button id="parseCsvBtn" type="button">CSV</button>
+    <button id="importFileBtn" type="button">Load from file</button>
     <button id="loadSampleBtn" type="button">サンプル</button>
     <button id="exportXlsxBtn" type="button">XLSX</button>
-    <button id="exportWbsXlsxBtn" type="button">WBS XLSX</button>
-    <button id="downloadMermaidSvgBtn" type="button" disabled>SVG</button>
+    <button id="exportWorkbookJsonBtn" type="button">JSON</button>
     <button id="exportCsvBtn" type="button">CSV</button>
+    <button id="exportWbsXlsxBtn" type="button">WBS XLSX</button>
+    <button id="exportMermaidMdBtn" type="button">Mermaid</button>
+    <button id="downloadMermaidSvgBtn" type="button" disabled>SVG</button>
     <button id="exportAiBundleBtn" type="button">project_overview + all phase_detail full</button>
     <button id="exportProjectOverviewBtn" type="button">project_overview_view</button>
     <button id="exportPhaseDetailFullBtn" type="button">phase_detail_view full</button>
     <button id="exportPhaseDetailBtn" type="button">phase_detail_view</button>
     <button id="loadProjectDraftSampleBtn" type="button">サンプル draft</button>
-    <button id="importProjectDraftFileBtn" type="button">project_draft_view JSON</button>
     <button id="importProjectDraftBtn" type="button">project_draft_view を取り込む</button>
     <button id="downloadXmlBtn" type="button">MS Project XML</button>
-    <input id="importXmlInput" type="file" />
-    <input id="importXlsxInput" type="file" />
-    <input id="importCsvInput" type="file" />
-    <input id="importProjectDraftInput" type="file" />
+    <input id="importFileInput" type="file" />
     <input id="phaseDetailUidInput" type="text" />
     <input id="phaseDetailRootUidInput" type="text" />
     <input id="phaseDetailMaxDepthInput" type="text" />
@@ -88,10 +96,10 @@ function mountDom() {
     </div>
     <section id="tabPanelInput" class="md-flow-section md-tab-panel" data-tab-panel="input">
       <span class="md-button-with-help">
-        <button id="importXlsxBtnWithHelp" type="button">XLSX help host</button>
+        <button id="importFileBtnWithHelp" type="button">Load from file help host</button>
         <span class="md-button-help-anchor">
-          <lht-help-tooltip label="XLSX 編集の扱い" placement="right" wide>
-            <p>XLSX は MS Project XML の代替正本ではなく、確認と限定編集のための周辺表現として扱います。</p>
+          <lht-help-tooltip label="Load from file の説明" placement="right" wide>
+            <p>Load from file は .xml / .xlsx / .json / .editjson / .csv を拡張子で判別して取り込みます。</p>
           </lht-help-tooltip>
         </span>
       </span>
@@ -126,9 +134,11 @@ function mountDom() {
       </details>
       <div class="md-feedback-stack md-hidden">
         <div class="md-feedback-stack__title">取込結果</div>
-        <div class="md-feedback-stack__text">XLSX Import 後は、ここで差分反映と検証結果を確認します。</div>
+        <div class="md-feedback-stack__text">取込後は、ここで差分反映・warning・検証結果を確認します。</div>
         <div class="md-feedback-stack__label md-hidden">検証メッセージ</div>
         <div id="validationIssues" class="md-hidden"></div>
+        <div class="md-feedback-stack__label md-hidden">取込 warning</div>
+        <div id="importWarnings" class="md-hidden"></div>
         <div class="md-feedback-stack__label md-hidden">差分要約</div>
         <div id="xlsxImportSummary" class="md-hidden"></div>
       </div>
@@ -154,6 +164,7 @@ function mountDom() {
         <summary class="md-debug-accordion__summary">デバッグ情報</summary>
         <div class="md-debug-accordion__body">
           <textarea id="projectDraftImportInput"></textarea>
+          <textarea id="workbookJsonOutput"></textarea>
           <textarea id="aiBundleOutput"></textarea>
           <textarea id="projectOverviewOutput"></textarea>
           <input id="phaseDetailUidInput" />
@@ -177,7 +188,7 @@ function bootPage() {
       svg: `<svg data-source="${String(source).includes("gantt") ? "gantt" : "other"}"></svg>`
     }))
   };
-  new Function(`${typesCode}\n${excelIoCode}\n${msProjectXmlCode}\n${projectXlsxCode}\n${wbsXlsxCode}\n${mainCode}`)();
+  new Function(`${typesCode}\n${excelIoCode}\n${msProjectXmlCode}\n${projectWorkbookSchemaCode}\n${projectXlsxCode}\n${projectWorkbookJsonCode}\n${wbsXlsxCode}\n${mainCode}`)();
   document.dispatchEvent(new Event("DOMContentLoaded"));
 }
 
@@ -236,11 +247,13 @@ describe("mikuproject main", () => {
     expect(document.getElementById("xmlInput").value).toContain("<Project");
     expect(document.getElementById("statusMessage").textContent).toContain("サンプル XML");
     expect(document.getElementById("xmlSaveState").textContent).toContain("XML 保存状態: 未保存");
-    expect(document.querySelector('lht-help-tooltip[label="XLSX 編集の扱い"]')).not.toBeNull();
+    expect(document.querySelector('lht-help-tooltip[label="Load from file の説明"]')).not.toBeNull();
     expect(document.body.textContent).toContain("取込結果");
     expect(document.body.textContent).toContain("検証メッセージ");
+    expect(document.body.textContent).toContain("取込 warning");
     expect(document.body.textContent).toContain("差分要約");
-    expect(document.body.textContent).toContain("差分反映と検証結果を確認します");
+    expect(document.body.textContent).toContain("差分反映・warning・検証結果を確認します");
+    expect(document.body.textContent).not.toContain("Workbook JSON");
     expect(document.body.textContent).toContain("デバッグ情報");
     expect(document.querySelector(".md-debug-accordion")?.hasAttribute("open")).toBe(false);
     expect(document.querySelectorAll(".md-debug-accordion")[1]?.hasAttribute("open")).toBe(false);
@@ -303,6 +316,11 @@ describe("mikuproject main", () => {
     expect(Array.isArray(phaseDetail.tasks)).toBe(true);
     expect(phaseDetail.phase.uid).toBeTruthy();
     expect(phaseDetail.scope).toEqual({ mode: "full", root_uid: null, max_depth: null });
+    const downloads = HTMLAnchorElement.prototype.click.mock.instances
+      .slice(anchorClickCalls)
+      .map((anchor) => anchor.download);
+    expect(downloads).toContain("mikuproject-project-overview-view.editjson");
+    expect(downloads).toContain(`mikuproject-phase-detail-view-${phaseDetail.phase.uid}-full.editjson`);
     expect(URL.createObjectURL.mock.calls.length - createObjectUrlCalls).toBeGreaterThanOrEqual(2);
     expect(HTMLAnchorElement.prototype.click.mock.calls.length - anchorClickCalls).toBeGreaterThanOrEqual(2);
   });
@@ -325,6 +343,8 @@ describe("mikuproject main", () => {
     expect(bundle.phase_detail_views_full.length).toBeGreaterThan(0);
     expect(bundle.phase_detail_views_full.every((item) => item.view_type === "phase_detail_view")).toBe(true);
     expect(bundle.phase_detail_views_full.every((item) => item.scope?.mode === "full")).toBe(true);
+    const clickedAnchor = HTMLAnchorElement.prototype.click.mock.instances.at(-1);
+    expect(clickedAnchor.download).toBe("mikuproject-full-bundle.editjson");
     expect(URL.createObjectURL.mock.calls.length - createObjectUrlCalls).toBeGreaterThanOrEqual(1);
     expect(HTMLAnchorElement.prototype.click.mock.calls.length - anchorClickCalls).toBeGreaterThanOrEqual(1);
   });
@@ -344,6 +364,8 @@ describe("mikuproject main", () => {
     expect(phaseDetail.scope).toEqual({ mode: "scoped", root_uid: "2", max_depth: 1 });
     expect(phaseDetail.tasks.every((task) => ["2", "3", "4", "5", "18"].includes(task.uid))).toBe(true);
     expect(phaseDetail.tasks.some((task) => task.uid === "19")).toBe(false);
+    const clickedAnchor = HTMLAnchorElement.prototype.click.mock.instances.at(-1);
+    expect(clickedAnchor.download).toBe("mikuproject-phase-detail-view-1-scoped-root-2-depth-1.editjson");
   });
 
   it("imports project_draft_view", async () => {
@@ -631,12 +653,12 @@ describe("mikuproject main", () => {
       ].join("\n"))
     });
 
-    const csvInput = document.getElementById("importCsvInput");
-    Object.defineProperty(csvInput, "files", {
+    const importInput = document.getElementById("importFileInput");
+    Object.defineProperty(importInput, "files", {
       value: [file],
       configurable: true
     });
-    csvInput.dispatchEvent(new Event("change"));
+    importInput.dispatchEvent(new Event("change"));
     await flushAsyncWork();
     await flushAsyncWork();
 
@@ -670,7 +692,7 @@ describe("mikuproject main", () => {
   it("imports xml from a file into the textarea", async () => {
     bootPage();
 
-    const importInput = document.getElementById("importXmlInput");
+    const importInput = document.getElementById("importFileInput");
     const file = new File(["<Project><Name>Imported</Name></Project>"], "sample.xml", { type: "application/xml" });
     Object.defineProperty(file, "text", {
       configurable: true,
@@ -712,6 +734,23 @@ describe("mikuproject main", () => {
     expect(document.getElementById("xmlInput").value).not.toContain("<!-- edited -->");
     expect(document.getElementById("xmlSaveState").textContent).toContain("XML 保存状態: 保存済み (2026-03-16 23:12)");
     expect(document.getElementById("statusMessage").textContent).toContain("XLSX ファイルをエクスポートしました");
+  });
+
+  it("downloads current workbook json", () => {
+    bootPage();
+
+    parseXmlViaHook();
+    document.getElementById("exportWorkbookJsonBtn").click();
+
+    expect(URL.createObjectURL).toHaveBeenCalled();
+    expect(HTMLAnchorElement.prototype.click).toHaveBeenCalled();
+    const clickedAnchor = HTMLAnchorElement.prototype.click.mock.instances.at(-1);
+    expect(clickedAnchor.download).toBe("mikuproject-workbook-202603162312.json");
+    const workbookJson = JSON.parse(document.getElementById("workbookJsonOutput").value);
+    expect(workbookJson.format).toBe("mikuproject_workbook_json");
+    expect(workbookJson.version).toBe(1);
+    expect(workbookJson.sheets.Tasks[0].UID).toBe("1");
+    expect(document.getElementById("statusMessage").textContent).toContain("workbook JSON を生成して保存しました");
   });
 
   it("downloads current wbs xlsx", () => {
@@ -829,7 +868,7 @@ describe("mikuproject main", () => {
     tasksSheet.rows[5].cells[9].value = 77;
     const bytes = codec.exportWorkbook(workbook);
 
-    const importInput = document.getElementById("importXlsxInput");
+    const importInput = document.getElementById("importFileInput");
     const file = new File([bytes], "sample.xlsx", {
       type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
     });
@@ -863,6 +902,101 @@ describe("mikuproject main", () => {
     expect(document.querySelectorAll("#xlsxImportSummary .md-xlsx-summary__item")).toHaveLength(1);
   });
 
+  it("imports workbook json edits back into the current model and xml", async () => {
+    bootPage();
+    parseXmlViaHook();
+
+    const workbookJson = globalThis.__mikuprojectProjectWorkbookJson.exportProjectWorkbookJson(
+      globalThis.__mikuprojectXml.importMsProjectXml(document.getElementById("xmlInput").value)
+    );
+    workbookJson.sheets.Tasks[2].Name = "初期実装 Imported From JSON";
+    workbookJson.sheets.Tasks[2].PercentComplete = 66;
+    const importInput = document.getElementById("importFileInput");
+    const file = new File([JSON.stringify(workbookJson, null, 2)], "workbook-inline.json", {
+      type: "application/json"
+    });
+    Object.defineProperty(file, "text", {
+      configurable: true,
+      value: () => Promise.resolve(JSON.stringify(workbookJson, null, 2))
+    });
+    Object.defineProperty(importInput, "files", {
+      configurable: true,
+      value: [file]
+    });
+
+    importInput.dispatchEvent(new Event("change"));
+    await flushAsyncWork();
+    await flushAsyncWork();
+
+    expect(document.getElementById("modelOutput").value).toContain("\"name\": \"初期実装 Imported From JSON\"");
+    expect(document.getElementById("modelOutput").value).toContain("\"percentComplete\": 66");
+    expect(document.getElementById("xmlInput").value).toContain("<Name>初期実装 Imported From JSON</Name>");
+    expect(document.getElementById("statusMessage").textContent).toContain("JSON を読み込んで 2 件の変更を反映しました");
+    expect(document.getElementById("xlsxImportSummary").textContent).toContain("Tasks 1");
+    expect(document.getElementById("xlsxImportSummary").textContent).toContain("PercentComplete: 100 -> 66");
+  });
+
+  it("imports workbook json from a file into the current model and xml", async () => {
+    bootPage();
+    parseXmlViaHook();
+
+    const importInput = document.getElementById("importFileInput");
+    const file = new File([workbookImportSampleJson], "workbook-import-sample.json", {
+      type: "application/json"
+    });
+    Object.defineProperty(file, "text", {
+      configurable: true,
+      value: () => Promise.resolve(workbookImportSampleJson)
+    });
+    Object.defineProperty(importInput, "files", {
+      configurable: true,
+      value: [file]
+    });
+
+    importInput.dispatchEvent(new Event("change"));
+    await flushAsyncWork();
+    await flushAsyncWork();
+
+    expect(document.getElementById("modelOutput").value).toContain("\"name\": \"初期実装 Imported From JSON File\"");
+    expect(document.getElementById("modelOutput").value).toContain("\"percentComplete\": 55");
+    expect(document.getElementById("xmlInput").value).toContain("<Name>初期実装 Imported From JSON File</Name>");
+    expect(document.getElementById("statusMessage").textContent).toContain("JSON を読み込んで 2 件の変更を反映しました");
+    expect(document.getElementById("xlsxImportSummary").textContent).toContain("Tasks 1");
+    expect(document.getElementById("xlsxImportSummary").textContent).toContain("PercentComplete: 100 -> 55");
+  });
+
+  it("reports ignored workbook json warnings in status message", async () => {
+    bootPage();
+    parseXmlViaHook();
+
+    const workbookJson = globalThis.__mikuprojectProjectWorkbookJson.exportProjectWorkbookJson(
+      globalThis.__mikuprojectXml.importMsProjectXml(document.getElementById("xmlInput").value)
+    );
+    workbookJson.sheets.Tasks[2].UnknownColumn = "ignored";
+    workbookJson.sheets.UnknownSheet = [];
+    const importInput = document.getElementById("importFileInput");
+    const file = new File([JSON.stringify(workbookJson, null, 2)], "workbook-warning.json", {
+      type: "application/json"
+    });
+    Object.defineProperty(file, "text", {
+      configurable: true,
+      value: () => Promise.resolve(JSON.stringify(workbookJson, null, 2))
+    });
+    Object.defineProperty(importInput, "files", {
+      configurable: true,
+      value: [file]
+    });
+
+    importInput.dispatchEvent(new Event("change"));
+    await flushAsyncWork();
+    await flushAsyncWork();
+
+    expect(document.getElementById("statusMessage").textContent).toContain("JSON 取込で 2 件の warning を無視しました");
+    expect(document.getElementById("importWarnings").textContent).toContain("未知の列は無視します: Tasks[2].UnknownColumn");
+    expect(document.getElementById("importWarnings").textContent).toContain("未知の sheet は無視します: UnknownSheet");
+    expect(document.querySelector(".md-feedback-stack")?.classList.contains("md-hidden")).toBe(false);
+  });
+
   it("imports project sheet edits back into the current model and xml", async () => {
     bootPage();
     parseXmlViaHook();
@@ -876,7 +1010,7 @@ describe("mikuproject main", () => {
     projectSheet.rows[13].cells[1].value = 420;
     const bytes = codec.exportWorkbook(workbook);
 
-    const importInput = document.getElementById("importXlsxInput");
+    const importInput = document.getElementById("importFileInput");
     const file = new File([bytes], "project-sheet.xlsx", {
       type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
     });
@@ -936,7 +1070,7 @@ describe("mikuproject main", () => {
     );
     const bytes = codec.exportWorkbook(workbook);
 
-    const importInput = document.getElementById("importXlsxInput");
+    const importInput = document.getElementById("importFileInput");
     const file = new File([bytes], "no-change.xlsx", {
       type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
     });
@@ -984,7 +1118,7 @@ describe("mikuproject main", () => {
     calendarsSheet.rows[3].cells[4].value = 99;
 
     const bytes = codec.exportWorkbook(workbook);
-    const importInput = document.getElementById("importXlsxInput");
+    const importInput = document.getElementById("importFileInput");
     const file = new File([bytes], "unsupported-columns.xlsx", {
       type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
     });
@@ -1026,7 +1160,7 @@ describe("mikuproject main", () => {
     calendarsSheet.rows[3].cells[6].value = 99;
 
     const bytes = codec.exportWorkbook(workbook);
-    const importInput = document.getElementById("importXlsxInput");
+    const importInput = document.getElementById("importFileInput");
     const file = new File([bytes], "ignored-calendar-structure.xlsx", {
       type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
     });
@@ -1188,6 +1322,23 @@ describe("mikuproject main", () => {
     expect(document.getElementById("xmlSaveState").textContent).toContain("XML 保存状態: 保存済み (2026-03-16 23:12)");
     expect(document.getElementById("mermaidOutput").value).toContain("gantt");
     expect(document.getElementById("statusMessage").textContent).toContain("Mermaid SVG を保存しました");
+  });
+
+  it("downloads mermaid markdown", () => {
+    bootPage();
+
+    parseXmlViaHook();
+    document.getElementById("exportMermaidMdBtn").click();
+
+    expect(URL.createObjectURL).toHaveBeenCalled();
+    expect(HTMLAnchorElement.prototype.click).toHaveBeenCalled();
+    const clickedAnchor = HTMLAnchorElement.prototype.click.mock.instances.at(-1);
+    expect(clickedAnchor.download).toBe("mermaid-20260316.md");
+    const markdownBlob = URL.createObjectURL.mock.calls.at(-1)?.[0];
+    expect(markdownBlob).toBeTruthy();
+    expect(markdownBlob.type).toBe("text/markdown;charset=utf-8");
+    expect(document.getElementById("mermaidOutput").value).toContain("gantt");
+    expect(document.getElementById("statusMessage").textContent).toContain("Mermaid Markdown を保存しました");
   });
 
   it("reports validation error when assignment references a missing resource", () => {

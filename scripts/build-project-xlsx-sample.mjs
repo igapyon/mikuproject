@@ -6,6 +6,7 @@ const ROOT = process.cwd();
 const typesCode = fs.readFileSync(path.resolve(ROOT, "src/js/types.js"), "utf8");
 const excelIoCode = fs.readFileSync(path.resolve(ROOT, "src/js/excel-io.js"), "utf8");
 const msProjectXmlCode = fs.readFileSync(path.resolve(ROOT, "src/js/msproject-xml.js"), "utf8");
+const projectWorkbookSchemaCode = fs.readFileSync(path.resolve(ROOT, "src/js/project-workbook-schema.js"), "utf8");
 const projectXlsxCode = fs.readFileSync(path.resolve(ROOT, "src/js/project-xlsx.js"), "utf8");
 const wbsXlsxCode = fs.readFileSync(path.resolve(ROOT, "src/js/wbs-xlsx.js"), "utf8");
 
@@ -16,7 +17,7 @@ globalThis.DOMParser = dom.window.DOMParser;
 globalThis.XMLSerializer = dom.window.XMLSerializer;
 globalThis.Node = dom.window.Node;
 
-globalThis.eval(`${typesCode}\n${excelIoCode}\n${msProjectXmlCode}\n${projectXlsxCode}\n${wbsXlsxCode}`);
+globalThis.eval(`${typesCode}\n${excelIoCode}\n${msProjectXmlCode}\n${projectWorkbookSchemaCode}\n${projectXlsxCode}\n${wbsXlsxCode}`);
 
 const excelIo = globalThis.__mikuprojectExcelIo;
 const xml = globalThis.__mikuprojectXml;

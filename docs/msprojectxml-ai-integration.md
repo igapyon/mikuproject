@@ -16,6 +16,7 @@
 
 - AI へ渡す入力は用途別 projection JSON
 - AI から受け取る出力は、現状実装では `project_draft_view`、将来案としては Patch JSON を想定する
+- workbook JSON と AI 向け編集用 JSON を区別するため、当面 `project_draft_view` などの編集用 JSON には `.editjson` 拡張子を推奨する
 
 `MS Project XML` は保存と互換のための外部形式として保持し、AI との直接入出力には使わない。
 

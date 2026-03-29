@@ -21,7 +21,9 @@ const TARGETS = [
       "src/ts/types.ts",
       "src/ts/excel-io.ts",
       "src/ts/msproject-xml.ts",
+      "src/ts/project-workbook-schema.ts",
       "src/ts/project-xlsx.ts",
+      "src/ts/project-workbook-json.ts",
       "src/ts/wbs-xlsx.ts",
       "src/ts/main.ts"
     ]

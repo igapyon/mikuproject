@@ -2,7 +2,9 @@
 
 `mikuproject` は、`MS Project XML` を読み込み、内部モデル・`XLSX`・生成AI向け `JSON` を行き来しながら、プロジェクト計画を確認・編集するためのローカル HTML ツールです。
 
-`MS Project XML` を意味の基軸として扱い、`.xlsx` は確認・可視化・限定編集のための周辺表現として扱います。
+`MS Project XML` を意味の基軸として扱い、`.xlsx` と workbook JSON は確認・可視化・限定編集のための周辺表現として扱います。生成AI 連携の編集用 JSON は、workbook JSON と区別するため当面 `.editjson` 拡張子を推奨します。
+
+開発用 source は `src/ts/` や `mikuproject-src.html` に分割して管理しますが、配布物としては引き続き `mikuproject.html` ひとつに束ねた single-file web app を維持します。
 
 ## できること
 
@@ -12,6 +14,7 @@
 - Mermaid gantt テキスト生成
 - `CSV + ParentID` のファイル読込とダウンロード
 - 構造忠実な `Project / Tasks / Resources / Assignments / Calendars` workbook の `XLSX Export / Import`
+- 構造忠実な `Project / Tasks / Resources / Assignments / Calendars` workbook の `JSON Export / Import`
 - 表示専用の `WBS XLSX Export`
 - 生成AI向け `project_overview_view` / `phase_detail_view` の出力
 - 生成AIが返した `project_draft_view` の取込
@@ -20,10 +23,10 @@
 
 - 正本は `MS Project XML`
 - 内部の中立表現は `ProjectModel`
-- `.xlsx` は補助的な入出力
+- `.xlsx` と workbook JSON は補助的な入出力
 - まずは意味的ラウンドトリップを優先
 
-`XLSX Import` は自由編集をそのまま受け入れるのではなく、限定列の部分更新として扱います。
+`XLSX Import` と workbook JSON import は、自由編集をそのまま受け入れるのではなく、限定列の部分更新として扱います。
 
 `mikuproject-sample.xlsx` は `MS Project XML` との対応関係を確認するための構造忠実 workbook として扱います。列やシートの対応関係は崩さず、見た目改善は可読性補助に留めます。これに対して `mikuproject-wbs-sample.xlsx` は人が読むための表示重視 workbook として扱います。
 
@@ -57,9 +60,10 @@
 
 - `MS Project XML` ファイルの読込
 - `XLSX` ファイルの限定 import
+- `JSON` ファイルまたは JSON テキストの限定 import
 - `CSV + ParentID` ファイルの読込
 - `project_draft_view` ベースで生成したサンプル XML の読込
-- 生成AIが返した `project_draft_view` の JSON ファイル読込または JSON 貼り付け取込
+- 生成AIが返した `project_draft_view` の `.editjson` ファイル読込または JSON 貼り付け取込
 
 ### Overview
 
@@ -74,6 +78,7 @@
 - `MS Project XML` の保存
 - `XLSX` の保存
 - `WBS XLSX` の保存
+- `XLSX` 相当 workbook JSON の保存
 - `CSV + ParentID` の保存
 - Mermaid SVG の保存
 - 生成AI向け `project_overview_view` / `phase_detail_view` JSON の保存
@@ -157,6 +162,7 @@ npm run build
 - `MS Project` 実機は未保有
 - 目標は XML の完全一致ではなく、意味的に往復できること
 - `XLSX Import` の反映対象は限定列のみ
+- workbook JSON import の反映対象も同じ限定列のみ
 - `CSV + ParentID` は現在ファイルベースの補助入出力として扱う
 - `Calendars` の `WeekDays / Exceptions / WorkWeeks` などは現時点では反映対象外
 - Mermaid の SVG プレビューは `src/vendor/mermaid/mermaid.min.js` を `build:html` で内包した `mikuproject.html` を前提とする
@@ -167,6 +173,7 @@ npm run build
 
 - 既存 project 向けには `project_overview_view` と `phase_detail_view` を出力します。
 - 新規生成向けには、生成AIが返した `project_draft_view` を取り込めます。
+- `mikuproject_workbook_json` は `.json`、生成AI 向け編集用 JSON は `.editjson` を推奨拡張子とします。
 - 現時点で UI から実装済みなのは上記 3 つです。`task_edit_view` と Patch JSON 適用は設計メモ段階で、まだ実装していません。
 - 詳細な考え方は `docs/mikuproject-ai-json-spec.md` と `docs/msprojectxml-ai-integration.md` に置いています。
 

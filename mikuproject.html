@@ -1378,6 +1378,11 @@ lht-index-card-link {
   align-items: center;
 }
 
+.md-output-actions {
+  display: grid;
+  gap: 12px;
+}
+
 .md-button-with-help {
   display: inline-flex;
   align-items: center;
@@ -2098,19 +2103,18 @@ md-outlined-select.md-outlined-field:focus-within::part(container) {
         </div>
 
         <div class="md-panel-actions">
-          <button id="importXmlBtn" type="button" class="md-button md-button--primary">MS Project XML</button>
           <span class="md-button-with-help">
-            <button id="importXlsxBtn" type="button" class="md-button md-button--tonal">XLSX</button>
+            <button id="importFileBtn" type="button" class="md-button md-button--primary">Load from file</button>
             <span class="md-button-help-anchor">
-              <lht-help-tooltip label="XLSX 編集の扱い" placement="right" wide>
+              <lht-help-tooltip label="Load from file の説明" placement="right" wide>
                 <p class="md-note-card__text">
-                  `.xlsx` は `MS Project XML` の代替正本ではなく、確認と限定編集のための周辺表現として扱います。
+                  `Load from file` は、`.xml` / `.xlsx` / `.json` / `.editjson` / `.csv` を拡張子で判別して取り込みます。
                 </p>
                 <p class="md-note-card__text">
-                  現在の `XLSX Import` で反映するのは限定列のみです。
+                  `.xlsx` と `mikuproject_workbook_json (.json)` は `MS Project XML` の代替正本ではなく、確認と限定編集のための周辺表現として扱います。
                 </p>
                 <p class="md-note-card__text">
-                  反映結果は、`Project / Tasks / Resources / Assignments / Calendars` ごとの件数と、`UID` 単位の差分要約として画面上に表示します。
+                  `project_draft_view (.editjson)` は生成AI 向けの編集用 JSON として扱います。反映結果は、`Project / Tasks / Resources / Assignments / Calendars` ごとの件数と、`UID` 単位の差分要約として画面上に表示します。
                 </p>
                 <p class="md-note-card__text"><strong>反映対象</strong></p>
                 <ul class="md-note-list">
@@ -2129,29 +2133,24 @@ md-outlined-select.md-outlined-field:focus-within::part(container) {
               </lht-help-tooltip>
             </span>
           </span>
-          <button id="parseCsvBtn" type="button" class="md-button md-button--tonal">CSV</button>
           <button id="loadSampleBtn" type="button" class="md-button md-button--surface">サンプル</button>
-          <input id="importXmlInput" type="file" accept=".xml,text/xml,application/xml" class="md-hidden" />
-          <input id="importXlsxInput" type="file" accept=".xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" class="md-hidden" />
-          <input id="importCsvInput" type="file" accept=".csv,text/csv,text/plain" class="md-hidden" />
-          <input id="importProjectDraftInput" type="file" accept=".json,application/json,text/plain" class="md-hidden" />
+          <input id="importFileInput" type="file" accept=".xml,.xlsx,.json,.editjson,.csv,text/xml,application/xml,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/json,text/csv,text/plain" class="md-hidden" />
         </div>
 
         <section class="md-note-card md-note-card--accent" aria-label="AI draft generation">
           <div class="md-note-card__title-row">
             <h3 class="md-note-card__title">新規生成AI連携</h3>
             <lht-help-tooltip label="新規生成AI連携の説明" wide>
-              (i) まず生成AIに 生成AIプロンプト を読み込ませます。<br><br>
+              (i) まず生成AIに 生成AIプロンプト を読み込ませます。ファイル取込は画面上部の `Load from file` を使います。生成AIが返す `project_draft_view` は workbook JSON と区別するため当面 `.editjson`、`mikuproject_workbook_json` は `.json` として扱います。<br><br>
               (ii) その前提で生成AIに `project_draft_view` を作らせます。<br><br>
               (iii) 返ってきた JSON を、ここでファイル読込または貼り付けで取り込みます。
             </lht-help-tooltip>
             <a class="md-inline-link md-inline-link--compact" href="https://raw.githubusercontent.com/igapyon/mikuproject/refs/heads/devel/docs/mikuproject-ai-json-spec.md" target="_blank" rel="noopener noreferrer">生成AIプロンプト</a>
           </div>
           <p class="md-note-card__text">
-            生成AIとの会話は別途行います。生成AIが返した `project_draft_view` は、JSON ファイルとして開くか、JSON テキストを貼り付けてここから取り込みます。
+            生成AIとの会話は別途行います。生成AIが返した `project_draft_view` は、上部の `Load from file` から `.editjson` を開くか、JSON テキストを貼り付けてここから取り込みます。
           </p>
           <div class="md-panel-actions">
-            <button id="importProjectDraftFileBtn" type="button" class="md-button md-button--tonal">JSON ファイルを開く</button>
             <button id="importProjectDraftBtn" type="button" class="md-button md-button--tonal">貼り付けた JSON を取り込む</button>
             <button id="loadProjectDraftSampleBtn" type="button" class="md-button md-button--surface">サンプル</button>
           </div>
@@ -2253,9 +2252,11 @@ md-outlined-select.md-outlined-field:focus-within::part(container) {
 
         <div class="md-feedback-stack md-hidden" aria-label="import feedback">
           <div class="md-feedback-stack__title">取込結果</div>
-          <div class="md-feedback-stack__text">XLSX Import 後は、ここで差分反映と検証結果を確認します。</div>
+          <div class="md-feedback-stack__text">取込後は、ここで差分反映・warning・検証結果を確認します。</div>
           <div class="md-feedback-stack__label">検証メッセージ</div>
           <div id="validationIssues" class="md-issues md-hidden" aria-live="polite"></div>
+          <div class="md-feedback-stack__label">取込 warning</div>
+          <div id="importWarnings" class="md-issues md-hidden" aria-live="polite"></div>
           <div class="md-feedback-stack__label">差分要約</div>
           <div id="xlsxImportSummary" class="md-xlsx-summary md-hidden" aria-live="polite"></div>
         </div>
@@ -2270,12 +2271,18 @@ md-outlined-select.md-outlined-field:focus-within::part(container) {
           <p class="md-flow-section__text">出力設定と生成結果の確認をここにまとめます。</p>
         </div>
 
-        <div class="md-panel-actions">
-          <button id="downloadXmlBtn" type="button" class="md-button md-button--primary">MS Project XML</button>
-          <button id="exportXlsxBtn" type="button" class="md-button md-button--tonal">XLSX</button>
-          <button id="exportWbsXlsxBtn" type="button" class="md-button md-button--tonal">WBS XLSX</button>
-          <button id="downloadMermaidSvgBtn" type="button" class="md-button md-button--surface" disabled>SVG</button>
-          <button id="exportCsvBtn" type="button" class="md-button md-button--tonal">CSV</button>
+        <div class="md-output-actions">
+          <div class="md-panel-actions">
+            <button id="downloadXmlBtn" type="button" class="md-button md-button--primary">MS Project XML</button>
+            <button id="exportXlsxBtn" type="button" class="md-button md-button--tonal">XLSX</button>
+            <button id="exportWorkbookJsonBtn" type="button" class="md-button md-button--tonal">JSON</button>
+            <button id="exportCsvBtn" type="button" class="md-button md-button--tonal">CSV</button>
+          </div>
+          <div class="md-panel-actions">
+            <button id="exportWbsXlsxBtn" type="button" class="md-button md-button--tonal">WBS XLSX</button>
+            <button id="exportMermaidMdBtn" type="button" class="md-button md-button--tonal">Mermaid</button>
+            <button id="downloadMermaidSvgBtn" type="button" class="md-button md-button--surface" disabled>SVG</button>
+          </div>
         </div>
 
         <section class="md-note-card md-note-card--accent" aria-label="AI integration exports">
@@ -2353,6 +2360,10 @@ md-outlined-select.md-outlined-field:focus-within::part(container) {
           <summary class="md-debug-accordion__summary">デバッグ情報</summary>
           <div class="md-debug-accordion__body">
             <div class="md-form-grid">
+              <lht-text-field-help field-id="workbookJsonOutput" label="mikuproject_workbook_json" rows="16" readonly></lht-text-field-help>
+            </div>
+
+            <div class="md-form-grid">
               <lht-text-field-help field-id="aiBundleOutput" label="ai_projection_bundle" rows="16" readonly></lht-text-field-help>
             </div>
             <div class="md-form-grid">
@@ -2369,6 +2380,8 @@ md-outlined-select.md-outlined-field:focus-within::part(container) {
     <lht-toast id="toast"></lht-toast>
   </div>
   </main>
+  
+  
   
   
   
@@ -9036,6 +9049,102 @@ if (!customElements.get("lht-page-menu")) {
  * SPDX-License-Identifier: Apache-2.0
  */
 (() => {
+    const SHEET_NAMES = [
+        "Project",
+        "Tasks",
+        "Resources",
+        "Assignments",
+        "Calendars",
+        "NonWorkingDays"
+    ];
+    const HEADER_ROW_INDEX = 2;
+    const DATA_ROW_START_INDEX = 3;
+    const PROJECT_FIELD_ORDER = [
+        "Name",
+        "Title",
+        "Author",
+        "Company",
+        "StartDate",
+        "FinishDate",
+        "CurrentDate",
+        "StatusDate",
+        "CalendarUID",
+        "MinutesPerDay",
+        "MinutesPerWeek",
+        "DaysPerMonth",
+        "ScheduleFromStart",
+        "OutlineCodes",
+        "WBSMasks",
+        "ExtendedAttributes"
+    ];
+    const PROJECT_EDITABLE_FIELDS = [
+        "Name",
+        "Title",
+        "Author",
+        "Company",
+        "StartDate",
+        "FinishDate",
+        "CurrentDate",
+        "StatusDate",
+        "CalendarUID",
+        "MinutesPerDay",
+        "MinutesPerWeek",
+        "DaysPerMonth",
+        "ScheduleFromStart"
+    ];
+    const SHEET_HEADERS = {
+        Tasks: [
+            "UID", "ID", "Name", "OutlineLevel", "OutlineNumber", "WBS",
+            "Start", "Finish", "Duration", "PercentComplete", "PercentWorkComplete",
+            "Milestone", "Summary", "Critical", "CalendarUID", "Predecessors", "Notes"
+        ],
+        Resources: [
+            "UID", "ID", "Name", "Type", "Initials", "Group", "MaxUnits",
+            "CalendarUID", "StandardRate", "OvertimeRate", "CostPerUse",
+            "Work", "ActualWork", "RemainingWork"
+        ],
+        Assignments: [
+            "UID", "TaskUID", "TaskName", "ResourceUID", "ResourceName", "Start",
+            "Finish", "Units", "Work", "ActualWork", "RemainingWork", "PercentWorkComplete"
+        ],
+        Calendars: [
+            "UID", "Name", "IsBaseCalendar", "BaseCalendarUID", "WeekDays", "Exceptions", "WorkWeeks"
+        ],
+        NonWorkingDays: [
+            "CalendarUID", "Index", "CalendarName", "Name", "Date", "FromDate", "ToDate", "DayWorking"
+        ]
+    };
+    const IMPORTABLE_FIELDS = {
+        Project: PROJECT_EDITABLE_FIELDS,
+        Tasks: ["Name", "Start", "Finish", "PercentComplete", "PercentWorkComplete", "Notes"],
+        Resources: ["Name", "Group", "MaxUnits"],
+        Assignments: ["Units", "Work", "PercentWorkComplete"],
+        Calendars: ["Name", "IsBaseCalendar", "BaseCalendarUID"],
+        NonWorkingDays: ["Name", "Date", "FromDate", "ToDate", "DayWorking"]
+    };
+    globalThis.__mikuprojectProjectWorkbookSchema = {
+        SHEET_NAMES,
+        HEADER_ROW_INDEX,
+        DATA_ROW_START_INDEX,
+        PROJECT_FIELD_ORDER,
+        PROJECT_EDITABLE_FIELDS,
+        SHEET_HEADERS,
+        IMPORTABLE_FIELDS
+    };
+})();
+  </script>
+
+  <script>
+/*
+ * Copyright 2026 Toshiki Iga
+ * SPDX-License-Identifier: Apache-2.0
+ */
+(() => {
+    const workbookSchema = globalThis.__mikuprojectProjectWorkbookSchema;
+    if (!workbookSchema) {
+        throw new Error("mikuproject Project Workbook Schema module is not loaded");
+    }
+    const { HEADER_ROW_INDEX, DATA_ROW_START_INDEX, PROJECT_FIELD_ORDER, PROJECT_EDITABLE_FIELDS, SHEET_HEADERS } = workbookSchema;
     const HEADER_FILL = "#D9EAF7";
     const SECTION_FILL = "#BFD7EA";
     const LABEL_FILL = "#EDF5FB";
@@ -9095,7 +9204,7 @@ if (!customElements.get("lht-page-menu")) {
             return;
         }
         const valueByField = new Map();
-        for (const row of projectSheet.rows.slice(3)) {
+        for (const row of projectSheet.rows.slice(DATA_ROW_START_INDEX)) {
             const field = readStringCell(row.cells[0]);
             if (!field) {
                 continue;
@@ -9123,23 +9232,9 @@ if (!customElements.get("lht-page-menu")) {
             titleRow("Project", SHEET_THEMES.project.section),
             titleRow("Basic Info", SHEET_THEMES.project.section),
             headerRow(["Field", "Value"], SHEET_THEMES.project.header),
-            keyValueRow("Name", project.name, SHEET_THEMES.project.label),
-            keyValueRow("Title", project.title, SHEET_THEMES.project.label),
-            keyValueRow("Author", project.author, SHEET_THEMES.project.label),
-            keyValueRow("Company", project.company, SHEET_THEMES.project.label),
-            keyValueRow("StartDate", project.startDate, SHEET_THEMES.project.label),
-            keyValueRow("FinishDate", project.finishDate, SHEET_THEMES.project.label),
-            keyValueRow("CurrentDate", project.currentDate, SHEET_THEMES.project.label),
-            keyValueRow("StatusDate", project.statusDate, SHEET_THEMES.project.label),
+            ...PROJECT_FIELD_ORDER.slice(0, 8).map((field) => keyValueRow(field, readProjectFieldValue(project, field), SHEET_THEMES.project.label)),
             titleRow("Settings", SHEET_THEMES.project.section),
-            keyValueRow("CalendarUID", project.calendarUID, SHEET_THEMES.project.label),
-            keyValueRow("MinutesPerDay", project.minutesPerDay, SHEET_THEMES.project.label),
-            keyValueRow("MinutesPerWeek", project.minutesPerWeek, SHEET_THEMES.project.label),
-            keyValueRow("DaysPerMonth", project.daysPerMonth, SHEET_THEMES.project.label),
-            keyValueRow("ScheduleFromStart", project.scheduleFromStart, SHEET_THEMES.project.label),
-            keyValueRow("OutlineCodes", project.outlineCodes.length, SHEET_THEMES.project.label),
-            keyValueRow("WBSMasks", project.wbsMasks.length, SHEET_THEMES.project.label),
-            keyValueRow("ExtendedAttributes", project.extendedAttributes.length, SHEET_THEMES.project.label)
+            ...PROJECT_FIELD_ORDER.slice(8).map((field) => keyValueRow(field, readProjectFieldValue(project, field), SHEET_THEMES.project.label))
         ];
         return {
             name: "Project",
@@ -9162,11 +9257,7 @@ if (!customElements.get("lht-page-menu")) {
             rows: [
                 sectionTitleRow("Tasks", 17, SHEET_THEMES.tasks.section),
                 sectionTitleRow("Task List", 17, SHEET_THEMES.tasks.section),
-                headerRow([
-                    "UID", "ID", "Name", "OutlineLevel", "OutlineNumber", "WBS",
-                    "Start", "Finish", "Duration", "PercentComplete", "PercentWorkComplete",
-                    "Milestone", "Summary", "Critical", "CalendarUID", "Predecessors", "Notes"
-                ], SHEET_THEMES.tasks.header),
+                headerRow([...SHEET_HEADERS.Tasks], SHEET_THEMES.tasks.header),
                 ...model.tasks.map((task, index) => ({
                     cells: [
                         countCell(task.uid, index),
@@ -9204,11 +9295,7 @@ if (!customElements.get("lht-page-menu")) {
             rows: [
                 sectionTitleRow("Resources", 14, SHEET_THEMES.resources.section),
                 sectionTitleRow("Resource List", 14, SHEET_THEMES.resources.section),
-                headerRow([
-                    "UID", "ID", "Name", "Type", "Initials", "Group", "MaxUnits",
-                    "CalendarUID", "StandardRate", "OvertimeRate", "CostPerUse",
-                    "Work", "ActualWork", "RemainingWork"
-                ], SHEET_THEMES.resources.header),
+                headerRow([...SHEET_HEADERS.Resources], SHEET_THEMES.resources.header),
                 ...model.resources.map((resource, index) => ({
                     cells: [
                         countCell(resource.uid, index),
@@ -9244,10 +9331,7 @@ if (!customElements.get("lht-page-menu")) {
             rows: [
                 sectionTitleRow("Assignments", 12, SHEET_THEMES.assignments.section),
                 sectionTitleRow("Assignment List", 12, SHEET_THEMES.assignments.section),
-                headerRow([
-                    "UID", "TaskUID", "TaskName", "ResourceUID", "ResourceName", "Start",
-                    "Finish", "Units", "Work", "ActualWork", "RemainingWork", "PercentWorkComplete"
-                ], SHEET_THEMES.assignments.header),
+                headerRow([...SHEET_HEADERS.Assignments], SHEET_THEMES.assignments.header),
                 ...model.assignments.map((assignment, index) => ({
                     cells: [
                         countCell(assignment.uid, index),
@@ -9278,9 +9362,7 @@ if (!customElements.get("lht-page-menu")) {
             rows: [
                 sectionTitleRow("Calendars", 7, SHEET_THEMES.calendars.section),
                 sectionTitleRow("Calendar List", 7, SHEET_THEMES.calendars.section),
-                headerRow([
-                    "UID", "Name", "IsBaseCalendar", "BaseCalendarUID", "WeekDays", "Exceptions", "WorkWeeks"
-                ], SHEET_THEMES.calendars.header),
+                headerRow([...SHEET_HEADERS.Calendars], SHEET_THEMES.calendars.header),
                 ...model.calendars.map((calendar, index) => ({
                     cells: [
                         countCell(calendar.uid, index),
@@ -9318,9 +9400,7 @@ if (!customElements.get("lht-page-menu")) {
             rows: [
                 sectionTitleRow("NonWorkingDays", 8, SHEET_THEMES.nonWorkingDays.section),
                 sectionTitleRow("Calendar Exceptions", 8, SHEET_THEMES.nonWorkingDays.section),
-                headerRow([
-                    "CalendarUID", "Index", "CalendarName", "Name", "Date", "FromDate", "ToDate", "DayWorking"
-                ], SHEET_THEMES.nonWorkingDays.header),
+                headerRow([...SHEET_HEADERS.NonWorkingDays], SHEET_THEMES.nonWorkingDays.header),
                 ...rows
             ]
         };
@@ -9544,21 +9624,45 @@ if (!customElements.get("lht-page-menu")) {
         return ["OutlineCodes", "WBSMasks", "ExtendedAttributes", "MinutesPerDay", "MinutesPerWeek", "DaysPerMonth"].includes(label);
     }
     function isEditableProjectLabel(label) {
-        return [
-            "Name",
-            "Title",
-            "Author",
-            "Company",
-            "StartDate",
-            "FinishDate",
-            "CurrentDate",
-            "StatusDate",
-            "CalendarUID",
-            "MinutesPerDay",
-            "MinutesPerWeek",
-            "DaysPerMonth",
-            "ScheduleFromStart"
-        ].includes(label);
+        return PROJECT_EDITABLE_FIELDS.includes(label);
+    }
+    function readProjectFieldValue(project, field) {
+        switch (field) {
+            case "Name":
+                return project.name;
+            case "Title":
+                return project.title;
+            case "Author":
+                return project.author;
+            case "Company":
+                return project.company;
+            case "StartDate":
+                return project.startDate;
+            case "FinishDate":
+                return project.finishDate;
+            case "CurrentDate":
+                return project.currentDate;
+            case "StatusDate":
+                return project.statusDate;
+            case "CalendarUID":
+                return project.calendarUID;
+            case "MinutesPerDay":
+                return project.minutesPerDay;
+            case "MinutesPerWeek":
+                return project.minutesPerWeek;
+            case "DaysPerMonth":
+                return project.daysPerMonth;
+            case "ScheduleFromStart":
+                return project.scheduleFromStart;
+            case "OutlineCodes":
+                return project.outlineCodes.length;
+            case "WBSMasks":
+                return project.wbsMasks.length;
+            case "ExtendedAttributes":
+                return project.extendedAttributes.length;
+            default:
+                return undefined;
+        }
     }
     function cloneProjectModel(model) {
         return JSON.parse(JSON.stringify(model));
@@ -9568,13 +9672,13 @@ if (!customElements.get("lht-page-menu")) {
         if (!tasksSheet) {
             return;
         }
-        const columnIndexByLabel = readHeaderMap(tasksSheet, 2);
+        const columnIndexByLabel = readHeaderMap(tasksSheet, HEADER_ROW_INDEX);
         const uidColumnIndex = columnIndexByLabel.get("UID");
         if (uidColumnIndex === undefined) {
             return;
         }
         const taskByUid = new Map(model.tasks.map((task) => [task.uid, task]));
-        for (const row of tasksSheet.rows.slice(3)) {
+        for (const row of tasksSheet.rows.slice(DATA_ROW_START_INDEX)) {
             const uid = readStringCell(row.cells[uidColumnIndex]);
             if (!uid) {
                 continue;
@@ -9597,13 +9701,13 @@ if (!customElements.get("lht-page-menu")) {
         if (!resourcesSheet) {
             return;
         }
-        const columnIndexByLabel = readHeaderMap(resourcesSheet, 2);
+        const columnIndexByLabel = readHeaderMap(resourcesSheet, HEADER_ROW_INDEX);
         const uidColumnIndex = columnIndexByLabel.get("UID");
         if (uidColumnIndex === undefined) {
             return;
         }
         const resourceByUid = new Map(model.resources.map((resource) => [resource.uid, resource]));
-        for (const row of resourcesSheet.rows.slice(3)) {
+        for (const row of resourcesSheet.rows.slice(DATA_ROW_START_INDEX)) {
             const uid = readStringCell(row.cells[uidColumnIndex]);
             if (!uid) {
                 continue;
@@ -9623,13 +9727,13 @@ if (!customElements.get("lht-page-menu")) {
         if (!assignmentsSheet) {
             return;
         }
-        const columnIndexByLabel = readHeaderMap(assignmentsSheet, 2);
+        const columnIndexByLabel = readHeaderMap(assignmentsSheet, HEADER_ROW_INDEX);
         const uidColumnIndex = columnIndexByLabel.get("UID");
         if (uidColumnIndex === undefined) {
             return;
         }
         const assignmentByUid = new Map(model.assignments.map((assignment) => [assignment.uid, assignment]));
-        for (const row of assignmentsSheet.rows.slice(3)) {
+        for (const row of assignmentsSheet.rows.slice(DATA_ROW_START_INDEX)) {
             const uid = readStringCell(row.cells[uidColumnIndex]);
             if (!uid) {
                 continue;
@@ -9649,13 +9753,13 @@ if (!customElements.get("lht-page-menu")) {
         if (!calendarsSheet) {
             return;
         }
-        const columnIndexByLabel = readHeaderMap(calendarsSheet, 2);
+        const columnIndexByLabel = readHeaderMap(calendarsSheet, HEADER_ROW_INDEX);
         const uidColumnIndex = columnIndexByLabel.get("UID");
         if (uidColumnIndex === undefined) {
             return;
         }
         const calendarByUid = new Map(model.calendars.map((calendar) => [calendar.uid, calendar]));
-        for (const row of calendarsSheet.rows.slice(3)) {
+        for (const row of calendarsSheet.rows.slice(DATA_ROW_START_INDEX)) {
             const uid = readStringCell(row.cells[uidColumnIndex]);
             if (!uid) {
                 continue;
@@ -9675,14 +9779,14 @@ if (!customElements.get("lht-page-menu")) {
         if (!nonWorkingDaysSheet) {
             return;
         }
-        const columnIndexByLabel = readHeaderMap(nonWorkingDaysSheet, 2);
+        const columnIndexByLabel = readHeaderMap(nonWorkingDaysSheet, HEADER_ROW_INDEX);
         const calendarUidColumnIndex = columnIndexByLabel.get("CalendarUID");
         const indexColumnIndex = columnIndexByLabel.get("Index");
         if (calendarUidColumnIndex === undefined || indexColumnIndex === undefined) {
             return;
         }
         const calendarByUid = new Map(model.calendars.map((calendar) => [calendar.uid, calendar]));
-        for (const row of nonWorkingDaysSheet.rows.slice(3)) {
+        for (const row of nonWorkingDaysSheet.rows.slice(DATA_ROW_START_INDEX)) {
             const calendarUid = readStringCell(row.cells[calendarUidColumnIndex]);
             const indexValue = readNumberCell(row.cells[indexColumnIndex]);
             if (!calendarUid || !indexValue) {
@@ -9845,6 +9949,199 @@ if (!customElements.get("lht-page-menu")) {
         exportProjectWorkbook,
         importProjectWorkbook,
         importProjectWorkbookDetailed
+    };
+})();
+  </script>
+
+  <script>
+/*
+ * Copyright 2026 Toshiki Iga
+ * SPDX-License-Identifier: Apache-2.0
+ */
+(() => {
+    const workbookSchema = globalThis.__mikuprojectProjectWorkbookSchema;
+    if (!workbookSchema) {
+        throw new Error("mikuproject Project Workbook Schema module is not loaded");
+    }
+    const { SHEET_NAMES, HEADER_ROW_INDEX, DATA_ROW_START_INDEX, PROJECT_FIELD_ORDER, SHEET_HEADERS } = workbookSchema;
+    const projectXlsx = globalThis.__mikuprojectProjectXlsx;
+    if (!projectXlsx) {
+        throw new Error("mikuproject Project XLSX module is not loaded");
+    }
+    function exportProjectWorkbookJson(model) {
+        const workbook = projectXlsx.exportProjectWorkbook(model);
+        return {
+            format: "mikuproject_workbook_json",
+            version: 1,
+            sheets: {
+                Project: exportProjectSheetRows(workbook),
+                Tasks: exportTabularSheetRows(workbook, "Tasks"),
+                Resources: exportTabularSheetRows(workbook, "Resources"),
+                Assignments: exportTabularSheetRows(workbook, "Assignments"),
+                Calendars: exportTabularSheetRows(workbook, "Calendars"),
+                NonWorkingDays: exportTabularSheetRows(workbook, "NonWorkingDays")
+            }
+        };
+    }
+    function importProjectWorkbookJson(documentLike, baseModel) {
+        const validation = validateWorkbookJsonDocument(documentLike);
+        const document = validation.document;
+        const workbook = {
+            sheets: [
+                buildProjectSheet(document.sheets.Project || []),
+                buildTabularSheet("Tasks", document.sheets.Tasks || [], SHEET_HEADERS.Tasks),
+                buildTabularSheet("Resources", document.sheets.Resources || [], SHEET_HEADERS.Resources),
+                buildTabularSheet("Assignments", document.sheets.Assignments || [], SHEET_HEADERS.Assignments),
+                buildTabularSheet("Calendars", document.sheets.Calendars || [], SHEET_HEADERS.Calendars),
+                buildTabularSheet("NonWorkingDays", document.sheets.NonWorkingDays || [], SHEET_HEADERS.NonWorkingDays)
+            ]
+        };
+        const result = projectXlsx.importProjectWorkbookDetailed(workbook, baseModel);
+        return {
+            ...result,
+            warnings: validation.warnings
+        };
+    }
+    function validateWorkbookJsonDocument(documentLike) {
+        if (!documentLike || typeof documentLike !== "object") {
+            throw new Error("workbook JSON がオブジェクトではありません");
+        }
+        const document = documentLike;
+        if (document.format !== "mikuproject_workbook_json") {
+            throw new Error("format が mikuproject_workbook_json ではありません");
+        }
+        if (document.version !== 1) {
+            throw new Error("version は 1 である必要があります");
+        }
+        if (!document.sheets || typeof document.sheets !== "object") {
+            throw new Error("sheets がありません");
+        }
+        const warnings = [];
+        for (const [sheetName, rows] of Object.entries(document.sheets)) {
+            if (!SHEET_NAMES.includes(sheetName)) {
+                warnings.push({ message: `未知の sheet は無視します: ${sheetName}` });
+                continue;
+            }
+            if (!Array.isArray(rows)) {
+                throw new Error(`sheets.${sheetName} は配列である必要があります`);
+            }
+            for (const [rowIndex, row] of rows.entries()) {
+                if (!row || typeof row !== "object" || Array.isArray(row)) {
+                    throw new Error(`sheets.${sheetName} にオブジェクトではない行があります`);
+                }
+                for (const key of Object.keys(row)) {
+                    if (!isKnownColumn(sheetName, key)) {
+                        warnings.push({ message: `未知の列は無視します: ${sheetName}[${rowIndex}].${key}` });
+                    }
+                }
+            }
+        }
+        return {
+            document: document,
+            warnings
+        };
+    }
+    function exportProjectSheetRows(workbook) {
+        var _a, _b;
+        const sheet = workbook.sheets.find((item) => item.name === "Project");
+        if (!sheet) {
+            return [];
+        }
+        const rows = [];
+        for (const row of sheet.rows.slice(DATA_ROW_START_INDEX)) {
+            const field = toJsonScalar((_a = row.cells[0]) === null || _a === void 0 ? void 0 : _a.value);
+            if (typeof field !== "string" || !PROJECT_FIELD_ORDER.includes(field)) {
+                continue;
+            }
+            rows.push({
+                Field: field,
+                Value: toJsonScalar((_b = row.cells[1]) === null || _b === void 0 ? void 0 : _b.value)
+            });
+        }
+        return rows;
+    }
+    function exportTabularSheetRows(workbook, sheetName) {
+        const sheet = workbook.sheets.find((item) => item.name === sheetName);
+        if (!sheet) {
+            return [];
+        }
+        const headers = readHeaderRow(sheet);
+        return sheet.rows.slice(DATA_ROW_START_INDEX).map((row) => {
+            const item = {};
+            headers.forEach((header, index) => {
+                var _a;
+                item[header] = toJsonScalar((_a = row.cells[index]) === null || _a === void 0 ? void 0 : _a.value);
+            });
+            return item;
+        });
+    }
+    function buildProjectSheet(rows) {
+        const valueByField = new Map();
+        for (const row of rows) {
+            const field = typeof row.Field === "string" ? row.Field : "";
+            if (!PROJECT_FIELD_ORDER.includes(field)) {
+                continue;
+            }
+            valueByField.set(field, toWorkbookScalar(row.Value));
+        }
+        return {
+            name: "Project",
+            rows: [
+                { cells: [{ value: "Project" }, {}] },
+                { cells: [{ value: "Basic Info" }, {}] },
+                { cells: [{ value: "Field" }, { value: "Value" }] },
+                ...PROJECT_FIELD_ORDER.map((field) => ({
+                    cells: [
+                        { value: field },
+                        { value: valueByField.get(field) }
+                    ]
+                }))
+            ]
+        };
+    }
+    function buildTabularSheet(sheetName, rows, headers) {
+        return {
+            name: sheetName,
+            rows: [
+                { cells: [{ value: sheetName }] },
+                { cells: [{ value: `${sheetName} List` }] },
+                { cells: headers.map((header) => ({ value: header })) },
+                ...rows.map((row) => ({
+                    cells: headers.map((header) => ({
+                        value: toWorkbookScalar(row[header])
+                    }))
+                }))
+            ]
+        };
+    }
+    function readHeaderRow(sheet) {
+        var _a;
+        return (((_a = sheet.rows[HEADER_ROW_INDEX]) === null || _a === void 0 ? void 0 : _a.cells) || [])
+            .map((cell) => (typeof cell.value === "string" ? cell.value : ""))
+            .filter((value) => value !== "");
+    }
+    function toJsonScalar(value) {
+        if (value === undefined) {
+            return null;
+        }
+        return value;
+    }
+    function toWorkbookScalar(value) {
+        if (value === null || value === undefined) {
+            return undefined;
+        }
+        return value;
+    }
+    function isKnownColumn(sheetName, key) {
+        if (sheetName === "Project") {
+            return key === "Field" || key === "Value";
+        }
+        return (SHEET_HEADERS[sheetName] || []).includes(key);
+    }
+    globalThis.__mikuprojectProjectWorkbookJson = {
+        exportProjectWorkbookJson,
+        importProjectWorkbookJson,
+        validateWorkbookJsonDocument
     };
 })();
   </script>
@@ -13806,6 +14103,10 @@ globalThis["mermaid"] = globalThis.__esbuild_esm_mermaid_nm["mermaid"].default;
     if (!mikuprojectProjectXlsx) {
         throw new Error("mikuproject Project XLSX module is not loaded");
     }
+    const mikuprojectProjectWorkbookJson = globalThis.__mikuprojectProjectWorkbookJson;
+    if (!mikuprojectProjectWorkbookJson) {
+        throw new Error("mikuproject Project Workbook JSON module is not loaded");
+    }
     const mikuprojectWbsXlsx = globalThis.__mikuprojectWbsXlsx;
     if (!mikuprojectWbsXlsx) {
         throw new Error("mikuproject WBS XLSX module is not loaded");
@@ -14305,6 +14606,26 @@ globalThis["mermaid"] = globalThis.__esbuild_esm_mermaid_nm["mermaid"].default;
     `;
         updateFeedbackVisibility();
     }
+    function renderImportWarnings(warnings) {
+        const container = getElement("importWarnings");
+        const label = container.previousElementSibling;
+        if (warnings.length === 0) {
+            container.classList.add("md-hidden");
+            container.innerHTML = "";
+            label === null || label === void 0 ? void 0 : label.classList.add("md-hidden");
+            updateFeedbackVisibility();
+            return;
+        }
+        container.classList.remove("md-hidden");
+        label === null || label === void 0 ? void 0 : label.classList.remove("md-hidden");
+        container.innerHTML = `
+      <div class="md-issues__title">取込 warning</div>
+      <ul class="md-issues__list">
+        ${warnings.map((warning) => `<li class="md-issues__item">${escapeHtml(warning.message)}</li>`).join("")}
+      </ul>
+    `;
+        updateFeedbackVisibility();
+    }
     function renderXlsxImportSummary(changes) {
         const container = getElement("xlsxImportSummary");
         const label = container.previousElementSibling;
@@ -14395,8 +14716,11 @@ globalThis["mermaid"] = globalThis.__esbuild_esm_mermaid_nm["mermaid"].default;
     function updateFeedbackVisibility() {
         const stack = document.querySelector(".md-feedback-stack");
         const validationIssues = getElement("validationIssues");
+        const importWarnings = getElement("importWarnings");
         const xlsxImportSummary = getElement("xlsxImportSummary");
-        const shouldShow = !validationIssues.classList.contains("md-hidden") || !xlsxImportSummary.classList.contains("md-hidden");
+        const shouldShow = !validationIssues.classList.contains("md-hidden")
+            || !importWarnings.classList.contains("md-hidden")
+            || !xlsxImportSummary.classList.contains("md-hidden");
         stack === null || stack === void 0 ? void 0 : stack.classList.toggle("md-hidden", !shouldShow);
     }
     function formatChangeValue(value) {
@@ -14508,6 +14832,7 @@ WorkWeek1=${formatCalendarWorkWeekSummary(calendar)}</div>
         const issues = mikuprojectXml.validateProjectModel(currentModel);
         updateSummary(currentModel);
         renderValidationIssues(issues);
+        renderImportWarnings([]);
         renderXlsxImportSummary([]);
         setStatus(issues.length > 0 ? `XML ファイルを読み込んで解析しました。検証で ${issues.length} 件の問題があります` : "XML ファイルを読み込んで解析しました");
         showToast("XML を読み込んで解析しました");
@@ -14537,6 +14862,7 @@ WorkWeek1=${formatCalendarWorkWeekSummary(calendar)}</div>
         const issues = mikuprojectXml.validateProjectModel(currentModel);
         updateSummary(currentModel);
         renderValidationIssues(issues);
+        renderImportWarnings([]);
         renderXlsxImportSummary([]);
         if (!options.silent) {
             setStatus(issues.length > 0 ? `XML を解析しました。検証で ${issues.length} 件の問題があります` : "XML を内部モデルへ変換しました");
@@ -14580,7 +14906,7 @@ WorkWeek1=${formatCalendarWorkWeekSummary(calendar)}</div>
         syncXmlTextFromModel(model);
         const viewText = JSON.stringify(mikuprojectXml.exportProjectOverviewView(model), null, 2);
         getTextArea("projectOverviewOutput").value = viewText;
-        downloadBlob(new Blob([`${viewText}\n`], { type: "application/json;charset=utf-8" }), "mikuproject-project-overview-view.json");
+        downloadBlob(new Blob([`${viewText}\n`], { type: "application/json;charset=utf-8" }), "mikuproject-project-overview-view.editjson");
         setStatus("project_overview_view を生成して保存しました");
         showToast("project_overview_view を保存しました");
         setActiveTab("output");
@@ -14600,7 +14926,7 @@ WorkWeek1=${formatCalendarWorkWeekSummary(calendar)}</div>
         };
         const bundleText = JSON.stringify(bundle, null, 2);
         getTextArea("aiBundleOutput").value = bundleText;
-        downloadBlob(new Blob([`${bundleText}\n`], { type: "application/json;charset=utf-8" }), "mikuproject-full-bundle.json");
+        downloadBlob(new Blob([`${bundleText}\n`], { type: "application/json;charset=utf-8" }), "mikuproject-full-bundle.editjson");
         setStatus(`AI 連携用まとめ JSON を生成して保存しました (phase_detail_view full ${phaseDetailViewsFull.length} 件)`);
         showToast("AI 連携用まとめ JSON を保存しました");
         setActiveTab("output");
@@ -14612,6 +14938,19 @@ WorkWeek1=${formatCalendarWorkWeekSummary(calendar)}</div>
             return ((_b = (_a = matches.at(-1)) === null || _a === void 0 ? void 0 : _a[1]) === null || _b === void 0 ? void 0 : _b.trim()) || "";
         }
         return value.trim();
+    }
+    function detectJsonDocumentKind(documentLike) {
+        if (!documentLike || typeof documentLike !== "object") {
+            return undefined;
+        }
+        const candidate = documentLike;
+        if (candidate.format === "mikuproject_workbook_json") {
+            return "workbook_json";
+        }
+        if (candidate.view_type === "project_draft_view") {
+            return "project_draft_view";
+        }
+        return undefined;
     }
     async function importProjectDraftFromText() {
         const sourceText = getTextArea("projectDraftImportInput").value.trim();
@@ -14625,6 +14964,7 @@ WorkWeek1=${formatCalendarWorkWeekSummary(calendar)}</div>
         const issues = mikuprojectXml.validateProjectModel(currentModel);
         updateSummary(currentModel);
         renderValidationIssues(issues);
+        renderImportWarnings([]);
         renderXlsxImportSummary([]);
         await exportCurrentMermaid({ silent: true });
         setStatus(issues.length > 0 ? `project_draft_view を取り込みました。検証で ${issues.length} 件の問題があります` : "project_draft_view を取り込みました");
@@ -14644,6 +14984,79 @@ WorkWeek1=${formatCalendarWorkWeekSummary(calendar)}</div>
         const sourceText = await file.text();
         getTextArea("projectDraftImportInput").value = sourceText;
         await importProjectDraftFromText();
+    }
+    async function importWorkbookJsonFromSourceText(sourceText) {
+        const trimmedSourceText = sourceText.trim();
+        if (!trimmedSourceText) {
+            throw new Error("workbook JSON を入力してください");
+        }
+        const documentLike = JSON.parse(extractLastJsonBlock(trimmedSourceText));
+        const baseModel = ensureCurrentModel();
+        const result = mikuprojectProjectWorkbookJson.importProjectWorkbookJson(documentLike, baseModel);
+        currentModel = result.model;
+        const issues = mikuprojectXml.validateProjectModel(currentModel);
+        updateSummary(currentModel);
+        renderValidationIssues(issues);
+        renderImportWarnings(result.warnings);
+        renderXlsxImportSummary(result.changes);
+        if (result.changes.length > 0) {
+            getTextArea("xmlInput").value = mikuprojectXml.exportMsProjectXml(currentModel);
+            markXmlDirty();
+        }
+        isXmlSourceDirty = false;
+        const summaryText = result.changes.length > 0
+            ? `JSON を読み込んで ${result.changes.length} 件の変更を反映しました。XML は再生成済みで、必要なら XML Export で保存できます`
+            : "JSON に反映対象の変更はありませんでした。XML は未変更です";
+        const warningText = result.warnings.length > 0 ? `。JSON 取込で ${result.warnings.length} 件の warning を無視しました` : "";
+        setStatus(issues.length > 0 ? `${summaryText}${warningText}。検証で ${issues.length} 件の問題があります` : `${summaryText}${warningText}`);
+        showToast("JSON を反映しました");
+        setActiveTab("transform", { skipTransformRefresh: true });
+        await exportCurrentMermaid({ silent: true });
+    }
+    async function importWorkbookJsonFromFile(file) {
+        if (!file) {
+            throw new Error("workbook JSON ファイルを選択してください");
+        }
+        const sourceText = await file.text();
+        await importWorkbookJsonFromSourceText(sourceText);
+    }
+    async function importFromFile(file) {
+        if (!file) {
+            return;
+        }
+        const normalizedName = file.name.trim().toLowerCase();
+        if (normalizedName.endsWith(".xml")) {
+            await importXmlFromFile(file);
+            return;
+        }
+        if (normalizedName.endsWith(".xlsx")) {
+            await importXlsxFromFile(file);
+            return;
+        }
+        if (normalizedName.endsWith(".csv")) {
+            await importCsvFromFile(file);
+            return;
+        }
+        if (normalizedName.endsWith(".editjson")) {
+            await importProjectDraftFromFile(file);
+            return;
+        }
+        if (normalizedName.endsWith(".json")) {
+            const sourceText = await file.text();
+            const documentLike = JSON.parse(extractLastJsonBlock(sourceText));
+            const kind = detectJsonDocumentKind(documentLike);
+            if (kind === "workbook_json") {
+                await importWorkbookJsonFromSourceText(sourceText);
+                return;
+            }
+            if (kind === "project_draft_view") {
+                getTextArea("projectDraftImportInput").value = sourceText;
+                await importProjectDraftFromText();
+                return;
+            }
+            throw new Error("JSON の format / view_type を判別できません。workbook JSON か project_draft_view を指定してください");
+        }
+        throw new Error("対応していないファイル形式です。.xml / .xlsx / .json / .editjson / .csv を指定してください");
     }
     function exportCurrentPhaseDetailView(mode = "scoped") {
         var _a, _b, _c, _d, _e, _f, _g, _h, _j;
@@ -14672,7 +15085,7 @@ WorkWeek1=${formatCalendarWorkWeekSummary(calendar)}</div>
         const modeSuffix = ((_e = view.scope) === null || _e === void 0 ? void 0 : _e.mode) === "scoped" ? "-scoped" : "-full";
         const rootSuffix = ((_f = view.scope) === null || _f === void 0 ? void 0 : _f.root_uid) ? `-root-${view.scope.root_uid}` : "";
         const depthSuffix = typeof ((_g = view.scope) === null || _g === void 0 ? void 0 : _g.max_depth) === "number" ? `-depth-${view.scope.max_depth}` : "";
-        downloadBlob(new Blob([`${viewText}\n`], { type: "application/json;charset=utf-8" }), `mikuproject-phase-detail-view${phaseSuffix}${modeSuffix}${rootSuffix}${depthSuffix}.json`);
+        downloadBlob(new Blob([`${viewText}\n`], { type: "application/json;charset=utf-8" }), `mikuproject-phase-detail-view${phaseSuffix}${modeSuffix}${rootSuffix}${depthSuffix}.editjson`);
         setStatus(`phase_detail_view (${((_h = view.scope) === null || _h === void 0 ? void 0 : _h.mode) === "scoped" ? "scoped" : "full"}) を生成して保存しました`);
         showToast(`phase_detail_view (${((_j = view.scope) === null || _j === void 0 ? void 0 : _j.mode) === "scoped" ? "scoped" : "full"}) を保存しました`);
         setActiveTab("output");
@@ -14694,6 +15107,24 @@ WorkWeek1=${formatCalendarWorkWeekSummary(calendar)}</div>
         downloadBlob(new Blob([bytes], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" }), `mikuproject-export-${stamp}.xlsx`);
         setStatus("XLSX ファイルをエクスポートしました");
         showToast("XLSX を保存しました");
+        setActiveTab("output");
+    }
+    function exportCurrentWorkbookJson() {
+        const model = ensureCurrentModel();
+        syncXmlTextFromModel(model);
+        const jsonText = JSON.stringify(mikuprojectProjectWorkbookJson.exportProjectWorkbookJson(model), null, 2);
+        const now = new Date();
+        const stamp = [
+            now.getFullYear(),
+            String(now.getMonth() + 1).padStart(2, "0"),
+            String(now.getDate()).padStart(2, "0"),
+            String(now.getHours()).padStart(2, "0"),
+            String(now.getMinutes()).padStart(2, "0")
+        ].join("");
+        getTextArea("workbookJsonOutput").value = jsonText;
+        downloadBlob(new Blob([`${jsonText}\n`], { type: "application/json;charset=utf-8" }), `mikuproject-workbook-${stamp}.json`);
+        setStatus("XLSX 相当の workbook JSON を生成して保存しました");
+        showToast("JSON を保存しました");
         setActiveTab("output");
     }
     function exportCurrentWbsXlsx() {
@@ -14743,6 +15174,7 @@ WorkWeek1=${formatCalendarWorkWeekSummary(calendar)}</div>
         const issues = mikuprojectXml.validateProjectModel(currentModel);
         updateSummary(currentModel);
         renderValidationIssues(issues);
+        renderImportWarnings([]);
         renderXlsxImportSummary(result.changes);
         if (result.changes.length > 0) {
             getTextArea("xmlInput").value = mikuprojectXml.exportMsProjectXml(currentModel);
@@ -14771,6 +15203,7 @@ WorkWeek1=${formatCalendarWorkWeekSummary(calendar)}</div>
         const issues = mikuprojectXml.validateProjectModel(currentModel);
         updateSummary(currentModel);
         renderValidationIssues(issues);
+        renderImportWarnings([]);
         renderXlsxImportSummary([]);
         setStatus(issues.length > 0 ? `CSV ファイルを読み込んで解析しました。検証で ${issues.length} 件の問題があります` : "CSV + ParentID を内部モデルへ変換しました");
         showToast("CSV を読み込みました");
@@ -14817,6 +15250,23 @@ WorkWeek1=${formatCalendarWorkWeekSummary(calendar)}</div>
         showToast("SVG を保存しました");
         setActiveTab("output");
     }
+    function downloadCurrentMermaidMarkdown() {
+        const model = ensureCurrentModel();
+        syncXmlTextFromModel(model);
+        const mermaidText = mikuprojectXml.exportMermaidGantt(model);
+        getTextArea("mermaidOutput").value = mermaidText;
+        const now = new Date();
+        const stamp = [
+            now.getFullYear(),
+            String(now.getMonth() + 1).padStart(2, "0"),
+            String(now.getDate()).padStart(2, "0")
+        ].join("");
+        const markdownText = `\`\`\`mermaid\n${mermaidText}\n\`\`\`\n`;
+        downloadBlob(new Blob([markdownText], { type: "text/markdown;charset=utf-8" }), `mermaid-${stamp}.md`);
+        setStatus("Mermaid Markdown を保存しました");
+        showToast("Mermaid Markdown を保存しました");
+        setActiveTab("output");
+    }
     function runRoundTripCheck() {
         if (!currentModel) {
             parseCurrentXml();
@@ -14842,13 +15292,21 @@ WorkWeek1=${formatCalendarWorkWeekSummary(calendar)}</div>
     }
     function bindEvents() {
         getElement("loadSampleBtn").addEventListener("click", loadSample);
-        getElement("importXmlBtn").addEventListener("click", () => {
-            getElement("importXmlInput").click();
+        getElement("importFileBtn").addEventListener("click", () => {
+            getElement("importFileInput").click();
         });
         getElement("downloadMermaidSvgBtn").addEventListener("click", () => {
             void downloadCurrentMermaidSvg().catch((error) => {
                 setStatus(error instanceof Error ? error.message : "SVG 保存に失敗しました");
             });
+        });
+        getElement("exportMermaidMdBtn").addEventListener("click", () => {
+            try {
+                downloadCurrentMermaidMarkdown();
+            }
+            catch (error) {
+                setStatus(error instanceof Error ? error.message : "Mermaid Markdown 保存に失敗しました");
+            }
         });
         getElement("exportCsvBtn").addEventListener("click", () => {
             try {
@@ -14873,9 +15331,6 @@ WorkWeek1=${formatCalendarWorkWeekSummary(calendar)}</div>
             catch (error) {
                 setStatus(error instanceof Error ? error.message : "AI 連携用まとめ JSON 生成に失敗しました");
             }
-        });
-        getElement("importProjectDraftFileBtn").addEventListener("click", () => {
-            getElement("importProjectDraftInput").click();
         });
         getElement("loadProjectDraftSampleBtn").addEventListener("click", loadProjectDraftSample);
         getElement("importProjectDraftBtn").addEventListener("click", async () => {
@@ -14910,6 +15365,14 @@ WorkWeek1=${formatCalendarWorkWeekSummary(calendar)}</div>
                 setStatus(error instanceof Error ? error.message : "XLSX エクスポートに失敗しました");
             }
         });
+        getElement("exportWorkbookJsonBtn").addEventListener("click", () => {
+            try {
+                exportCurrentWorkbookJson();
+            }
+            catch (error) {
+                setStatus(error instanceof Error ? error.message : "JSON エクスポートに失敗しました");
+            }
+        });
         getElement("exportWbsXlsxBtn").addEventListener("click", () => {
             try {
                 exportCurrentWbsXlsx();
@@ -14917,12 +15380,6 @@ WorkWeek1=${formatCalendarWorkWeekSummary(calendar)}</div>
             catch (error) {
                 setStatus(error instanceof Error ? error.message : "WBS XLSX エクスポートに失敗しました");
             }
-        });
-        getElement("parseCsvBtn").addEventListener("click", async () => {
-            getElement("importCsvInput").click();
-        });
-        getElement("importXlsxBtn").addEventListener("click", () => {
-            getElement("importXlsxInput").click();
         });
         getElement("downloadXmlBtn").addEventListener("click", () => {
             try {
@@ -14940,59 +15397,14 @@ WorkWeek1=${formatCalendarWorkWeekSummary(calendar)}</div>
                 setStatus(error instanceof Error ? error.message : "再読込テストに失敗しました");
             }
         });
-        getElement("importXmlInput").addEventListener("change", async (event) => {
+        getElement("importFileInput").addEventListener("change", async (event) => {
             const input = event.target;
             const file = (input === null || input === void 0 ? void 0 : input.files) && input.files[0];
             try {
-                await importXmlFromFile(file);
+                await importFromFile(file);
             }
             catch (error) {
-                setStatus(error instanceof Error ? error.message : "XML 読み込みに失敗しました");
-            }
-            finally {
-                if (input) {
-                    input.value = "";
-                }
-            }
-        });
-        getElement("importXlsxInput").addEventListener("change", async (event) => {
-            const input = event.target;
-            const file = (input === null || input === void 0 ? void 0 : input.files) && input.files[0];
-            try {
-                await importXlsxFromFile(file);
-            }
-            catch (error) {
-                setStatus(error instanceof Error ? error.message : "XLSX 読み込みに失敗しました");
-            }
-            finally {
-                if (input) {
-                    input.value = "";
-                }
-            }
-        });
-        getElement("importCsvInput").addEventListener("change", async (event) => {
-            const input = event.target;
-            const file = (input === null || input === void 0 ? void 0 : input.files) && input.files[0];
-            try {
-                await importCsvFromFile(file);
-            }
-            catch (error) {
-                setStatus(error instanceof Error ? error.message : "CSV 読み込みに失敗しました");
-            }
-            finally {
-                if (input) {
-                    input.value = "";
-                }
-            }
-        });
-        getElement("importProjectDraftInput").addEventListener("change", async (event) => {
-            const input = event.target;
-            const file = (input === null || input === void 0 ? void 0 : input.files) && input.files[0];
-            try {
-                await importProjectDraftFromFile(file);
-            }
-            catch (error) {
-                setStatus(error instanceof Error ? error.message : "project_draft_view 読み込みに失敗しました");
+                setStatus(error instanceof Error ? error.message : "ファイル読込に失敗しました");
             }
             finally {
                 if (input) {
@@ -15010,6 +15422,7 @@ WorkWeek1=${formatCalendarWorkWeekSummary(calendar)}</div>
         bindEvents();
         updateSummary(null);
         renderValidationIssues([]);
+        renderImportWarnings([]);
         renderXlsxImportSummary([]);
         updateMermaidSvgButton();
         clearMermaidError();

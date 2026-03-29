@@ -15,6 +15,10 @@
     if (!mikuprojectProjectXlsx) {
         throw new Error("mikuproject Project XLSX module is not loaded");
     }
+    const mikuprojectProjectWorkbookJson = globalThis.__mikuprojectProjectWorkbookJson;
+    if (!mikuprojectProjectWorkbookJson) {
+        throw new Error("mikuproject Project Workbook JSON module is not loaded");
+    }
     const mikuprojectWbsXlsx = globalThis.__mikuprojectWbsXlsx;
     if (!mikuprojectWbsXlsx) {
         throw new Error("mikuproject WBS XLSX module is not loaded");
@@ -514,6 +518,26 @@
     `;
         updateFeedbackVisibility();
     }
+    function renderImportWarnings(warnings) {
+        const container = getElement("importWarnings");
+        const label = container.previousElementSibling;
+        if (warnings.length === 0) {
+            container.classList.add("md-hidden");
+            container.innerHTML = "";
+            label === null || label === void 0 ? void 0 : label.classList.add("md-hidden");
+            updateFeedbackVisibility();
+            return;
+        }
+        container.classList.remove("md-hidden");
+        label === null || label === void 0 ? void 0 : label.classList.remove("md-hidden");
+        container.innerHTML = `
+      <div class="md-issues__title">取込 warning</div>
+      <ul class="md-issues__list">
+        ${warnings.map((warning) => `<li class="md-issues__item">${escapeHtml(warning.message)}</li>`).join("")}
+      </ul>
+    `;
+        updateFeedbackVisibility();
+    }
     function renderXlsxImportSummary(changes) {
         const container = getElement("xlsxImportSummary");
         const label = container.previousElementSibling;
@@ -604,8 +628,11 @@
     function updateFeedbackVisibility() {
         const stack = document.querySelector(".md-feedback-stack");
         const validationIssues = getElement("validationIssues");
+        const importWarnings = getElement("importWarnings");
         const xlsxImportSummary = getElement("xlsxImportSummary");
-        const shouldShow = !validationIssues.classList.contains("md-hidden") || !xlsxImportSummary.classList.contains("md-hidden");
+        const shouldShow = !validationIssues.classList.contains("md-hidden")
+            || !importWarnings.classList.contains("md-hidden")
+            || !xlsxImportSummary.classList.contains("md-hidden");
         stack === null || stack === void 0 ? void 0 : stack.classList.toggle("md-hidden", !shouldShow);
     }
     function formatChangeValue(value) {
@@ -717,6 +744,7 @@ WorkWeek1=${formatCalendarWorkWeekSummary(calendar)}</div>
         const issues = mikuprojectXml.validateProjectModel(currentModel);
         updateSummary(currentModel);
         renderValidationIssues(issues);
+        renderImportWarnings([]);
         renderXlsxImportSummary([]);
         setStatus(issues.length > 0 ? `XML ファイルを読み込んで解析しました。検証で ${issues.length} 件の問題があります` : "XML ファイルを読み込んで解析しました");
         showToast("XML を読み込んで解析しました");
@@ -746,6 +774,7 @@ WorkWeek1=${formatCalendarWorkWeekSummary(calendar)}</div>
         const issues = mikuprojectXml.validateProjectModel(currentModel);
         updateSummary(currentModel);
         renderValidationIssues(issues);
+        renderImportWarnings([]);
         renderXlsxImportSummary([]);
         if (!options.silent) {
             setStatus(issues.length > 0 ? `XML を解析しました。検証で ${issues.length} 件の問題があります` : "XML を内部モデルへ変換しました");
@@ -789,7 +818,7 @@ WorkWeek1=${formatCalendarWorkWeekSummary(calendar)}</div>
         syncXmlTextFromModel(model);
         const viewText = JSON.stringify(mikuprojectXml.exportProjectOverviewView(model), null, 2);
         getTextArea("projectOverviewOutput").value = viewText;
-        downloadBlob(new Blob([`${viewText}\n`], { type: "application/json;charset=utf-8" }), "mikuproject-project-overview-view.json");
+        downloadBlob(new Blob([`${viewText}\n`], { type: "application/json;charset=utf-8" }), "mikuproject-project-overview-view.editjson");
         setStatus("project_overview_view を生成して保存しました");
         showToast("project_overview_view を保存しました");
         setActiveTab("output");
@@ -809,7 +838,7 @@ WorkWeek1=${formatCalendarWorkWeekSummary(calendar)}</div>
         };
         const bundleText = JSON.stringify(bundle, null, 2);
         getTextArea("aiBundleOutput").value = bundleText;
-        downloadBlob(new Blob([`${bundleText}\n`], { type: "application/json;charset=utf-8" }), "mikuproject-full-bundle.json");
+        downloadBlob(new Blob([`${bundleText}\n`], { type: "application/json;charset=utf-8" }), "mikuproject-full-bundle.editjson");
         setStatus(`AI 連携用まとめ JSON を生成して保存しました (phase_detail_view full ${phaseDetailViewsFull.length} 件)`);
         showToast("AI 連携用まとめ JSON を保存しました");
         setActiveTab("output");
@@ -821,6 +850,19 @@ WorkWeek1=${formatCalendarWorkWeekSummary(calendar)}</div>
             return ((_b = (_a = matches.at(-1)) === null || _a === void 0 ? void 0 : _a[1]) === null || _b === void 0 ? void 0 : _b.trim()) || "";
         }
         return value.trim();
+    }
+    function detectJsonDocumentKind(documentLike) {
+        if (!documentLike || typeof documentLike !== "object") {
+            return undefined;
+        }
+        const candidate = documentLike;
+        if (candidate.format === "mikuproject_workbook_json") {
+            return "workbook_json";
+        }
+        if (candidate.view_type === "project_draft_view") {
+            return "project_draft_view";
+        }
+        return undefined;
     }
     async function importProjectDraftFromText() {
         const sourceText = getTextArea("projectDraftImportInput").value.trim();
@@ -834,6 +876,7 @@ WorkWeek1=${formatCalendarWorkWeekSummary(calendar)}</div>
         const issues = mikuprojectXml.validateProjectModel(currentModel);
         updateSummary(currentModel);
         renderValidationIssues(issues);
+        renderImportWarnings([]);
         renderXlsxImportSummary([]);
         await exportCurrentMermaid({ silent: true });
         setStatus(issues.length > 0 ? `project_draft_view を取り込みました。検証で ${issues.length} 件の問題があります` : "project_draft_view を取り込みました");
@@ -853,6 +896,79 @@ WorkWeek1=${formatCalendarWorkWeekSummary(calendar)}</div>
         const sourceText = await file.text();
         getTextArea("projectDraftImportInput").value = sourceText;
         await importProjectDraftFromText();
+    }
+    async function importWorkbookJsonFromSourceText(sourceText) {
+        const trimmedSourceText = sourceText.trim();
+        if (!trimmedSourceText) {
+            throw new Error("workbook JSON を入力してください");
+        }
+        const documentLike = JSON.parse(extractLastJsonBlock(trimmedSourceText));
+        const baseModel = ensureCurrentModel();
+        const result = mikuprojectProjectWorkbookJson.importProjectWorkbookJson(documentLike, baseModel);
+        currentModel = result.model;
+        const issues = mikuprojectXml.validateProjectModel(currentModel);
+        updateSummary(currentModel);
+        renderValidationIssues(issues);
+        renderImportWarnings(result.warnings);
+        renderXlsxImportSummary(result.changes);
+        if (result.changes.length > 0) {
+            getTextArea("xmlInput").value = mikuprojectXml.exportMsProjectXml(currentModel);
+            markXmlDirty();
+        }
+        isXmlSourceDirty = false;
+        const summaryText = result.changes.length > 0
+            ? `JSON を読み込んで ${result.changes.length} 件の変更を反映しました。XML は再生成済みで、必要なら XML Export で保存できます`
+            : "JSON に反映対象の変更はありませんでした。XML は未変更です";
+        const warningText = result.warnings.length > 0 ? `。JSON 取込で ${result.warnings.length} 件の warning を無視しました` : "";
+        setStatus(issues.length > 0 ? `${summaryText}${warningText}。検証で ${issues.length} 件の問題があります` : `${summaryText}${warningText}`);
+        showToast("JSON を反映しました");
+        setActiveTab("transform", { skipTransformRefresh: true });
+        await exportCurrentMermaid({ silent: true });
+    }
+    async function importWorkbookJsonFromFile(file) {
+        if (!file) {
+            throw new Error("workbook JSON ファイルを選択してください");
+        }
+        const sourceText = await file.text();
+        await importWorkbookJsonFromSourceText(sourceText);
+    }
+    async function importFromFile(file) {
+        if (!file) {
+            return;
+        }
+        const normalizedName = file.name.trim().toLowerCase();
+        if (normalizedName.endsWith(".xml")) {
+            await importXmlFromFile(file);
+            return;
+        }
+        if (normalizedName.endsWith(".xlsx")) {
+            await importXlsxFromFile(file);
+            return;
+        }
+        if (normalizedName.endsWith(".csv")) {
+            await importCsvFromFile(file);
+            return;
+        }
+        if (normalizedName.endsWith(".editjson")) {
+            await importProjectDraftFromFile(file);
+            return;
+        }
+        if (normalizedName.endsWith(".json")) {
+            const sourceText = await file.text();
+            const documentLike = JSON.parse(extractLastJsonBlock(sourceText));
+            const kind = detectJsonDocumentKind(documentLike);
+            if (kind === "workbook_json") {
+                await importWorkbookJsonFromSourceText(sourceText);
+                return;
+            }
+            if (kind === "project_draft_view") {
+                getTextArea("projectDraftImportInput").value = sourceText;
+                await importProjectDraftFromText();
+                return;
+            }
+            throw new Error("JSON の format / view_type を判別できません。workbook JSON か project_draft_view を指定してください");
+        }
+        throw new Error("対応していないファイル形式です。.xml / .xlsx / .json / .editjson / .csv を指定してください");
     }
     function exportCurrentPhaseDetailView(mode = "scoped") {
         var _a, _b, _c, _d, _e, _f, _g, _h, _j;
@@ -881,7 +997,7 @@ WorkWeek1=${formatCalendarWorkWeekSummary(calendar)}</div>
         const modeSuffix = ((_e = view.scope) === null || _e === void 0 ? void 0 : _e.mode) === "scoped" ? "-scoped" : "-full";
         const rootSuffix = ((_f = view.scope) === null || _f === void 0 ? void 0 : _f.root_uid) ? `-root-${view.scope.root_uid}` : "";
         const depthSuffix = typeof ((_g = view.scope) === null || _g === void 0 ? void 0 : _g.max_depth) === "number" ? `-depth-${view.scope.max_depth}` : "";
-        downloadBlob(new Blob([`${viewText}\n`], { type: "application/json;charset=utf-8" }), `mikuproject-phase-detail-view${phaseSuffix}${modeSuffix}${rootSuffix}${depthSuffix}.json`);
+        downloadBlob(new Blob([`${viewText}\n`], { type: "application/json;charset=utf-8" }), `mikuproject-phase-detail-view${phaseSuffix}${modeSuffix}${rootSuffix}${depthSuffix}.editjson`);
         setStatus(`phase_detail_view (${((_h = view.scope) === null || _h === void 0 ? void 0 : _h.mode) === "scoped" ? "scoped" : "full"}) を生成して保存しました`);
         showToast(`phase_detail_view (${((_j = view.scope) === null || _j === void 0 ? void 0 : _j.mode) === "scoped" ? "scoped" : "full"}) を保存しました`);
         setActiveTab("output");
@@ -903,6 +1019,24 @@ WorkWeek1=${formatCalendarWorkWeekSummary(calendar)}</div>
         downloadBlob(new Blob([bytes], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" }), `mikuproject-export-${stamp}.xlsx`);
         setStatus("XLSX ファイルをエクスポートしました");
         showToast("XLSX を保存しました");
+        setActiveTab("output");
+    }
+    function exportCurrentWorkbookJson() {
+        const model = ensureCurrentModel();
+        syncXmlTextFromModel(model);
+        const jsonText = JSON.stringify(mikuprojectProjectWorkbookJson.exportProjectWorkbookJson(model), null, 2);
+        const now = new Date();
+        const stamp = [
+            now.getFullYear(),
+            String(now.getMonth() + 1).padStart(2, "0"),
+            String(now.getDate()).padStart(2, "0"),
+            String(now.getHours()).padStart(2, "0"),
+            String(now.getMinutes()).padStart(2, "0")
+        ].join("");
+        getTextArea("workbookJsonOutput").value = jsonText;
+        downloadBlob(new Blob([`${jsonText}\n`], { type: "application/json;charset=utf-8" }), `mikuproject-workbook-${stamp}.json`);
+        setStatus("XLSX 相当の workbook JSON を生成して保存しました");
+        showToast("JSON を保存しました");
         setActiveTab("output");
     }
     function exportCurrentWbsXlsx() {
@@ -952,6 +1086,7 @@ WorkWeek1=${formatCalendarWorkWeekSummary(calendar)}</div>
         const issues = mikuprojectXml.validateProjectModel(currentModel);
         updateSummary(currentModel);
         renderValidationIssues(issues);
+        renderImportWarnings([]);
         renderXlsxImportSummary(result.changes);
         if (result.changes.length > 0) {
             getTextArea("xmlInput").value = mikuprojectXml.exportMsProjectXml(currentModel);
@@ -980,6 +1115,7 @@ WorkWeek1=${formatCalendarWorkWeekSummary(calendar)}</div>
         const issues = mikuprojectXml.validateProjectModel(currentModel);
         updateSummary(currentModel);
         renderValidationIssues(issues);
+        renderImportWarnings([]);
         renderXlsxImportSummary([]);
         setStatus(issues.length > 0 ? `CSV ファイルを読み込んで解析しました。検証で ${issues.length} 件の問題があります` : "CSV + ParentID を内部モデルへ変換しました");
         showToast("CSV を読み込みました");
@@ -1026,6 +1162,23 @@ WorkWeek1=${formatCalendarWorkWeekSummary(calendar)}</div>
         showToast("SVG を保存しました");
         setActiveTab("output");
     }
+    function downloadCurrentMermaidMarkdown() {
+        const model = ensureCurrentModel();
+        syncXmlTextFromModel(model);
+        const mermaidText = mikuprojectXml.exportMermaidGantt(model);
+        getTextArea("mermaidOutput").value = mermaidText;
+        const now = new Date();
+        const stamp = [
+            now.getFullYear(),
+            String(now.getMonth() + 1).padStart(2, "0"),
+            String(now.getDate()).padStart(2, "0")
+        ].join("");
+        const markdownText = `\`\`\`mermaid\n${mermaidText}\n\`\`\`\n`;
+        downloadBlob(new Blob([markdownText], { type: "text/markdown;charset=utf-8" }), `mermaid-${stamp}.md`);
+        setStatus("Mermaid Markdown を保存しました");
+        showToast("Mermaid Markdown を保存しました");
+        setActiveTab("output");
+    }
     function runRoundTripCheck() {
         if (!currentModel) {
             parseCurrentXml();
@@ -1051,13 +1204,21 @@ WorkWeek1=${formatCalendarWorkWeekSummary(calendar)}</div>
     }
     function bindEvents() {
         getElement("loadSampleBtn").addEventListener("click", loadSample);
-        getElement("importXmlBtn").addEventListener("click", () => {
-            getElement("importXmlInput").click();
+        getElement("importFileBtn").addEventListener("click", () => {
+            getElement("importFileInput").click();
         });
         getElement("downloadMermaidSvgBtn").addEventListener("click", () => {
             void downloadCurrentMermaidSvg().catch((error) => {
                 setStatus(error instanceof Error ? error.message : "SVG 保存に失敗しました");
             });
+        });
+        getElement("exportMermaidMdBtn").addEventListener("click", () => {
+            try {
+                downloadCurrentMermaidMarkdown();
+            }
+            catch (error) {
+                setStatus(error instanceof Error ? error.message : "Mermaid Markdown 保存に失敗しました");
+            }
         });
         getElement("exportCsvBtn").addEventListener("click", () => {
             try {
@@ -1082,9 +1243,6 @@ WorkWeek1=${formatCalendarWorkWeekSummary(calendar)}</div>
             catch (error) {
                 setStatus(error instanceof Error ? error.message : "AI 連携用まとめ JSON 生成に失敗しました");
             }
-        });
-        getElement("importProjectDraftFileBtn").addEventListener("click", () => {
-            getElement("importProjectDraftInput").click();
         });
         getElement("loadProjectDraftSampleBtn").addEventListener("click", loadProjectDraftSample);
         getElement("importProjectDraftBtn").addEventListener("click", async () => {
@@ -1119,6 +1277,14 @@ WorkWeek1=${formatCalendarWorkWeekSummary(calendar)}</div>
                 setStatus(error instanceof Error ? error.message : "XLSX エクスポートに失敗しました");
             }
         });
+        getElement("exportWorkbookJsonBtn").addEventListener("click", () => {
+            try {
+                exportCurrentWorkbookJson();
+            }
+            catch (error) {
+                setStatus(error instanceof Error ? error.message : "JSON エクスポートに失敗しました");
+            }
+        });
         getElement("exportWbsXlsxBtn").addEventListener("click", () => {
             try {
                 exportCurrentWbsXlsx();
@@ -1126,12 +1292,6 @@ WorkWeek1=${formatCalendarWorkWeekSummary(calendar)}</div>
             catch (error) {
                 setStatus(error instanceof Error ? error.message : "WBS XLSX エクスポートに失敗しました");
             }
-        });
-        getElement("parseCsvBtn").addEventListener("click", async () => {
-            getElement("importCsvInput").click();
-        });
-        getElement("importXlsxBtn").addEventListener("click", () => {
-            getElement("importXlsxInput").click();
         });
         getElement("downloadXmlBtn").addEventListener("click", () => {
             try {
@@ -1149,59 +1309,14 @@ WorkWeek1=${formatCalendarWorkWeekSummary(calendar)}</div>
                 setStatus(error instanceof Error ? error.message : "再読込テストに失敗しました");
             }
         });
-        getElement("importXmlInput").addEventListener("change", async (event) => {
+        getElement("importFileInput").addEventListener("change", async (event) => {
             const input = event.target;
             const file = (input === null || input === void 0 ? void 0 : input.files) && input.files[0];
             try {
-                await importXmlFromFile(file);
+                await importFromFile(file);
             }
             catch (error) {
-                setStatus(error instanceof Error ? error.message : "XML 読み込みに失敗しました");
-            }
-            finally {
-                if (input) {
-                    input.value = "";
-                }
-            }
-        });
-        getElement("importXlsxInput").addEventListener("change", async (event) => {
-            const input = event.target;
-            const file = (input === null || input === void 0 ? void 0 : input.files) && input.files[0];
-            try {
-                await importXlsxFromFile(file);
-            }
-            catch (error) {
-                setStatus(error instanceof Error ? error.message : "XLSX 読み込みに失敗しました");
-            }
-            finally {
-                if (input) {
-                    input.value = "";
-                }
-            }
-        });
-        getElement("importCsvInput").addEventListener("change", async (event) => {
-            const input = event.target;
-            const file = (input === null || input === void 0 ? void 0 : input.files) && input.files[0];
-            try {
-                await importCsvFromFile(file);
-            }
-            catch (error) {
-                setStatus(error instanceof Error ? error.message : "CSV 読み込みに失敗しました");
-            }
-            finally {
-                if (input) {
-                    input.value = "";
-                }
-            }
-        });
-        getElement("importProjectDraftInput").addEventListener("change", async (event) => {
-            const input = event.target;
-            const file = (input === null || input === void 0 ? void 0 : input.files) && input.files[0];
-            try {
-                await importProjectDraftFromFile(file);
-            }
-            catch (error) {
-                setStatus(error instanceof Error ? error.message : "project_draft_view 読み込みに失敗しました");
+                setStatus(error instanceof Error ? error.message : "ファイル読込に失敗しました");
             }
             finally {
                 if (input) {
@@ -1219,6 +1334,7 @@ WorkWeek1=${formatCalendarWorkWeekSummary(calendar)}</div>
         bindEvents();
         updateSummary(null);
         renderValidationIssues([]);
+        renderImportWarnings([]);
         renderXlsxImportSummary([]);
         updateMermaidSvgButton();
         clearMermaidError();

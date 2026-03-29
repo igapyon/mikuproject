@@ -261,11 +261,12 @@ AI 入力は 1 種類の簡約 JSON で統一するより、用途別 projection
 
 現行 UI では、既存 project 向けの生成AI連携は `Output` タブから扱う。
 
+- `full bundle`
 - `project_overview_view`
 - `phase_detail_view full`
 - `phase_detail_view scoped`
 
-を JSON ファイルとして保存できる構成とし、`scoped` の場合は `phase UID`、`root UID`、`max depth` 相当の入力を伴う。
+を `.editjson` として保存できる構成とし、`scoped` の場合は `phase UID`、`root UID`、`max depth` 相当の入力を伴う。
 
 一方で、既存 project の安全編集とは別に、全く新規の project 草案を AI に生成させるための `project_draft_request` / `project_draft_view` 系を分離して持つことも有効である。
 
@@ -278,9 +279,9 @@ AI 入力は 1 種類の簡約 JSON で統一するより、用途別 projection
 
 この新規生成モードでは、AI は既存 project を変更しない。許されるのは、新しい project の全量草案を返すことだけである。
 
-現行 UI では、この新規生成モードは `Input` タブ内の `新規生成AI連携` から扱う。生成AIとの会話自体は外部で行い、`mikuproject` 側では `project_draft_view` を
+現行 UI では、この新規生成モードは `Input` タブ内の `生成AI連携` から扱う。生成AIとの会話自体は外部で行い、`mikuproject` 側では `project_draft_view` を
 
-- JSON ファイルとして開く
+- `Load from file` から `.editjson` として開く
 - JSON テキストを貼り付けて取り込む
 
 のいずれかで受け付ける。

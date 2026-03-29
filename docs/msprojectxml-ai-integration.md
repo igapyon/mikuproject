@@ -4,10 +4,18 @@
 
 現時点では実装仕様の確定版ではなく、アーキテクチャ判断と今後の仕様化ポイントを明確にすることを目的とする。
 
+現時点の実装範囲は次のとおり。
+
+- 実装済み: `project_overview_view` export
+- 実装済み: `phase_detail_view` export
+- 実装済み: `project_draft_view` import
+- 未実装: `task_edit_view`
+- 未実装: Patch JSON の受信・適用
+
 この設計では、生成AIとの会話は `JSON` ベースで行う方針とする。
 
 - AI へ渡す入力は用途別 projection JSON
-- AI から受け取る出力は Patch JSON
+- AI から受け取る出力は、現状実装では `project_draft_view`、将来案としては Patch JSON を想定する
 
 `MS Project XML` は保存と互換のための外部形式として保持し、AI との直接入出力には使わない。
 
@@ -21,6 +29,8 @@
 - AIの編集結果を、安全かつ検証可能な形で受け取る
 - `MS Project XML` との互換性を維持する
 
+なお、現時点の UI で扱える生成AI連携は、既存 project に対する `project_overview_view` / `phase_detail_view` の保存と、新規草案として返ってきた `project_draft_view` の取込までである。
+
 ## 最重要方針
 
 結論として、生成AIとの会話は `JSON` ベースで行い、`MS Project XML` をそのまま AI に渡さない。
@@ -29,16 +39,16 @@
 
 - 外部形式: `MS Project XML`
 - 内部形式: 正規化された canonical model
-- AI 入出力形式: 用途別 projection JSON と Patch JSON
+- AI 入出力形式: 用途別 projection JSON と、将来案としての Patch JSON
 
 要点は次のとおり。
 
 - XML は保存と互換のための正本として扱う
 - 内部では意味ベースの正規化モデルを扱う
 - AI とは JSON ベースでやり取りする
-- AI からの返却は全量ではなく差分として受け取る
+- AI からの返却は、現状では `project_draft_view` の取込、将来は差分 Patch の受取を想定する
 
-一言でまとめると、`XML は保存、JSON は思考、Patch は操作` である。
+一言でまとめると、`XML は保存、JSON は思考、Patch は将来の操作` である。
 
 ## レイヤ構造
 

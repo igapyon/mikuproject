@@ -18,15 +18,15 @@
 - `main.test.js` に残っている `xlsx import` の file input wiring を、UI 配線確認と import 結果確認へさらに分離する
 - `main.ts` の summary / validation / preview 描画を別モジュール化し、DOM テストをさらに軽くする
 - `phase_detail_view scoped` の `phase UID / root UID / max depth` 指定を、より選びやすい UI に改善する
+- `task_edit_view` の projection を実装する
+- 既存 project 向け Patch JSON の schema を具体化する
+- Patch JSON を内部モデルへ適用する処理を実装する
+- Patch JSON import 後の validation と差分要約 UI を実装する
+- `project_draft_request` を UI から生成しやすくするか整理する
 - UI の微調整として、`Input / Overview / Output` の各カードの余白・見出し・ボタン階層を見直し、`miku` 系テーマの統一感をさらに整える
 - `Overview` タブの summary / validation / preview の情報密度を見直し、どこを見る画面なのかをより直感的に伝わる構成へ調整する
 - `Output` タブの生成AI連携と各種 export ボタンの優先度表現を見直し、主操作と補助操作の区別をより明確にする
-- 新規 project 作成時に、明示的な calendar 指定がなければ、既定 calendar 1 つへ `WeekDays` の土日非稼働と `Exceptions` の日本祝日を自動設定する
-- 上記の既定 calendar の名前を当面 `Standard` とし、calendar が存在しない新規 project にだけ自動補完する
-- 既定 calendar 自動補完時に、`Project.CalendarUID` をその calendar の `UID` へ設定する
-- 上記の既定 calendar に含める祝日例外の生成範囲を、project の `StartDate` から 5 年先までに制限する
-- `WBS XLSX Export` で、期間帯の表示から非稼働日を除外する営業日ベース表示を実装する
-- `WBS XLSX Export` の進捗帯表示でも、同じ非稼働日基準を使うようにする
+- calendar 未設定時に自動補完する既定 calendar の祝日 `Exceptions` を、project 期間内だけに限定する
 - WBS 上で土日と祝日を別色表示する場合も、`MS Project XML` 正本へ独自の非稼働日種別を追加せず、`WeekDays / Exceptions` の由来で描き分ける
 - `build:xlsx-sample` の所要時間を個別計測し、sample workbook 生成処理の支配要因を確認する
 - `main.test.js` の初期化 DOM をケース別に最小化できるか見直す

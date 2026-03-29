@@ -6,9 +6,18 @@
 
 `mikuproject` と生成AIの間のやり取りは、XML ではなく JSON ベースで行います。
 
+現時点の実装状況:
+- 実装済み: `project_overview_view` の export
+- 実装済み: `phase_detail_view` の export
+- 実装済み: `project_draft_view` の import
+- 未実装: `task_edit_view`
+- 未実装: Patch JSON の import / 適用
+- `project_draft_request` は補助的な構想・helper であり、現行 UI の主機能ではありません
+
 前提:
 - AI へ渡される入力は用途別 projection JSON です
-- AI は説明文と Patch JSON を返してよいです
+- AI は説明文を返してよいです
+- 既存編集向けの Patch JSON は将来案として設計中です
 - `MS Project XML` は保存と互換のための外部形式ですが、AI は直接扱いません
 
 重要方針:
@@ -22,9 +31,9 @@
 projection JSON の代表例:
 - `project_overview_view`: プロジェクト全体の構造、粒度、主要節目を把握するための要約ビュー
 - `phase_detail_view`: 特定フェーズの task 群、主要 milestone、依存の要点を把握するための詳細ビュー
-- `task_edit_view`: 個別 task を安全に編集するための作業ビュー
-- `project_draft_request`: 全く新規の project 草案を AI に生成させるための入力
-- `project_draft_view`: 新規 project 草案の全量出力
+- `task_edit_view`: 個別 task を安全に編集するための作業ビュー。現時点では未実装です
+- `project_draft_request`: 全く新規の project 草案を AI に生成させるための入力。現時点では設計メモ寄りです
+- `project_draft_view`: 新規 project 草案の全量出力。現時点では import 済みです
 
 `phase_detail_view` は、安全な変更候補の抽出や、次に必要な `task_edit_view` の特定にも使えます。
 `phase_detail_view` には、phase 全体をそのまま渡す `full` モードと、対象を絞る `scoped` モードの両方がありえます。
@@ -110,6 +119,8 @@ projection JSON の代表例:
 
 ### `task_edit_view` の例
 
+これは将来の安全編集用 projection 案であり、現時点では `mikuproject` 本体に未実装です。
+
 ```json
 {
   "project": {
@@ -156,6 +167,8 @@ projection JSON の代表例:
 ```
 
 ### `project_draft_request` の例
+
+これは新規生成プロンプト組み立て用の入力案です。現時点では主に設計用で、UI の主導線にはまだ載せていません。
 
 ```json
 {
@@ -272,6 +285,12 @@ Patch JSON の原則:
 - このとき `Patch JSON` は返しません
 - draft は正本ではなく草案です
 - draft 内の `uid` は `"draft-1"` のような仮 UID でよいです
+- `percent_complete` を含めてよいです
+- task が通常 task で、`planned_start` / `planned_finish` が日付だけの場合、`mikuproject` 側では勤務時間帯を補完して扱うことがあります
+- 同日 task の date-only 指定は、通常 task なら `09:00:00` 開始 / `18:00:00` 終了へ補完されることがあります
+- 複数日 task の date-only 指定でも、通常 task なら開始日は `09:00:00`、終了日は `18:00:00` を補完して扱うことがあります
+- `planned_finish` だけが与えられた通常 task は、まず同日の `planned_start` を補完したうえで、上記の勤務時間帯補完を適用することがあります
+- `is_milestone: true` の task には、この勤務時間帯補完を適用しません
 
 Patch の例:
 ```json

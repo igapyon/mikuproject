@@ -43,7 +43,7 @@ function findRowIndexByPredicate(sheet, predicate) {
   return sheet.rows.findIndex((row) => predicate(row.cells));
 }
 
-const SAMPLE_HOLIDAY_COUNT = 90;
+const SAMPLE_HOLIDAY_COUNT = 1;
 
 describe("mikuproject wbs xlsx", () => {
   it("provides Excel-style layout references for WBS worksheet tuning", () => {
@@ -86,7 +86,7 @@ describe("mikuproject wbs xlsx", () => {
     expect(holidayDates).toHaveLength(SAMPLE_HOLIDAY_COUNT);
     expect(holidayDates).toContain("2026-03-20");
     expect(holidayDates[0]).toBe("2026-03-20");
-    expect(holidayDates.at(-1)).toBe("2031-02-24");
+    expect(holidayDates.at(-1)).toBe("2026-03-20");
   });
 
   it("exports a dedicated WBS workbook from ProjectModel", () => {

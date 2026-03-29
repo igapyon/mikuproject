@@ -19,6 +19,7 @@
 - `main.ts` の summary / validation / preview 描画を別モジュール化し、DOM テストをさらに軽くする
 - `phase_detail_view scoped` の `phase UID / root UID / max depth` 指定を、より選びやすい UI に改善する
 - `task_edit_view` の projection を実装する
+- `.editjson` の import で現状 `project_draft_view` だけを受けている制約を見直し、将来の `task_edit_view` / Patch JSON など他の `view_type` も扱えるようにする
 - 既存 project 向け Patch JSON の schema を具体化する
 - Patch JSON を内部モデルへ適用する処理を実装する
 - Patch JSON import 後の validation と差分要約 UI を実装する

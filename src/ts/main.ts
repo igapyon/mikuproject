@@ -345,6 +345,45 @@
     }
   }
 
+  function getAiPromptText(): string {
+    const template = document.getElementById("aiPromptTemplate") as HTMLTemplateElement | null;
+    if (!template) {
+      return "";
+    }
+    return (template.content?.textContent || template.textContent || "").trim();
+  }
+
+  async function copyTextToClipboard(text: string): Promise<void> {
+    if (
+      typeof navigator !== "undefined" &&
+      navigator.clipboard &&
+      typeof navigator.clipboard.writeText === "function"
+    ) {
+      await navigator.clipboard.writeText(text);
+      return;
+    }
+
+    const textarea = document.createElement("textarea");
+    textarea.value = text;
+    textarea.setAttribute("readonly", "readonly");
+    textarea.style.position = "fixed";
+    textarea.style.opacity = "0";
+    document.body.appendChild(textarea);
+    textarea.select();
+    document.execCommand("copy");
+    document.body.removeChild(textarea);
+  }
+
+  async function copyAiPrompt(): Promise<void> {
+    const promptText = getAiPromptText();
+    if (!promptText) {
+      throw new Error("生成AIプロンプトが見つかりません");
+    }
+    await copyTextToClipboard(promptText);
+    showToast("生成AIプロンプトをクリップボードにコピーしました");
+    setStatus("生成AIプロンプトをクリップボードにコピーしました");
+  }
+
   function setMermaidError(message: string): void {
     const errorNode = getElement<HTMLElement>("mermaidSvgError");
     errorNode.textContent = message;
@@ -1489,6 +1528,13 @@ WorkWeek1=${formatCalendarWorkWeekSummary(calendar)}</div>
       }
     });
     getElement<HTMLButtonElement>("loadProjectDraftSampleBtn").addEventListener("click", loadProjectDraftSample);
+    getElement<HTMLButtonElement>("copyAiPromptBtn").addEventListener("click", async () => {
+      try {
+        await copyAiPrompt();
+      } catch (error) {
+        setStatus(error instanceof Error ? error.message : "生成AIプロンプトのコピーに失敗しました");
+      }
+    });
     getElement<HTMLButtonElement>("importProjectDraftBtn").addEventListener("click", async () => {
       try {
         await importProjectDraftFromText();

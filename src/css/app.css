@@ -181,8 +181,6 @@
 .md-flow-section__header {
   display: grid;
   gap: 8px;
-  padding-bottom: 8px;
-  border-bottom: 1px solid rgba(148, 163, 184, 0.12);
 }
 
 .md-flow-section__title {
@@ -317,6 +315,24 @@
   align-items: center;
 }
 
+.md-panel-actions--ai-draft {
+  margin-bottom: 20px;
+}
+
+.md-button--compact-link {
+  gap: 0.38rem;
+  min-height: 2.2rem;
+  padding: 0.28rem 0.88rem;
+  font-size: 0.82rem;
+  font-weight: 600;
+}
+
+.md-button__icon {
+  width: 0.82rem;
+  height: 0.82rem;
+  flex: 0 0 auto;
+}
+
 .md-output-actions {
   display: grid;
   gap: 12px;
@@ -346,7 +362,7 @@
 }
 
 .md-panel-actions + .md-form-grid {
-  margin-top: 12px;
+  margin-top: 24px;
 }
 
 .md-panel-actions + .md-note-card {
@@ -361,6 +377,7 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
+  gap: 0.44rem;
   min-height: 2.55rem;
   border-radius: 999px;
   padding: 0.38rem 1.02rem;
@@ -370,8 +387,19 @@
   font: inherit;
   font-weight: 600;
   font-size: 0.9rem;
+  line-height: 1.2;
   cursor: pointer;
+  text-decoration: none;
   transition: background 150ms ease, box-shadow 150ms ease, transform 150ms ease;
+}
+
+.md-button:link,
+.md-button:visited,
+.md-button:hover,
+.md-button:focus-visible,
+.md-button:active {
+  color: #102a43;
+  text-decoration: none;
 }
 
 .md-button:hover {
@@ -400,9 +428,11 @@
   border: 1px solid var(--md-project-border);
   border-radius: 12px;
   background: rgba(230, 240, 255, 0.72);
-  padding: 14px 16px;
+  padding: 11px 14px;
   color: #102a43;
-  font-weight: 600;
+  font-size: 0.94rem;
+  font-weight: 500;
+  line-height: 1.45;
 }
 
 .md-save-state {
@@ -565,6 +595,34 @@
   font-weight: 700;
 }
 
+.md-pill-link {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.42rem 0.8rem;
+  border-radius: 999px;
+  border: 1px solid rgba(103, 80, 164, 0.22);
+  background: linear-gradient(180deg, #f6f1fc 0%, #eee7f8 100%);
+  color: #4f378b;
+  font-size: 0.82rem;
+  font-weight: 700;
+  line-height: 1.2;
+  text-decoration: none;
+  transition: background 0.16s ease, border-color 0.16s ease, color 0.16s ease;
+}
+
+.md-pill-link:hover,
+.md-pill-link:focus-visible {
+  background: linear-gradient(180deg, #efe7fa 0%, #e6dcf5 100%);
+  border-color: rgba(103, 80, 164, 0.32);
+  color: #3f315f;
+  text-decoration: none;
+}
+
+.md-pill-link--compact {
+  margin-left: auto;
+}
+
 md-outlined-text-field.md-outlined-field {
   --md-outlined-text-field-outline-color: #bdb7c8;
   --md-outlined-field-outline-color: #bdb7c8;
@@ -687,6 +745,49 @@ md-outlined-select.md-outlined-field:focus-within::part(container) {
 
 .md-debug-accordion__body .md-form-grid + .md-form-grid {
   margin-top: 16px;
+}
+
+.md-note-accordion {
+  border: 1px solid rgba(148, 163, 184, 0.18);
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.72);
+  overflow: clip;
+}
+
+.md-note-accordion__summary {
+  list-style: none;
+  cursor: pointer;
+  user-select: none;
+  padding: 14px 18px;
+  font-size: 0.94rem;
+  font-weight: 700;
+  color: #102a43;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.md-note-accordion__summary::-webkit-details-marker {
+  display: none;
+}
+
+.md-note-accordion__summary::before {
+  content: "▸";
+  font-size: 0.9rem;
+  color: #52606d;
+  transition: transform 160ms ease;
+}
+
+.md-note-accordion[open] .md-note-accordion__summary::before {
+  transform: rotate(90deg);
+}
+
+.md-note-accordion__body {
+  padding: 0 18px 18px;
+}
+
+.md-note-accordion__body > .md-note-card {
+  margin-top: 0;
 }
 
 .ms-settings-card {

@@ -215,6 +215,40 @@
             toast.show(message, 2200);
         }
     }
+    function getAiPromptText() {
+        var _a;
+        const template = document.getElementById("aiPromptTemplate");
+        if (!template) {
+            return "";
+        }
+        return (((_a = template.content) === null || _a === void 0 ? void 0 : _a.textContent) || template.textContent || "").trim();
+    }
+    async function copyTextToClipboard(text) {
+        if (typeof navigator !== "undefined" &&
+            navigator.clipboard &&
+            typeof navigator.clipboard.writeText === "function") {
+            await navigator.clipboard.writeText(text);
+            return;
+        }
+        const textarea = document.createElement("textarea");
+        textarea.value = text;
+        textarea.setAttribute("readonly", "readonly");
+        textarea.style.position = "fixed";
+        textarea.style.opacity = "0";
+        document.body.appendChild(textarea);
+        textarea.select();
+        document.execCommand("copy");
+        document.body.removeChild(textarea);
+    }
+    async function copyAiPrompt() {
+        const promptText = getAiPromptText();
+        if (!promptText) {
+            throw new Error("生成AIプロンプトが見つかりません");
+        }
+        await copyTextToClipboard(promptText);
+        showToast("生成AIプロンプトをクリップボードにコピーしました");
+        setStatus("生成AIプロンプトをクリップボードにコピーしました");
+    }
     function setMermaidError(message) {
         const errorNode = getElement("mermaidSvgError");
         errorNode.textContent = message;
@@ -1245,6 +1279,14 @@ WorkWeek1=${formatCalendarWorkWeekSummary(calendar)}</div>
             }
         });
         getElement("loadProjectDraftSampleBtn").addEventListener("click", loadProjectDraftSample);
+        getElement("copyAiPromptBtn").addEventListener("click", async () => {
+            try {
+                await copyAiPrompt();
+            }
+            catch (error) {
+                setStatus(error instanceof Error ? error.message : "生成AIプロンプトのコピーに失敗しました");
+            }
+        });
         getElement("importProjectDraftBtn").addEventListener("click", async () => {
             try {
                 await importProjectDraftFromText();

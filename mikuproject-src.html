@@ -15,6 +15,9 @@
     <symbol id="md-icon-github" viewBox="0 0 16 16">
       <path d="M8 0C3.58 0 0 3.58 0 8a8 8 0 0 0 5.47 7.59c.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.5-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82a7.5 7.5 0 0 1 4 0c1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8 8 0 0 0 16 8c0-4.42-3.58-8-8-8Z"></path>
     </symbol>
+    <symbol id="md-icon-clipboard" viewBox="0 0 16 16">
+      <path d="M6 2.5A1.5 1.5 0 0 1 7.5 1h1A1.5 1.5 0 0 1 10 2.5h1.25A1.75 1.75 0 0 1 13 4.25v8A1.75 1.75 0 0 1 11.25 14h-6.5A1.75 1.75 0 0 1 3 12.25v-8A1.75 1.75 0 0 1 4.75 2.5H6Zm1.5 0h1v-.25h-1v.25Zm-2.75 1.5a.25.25 0 0 0-.25.25v8c0 .138.112.25.25.25h6.5a.25.25 0 0 0 .25-.25v-8a.25.25 0 0 0-.25-.25H10v.25A1.25 1.25 0 0 1 8.75 5.5h-1.5A1.25 1.25 0 0 1 6 4.25V4H4.75Z"></path>
+    </symbol>
   </svg>
   <div class="md-surface-card md-card">
     <header class="ms-hero">
@@ -62,8 +65,10 @@
           <h2 class="md-flow-section__title">
             <span class="md-flow-section__step">1</span>
             <span>Input</span>
+            <lht-help-tooltip label="Input の説明" wide>
+              `MS Project XML`、`XLSX`、`mikuproject_workbook_json (.json)`、生成AI 向け編集用 JSON (`.editjson`)、`CSV` を読み込みます。
+            </lht-help-tooltip>
           </h2>
-          <p class="md-flow-section__text">入力、読込、編集元データの確認をここにまとめます。</p>
         </div>
 
         <div class="md-panel-actions">
@@ -101,27 +106,30 @@
           <input id="importFileInput" type="file" accept=".xml,.xlsx,.json,.editjson,.csv,text/xml,application/xml,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/json,text/csv,text/plain" class="md-hidden" />
         </div>
 
-        <section class="md-note-card md-note-card--accent" aria-label="AI draft generation">
-          <div class="md-note-card__title-row">
-            <h3 class="md-note-card__title">新規生成AI連携</h3>
-            <lht-help-tooltip label="新規生成AI連携の説明" wide>
-              (i) まず生成AIに 生成AIプロンプト を読み込ませます。ファイル取込は画面上部の `Load from file` を使います。生成AIが返す `project_draft_view` は workbook JSON と区別するため当面 `.editjson`、`mikuproject_workbook_json` は `.json` として扱います。<br><br>
-              (ii) その前提で生成AIに `project_draft_view` を作らせます。<br><br>
-              (iii) 返ってきた JSON を、ここでファイル読込または貼り付けで取り込みます。
-            </lht-help-tooltip>
-            <a class="md-inline-link md-inline-link--compact" href="https://raw.githubusercontent.com/igapyon/mikuproject/refs/heads/devel/docs/mikuproject-ai-json-spec.md" target="_blank" rel="noopener noreferrer">生成AIプロンプト</a>
+        <details class="md-note-accordion" aria-label="AI draft generation">
+          <summary class="md-note-accordion__summary">生成AI連携</summary>
+          <div class="md-note-accordion__body">
+            <section class="md-note-card md-note-card--accent">
+              <div class="md-panel-actions md-panel-actions--ai-draft">
+                <button id="copyAiPromptBtn" type="button" class="md-button md-button--tonal md-button--compact-link">
+                  <svg aria-hidden="true" viewBox="0 0 16 16" class="md-button__icon" fill="currentColor">
+                    <use href="#md-icon-clipboard" xlink:href="#md-icon-clipboard"></use>
+                  </svg>
+                  <span>mikuproject 用の生成AIプロンプト</span>
+                </button>
+                <lht-help-tooltip label="新規生成AI連携の説明" wide>
+                  クリップボードにコピーしたプロンプトを用いて生成AIと会話してください。結果として得られた JSON を下のテキストエリアに貼り付けて、<code>貼り付けた JSON を取り込む</code> ボタンをクリックしてください。
+                </lht-help-tooltip>
+                <button id="importProjectDraftBtn" type="button" class="md-button md-button--tonal">貼り付けた JSON を取り込む</button>
+                <button id="loadProjectDraftSampleBtn" type="button" class="md-button md-button--surface">サンプル</button>
+              </div>
+              <template id="aiPromptTemplate">{{AI_PROMPT_TEXT}}</template>
+              <div class="md-form-grid">
+                <lht-text-field-help field-id="projectDraftImportInput" label="生成AIが返した JSON" rows="14" help-text="生成AIが返した `project_draft_view` の JSON テキストを貼り付けます。最後に json フェンスを持つ応答全体でもかまいません。"></lht-text-field-help>
+              </div>
+            </section>
           </div>
-          <p class="md-note-card__text">
-            生成AIとの会話は別途行います。生成AIが返した `project_draft_view` は、上部の `Load from file` から `.editjson` を開くか、JSON テキストを貼り付けてここから取り込みます。
-          </p>
-          <div class="md-panel-actions">
-            <button id="importProjectDraftBtn" type="button" class="md-button md-button--tonal">貼り付けた JSON を取り込む</button>
-            <button id="loadProjectDraftSampleBtn" type="button" class="md-button md-button--surface">サンプル</button>
-          </div>
-          <div class="md-form-grid">
-            <lht-text-field-help field-id="projectDraftImportInput" label="生成AIが返した JSON" rows="14" help-text="生成AIが返した `project_draft_view` の JSON テキストを貼り付けます。最後に json フェンスを持つ応答全体でもかまいません。"></lht-text-field-help>
-          </div>
-        </section>
+        </details>
 
         <details class="md-debug-accordion">
           <summary class="md-debug-accordion__summary">デバッグ情報</summary>
@@ -140,8 +148,10 @@
           <h2 class="md-flow-section__title">
             <span class="md-flow-section__step">2</span>
             <span>Overview</span>
+            <lht-help-tooltip label="Overview の説明" wide>
+              内部モデル、検証結果、Mermaid preview を確認します。取込後の warning と差分要約もここに表示します。
+            </lht-help-tooltip>
           </h2>
-          <p class="md-flow-section__text">内部モデル、要約、検証結果、プレビューをここで確認します。</p>
         </div>
 
         <section class="md-note-card md-note-card--feature">
@@ -231,8 +241,10 @@
           <h2 class="md-flow-section__title">
             <span class="md-flow-section__step">3</span>
             <span>Output</span>
+            <lht-help-tooltip label="Output の説明" wide>
+              `MS Project XML`、`XLSX`、`JSON`、`CSV`、`WBS XLSX`、`Mermaid`、生成AI 向け `.editjson` を保存します。
+            </lht-help-tooltip>
           </h2>
-          <p class="md-flow-section__text">出力設定と生成結果の確認をここにまとめます。</p>
         </div>
 
         <div class="md-output-actions">
@@ -249,33 +261,35 @@
           </div>
         </div>
 
-        <section class="md-note-card md-note-card--accent" aria-label="AI integration exports">
-          <div class="md-note-card__title-row">
-            <h3 class="md-note-card__title">生成AI連携</h3>
+        <details class="md-note-accordion" aria-label="AI integration exports">
+          <summary class="md-note-accordion__summary">生成AI連携</summary>
+          <div class="md-note-accordion__body">
+            <section class="md-note-card md-note-card--accent" aria-label="AI integration exports">
+              <div class="md-panel-actions">
+                <button id="exportAiBundleBtn" type="button" class="md-button md-button--tonal">full bundle</button>
+                <lht-help-tooltip label="生成AI連携の説明" wide>
+                  既存 project を生成AIへ渡すための projection JSON をここから生成します。
+                </lht-help-tooltip>
+                <button id="exportProjectOverviewBtn" type="button" class="md-button md-button--tonal">project_overview_view</button>
+                <button id="exportPhaseDetailFullBtn" type="button" class="md-button md-button--tonal">phase_detail_view full</button>
+              </div>
+              <section class="md-note-card md-note-card--subtle" aria-label="AI scoped phase detail">
+                <h4 class="md-note-card__title">phase_detail_view scoped</h4>
+                <p class="md-note-card__text">
+                  phase の一部だけを生成AIへ渡したい時に使います。
+                </p>
+                <div class="md-form-grid md-form-grid--three">
+                  <lht-text-field-help field-id="phaseDetailUidInput" label="対象 phase UID" rows="1" placeholder="空欄なら先頭 phase" help-text="どの phase を対象にするかを指定します。"></lht-text-field-help>
+                  <lht-text-field-help field-id="phaseDetailRootUidInput" label="部分木の起点 task UID" rows="1" placeholder="空欄なら phase 全体" help-text="phase_detail_view scoped で切り出したい task UID を指定します。まず full を出して UID を確認してください。"></lht-text-field-help>
+                  <lht-text-field-help field-id="phaseDetailMaxDepthInput" label="何階層下まで含めるか" rows="1" placeholder="空欄なら全階層" help-text="起点 task から何階層下まで含めるかを指定します。0 は起点 task のみです。"></lht-text-field-help>
+                </div>
+                <div class="md-panel-actions">
+                  <button id="exportPhaseDetailBtn" type="button" class="md-button md-button--tonal">phase_detail_view scoped</button>
+                </div>
+              </section>
+            </section>
           </div>
-          <p class="md-note-card__text">
-            既存 project を生成AIへ渡すための projection JSON をここから生成します。
-          </p>
-          <div class="md-panel-actions">
-            <button id="exportAiBundleBtn" type="button" class="md-button md-button--tonal">full bundle</button>
-            <button id="exportProjectOverviewBtn" type="button" class="md-button md-button--tonal">project_overview_view</button>
-            <button id="exportPhaseDetailFullBtn" type="button" class="md-button md-button--tonal">phase_detail_view full</button>
-          </div>
-          <section class="md-note-card md-note-card--subtle" aria-label="AI scoped phase detail">
-            <h4 class="md-note-card__title">phase_detail_view scoped</h4>
-            <p class="md-note-card__text">
-              phase の一部だけを生成AIへ渡したい時に使います。
-            </p>
-            <div class="md-form-grid md-form-grid--three">
-              <lht-text-field-help field-id="phaseDetailUidInput" label="対象 phase UID" rows="1" placeholder="空欄なら先頭 phase" help-text="どの phase を対象にするかを指定します。"></lht-text-field-help>
-              <lht-text-field-help field-id="phaseDetailRootUidInput" label="部分木の起点 task UID" rows="1" placeholder="空欄なら phase 全体" help-text="phase_detail_view scoped で切り出したい task UID を指定します。まず full を出して UID を確認してください。"></lht-text-field-help>
-              <lht-text-field-help field-id="phaseDetailMaxDepthInput" label="何階層下まで含めるか" rows="1" placeholder="空欄なら全階層" help-text="起点 task から何階層下まで含めるかを指定します。0 は起点 task のみです。"></lht-text-field-help>
-            </div>
-            <div class="md-panel-actions">
-              <button id="exportPhaseDetailBtn" type="button" class="md-button md-button--tonal">phase_detail_view scoped</button>
-            </div>
-          </section>
-        </section>
+        </details>
 
         <section class="ms-settings-card" aria-label="Output settings">
           <details class="ms-settings-accordion">

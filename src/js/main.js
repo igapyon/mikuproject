@@ -1114,7 +1114,9 @@ WorkWeek1=${formatCalendarWorkWeekSummary(calendar)}</div>
         const baseModel = ensureCurrentModel();
         const bytes = new Uint8Array(await file.arrayBuffer());
         const codec = new mikuprojectExcelIo.XlsxWorkbookCodec();
-        const workbook = codec.importWorkbook(bytes);
+        const workbook = typeof codec.importWorkbookAsync === "function"
+            ? await codec.importWorkbookAsync(bytes)
+            : codec.importWorkbook(bytes);
         const result = mikuprojectProjectXlsx.importProjectWorkbookDetailed(workbook, baseModel);
         currentModel = result.model;
         const issues = mikuprojectXml.validateProjectModel(currentModel);
@@ -1238,8 +1240,16 @@ WorkWeek1=${formatCalendarWorkWeekSummary(calendar)}</div>
     }
     function bindEvents() {
         getElement("loadSampleBtn").addEventListener("click", loadSample);
+        getElement("importFileInput").addEventListener("click", (event) => {
+            const input = event.target;
+            if (input) {
+                input.value = "";
+            }
+        });
         getElement("importFileBtn").addEventListener("click", () => {
-            getElement("importFileInput").click();
+            const input = getElement("importFileInput");
+            input.value = "";
+            input.click();
         });
         getElement("downloadMermaidSvgBtn").addEventListener("click", () => {
             void downloadCurrentMermaidSvg().catch((error) => {
@@ -1354,10 +1364,14 @@ WorkWeek1=${formatCalendarWorkWeekSummary(calendar)}</div>
         getElement("importFileInput").addEventListener("change", async (event) => {
             const input = event.target;
             const file = (input === null || input === void 0 ? void 0 : input.files) && input.files[0];
+            if (file) {
+                setStatus(`${file.name} を読み込んでいます...`);
+            }
             try {
                 await importFromFile(file);
             }
             catch (error) {
+                console.error("[mikuproject] file import failed", error);
                 setStatus(error instanceof Error ? error.message : "ファイル読込に失敗しました");
             }
             finally {

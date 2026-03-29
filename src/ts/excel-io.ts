@@ -106,12 +106,26 @@
       return parseWorkbookEntries(entries);
     }
 
+    async importWorkbookAsync(bytes: Uint8Array): Promise<XlsxWorkbookModel> {
+      const entries = await this.unpackEntriesAsync(bytes);
+      return parseWorkbookEntries(entries);
+    }
+
     listEntries(bytes: Uint8Array): string[] {
       return Object.keys(this.unpackEntries(bytes)).sort();
     }
 
+    async listEntriesAsync(bytes: Uint8Array): Promise<string[]> {
+      const entries = await this.unpackEntriesAsync(bytes);
+      return Object.keys(entries).sort();
+    }
+
     unpackEntries(bytes: Uint8Array): Record<string, Uint8Array> {
       return unpackZip(bytes);
+    }
+
+    async unpackEntriesAsync(bytes: Uint8Array): Promise<Record<string, Uint8Array>> {
+      return unpackZipAsync(bytes);
     }
 
     private createWorkbookEntries(workbook: XlsxWorkbookModel): ZipEntry[] {
@@ -697,9 +711,11 @@
     const workbookXml = decodeRequiredEntry(entries, "xl/workbook.xml");
     const workbookRelsXml = decodeRequiredEntry(entries, "xl/_rels/workbook.xml.rels");
     const stylesXml = entries["xl/styles.xml"] ? decodeUtf8(entries["xl/styles.xml"]) : null;
+    const sharedStringsXml = entries["xl/sharedStrings.xml"] ? decodeUtf8(entries["xl/sharedStrings.xml"]) : null;
     const workbookDocument = parseXmlDocument(workbookXml);
     const relationshipsDocument = parseXmlDocument(workbookRelsXml);
     const styleBook = parseStylesXml(stylesXml);
+    const sharedStrings = parseSharedStringsXml(sharedStringsXml);
     const relationshipMap = new Map<string, string>();
     const relationshipElements = Array.from(relationshipsDocument.getElementsByTagNameNS(
       "http://schemas.openxmlformats.org/package/2006/relationships",
@@ -735,7 +751,7 @@
           throw new Error(`Worksheet relationship target is missing for sheet: ${name}`);
         }
         const worksheetXml = decodeRequiredEntry(entries, target);
-        return parseWorksheetXml(name, worksheetXml, styleBook);
+        return parseWorksheetXml(name, worksheetXml, styleBook, sharedStrings);
       })
     };
   }
@@ -744,7 +760,12 @@
     return target.startsWith("xl/") ? target : `xl/${target.replace(/^\.\//, "")}`;
   }
 
-  function parseWorksheetXml(name: string, xmlText: string, styleBook: StyleDescriptor[]): XlsxSheetModel {
+  function parseWorksheetXml(
+    name: string,
+    xmlText: string,
+    styleBook: StyleDescriptor[],
+    sharedStrings: string[]
+  ): XlsxSheetModel {
     const document = parseXmlDocument(xmlText);
     const rowElements = Array.from(document.getElementsByTagNameNS(
       "http://schemas.openxmlformats.org/spreadsheetml/2006/main",
@@ -758,7 +779,7 @@
       mergedRanges: parseWorksheetMergedRanges(document),
       rows: rowElements.map((rowElement) => ({
         height: parseOptionalNumber(rowElement.getAttribute("ht")),
-        cells: parseWorksheetRowCells(rowElement, styleBook)
+        cells: parseWorksheetRowCells(rowElement, styleBook, sharedStrings)
       }))
     };
   }
@@ -819,7 +840,11 @@
     };
   }
 
-  function parseWorksheetRowCells(rowElement: Element, styleBook: StyleDescriptor[]): XlsxCellModel[] {
+  function parseWorksheetRowCells(
+    rowElement: Element,
+    styleBook: StyleDescriptor[],
+    sharedStrings: string[]
+  ): XlsxCellModel[] {
     const cells: XlsxCellModel[] = [];
     const cellElements = Array.from(rowElement.getElementsByTagNameNS(
       "http://schemas.openxmlformats.org/spreadsheetml/2006/main",
@@ -832,13 +857,17 @@
       while (cells.length < columnIndex) {
         cells.push({});
       }
-      cells.push(parseWorksheetCell(cellElement, styleBook));
+      cells.push(parseWorksheetCell(cellElement, styleBook, sharedStrings));
     }
 
     return cells;
   }
 
-  function parseWorksheetCell(cellElement: Element, styleBook: StyleDescriptor[]): XlsxCellModel {
+  function parseWorksheetCell(
+    cellElement: Element,
+    styleBook: StyleDescriptor[],
+    sharedStrings: string[]
+  ): XlsxCellModel {
     const type = cellElement.getAttribute("t") || "";
     const styleIndex = Number(cellElement.getAttribute("s") || "0");
     const formulaElement = findDirectChild(cellElement, "f");
@@ -849,6 +878,9 @@
     if (type === "inlineStr") {
       const textElement = inlineStringElement ? findDirectChild(inlineStringElement, "t") : null;
       value = textElement ? (textElement.textContent || "") : "";
+    } else if (type === "s") {
+      const sharedStringIndex = Number(valueElement?.textContent || "0");
+      value = Number.isFinite(sharedStringIndex) ? (sharedStrings[sharedStringIndex] || "") : "";
     } else if (type === "b") {
       value = valueElement?.textContent === "1";
     } else if (type === "str") {
@@ -891,6 +923,35 @@
       cell.value = value;
     }
     return cell;
+  }
+
+  function parseSharedStringsXml(xmlText: string | null): string[] {
+    if (!xmlText) {
+      return [];
+    }
+    const document = parseXmlDocument(xmlText);
+    const stringItems = Array.from(document.getElementsByTagNameNS(
+      "http://schemas.openxmlformats.org/spreadsheetml/2006/main",
+      "si"
+    ));
+    return stringItems.map((item) => extractSharedStringText(item));
+  }
+
+  function extractSharedStringText(itemElement: Element): string {
+    const directText = findDirectChild(itemElement, "t");
+    if (directText) {
+      return directText.textContent || "";
+    }
+    const richTextRuns = Array.from(itemElement.getElementsByTagNameNS(
+      "http://schemas.openxmlformats.org/spreadsheetml/2006/main",
+      "r"
+    ));
+    if (richTextRuns.length === 0) {
+      return "";
+    }
+    return richTextRuns
+      .map((run) => findDirectChild(run, "t")?.textContent || "")
+      .join("");
   }
 
   function parseStylesXml(xmlText: string | null): StyleDescriptor[] {
@@ -1185,6 +1246,75 @@
     }
 
     return entries;
+  }
+
+  async function unpackZipAsync(bytes: Uint8Array): Promise<Record<string, Uint8Array>> {
+    const view = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength);
+    const endOffset = findEndOfCentralDirectoryOffset(bytes);
+    const totalEntries = view.getUint16(endOffset + 10, true);
+    const centralDirectoryOffset = view.getUint32(endOffset + 16, true);
+    const entries: Record<string, Uint8Array> = {};
+    let pointer = centralDirectoryOffset;
+
+    for (let index = 0; index < totalEntries; index += 1) {
+      if (view.getUint32(pointer, true) !== 0x02014b50) {
+        throw new Error("Invalid ZIP central directory header");
+      }
+
+      const compressionMethod = view.getUint16(pointer + 10, true);
+      const compressedSize = view.getUint32(pointer + 20, true);
+      const uncompressedSize = view.getUint32(pointer + 24, true);
+      const fileNameLength = view.getUint16(pointer + 28, true);
+      const extraLength = view.getUint16(pointer + 30, true);
+      const commentLength = view.getUint16(pointer + 32, true);
+      const localHeaderOffset = view.getUint32(pointer + 42, true);
+      const fileName = decodeUtf8(bytes.subarray(pointer + 46, pointer + 46 + fileNameLength));
+      const localView = new DataView(bytes.buffer, bytes.byteOffset + localHeaderOffset, bytes.byteLength - localHeaderOffset);
+      if (localView.getUint32(0, true) !== 0x04034b50) {
+        throw new Error(`Invalid ZIP local header for entry: ${fileName}`);
+      }
+      const localFileNameLength = localView.getUint16(26, true);
+      const localExtraLength = localView.getUint16(28, true);
+      const dataOffset = localHeaderOffset + 30 + localFileNameLength + localExtraLength;
+      const data = bytes.slice(dataOffset, dataOffset + compressedSize);
+
+      if (compressionMethod === 0) {
+        if (compressedSize !== uncompressedSize) {
+          throw new Error(`Stored ZIP entry size mismatch: ${fileName}`);
+        }
+        entries[fileName] = data;
+      } else if (compressionMethod === 8) {
+        entries[fileName] = await inflateDeflateRaw(data, uncompressedSize, fileName);
+      } else {
+        throw new Error(`Unsupported ZIP compression method for entry ${fileName}: ${compressionMethod}`);
+      }
+      pointer += 46 + fileNameLength + extraLength + commentLength;
+    }
+
+    return entries;
+  }
+
+  async function inflateDeflateRaw(
+    compressed: Uint8Array,
+    expectedSize: number,
+    fileName: string
+  ): Promise<Uint8Array> {
+    if (typeof DecompressionStream !== "function") {
+      throw new Error(`ZIP deflate compression is not supported in this runtime: ${fileName}`);
+    }
+    const sourceStream = typeof Blob === "function" && typeof Blob.prototype?.stream === "function"
+      ? new Blob([compressed]).stream()
+      : new Response(compressed).body;
+    if (!sourceStream) {
+      throw new Error(`ZIP deflate stream source is not available in this runtime: ${fileName}`);
+    }
+    const decompressedStream = sourceStream.pipeThrough(new DecompressionStream("deflate-raw"));
+    const buffer = await new Response(decompressedStream).arrayBuffer();
+    const inflated = new Uint8Array(buffer);
+    if (inflated.byteLength !== expectedSize) {
+      throw new Error(`Deflated ZIP entry size mismatch: ${fileName}`);
+    }
+    return inflated;
   }
 
   function findEndOfCentralDirectoryOffset(bytes: Uint8Array): number {

@@ -1375,6 +1375,41 @@ lht-index-card-link {
   flex-wrap: wrap;
 }
 
+.md-button-with-help {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.md-button-help-anchor {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 auto;
+}
+
+.md-button-help-anchor lht-help-tooltip {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.md-button-help-anchor .md-tooltip-group > .md-tooltip {
+  display: none;
+}
+
+.md-panel-actions + .md-form-grid {
+  margin-top: 12px;
+}
+
+.md-panel-actions + .md-note-card {
+  margin-top: 12px;
+}
+
+.md-form-grid + .md-panel-actions {
+  margin-top: 12px;
+}
+
 .md-button {
   display: inline-flex;
   align-items: center;
@@ -1522,6 +1557,7 @@ lht-index-card-link {
   display: flex;
   align-items: center;
   gap: 8px;
+  flex-wrap: wrap;
 }
 
 .md-note-card__title {
@@ -1551,6 +1587,12 @@ lht-index-card-link {
 .md-inline-link:hover,
 .md-inline-link:focus-visible {
   text-decoration: underline;
+}
+
+.md-inline-link--compact {
+  margin-left: auto;
+  font-size: 0.86rem;
+  font-weight: 700;
 }
 
 md-outlined-text-field.md-outlined-field {
@@ -1937,8 +1979,6 @@ md-outlined-select.md-outlined-field:focus-within::part(container) {
     </header>
 
     <section class="md-section md-stack-md">
-      <div id="statusMessage" class="md-status">未実行</div>
-
       <div class="md-top-tabs ms-top-tabs" role="tablist" aria-label="mikuproject sections">
         <button type="button" class="md-top-tab ms-top-tab is-active" data-tab="input" role="tab" aria-selected="true" aria-controls="tabPanelInput">
           <span class="md-top-tab-no ms-top-tab-no">1</span>
@@ -1954,6 +1994,8 @@ md-outlined-select.md-outlined-field:focus-within::part(container) {
         </button>
       </div>
 
+      <div id="statusMessage" class="md-status">未実行</div>
+
       <section id="tabPanelInput" class="md-flow-section md-tab-panel" data-tab-panel="input" aria-label="input">
         <div class="md-flow-section__header">
           <h2 class="md-flow-section__title">
@@ -1965,64 +2007,63 @@ md-outlined-select.md-outlined-field:focus-within::part(container) {
 
         <div class="md-panel-actions">
           <button id="importXmlBtn" type="button" class="md-button md-button--primary">MS Project XML</button>
-          <button id="importXlsxBtn" type="button" class="md-button md-button--surface">XLSX</button>
+          <span class="md-button-with-help">
+            <button id="importXlsxBtn" type="button" class="md-button md-button--surface">XLSX</button>
+            <span class="md-button-help-anchor">
+              <lht-help-tooltip label="XLSX 編集の扱い" placement="right" wide>
+                <p class="md-note-card__text">
+                  `.xlsx` は `MS Project XML` の代替正本ではなく、確認と限定編集のための周辺表現として扱います。
+                </p>
+                <p class="md-note-card__text">
+                  現在の `XLSX Import` で反映するのは限定列のみです。
+                </p>
+                <p class="md-note-card__text">
+                  反映結果は、`Project / Tasks / Resources / Assignments / Calendars` ごとの件数と、`UID` 単位の差分要約として画面上に表示します。
+                </p>
+                <p class="md-note-card__text"><strong>反映対象</strong></p>
+                <ul class="md-note-list">
+                  <li>`Project`: `Name / Title / Author / Company / StartDate / FinishDate / CurrentDate / StatusDate / CalendarUID / MinutesPerDay / MinutesPerWeek / DaysPerMonth / ScheduleFromStart`</li>
+                  <li>`Tasks`: `Name / Start / Finish / PercentComplete / PercentWorkComplete / Notes`</li>
+                  <li>`Resources`: `Name / Group / MaxUnits`</li>
+                  <li>`Assignments`: `Units / Work / PercentWorkComplete`</li>
+                  <li>`Calendars`: `Name / IsBaseCalendar / BaseCalendarUID`</li>
+                  <li>`NonWorkingDays`: `Name / Date / FromDate / ToDate / DayWorking`</li>
+                </ul>
+                <p class="md-note-card__text"><strong>現在は反映しないもの</strong></p>
+                <ul class="md-note-list">
+                  <li>対象外の列や未対応シートの編集</li>
+                  <li>`Calendars` の `WeekDays / WorkWeeks` と、`Baseline / TimephasedData / ExtendedAttributes`</li>
+                </ul>
+              </lht-help-tooltip>
+            </span>
+          </span>
           <button id="parseCsvBtn" type="button" class="md-button md-button--surface">CSV</button>
           <button id="loadSampleBtn" type="button" class="md-button md-button--surface">サンプル</button>
           <input id="importXmlInput" type="file" accept=".xml,text/xml,application/xml" class="md-hidden" />
           <input id="importXlsxInput" type="file" accept=".xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" class="md-hidden" />
+          <input id="importCsvInput" type="file" accept=".csv,text/csv,text/plain" class="md-hidden" />
           <input id="importProjectDraftInput" type="file" accept=".json,application/json,text/plain" class="md-hidden" />
         </div>
-
-        <section class="md-note-card" aria-label="XLSX import export notes">
-          <div class="md-note-card__title-row">
-            <h3 class="md-note-card__title">XLSX 編集の扱い</h3>
-            <lht-help-tooltip label="XLSX 編集の扱い" placement="right" wide>
-              <p class="md-note-card__text">
-                `.xlsx` は `MS Project XML` の代替正本ではなく、確認と限定編集のための周辺表現として扱います。
-              </p>
-              <p class="md-note-card__text">
-                現在の `XLSX Import` で反映するのは限定列のみです。
-              </p>
-              <p class="md-note-card__text">
-                反映結果は、`Project / Tasks / Resources / Assignments / Calendars` ごとの件数と、`UID` 単位の差分要約として画面上に表示します。
-              </p>
-              <p class="md-note-card__text"><strong>反映対象</strong></p>
-              <ul class="md-note-list">
-                <li>`Project`: `Name / Title / Author / Company / StartDate / FinishDate / CurrentDate / StatusDate / CalendarUID / MinutesPerDay / MinutesPerWeek / DaysPerMonth / ScheduleFromStart`</li>
-                <li>`Tasks`: `Name / Start / Finish / PercentComplete / PercentWorkComplete / Notes`</li>
-                <li>`Resources`: `Name / Group / MaxUnits`</li>
-                <li>`Assignments`: `Units / Work / PercentWorkComplete`</li>
-                <li>`Calendars`: `Name / IsBaseCalendar / BaseCalendarUID`</li>
-                <li>`NonWorkingDays`: `Name / Date / FromDate / ToDate / DayWorking`</li>
-              </ul>
-              <p class="md-note-card__text"><strong>現在は反映しないもの</strong></p>
-              <ul class="md-note-list">
-                <li>対象外の列や未対応シートの編集</li>
-                <li>`Calendars` の `WeekDays / WorkWeeks` と、`Baseline / TimephasedData / ExtendedAttributes`</li>
-              </ul>
-            </lht-help-tooltip>
-          </div>
-        </section>
 
         <section class="md-note-card" aria-label="AI draft generation">
           <div class="md-note-card__title-row">
             <h3 class="md-note-card__title">新規生成AI連携</h3>
+            <lht-help-tooltip label="新規生成AI連携の説明" wide>
+              (i) まず生成AIに 生成AIプロンプト を読み込ませます。<br><br>
+              (ii) その前提で生成AIに `project_draft_view` を作らせます。<br><br>
+              (iii) 返ってきた JSON を、ここでファイル読込または貼り付けで取り込みます。
+            </lht-help-tooltip>
+            <a class="md-inline-link md-inline-link--compact" href="https://raw.githubusercontent.com/igapyon/mikuproject/refs/heads/devel/docs/mikuproject-ai-json-spec.md" target="_blank" rel="noopener noreferrer">生成AIプロンプト</a>
           </div>
           <p class="md-note-card__text">
             生成AIとの会話は別途行います。生成AIが返した `project_draft_view` は、JSON ファイルとして開くか、JSON テキストを貼り付けてここから取り込みます。
           </p>
-          <p class="md-note-card__text">
-            (i) まず生成AIに <a class="md-inline-link" href="https://raw.githubusercontent.com/igapyon/mikuproject/refs/heads/devel/docs/mikuproject-ai-json-spec.md" target="_blank" rel="noopener noreferrer">生成AIプロンプト</a> を読み込ませます。
-          </p>
-          <p class="md-note-card__text">
-            (ii) その前提で生成AIに `project_draft_view` を作らせます。
-          </p>
-          <p class="md-note-card__text">
-            (iii) 返ってきた JSON を、ここでファイル読込または貼り付けで取り込みます。
-          </p>
           <div class="md-panel-actions">
             <button id="importProjectDraftFileBtn" type="button" class="md-button md-button--surface">JSON ファイルを開く</button>
             <button id="importProjectDraftBtn" type="button" class="md-button md-button--surface">貼り付けた JSON を取り込む</button>
+          </div>
+          <div class="md-form-grid">
+            <lht-text-field-help field-id="projectDraftImportInput" label="生成AIが返した JSON" rows="14" help-text="生成AIが返した `project_draft_view` の JSON テキストを貼り付けます。最後に json フェンスを持つ応答全体でもかまいません。"></lht-text-field-help>
           </div>
         </section>
 
@@ -2031,14 +2072,6 @@ md-outlined-select.md-outlined-field:focus-within::part(container) {
           <div class="md-debug-accordion__body">
             <div class="md-form-grid">
               <lht-text-field-help field-id="xmlInput" label="MS Project XML" rows="16" placeholder="ここに XML を入力" help-text="MS Project XML を読み込みます。"></lht-text-field-help>
-            </div>
-
-            <div class="md-form-grid">
-              <lht-text-field-help field-id="csvInput" label="CSV + ParentID 入力" rows="12" placeholder="ここに CSV を入力" help-text="CSV + ParentID を内部モデルへ変換します。"></lht-text-field-help>
-            </div>
-
-            <div class="md-form-grid">
-              <lht-text-field-help field-id="projectDraftImportInput" label="生成AIが返した JSON" rows="14" help-text="生成AIが返した `project_draft_view` の JSON テキストを貼り付けます。最後に json フェンスを持つ応答全体でもかまいません。"></lht-text-field-help>
             </div>
           </div>
         </details>
@@ -2244,9 +2277,6 @@ md-outlined-select.md-outlined-field:focus-within::part(container) {
         <details class="md-debug-accordion">
           <summary class="md-debug-accordion__summary">デバッグ情報</summary>
           <div class="md-debug-accordion__body">
-            <div class="md-form-grid">
-              <lht-text-field-help field-id="csvOutput" label="CSV + ParentID" rows="12" readonly></lht-text-field-help>
-            </div>
             <div class="md-form-grid">
               <lht-text-field-help field-id="projectOverviewOutput" label="project_overview_view" rows="14" readonly></lht-text-field-help>
             </div>
@@ -14040,9 +14070,18 @@ WorkWeek1=${formatCalendarWorkWeekSummary(calendar)}</div>
     function exportCurrentCsv() {
         const model = ensureCurrentModel();
         syncXmlTextFromModel(model);
-        getTextArea("csvOutput").value = mikuprojectXml.exportCsvParentId(model);
-        setStatus("内部モデルから CSV + ParentID を生成しました");
-        showToast("CSV を生成しました");
+        const csvText = mikuprojectXml.exportCsvParentId(model);
+        const now = new Date();
+        const stamp = [
+            now.getFullYear(),
+            String(now.getMonth() + 1).padStart(2, "0"),
+            String(now.getDate()).padStart(2, "0"),
+            String(now.getHours()).padStart(2, "0"),
+            String(now.getMinutes()).padStart(2, "0")
+        ].join("");
+        downloadBlob(new Blob([`${csvText}\n`], { type: "text/csv;charset=utf-8" }), `mikuproject-export-${stamp}.csv`);
+        setStatus("内部モデルから CSV + ParentID を生成して保存しました");
+        showToast("CSV を保存しました");
         setActiveTab("output");
     }
     function exportCurrentProjectOverviewView() {
@@ -14206,8 +14245,11 @@ WorkWeek1=${formatCalendarWorkWeekSummary(calendar)}</div>
         setActiveTab("transform", { skipTransformRefresh: true });
         await exportCurrentMermaid({ silent: true });
     }
-    async function parseCurrentCsv() {
-        const csvText = getTextArea("csvInput").value.trim();
+    async function importCsvFromFile(file) {
+        if (!file) {
+            return;
+        }
+        const csvText = (await file.text()).trim();
         if (!csvText) {
             setStatus("CSV が空です");
             return;
@@ -14218,8 +14260,8 @@ WorkWeek1=${formatCalendarWorkWeekSummary(calendar)}</div>
         updateSummary(currentModel);
         renderValidationIssues(issues);
         renderXlsxImportSummary([]);
-        setStatus(issues.length > 0 ? `CSV を解析しました。検証で ${issues.length} 件の問題があります` : "CSV + ParentID を内部モデルへ変換しました");
-        showToast("CSV を解析しました");
+        setStatus(issues.length > 0 ? `CSV ファイルを読み込んで解析しました。検証で ${issues.length} 件の問題があります` : "CSV + ParentID を内部モデルへ変換しました");
+        showToast("CSV を読み込みました");
         setActiveTab("transform", { skipTransformRefresh: true });
         await exportCurrentMermaid({ silent: true });
     }
@@ -14364,12 +14406,7 @@ WorkWeek1=${formatCalendarWorkWeekSummary(calendar)}</div>
             }
         });
         getElement("parseCsvBtn").addEventListener("click", async () => {
-            try {
-                await parseCurrentCsv();
-            }
-            catch (error) {
-                setStatus(error instanceof Error ? error.message : "CSV 解析に失敗しました");
-            }
+            getElement("importCsvInput").click();
         });
         getElement("importXlsxBtn").addEventListener("click", () => {
             getElement("importXlsxInput").click();
@@ -14413,6 +14450,21 @@ WorkWeek1=${formatCalendarWorkWeekSummary(calendar)}</div>
             }
             catch (error) {
                 setStatus(error instanceof Error ? error.message : "XLSX 読み込みに失敗しました");
+            }
+            finally {
+                if (input) {
+                    input.value = "";
+                }
+            }
+        });
+        getElement("importCsvInput").addEventListener("change", async (event) => {
+            const input = event.target;
+            const file = (input === null || input === void 0 ? void 0 : input.files) && input.files[0];
+            try {
+                await importCsvFromFile(file);
+            }
+            catch (error) {
+                setStatus(error instanceof Error ? error.message : "CSV 読み込みに失敗しました");
             }
             finally {
                 if (input) {

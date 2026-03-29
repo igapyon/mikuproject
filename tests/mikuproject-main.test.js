@@ -65,6 +65,7 @@ function mountDom() {
     <button id="downloadXmlBtn" type="button">MS Project XML</button>
     <input id="importXmlInput" type="file" />
     <input id="importXlsxInput" type="file" />
+    <input id="importCsvInput" type="file" />
     <input id="importProjectDraftInput" type="file" />
     <input id="phaseDetailUidInput" type="text" />
     <input id="phaseDetailRootUidInput" type="text" />
@@ -85,35 +86,18 @@ function mountDom() {
       </button>
     </div>
     <section id="tabPanelInput" class="md-flow-section md-tab-panel" data-tab-panel="input">
-      <section class="md-note-card">
-        <div class="md-note-card__title-row">
-          <h3 class="md-note-card__title">XLSX 編集の扱い</h3>
+      <span class="md-button-with-help">
+        <button id="importXlsxBtnWithHelp" type="button">XLSX help host</button>
+        <span class="md-button-help-anchor">
           <lht-help-tooltip label="XLSX 編集の扱い" placement="right" wide>
-            <p class="md-note-card__text">XLSX は MS Project XML の代替正本ではなく、確認と限定編集のための周辺表現として扱います。</p>
-            <p class="md-note-card__text">現在の XLSX Import で反映するのは限定列のみです。</p>
-            <p class="md-note-card__text">反映結果は、Project / Tasks / Resources / Assignments / Calendars ごとの件数と、UID 単位の差分要約として画面上に表示します。</p>
-            <p class="md-note-card__text"><strong>反映対象</strong></p>
-            <ul class="md-note-list">
-              <li>Project: Name / Title / Author / Company / StartDate / FinishDate / CurrentDate / StatusDate / CalendarUID / MinutesPerDay / MinutesPerWeek / DaysPerMonth / ScheduleFromStart</li>
-              <li>Tasks: Name / Start / Finish / PercentComplete / PercentWorkComplete / Notes</li>
-              <li>Resources: Name / Group / MaxUnits</li>
-              <li>Assignments: Units / Work / PercentWorkComplete</li>
-              <li>Calendars: Name / IsBaseCalendar / BaseCalendarUID</li>
-              <li>NonWorkingDays: Name / Date / FromDate / ToDate / DayWorking</li>
-            </ul>
-            <p class="md-note-card__text"><strong>現在は反映しないもの</strong></p>
-            <ul class="md-note-list">
-              <li>対象外の列や未対応シートの編集</li>
-              <li>Calendars の WeekDays / WorkWeeks と、Baseline / TimephasedData / ExtendedAttributes</li>
-            </ul>
+            <p>XLSX は MS Project XML の代替正本ではなく、確認と限定編集のための周辺表現として扱います。</p>
           </lht-help-tooltip>
-        </div>
-      </section>
+        </span>
+      </span>
       <details class="md-debug-accordion">
         <summary class="md-debug-accordion__summary">デバッグ情報</summary>
         <div class="md-debug-accordion__body">
           <textarea id="xmlInput"></textarea>
-          <textarea id="csvInput"></textarea>
         </div>
       </details>
       <div id="xmlSaveState" class="md-save-state md-save-state--dirty">XML 保存状態: 未保存</div>
@@ -169,7 +153,6 @@ function mountDom() {
       <details class="md-debug-accordion">
         <summary class="md-debug-accordion__summary">デバッグ情報</summary>
         <div class="md-debug-accordion__body">
-          <textarea id="csvOutput"></textarea>
           <textarea id="projectDraftImportInput"></textarea>
           <textarea id="projectOverviewOutput"></textarea>
           <input id="phaseDetailUidInput" />
@@ -251,12 +234,7 @@ describe("mikuproject main", () => {
 
     expect(document.getElementById("xmlInput").value).toContain("<Project");
     expect(document.getElementById("statusMessage").textContent).toContain("サンプル XML");
-    expect(document.body.textContent).toContain("XLSX 編集の扱い");
     expect(document.getElementById("xmlSaveState").textContent).toContain("XML 保存状態: 未保存");
-    expect(document.body.textContent).toContain("現在の XLSX Import で反映するのは限定列のみです");
-    expect(document.body.textContent).toContain("UID 単位の差分要約として画面上に表示します");
-    expect(document.body.textContent).toContain("反映対象");
-    expect(document.body.textContent).toContain("現在は反映しないもの");
     expect(document.querySelector('lht-help-tooltip[label="XLSX 編集の扱い"]')).not.toBeNull();
     expect(document.body.textContent).toContain("取込結果");
     expect(document.body.textContent).toContain("検証メッセージ");
@@ -265,11 +243,6 @@ describe("mikuproject main", () => {
     expect(document.body.textContent).toContain("デバッグ情報");
     expect(document.querySelector(".md-debug-accordion")?.hasAttribute("open")).toBe(false);
     expect(document.querySelectorAll(".md-debug-accordion")[1]?.hasAttribute("open")).toBe(false);
-    expect(document.body.textContent).toContain("Project: Name / Title / Author / Company");
-    expect(document.body.textContent).toContain("Tasks: Name / Start / Finish / PercentComplete / PercentWorkComplete / Notes");
-    expect(document.body.textContent).toContain("Calendars: Name / IsBaseCalendar / BaseCalendarUID");
-    expect(document.body.textContent).toContain("NonWorkingDays: Name / Date / FromDate / ToDate / DayWorking");
-    expect(document.body.textContent).toContain("Calendars の WeekDays / WorkWeeks");
     expect(document.body.textContent).toContain("WBS XLSX の祝日指定");
     expect(document.body.textContent).toContain("設定");
     expect(document.querySelectorAll(".md-debug-accordion")[2]?.hasAttribute("open")).toBe(false);
@@ -797,38 +770,55 @@ describe("mikuproject main", () => {
     expect(mermaidText).toContain("%% dependency(note): Ship has multiple predecessors");
   });
 
-  it("exports csv with parent id from the current model", () => {
+  it("exports csv with parent id from the current model", async () => {
     bootPage();
 
     parseXmlViaHook();
     document.getElementById("downloadXmlBtn").click();
+    const createObjectUrlCalls = URL.createObjectURL.mock.calls.length;
+    const anchorClickCalls = HTMLAnchorElement.prototype.click.mock.calls.length;
     const xmlInput = document.getElementById("xmlInput");
     xmlInput.value = `${xmlInput.value}\n<!-- edited -->`;
     xmlInput.dispatchEvent(new Event("input"));
     document.getElementById("exportCsvBtn").click();
 
-    const csvText = document.getElementById("csvOutput").value;
-    expect(csvText).toContain("ID,ParentID,WBS,Name,Start,Finish,PredecessorID,Resource,PercentComplete,PercentWorkComplete,Milestone,Summary,Critical,Type,Priority,Work,CalendarUID,ConstraintType,ConstraintDate,Deadline,Notes");
-    expect(csvText).toContain("1,,1,Project Summary,2026-03-16T09:00:00,2026-03-20T18:00:00,,,50,50,0,1,0,1,500,PT40H0M0S,1,,,,");
-    expect(csvText).toContain("2,1,1.1,Design,2026-03-16T09:00:00,2026-03-17T18:00:00,,Miku,100,100,0,0,0,1,500,PT16H0M0S,1,,,,Design completed");
-    expect(csvText).toContain("3,1,1.2,Implementation,2026-03-18T09:00:00,2026-03-20T18:00:00,2,Miku,0,0,0,0,1,1,700,PT24H0M0S,1,4,2026-03-18T09:00:00,2026-03-21T18:00:00,Implementation starts after design");
+    expect(URL.createObjectURL.mock.calls.length - createObjectUrlCalls).toBeGreaterThan(0);
+    expect(HTMLAnchorElement.prototype.click.mock.calls.length - anchorClickCalls).toBeGreaterThan(0);
+    const csvBlob = URL.createObjectURL.mock.calls.at(-1)?.[0];
+    expect(csvBlob).toBeTruthy();
+    expect(csvBlob.type).toBe("text/csv;charset=utf-8");
     expect(document.getElementById("xmlInput").value).not.toContain("<!-- edited -->");
     expect(document.getElementById("xmlSaveState").textContent).toContain("XML 保存状態: 保存済み (2026-03-16 23:12)");
-    expect(document.getElementById("statusMessage").textContent).toContain("CSV + ParentID を生成しました");
+    expect(document.getElementById("statusMessage").textContent).toContain("CSV + ParentID を生成して保存しました");
   });
 
   it("parses csv with parent id into internal model summary", async () => {
     bootPage();
 
-    document.getElementById("csvInput").value = [
+    const file = new File([[
       "ID,ParentID,WBS,Name,Start,Finish,PredecessorID,Resource,PercentComplete",
       "1,,1,Project Summary,2026-03-16T09:00:00,2026-03-20T18:00:00,,,50",
       "2,1,1.1,Design,2026-03-16T09:00:00,2026-03-17T18:00:00,,Miku,100",
       "3,1,1.2,Implementation,2026-03-18T09:00:00,2026-03-20T18:00:00,2,Miku,0"
-    ].join("\n");
+    ].join("\n")], "sample.csv", { type: "text/csv" });
+    Object.defineProperty(file, "text", {
+      configurable: true,
+      value: () => Promise.resolve([
+        "ID,ParentID,WBS,Name,Start,Finish,PredecessorID,Resource,PercentComplete",
+        "1,,1,Project Summary,2026-03-16T09:00:00,2026-03-20T18:00:00,,,50",
+        "2,1,1.1,Design,2026-03-16T09:00:00,2026-03-17T18:00:00,,Miku,100",
+        "3,1,1.2,Implementation,2026-03-18T09:00:00,2026-03-20T18:00:00,2,Miku,0"
+      ].join("\n"))
+    });
 
-    document.getElementById("parseCsvBtn").click();
-    await Promise.resolve();
+    const csvInput = document.getElementById("importCsvInput");
+    Object.defineProperty(csvInput, "files", {
+      value: [file],
+      configurable: true
+    });
+    csvInput.dispatchEvent(new Event("change"));
+    await flushAsyncWork();
+    await flushAsyncWork();
 
     expect(document.getElementById("summaryProjectName").textContent).toBe("CSV Imported Project");
     expect(document.getElementById("summaryTaskCount").textContent).toBe("3");

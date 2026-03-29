@@ -314,6 +314,41 @@
   flex-wrap: wrap;
 }
 
+.md-button-with-help {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.md-button-help-anchor {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 auto;
+}
+
+.md-button-help-anchor lht-help-tooltip {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.md-button-help-anchor .md-tooltip-group > .md-tooltip {
+  display: none;
+}
+
+.md-panel-actions + .md-form-grid {
+  margin-top: 12px;
+}
+
+.md-panel-actions + .md-note-card {
+  margin-top: 12px;
+}
+
+.md-form-grid + .md-panel-actions {
+  margin-top: 12px;
+}
+
 .md-button {
   display: inline-flex;
   align-items: center;
@@ -461,6 +496,7 @@
   display: flex;
   align-items: center;
   gap: 8px;
+  flex-wrap: wrap;
 }
 
 .md-note-card__title {
@@ -490,6 +526,12 @@
 .md-inline-link:hover,
 .md-inline-link:focus-visible {
   text-decoration: underline;
+}
+
+.md-inline-link--compact {
+  margin-left: auto;
+  font-size: 0.86rem;
+  font-weight: 700;
 }
 
 md-outlined-text-field.md-outlined-field {

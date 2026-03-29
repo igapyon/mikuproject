@@ -380,7 +380,7 @@ describe("mikuproject project xlsx", () => {
 
     expect(result.changes).toEqual([
       { scope: "tasks", uid: "3", label: "初期実装（MS Project XML 調査・基軸フォーマット選定・内部モデルの概要確定）", field: "Name", before: "初期実装（MS Project XML 調査・基軸フォーマット選定・内部モデルの概要確定）", after: "初期実装 Updated" },
-      { scope: "tasks", uid: "3", label: "初期実装（MS Project XML 調査・基軸フォーマット選定・内部モデルの概要確定）", field: "PercentComplete", before: 0, after: 80 },
+      { scope: "tasks", uid: "3", label: "初期実装（MS Project XML 調査・基軸フォーマット選定・内部モデルの概要確定）", field: "PercentComplete", before: 100, after: 80 },
       { scope: "tasks", uid: "3", label: "初期実装（MS Project XML 調査・基軸フォーマット選定・内部モデルの概要確定）", field: "Notes", before: undefined, after: "Updated Notes" }
     ]);
   });

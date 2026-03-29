@@ -907,9 +907,21 @@ WorkWeek1=${formatCalendarWorkWeekSummary(calendar)}</div>
   function exportCurrentCsv(): void {
     const model = ensureCurrentModel();
     syncXmlTextFromModel(model);
-    getTextArea("csvOutput").value = mikuprojectXml.exportCsvParentId(model);
-    setStatus("内部モデルから CSV + ParentID を生成しました");
-    showToast("CSV を生成しました");
+    const csvText = mikuprojectXml.exportCsvParentId(model);
+    const now = new Date();
+    const stamp = [
+      now.getFullYear(),
+      String(now.getMonth() + 1).padStart(2, "0"),
+      String(now.getDate()).padStart(2, "0"),
+      String(now.getHours()).padStart(2, "0"),
+      String(now.getMinutes()).padStart(2, "0")
+    ].join("");
+    downloadBlob(
+      new Blob([`${csvText}\n`], { type: "text/csv;charset=utf-8" }),
+      `mikuproject-export-${stamp}.csv`
+    );
+    setStatus("内部モデルから CSV + ParentID を生成して保存しました");
+    showToast("CSV を保存しました");
     setActiveTab("output");
   }
 
@@ -1095,8 +1107,11 @@ WorkWeek1=${formatCalendarWorkWeekSummary(calendar)}</div>
     await exportCurrentMermaid({ silent: true });
   }
 
-  async function parseCurrentCsv(): Promise<void> {
-    const csvText = getTextArea("csvInput").value.trim();
+  async function importCsvFromFile(file: File | null | undefined): Promise<void> {
+    if (!file) {
+      return;
+    }
+    const csvText = (await file.text()).trim();
     if (!csvText) {
       setStatus("CSV が空です");
       return;
@@ -1107,8 +1122,8 @@ WorkWeek1=${formatCalendarWorkWeekSummary(calendar)}</div>
     updateSummary(currentModel);
     renderValidationIssues(issues);
     renderXlsxImportSummary([]);
-    setStatus(issues.length > 0 ? `CSV を解析しました。検証で ${issues.length} 件の問題があります` : "CSV + ParentID を内部モデルへ変換しました");
-    showToast("CSV を解析しました");
+    setStatus(issues.length > 0 ? `CSV ファイルを読み込んで解析しました。検証で ${issues.length} 件の問題があります` : "CSV + ParentID を内部モデルへ変換しました");
+    showToast("CSV を読み込みました");
     setActiveTab("transform", { skipTransformRefresh: true });
     await exportCurrentMermaid({ silent: true });
   }
@@ -1249,11 +1264,7 @@ WorkWeek1=${formatCalendarWorkWeekSummary(calendar)}</div>
       }
     });
     getElement<HTMLButtonElement>("parseCsvBtn").addEventListener("click", async () => {
-      try {
-        await parseCurrentCsv();
-      } catch (error) {
-        setStatus(error instanceof Error ? error.message : "CSV 解析に失敗しました");
-      }
+      getElement<HTMLInputElement>("importCsvInput").click();
     });
     getElement<HTMLButtonElement>("importXlsxBtn").addEventListener("click", () => {
       getElement<HTMLInputElement>("importXlsxInput").click();
@@ -1292,6 +1303,19 @@ WorkWeek1=${formatCalendarWorkWeekSummary(calendar)}</div>
         await importXlsxFromFile(file);
       } catch (error) {
         setStatus(error instanceof Error ? error.message : "XLSX 読み込みに失敗しました");
+      } finally {
+        if (input) {
+          input.value = "";
+        }
+      }
+    });
+    getElement<HTMLInputElement>("importCsvInput").addEventListener("change", async (event) => {
+      const input = event.target as HTMLInputElement | null;
+      const file = input?.files && input.files[0];
+      try {
+        await importCsvFromFile(file);
+      } catch (error) {
+        setStatus(error instanceof Error ? error.message : "CSV 読み込みに失敗しました");
       } finally {
         if (input) {
           input.value = "";

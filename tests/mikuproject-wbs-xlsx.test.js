@@ -255,7 +255,7 @@ describe("mikuproject wbs xlsx", () => {
     expect(firstTaskRow.cells[5].bold).toBe(true);
     expect(firstTaskRow.cells[9].value).toBe("-");
     expect(firstTaskRow.cells[9].fillColor).toBe("#F5F7FA");
-    expect(firstTaskRow.cells[9].horizontalAlign).toBe("center");
+    expect(firstTaskRow.cells[9].horizontalAlign).toBe("left");
     expect(firstTaskRow.cells[15].value).toBe("-");
     expect(firstTaskRow.cells[15].fillColor).toBe("#F5F7FA");
     expect(firstTaskRow.cells[15].horizontalAlign).toBe("center");
@@ -275,7 +275,7 @@ describe("mikuproject wbs xlsx", () => {
     expect(firstTaskRow.cells[5].value).toBe("> 基盤整備");
     expect(secondTaskRow.cells[5].value).toBe("  * 着手");
     expect(secondTaskRow.cells[5].fillColor).toBe("#FFF4E0");
-    expect(secondTaskRow.cells[5].horizontalAlign).toBe("center");
+    expect(secondTaskRow.cells[5].horizontalAlign).toBe("left");
     expect(secondTaskRow.cells[5].wrapText).toBe(true);
     expect(secondTaskRow.cells[6].fillColor).toBe("#FFF4E0");
     expect(secondTaskRow.cells[9].value).toBe("-");

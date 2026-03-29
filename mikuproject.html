@@ -5047,7 +5047,7 @@ if (!customElements.get("lht-page-menu")) {
     const TEXT_DECODER = new TextDecoder();
     const INVALID_SHEET_NAME_PATTERN = /[:\\/?*\[\]]/;
     const CRC32_TABLE = buildCrc32Table();
-    const NUMBER_FORMATS = ["general", "integer", "decimal", "date", "datetime", "percent"];
+    const NUMBER_FORMATS = ["general", "integer", "decimal", "date", "datetime", "percent", "text"];
     const HORIZONTAL_ALIGNS = ["left", "center", "right"];
     const VERTICAL_ALIGNS = ["top", "center", "bottom"];
     const BORDER_STYLES = ["thin"];
@@ -5380,6 +5380,7 @@ if (!customElements.get("lht-page-menu")) {
         const reference = `${encodeColumnName(cellIndex)}${rowIndex + 1}`;
         const styleIndex = resolveStyleIndex(cell, styleBook);
         const styleAttribute = styleIndex > 0 ? ` s="${styleIndex}"` : "";
+        const resolvedNumberFormat = resolveCellNumberFormat(cell);
         if (cell.formula !== undefined) {
             const formulaXml = `<f>${escapeXml(cell.formula)}</f>`;
             const valueXml = buildFormulaValueXml(cell.value);
@@ -5389,8 +5390,11 @@ if (!customElements.get("lht-page-menu")) {
         if (cell.value === undefined) {
             return styleIndex > 0 ? `<c r="${reference}"${styleAttribute}/>` : "";
         }
+        if (resolvedNumberFormat === "text") {
+            return `<c r="${reference}"${styleAttribute} t="inlineStr"><is>${buildInlineStringTextXml(String(cell.value))}</is></c>`;
+        }
         if (typeof cell.value === "string") {
-            return `<c r="${reference}"${styleAttribute} t="inlineStr"><is><t>${escapeXml(cell.value)}</t></is></c>`;
+            return `<c r="${reference}"${styleAttribute} t="inlineStr"><is>${buildInlineStringTextXml(cell.value)}</is></c>`;
         }
         if (typeof cell.value === "number") {
             return `<c r="${reference}"${styleAttribute}><v>${formatNumber(cell.value)}</v></c>`;
@@ -5448,11 +5452,12 @@ if (!customElements.get("lht-page-menu")) {
         return { styles, styleIndexByKey };
     }
     function getStyleDescriptor(cell) {
-        if (!cell.numberFormat && !cell.horizontalAlign && !cell.verticalAlign && !cell.wrapText && !cell.bold && !cell.fontSize && !cell.fillColor && !cell.border) {
+        const numberFormat = resolveCellNumberFormat(cell);
+        if (numberFormat === "general" && !cell.horizontalAlign && !cell.verticalAlign && !cell.wrapText && !cell.bold && !cell.fontSize && !cell.fillColor && !cell.border) {
             return null;
         }
         return {
-            numberFormat: cell.numberFormat || "general",
+            numberFormat,
             horizontalAlign: cell.horizontalAlign,
             verticalAlign: cell.verticalAlign,
             wrapText: cell.wrapText === true ? true : undefined,
@@ -5577,6 +5582,8 @@ if (!customElements.get("lht-page-menu")) {
                 return 1;
             case "decimal":
                 return 2;
+            case "text":
+                return 49;
             case "date":
                 return 14;
             case "datetime":
@@ -5854,6 +5861,21 @@ if (!customElements.get("lht-page-menu")) {
                 return "general";
         }
     }
+    function resolveCellNumberFormat(cell) {
+        if (cell.numberFormat) {
+            return cell.numberFormat;
+        }
+        if (cell.formula === undefined && cell.value !== undefined) {
+            return "text";
+        }
+        return "general";
+    }
+    function buildInlineStringTextXml(value) {
+        const sanitizedValue = sanitizeXmlText(value);
+        const preserveWhitespace = /^[\s]/.test(sanitizedValue) || /[\s]$/.test(sanitizedValue) || sanitizedValue.includes("\n") || sanitizedValue.includes("\r") || sanitizedValue.includes("\t");
+        const preserveAttribute = preserveWhitespace ? ` xml:space="preserve"` : "";
+        return `<t${preserveAttribute}>${escapeXml(sanitizedValue)}</t>`;
+    }
     function parseOptionalNumber(value) {
         if (!value) {
             return undefined;
@@ -5893,12 +5915,15 @@ if (!customElements.get("lht-page-menu")) {
         return TEXT_DECODER.decode(bytes);
     }
     function escapeXml(value) {
-        return value
+        return sanitizeXmlText(value)
             .replace(/&/g, "&amp;")
             .replace(/</g, "&lt;")
             .replace(/>/g, "&gt;")
             .replace(/"/g, "&quot;")
             .replace(/'/g, "&apos;");
+    }
+    function sanitizeXmlText(value) {
+        return value.replace(/[^\u0009\u000A\u000D\u0020-\uD7FF\uE000-\uFFFD]/g, "");
     }
     function encodeColumnName(columnIndex) {
         let current = columnIndex + 1;
@@ -10119,9 +10144,12 @@ if (!customElements.get("lht-page-menu")) {
             return {};
         }
         return {
-            value,
+            value: stringifyCellValue(value),
             border: "thin"
         };
+    }
+    function stringifyCellValue(value) {
+        return typeof value === "string" ? value : String(value);
     }
     function keyValueCell(label, value) {
         if (isEditableProjectLabel(label)) {
@@ -11299,7 +11327,7 @@ if (!customElements.get("lht-page-menu")) {
             fillColor
         };
         cells[startColumnIndex + 2] = {
-            value,
+            value: stringifyCellValue(value),
             border: "thin",
             horizontalAlign: typeof value === "number" ? "center" : "left",
             bold: true,
@@ -11357,7 +11385,7 @@ if (!customElements.get("lht-page-menu")) {
     function summaryStatCell(value, fillColor, isValueCell) {
         const valueAlign = typeof value === "number" ? "center" : "left";
         return {
-            value,
+            value: stringifyCellValue(value),
             border: "thin",
             horizontalAlign: isValueCell ? valueAlign : "right",
             bold: true,
@@ -11447,16 +11475,19 @@ if (!customElements.get("lht-page-menu")) {
             return {};
         }
         return {
-            value,
+            value: stringifyCellValue(value),
             border: "thin"
         };
+    }
+    function stringifyCellValue(value) {
+        return typeof value === "string" ? value : String(value);
     }
     function taskCell(task, value, horizontalAlign = "left") {
         if (value === undefined || value === "") {
             return {};
         }
         return {
-            value,
+            value: stringifyCellValue(value),
             border: "thin",
             horizontalAlign,
             verticalAlign: "center",
@@ -11489,16 +11520,31 @@ if (!customElements.get("lht-page-menu")) {
         };
     }
     function taskRowHeight(task) {
-        const labelLength = formatTaskLabel(task).length;
-        const notesLength = (task.notes || "").trim().length;
-        const maxLength = Math.max(labelLength, notesLength);
-        if (maxLength > 72) {
+        const labelLineCount = estimateWrappedLineCount(formatTaskLabel(task), 22);
+        const notesLineCount = estimateWrappedLineCount((task.notes || "").trim(), 18);
+        const maxLineCount = Math.max(labelLineCount, notesLineCount, 1);
+        if (maxLineCount >= 5) {
+            return 82;
+        }
+        if (maxLineCount === 4) {
+            return 70;
+        }
+        if (maxLineCount === 3) {
+            return 58;
+        }
+        if (maxLineCount === 2) {
             return 46;
         }
-        if (maxLength > 36) {
-            return 34;
-        }
         return 34;
+    }
+    function estimateWrappedLineCount(value, charactersPerLine) {
+        const normalized = value.replace(/\r\n/g, "\n").replace(/\r/g, "\n");
+        if (!normalized) {
+            return 1;
+        }
+        return normalized
+            .split("\n")
+            .reduce((count, line) => count + Math.max(1, Math.ceil(line.length / charactersPerLine)), 0);
     }
     function kindCell(task) {
         return {
@@ -11515,7 +11561,7 @@ if (!customElements.get("lht-page-menu")) {
             return {};
         }
         return {
-            value,
+            value: stringifyCellValue(value),
             border: "thin",
             horizontalAlign: "center",
             verticalAlign: "center",

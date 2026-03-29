@@ -370,9 +370,12 @@
             return {};
         }
         return {
-            value,
+            value: stringifyCellValue(value),
             border: "thin"
         };
+    }
+    function stringifyCellValue(value) {
+        return typeof value === "string" ? value : String(value);
     }
     function keyValueCell(label, value) {
         if (isEditableProjectLabel(label)) {

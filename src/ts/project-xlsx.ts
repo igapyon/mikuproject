@@ -446,9 +446,13 @@
       return {};
     }
     return {
-      value,
+      value: stringifyCellValue(value),
       border: "thin"
     };
+  }
+
+  function stringifyCellValue(value: string | number | boolean): string {
+    return typeof value === "string" ? value : String(value);
   }
 
   function keyValueCell(label: string, value: string | number | boolean | undefined): XlsxCellLike {

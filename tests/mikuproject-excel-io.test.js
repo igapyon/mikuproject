@@ -121,12 +121,13 @@ describe("mikuproject excel io", () => {
       "[Content_Types].xml",
       "_rels/.rels",
       "xl/_rels/workbook.xml.rels",
+      "xl/styles.xml",
       "xl/workbook.xml",
       "xl/worksheets/sheet1.xml"
     ]);
   });
 
-  it("round-trips sheet names, sparse cells, formulas, and primitive cell values", () => {
+  it("round-trips sheet names, sparse cells, formulas, and primitive cell values as text by default", () => {
     const excelIo = bootExcelIoModule();
     const codec = new excelIo.XlsxWorkbookCodec();
     const workbook = {
@@ -145,8 +146,8 @@ describe("mikuproject excel io", () => {
             {
               cells: [
                 { value: "Design" },
-                { value: 2 },
-                { value: true },
+                { value: "2" },
+                { value: "true" },
                 { formula: "B2*2", value: 4 }
               ]
             },
@@ -154,7 +155,7 @@ describe("mikuproject excel io", () => {
               cells: [
                 { value: "Build" },
                 {},
-                { value: false },
+                { value: "false" },
                 { value: "" }
               ]
             }
@@ -178,6 +179,80 @@ describe("mikuproject excel io", () => {
           ]
         }
       ]
+    };
+
+    const bytes = codec.exportWorkbook(workbook);
+    const imported = codec.importWorkbook(bytes);
+
+    expect(imported).toEqual(workbook);
+  });
+
+  it("writes string cells as text-formatted inline strings and preserves leading whitespace", () => {
+    const excelIo = bootExcelIoModule();
+    const codec = new excelIo.XlsxWorkbookCodec();
+    const workbook = {
+      sheets: [{
+        name: "Sheet1",
+        rows: [{
+          cells: [
+            { value: "  - round-trip" },
+            { value: "plain" }
+          ]
+        }]
+      }]
+    };
+
+    const bytes = codec.exportWorkbook(workbook);
+    const entries = codec.unpackEntries(bytes);
+    const sheetXml = new TextDecoder().decode(entries["xl/worksheets/sheet1.xml"]);
+    const stylesXml = new TextDecoder().decode(entries["xl/styles.xml"]);
+
+    expect(sheetXml).toContain('t="inlineStr"><is><t xml:space="preserve">  - round-trip</t></is></c>');
+    expect(stylesXml).toContain('numFmtId="49"');
+    expect(codec.importWorkbook(bytes)).toEqual(workbook);
+  });
+
+  it("sanitizes XML-invalid control characters from cell strings", () => {
+    const excelIo = bootExcelIoModule();
+    const codec = new excelIo.XlsxWorkbookCodec();
+    const workbook = {
+      sheets: [{
+        name: "Sheet1",
+        rows: [{
+          cells: [
+            { value: "ok\u0000bad\u0008text" },
+            { value: "line1\nline2\tok" }
+          ]
+        }]
+      }]
+    };
+
+    const bytes = codec.exportWorkbook(workbook);
+    const entries = codec.unpackEntries(bytes);
+    const sheetXml = new TextDecoder().decode(entries["xl/worksheets/sheet1.xml"]);
+    const imported = codec.importWorkbook(bytes);
+
+    expect(sheetXml).toContain("okbadtext");
+    expect(sheetXml).not.toContain("\u0000");
+    expect(sheetXml).not.toContain("\u0008");
+    expect(imported.sheets[0].rows[0].cells[0].value).toBe("okbadtext");
+    expect(imported.sheets[0].rows[0].cells[1].value).toBe("line1\nline2\tok");
+  });
+
+  it("keeps explicitly formatted numeric cells as numeric values", () => {
+    const excelIo = bootExcelIoModule();
+    const codec = new excelIo.XlsxWorkbookCodec();
+    const workbook = {
+      sheets: [{
+        name: "Numeric",
+        rows: [{
+          cells: [
+            { value: 12, numberFormat: "integer" },
+            { value: 0.5, numberFormat: "percent" },
+            { formula: "A1*2", value: 24 }
+          ]
+        }]
+      }]
     };
 
     const bytes = codec.exportWorkbook(workbook);
@@ -412,10 +487,10 @@ describe("mikuproject excel io", () => {
             },
             {
               cells: [
-                { value: 1 },
-                { value: 2 },
-                { value: 3 },
-                { value: 4 }
+                { value: "1" },
+                { value: "2" },
+                { value: "3" },
+                { value: "4" }
               ]
             }
           ]
@@ -478,7 +553,7 @@ describe("mikuproject excel io", () => {
     expect(decodeUtf8(entries["xl/workbook.xml"])).toContain('name="One"');
     expect(decodeUtf8(entries["xl/worksheets/sheet1.xml"])).toContain('r="A1"');
     expect(decodeUtf8(entries["xl/worksheets/sheet1.xml"])).toContain("inlineStr");
-    expect(decodeUtf8(entries["xl/worksheets/sheet1.xml"])).toContain("<v>1</v>");
+    expect(decodeUtf8(entries["xl/worksheets/sheet1.xml"])).toContain("<t>1</t>");
   });
 
   it("writes styles and sheet layout xml when formatting is present", () => {
@@ -540,7 +615,7 @@ describe("mikuproject excel io", () => {
 
     expect(sheetXml).toContain('r="A1"');
     expect(sheetXml).toContain('r="B1"');
-    expect(sheetXml).toContain('<c r="B1" s="1"/>');
+    expect(sheetXml).toMatch(/<c r="B1" s="\d+"\/>/);
   });
 
   it("writes font, fill, and border definitions when style options are present", () => {

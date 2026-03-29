@@ -140,20 +140,20 @@ describe("mikuproject wbs xlsx", () => {
     expect(sheet.rows[projectInfoHeaderIndex + 5].cells[0].value).toBe("現在日");
     expect(sheet.rows[projectInfoHeaderIndex + 5].cells[2].value).toBe("2026-03-23");
     expect(sheet.rows[projectInfoHeaderIndex + 6].cells[0].value).toBe("祝日");
-    expect(sheet.rows[projectInfoHeaderIndex + 6].cells[2].value).toBeGreaterThan(0);
+    expect(sheet.rows[projectInfoHeaderIndex + 6].cells[2].value).toBe("1");
     const summaryHeaderIndex = findRowIndexByCellValue(sheet, "サマリ", 0);
     expect(sheet.rows[summaryHeaderIndex].height).toBe(24);
     expect(sheet.rows[summaryHeaderIndex].cells[0].fontSize).toBe(14);
     expect(sheet.rows[summaryHeaderIndex].cells[0].fillColor).toBe("#E1EDF8");
     expect(sheet.rows[summaryHeaderIndex + 1].cells[0].value).toBe("表示日");
-    expect(sheet.rows[summaryHeaderIndex + 1].cells[1].value).toBe(17);
+    expect(sheet.rows[summaryHeaderIndex + 1].cells[1].value).toBe("17");
     expect(sheet.rows[summaryHeaderIndex + 1].cells[0].horizontalAlign).toBe("right");
     expect(sheet.rows[summaryHeaderIndex + 1].cells[1].horizontalAlign).toBe("center");
     expect(sheet.rows[summaryHeaderIndex + 1].cells[1].bold).toBe(true);
     expect(sheet.rows[projectInfoHeaderIndex + 1].cells[2].horizontalAlign).toBe("left");
     expect(sheet.rows[projectInfoHeaderIndex + 3].cells[2].horizontalAlign).toBe("left");
     expect(sheet.rows[summaryHeaderIndex + 3].cells[0].value).toBe("営業日");
-    expect(sheet.rows[summaryHeaderIndex + 3].cells[1].value).toBe(12);
+    expect(sheet.rows[summaryHeaderIndex + 3].cells[1].value).toBe("12");
     expect(sheet.rows[summaryHeaderIndex + 4].cells[0].value).toBe("前日数");
     expect(sheet.rows[summaryHeaderIndex + 4].cells[1].value).toBe("-");
     expect(sheet.rows[summaryHeaderIndex + 5].cells[0].value).toBe("後日数");
@@ -165,13 +165,13 @@ describe("mikuproject wbs xlsx", () => {
     expect(sheet.rows[summaryHeaderIndex + 8].cells[0].value).toBe("基準日");
     expect(sheet.rows[summaryHeaderIndex + 8].cells[1].value).toBe("2026-03-23");
     expect(sheet.rows[summaryHeaderIndex + 9].cells[0].value).toBe("タスク");
-    expect(sheet.rows[summaryHeaderIndex + 9].cells[1].value).toBe(13);
+    expect(sheet.rows[summaryHeaderIndex + 9].cells[1].value).toBe("13");
     expect(sheet.rows[summaryHeaderIndex + 10].cells[0].value).toBe("リソース");
-    expect(sheet.rows[summaryHeaderIndex + 10].cells[1].value).toBe(0);
+    expect(sheet.rows[summaryHeaderIndex + 10].cells[1].value).toBe("0");
     expect(sheet.rows[summaryHeaderIndex + 11].cells[0].value).toBe("割当");
-    expect(sheet.rows[summaryHeaderIndex + 11].cells[1].value).toBe(0);
+    expect(sheet.rows[summaryHeaderIndex + 11].cells[1].value).toBe("0");
     expect(sheet.rows[summaryHeaderIndex + 12].cells[0].value).toBe("カレンダ");
-    expect(sheet.rows[summaryHeaderIndex + 12].cells[1].value).toBe(1);
+    expect(sheet.rows[summaryHeaderIndex + 12].cells[1].value).toBe("1");
     const headerRowIndex = findRowIndexByCellValue(sheet, "UID");
     const dateRowIndex = headerRowIndex - 1;
     expect(headerRowIndex).toBe(8);
@@ -364,6 +364,7 @@ describe("mikuproject wbs xlsx", () => {
     expect(sheetXml).toContain("1 Standard");
     expect(sheetXml).toContain("階層");
     expect(sheetXml).toContain("3/16");
+    expect(sheetXml).toContain('t="inlineStr"><is><t>1</t></is>');
     vi.useRealTimers();
   });
 
@@ -580,7 +581,7 @@ describe("mikuproject wbs xlsx", () => {
     const sheet = workbook.sheets[0];
 
     const projectInfoHeaderIndex = findRowIndexByCellValue(sheet, "プロジェクト情報", 0);
-    expect(sheet.rows[projectInfoHeaderIndex + 6].cells[2].value).toBeGreaterThan(0);
+    expect(sheet.rows[projectInfoHeaderIndex + 6].cells[2].value).toBe("1");
     const headerRowIndex = findRowIndexByCellValue(sheet, "UID");
     expect(sheet.rows[headerRowIndex - 1].cells[24].value).toBe("3/20");
     expect(sheet.rows[headerRowIndex].cells[24].value).toBe("Fri");
@@ -608,8 +609,8 @@ describe("mikuproject wbs xlsx", () => {
       "3/24",
       "3/25"
     ]);
-    expect(sheet.rows[summaryHeaderIndex + 4].cells[1].value).toBe(1);
-    expect(sheet.rows[summaryHeaderIndex + 5].cells[1].value).toBe(2);
+    expect(sheet.rows[summaryHeaderIndex + 4].cells[1].value).toBe("1");
+    expect(sheet.rows[summaryHeaderIndex + 5].cells[1].value).toBe("2");
     expect(sheet.rows[summaryHeaderIndex + 6].cells[1].value).toBe("暦日");
     expect(sheet.rows[summaryHeaderIndex + 7].cells[1].value).toBe("暦日");
   });
@@ -642,7 +643,7 @@ describe("mikuproject wbs xlsx", () => {
       "3/22",
       "3/23"
     ]);
-    expect(sheet.rows[summaryHeaderIndex + 3].cells[1].value).toBe(4);
+    expect(sheet.rows[summaryHeaderIndex + 3].cells[1].value).toBe("4");
     expect(sheet.rows[summaryHeaderIndex + 6].cells[1].value).toBe("営業日");
     expect(sheet.rows[summaryHeaderIndex + 7].cells[1].value).toBe("暦日");
   });
@@ -724,13 +725,15 @@ describe("mikuproject wbs xlsx", () => {
     const model = xml.importMsProjectXml(xml.SAMPLE_XML);
 
     model.tasks[2].name = "Design task with a very long title for wrapped display";
+    model.tasks[2].notes = "Detailed note line one\nDetailed note line two with additional context";
 
     const workbook = wbsXlsx.exportWbsWorkbook(model);
     const sheet = workbook.sheets[0];
     const headerRowIndex = findRowIndexByCellValue(sheet, "UID");
     const designRow = sheet.rows[headerRowIndex + 3];
 
-    expect(designRow.height).toBe(34);
+    expect(designRow.height).toBe(82);
     expect(designRow.cells[5].wrapText).toBe(true);
+    expect(designRow.cells[9].wrapText).toBe(true);
   });
 });

@@ -3,9 +3,131 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 (() => {
-  const SAMPLE_XML = `<?xml version="1.0" encoding="UTF-8"?>
-<Project xmlns="http://schemas.microsoft.com/project">
-  <Name>Sample Project</Name>
+  const SAMPLE_PROJECT_DRAFT_VIEW = {
+    view_type: "project_draft_view",
+    project: {
+      name: "mikuproject開発",
+      planned_start: "2026-03-16",
+      planned_finish: "2026-04-01"
+    },
+    tasks: [
+      {
+        uid: "draft-100",
+        name: "基盤整備",
+        parent_uid: null,
+        position: 0,
+        is_summary: true,
+        planned_start: "2026-03-16",
+        planned_finish: "2026-03-17"
+      },
+      {
+        uid: "draft-110",
+        name: "着手",
+        parent_uid: "draft-100",
+        position: 0,
+        is_milestone: true,
+        planned_start: "2026-03-16",
+        planned_finish: "2026-03-16"
+      },
+      {
+        uid: "draft-120",
+        name: "初期実装（MS Project XML 調査・基軸フォーマット選定・内部モデルの概要確定）",
+        parent_uid: "draft-100",
+        position: 1,
+        planned_start: "2026-03-16",
+        planned_finish: "2026-03-16"
+      },
+      {
+        uid: "draft-130",
+        name: "round-trip拡張（MS Project XML → 内部JSON形式 → MS Project XML の往復対応）",
+        parent_uid: "draft-100",
+        position: 2,
+        planned_start: "2026-03-17",
+        planned_finish: "2026-03-17"
+      },
+      {
+        uid: "draft-150",
+        name: "架空検討フェーズ【架空】",
+        parent_uid: null,
+        position: 1,
+        is_summary: true,
+        planned_start: "2026-03-19",
+        planned_finish: "2026-03-25"
+      },
+      {
+        uid: "draft-160",
+        name: "ユーザー操作フローの見直し【架空】",
+        parent_uid: "draft-150",
+        position: 0,
+        planned_start: "2026-03-19",
+        planned_finish: "2026-03-23"
+      },
+      {
+        uid: "draft-170",
+        name: "画面構成の再整理【架空】",
+        parent_uid: "draft-150",
+        position: 1,
+        planned_start: "2026-03-24",
+        planned_finish: "2026-03-25"
+      },
+      {
+        uid: "draft-200",
+        name: "XLSX / UI 強化",
+        parent_uid: null,
+        position: 2,
+        is_summary: true,
+        planned_start: "2026-03-27",
+        planned_finish: "2026-03-28"
+      },
+      {
+        uid: "draft-210",
+        name: "GitHub リポジトリ独立化",
+        parent_uid: "draft-200",
+        position: 0,
+        is_milestone: true,
+        planned_start: "2026-03-27",
+        planned_finish: "2026-03-27"
+      },
+      {
+        uid: "draft-220",
+        name: "MS Project XML と XLSX の相互変換・round-trip実装",
+        parent_uid: "draft-200",
+        position: 1,
+        planned_start: "2026-03-27",
+        planned_finish: "2026-03-27"
+      },
+      {
+        uid: "draft-230",
+        name: "XLSXレイアウト再設計・再整理",
+        parent_uid: "draft-200",
+        position: 2,
+        planned_start: "2026-03-28",
+        planned_finish: "2026-03-28"
+      },
+      {
+        uid: "draft-300",
+        name: "リリース",
+        parent_uid: null,
+        position: 3,
+        is_summary: true,
+        planned_start: "2026-03-29",
+        planned_finish: "2026-03-29"
+      },
+      {
+        uid: "draft-310",
+        name: "v1.0 リリース",
+        parent_uid: "draft-300",
+        position: 0,
+        is_milestone: true,
+        planned_start: "2026-03-29",
+        planned_finish: "2026-03-29"
+      }
+    ]
+  } as const;
+
+  const SAMPLE_XML = buildSampleXml();
+  /*
+
   <Title>Sample Project Title</Title>
   <Company>Local HTML Tools</Company>
   <Author>Toshiki Iga</Author>
@@ -932,7 +1054,13 @@
       <RemainingWork>PT24H0M0S</RemainingWork>
     </Assignment>
   </Assignments>
-</Project>`;
+
+
+  */
+
+  function buildSampleXml(): string {
+    return exportMsProjectXml(importProjectDraftView(SAMPLE_PROJECT_DRAFT_VIEW));
+  }
 
   function textContent(parent: Element, tagName: string): string {
     const element = parent.getElementsByTagName(tagName)[0];
@@ -1274,8 +1402,17 @@
   }
 
   function normalizeMermaidText(value: string | undefined, fallback: string): string {
-    const text = String(value || fallback).replace(/[:#,]/g, " ").replace(/\s+/g, " ").trim();
+    const text = String(value || fallback).replace(/[:：#,，]/g, " ").replace(/\s+/g, " ").trim();
     return text || fallback;
+  }
+
+  function normalizeMermaidGanttLabel(
+    value: string | undefined,
+    fallback: string,
+    leadingPrefix: string
+  ): string {
+    const text = normalizeMermaidText(value, fallback);
+    return /^\d/.test(text) ? `${leadingPrefix} ${text}` : text;
   }
 
   function normalizeMermaidTaskId(value: string | undefined, fallback: string): string {
@@ -1606,7 +1743,7 @@
       siblings.forEach((task, index) => {
         const currentPath = [...outlinePath, index + 1];
         const outlineNumber = currentPath.join(".");
-        const start = task.plannedStart || projectStart;
+        const start = task.plannedStart || task.plannedFinish || projectStart;
         const finish = task.plannedFinish
           || (typeof task.plannedDurationHours === "number" ? addHoursToDateTime(start, task.plannedDurationHours) : start);
         const hasChildren = (byParent.get(task.uid) || []).length > 0;
@@ -1620,7 +1757,7 @@
           start,
           finish,
           duration: task.plannedDuration || (typeof task.plannedDurationHours === "number" ? `PT${task.plannedDurationHours}H` : "PT0H0M0S"),
-          milestone: task.isMilestone || start === finish,
+          milestone: task.isMilestone,
           summary: task.isSummary || hasChildren,
           percentComplete: 0,
           predecessors: task.predecessorUids.map((predecessorUid) => ({ predecessorUid })),
@@ -1830,8 +1967,8 @@
         continue;
       }
       const sectionName = summaryStack.length > 0
-        ? normalizeMermaidText(summaryStack[summaryStack.length - 1].name, "Summary")
-        : normalizeMermaidText(projectName, "Tasks");
+        ? normalizeMermaidGanttLabel(summaryStack[summaryStack.length - 1].name, "Summary", "Section")
+        : normalizeMermaidGanttLabel(projectName, "Tasks", "Section");
       sectionMap.set(task.uid, sectionName);
     }
     return sectionMap;
@@ -1840,12 +1977,17 @@
   function exportMermaidGantt(model: ProjectModel): string {
     const lines: string[] = [
       "gantt",
-      `  title ${normalizeMermaidText(model.project.name, "Project")}`,
+      `  title ${normalizeMermaidGanttLabel(model.project.name, "Project", "Project")}`,
       "  dateFormat YYYY-MM-DDTHH:mm:ss",
       "  axisFormat %m/%d"
     ];
     const sectionMap = buildTaskSectionMap(model.tasks, model.project.name);
-    const taskNameMap = new Map(model.tasks.map((task) => [task.uid, normalizeMermaidText(task.name, `Task ${task.uid}`)]));
+    const taskNameMap = new Map(
+      model.tasks.map((task) => [
+        task.uid,
+        normalizeMermaidGanttLabel(task.name, `Task ${task.uid}`, "Task")
+      ])
+    );
     const exportedTasks = model.tasks.filter((task) => !task.summary && task.start && task.finish);
     let currentSection = "";
     for (const task of exportedTasks) {
@@ -1881,7 +2023,7 @@
       const fields = useNativeDependency
         ? [...tags, taskId, `after ${nativeDependencyTarget}`, nativeDuration]
         : [...tags, taskId, task.start, task.finish].filter(Boolean);
-      lines.push(`  ${normalizeMermaidText(task.name, `Task ${task.uid}`)} :${fields.join(", ")}`);
+      lines.push(`  ${normalizeMermaidGanttLabel(task.name, `Task ${task.uid}`, "Task")} :${fields.join(", ")}`);
       for (const predecessor of task.predecessors) {
         const predecessorTaskId = `task_${normalizeMermaidTaskId(predecessor.predecessorUid, "x")}`;
         const predecessorName = taskNameMap.get(predecessor.predecessorUid) || `Task ${predecessor.predecessorUid}`;
@@ -3477,6 +3619,7 @@
   (globalThis as typeof globalThis & {
     __mikuprojectXml?: {
       SAMPLE_XML: string;
+      SAMPLE_PROJECT_DRAFT_VIEW: unknown;
       parseXmlDocument: (xmlText: string) => XMLDocument;
       importMsProjectXml: (xmlText: string) => ProjectModel;
       importCsvParentId: (csvText: string) => ProjectModel;
@@ -3499,6 +3642,7 @@
     };
   }).__mikuprojectXml = {
     SAMPLE_XML,
+    SAMPLE_PROJECT_DRAFT_VIEW,
     parseXmlDocument,
     importMsProjectXml,
     importCsvParentId,

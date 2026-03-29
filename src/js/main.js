@@ -796,6 +796,12 @@ WorkWeek1=${formatCalendarWorkWeekSummary(calendar)}</div>
         showToast("project_draft_view を取り込みました");
         setActiveTab("transform", { skipTransformRefresh: true });
     }
+    function loadProjectDraftSample() {
+        const sampleDraftText = JSON.stringify(mikuprojectXml.SAMPLE_PROJECT_DRAFT_VIEW, null, 2);
+        getTextArea("projectDraftImportInput").value = sampleDraftText;
+        setStatus("サンプル project_draft_view を読み込みました");
+        setActiveTab("input");
+    }
     async function importProjectDraftFromFile(file) {
         if (!file) {
             throw new Error("project_draft_view JSON ファイルを選択してください");
@@ -1036,6 +1042,7 @@ WorkWeek1=${formatCalendarWorkWeekSummary(calendar)}</div>
         getElement("importProjectDraftFileBtn").addEventListener("click", () => {
             getElement("importProjectDraftInput").click();
         });
+        getElement("loadProjectDraftSampleBtn").addEventListener("click", loadProjectDraftSample);
         getElement("importProjectDraftBtn").addEventListener("click", async () => {
             try {
                 await importProjectDraftFromText();

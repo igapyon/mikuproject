@@ -776,7 +776,9 @@
         const isWeekendDay = isWeeklyNonWorkingDay(day, nonWorkingDayTypes);
         const isHoliday = holidaySet.has(day);
         const isNonWorkingDay = isWeekendDay || isHoliday;
-        const active = includesDay(task.start, task.finish, day) && !isNonWorkingDay;
+        const isTaskStart = isSameDay(day, task.start);
+        const isTaskFinish = isSameDay(day, task.finish);
+        const active = includesDay(task.start, task.finish, day) && (!isNonWorkingDay || isTaskStart || isTaskFinish);
         const isToday = isSameDay(day, currentDate);
         const weekStart = isWeekStart(day);
         const complete = active && isCompletedDay(task, day, holidaySet, nonWorkingDayTypes, useBusinessDaysForProgressBand);

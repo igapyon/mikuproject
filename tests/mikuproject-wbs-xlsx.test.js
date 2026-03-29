@@ -143,7 +143,7 @@ describe("mikuproject wbs xlsx", () => {
     expect(sheet.rows[projectInfoHeaderIndex + 6].cells[0].value).toBe("現在日");
     expect(sheet.rows[projectInfoHeaderIndex + 6].cells[2].value).toBe("2026-03-16");
     expect(sheet.rows[projectInfoHeaderIndex + 7].cells[0].value).toBe("祝日");
-    expect(sheet.rows[projectInfoHeaderIndex + 7].cells[2].value).toBe(0);
+    expect(sheet.rows[projectInfoHeaderIndex + 7].cells[2].value).toBeGreaterThan(0);
     const summaryHeaderIndex = findRowIndexByCellValue(sheet, "サマリ", 5);
     expect(summaryHeaderIndex).toBe(2);
     expect(sheet.rows[summaryHeaderIndex].height).toBe(24);
@@ -157,7 +157,7 @@ describe("mikuproject wbs xlsx", () => {
     expect(sheet.rows[projectInfoHeaderIndex + 1].cells[2].horizontalAlign).toBe("left");
     expect(sheet.rows[projectInfoHeaderIndex + 4].cells[2].horizontalAlign).toBe("left");
     expect(sheet.rows[summaryHeaderIndex + 3].cells[5].value).toBe("営業日");
-    expect(sheet.rows[summaryHeaderIndex + 3].cells[6].value).toBe(12);
+    expect(sheet.rows[summaryHeaderIndex + 3].cells[6].value).toBe(11);
     expect(sheet.rows[summaryHeaderIndex + 4].cells[5].value).toBe("前日数");
     expect(sheet.rows[summaryHeaderIndex + 4].cells[6].value).toBe("-");
     expect(sheet.rows[summaryHeaderIndex + 5].cells[5].value).toBe("後日数");
@@ -317,7 +317,7 @@ describe("mikuproject wbs xlsx", () => {
     expect(thirdTaskRow.cells[8].value).toBe("3日");
     expect(thirdTaskRow.cells[10].value).toBe("  0%\n[----------]");
     expect(thirdTaskRow.cells[11].value).toBe("  0%\n[----------]");
-    expect(thirdTaskRow.cells[24].value).toBe("□");
+    expect(thirdTaskRow.cells[24].value).toBe("");
     const legendHeaderIndex = findRowIndexByCellValue(sheet, "凡例", 0);
     expect(legendHeaderIndex).toBe(headerRowIndex + 5);
     expect(sheet.rows[legendHeaderIndex - 1].height).toBe(28);
@@ -404,6 +404,95 @@ describe("mikuproject wbs xlsx", () => {
     ]);
     expect(sheet.rows[dateRowIndex].cells[21].fillColor).toBe("#FFE6A7");
     expect(sheet.rows[dateRowIndex].cells[22].fillColor).toBe("#C9D3E1");
+  });
+
+  it("uses project calendar weekdays instead of hardcoded weekends for non-working fill", () => {
+    const { xml, wbsXlsx } = bootModules();
+    const model = xml.importMsProjectXml(xml.SAMPLE_XML);
+
+    model.project.startDate = "2026-03-20T09:00:00";
+    model.project.finishDate = "2026-03-23T18:00:00";
+    model.project.currentDate = "2026-03-20T09:00:00";
+    model.calendars[0].weekDays = [
+      { dayType: 1, dayWorking: false, workingTimes: [] },
+      { dayType: 2, dayWorking: true, workingTimes: [{ fromTime: "09:00:00", toTime: "18:00:00" }] },
+      { dayType: 3, dayWorking: true, workingTimes: [{ fromTime: "09:00:00", toTime: "18:00:00" }] },
+      { dayType: 4, dayWorking: true, workingTimes: [{ fromTime: "09:00:00", toTime: "18:00:00" }] },
+      { dayType: 5, dayWorking: true, workingTimes: [{ fromTime: "09:00:00", toTime: "18:00:00" }] },
+      { dayType: 6, dayWorking: false, workingTimes: [] },
+      { dayType: 7, dayWorking: true, workingTimes: [{ fromTime: "09:00:00", toTime: "18:00:00" }] }
+    ];
+
+    const workbook = wbsXlsx.exportWbsWorkbook(model);
+    const sheet = workbook.sheets[0];
+    const headerRowIndex = findRowIndexByCellValue(sheet, "UID");
+    const dateRowIndex = headerRowIndex - 1;
+
+    expect(sheet.rows[dateRowIndex].cells.slice(20).map((cell) => cell.value)).toEqual([
+      "3/20",
+      "3/21",
+      "3/22",
+      "3/23"
+    ]);
+    expect(sheet.rows[headerRowIndex].cells.slice(20).map((cell) => cell.value)).toEqual([
+      "Fri",
+      "Sat",
+      "Sun",
+      "Mon"
+    ]);
+    expect(sheet.rows[dateRowIndex].cells[20].fillColor).toBe("#FFE6A7");
+    expect(sheet.rows[dateRowIndex].cells[21].fillColor).toBe("#D9EAF7");
+    expect(sheet.rows[dateRowIndex].cells[22].fillColor).toBe("#C9D3E1");
+  });
+
+  it("suppresses task bands on weekly non-working days and configured holidays", () => {
+    const { xml, wbsXlsx } = bootModules();
+    const model = xml.importMsProjectXml(xml.SAMPLE_XML);
+    const task = model.tasks.find((item) => !item.summary && !item.milestone);
+    if (!task) {
+      throw new Error("Expected a non-summary task in sample model");
+    }
+
+    model.project.startDate = "2026-03-26T09:00:00";
+    model.project.finishDate = "2026-03-29T18:00:00";
+    model.project.currentDate = "2026-03-26T09:00:00";
+    task.start = "2026-03-26T09:00:00";
+    task.finish = "2026-03-29T18:00:00";
+    task.percentComplete = 50;
+    model.calendars[0].weekDays = [
+      { dayType: 1, dayWorking: false, workingTimes: [] },
+      { dayType: 2, dayWorking: true, workingTimes: [{ fromTime: "09:00:00", toTime: "18:00:00" }] },
+      { dayType: 3, dayWorking: true, workingTimes: [{ fromTime: "09:00:00", toTime: "18:00:00" }] },
+      { dayType: 4, dayWorking: true, workingTimes: [{ fromTime: "09:00:00", toTime: "18:00:00" }] },
+      { dayType: 5, dayWorking: true, workingTimes: [{ fromTime: "09:00:00", toTime: "18:00:00" }] },
+      { dayType: 6, dayWorking: false, workingTimes: [] },
+      { dayType: 7, dayWorking: true, workingTimes: [{ fromTime: "09:00:00", toTime: "18:00:00" }] }
+    ];
+    model.calendars[0].exceptions = [{
+      name: "祝日",
+      fromDate: "2026-03-28T00:00:00",
+      toDate: "2026-03-28T23:59:59",
+      dayWorking: false,
+      workingTimes: []
+    }];
+
+    const workbook = wbsXlsx.exportWbsWorkbook(model);
+    const sheet = workbook.sheets[0];
+    const headerRowIndex = findRowIndexByCellValue(sheet, "UID");
+    const dateRowIndex = headerRowIndex - 1;
+    const dateColumns = new Map(
+      sheet.rows[dateRowIndex].cells.map((cell, index) => [cell.value, index])
+    );
+    const taskRowIndex = headerRowIndex + 1 + model.tasks.indexOf(task);
+
+    expect(taskRowIndex).toBeGreaterThan(headerRowIndex);
+    expect(sheet.rows[taskRowIndex].cells[dateColumns.get("3/26")].value).toBe("■");
+    expect(sheet.rows[taskRowIndex].cells[dateColumns.get("3/27")].value).toBe("");
+    expect(sheet.rows[taskRowIndex].cells[dateColumns.get("3/28")].value).toBe("");
+    expect(sheet.rows[taskRowIndex].cells[dateColumns.get("3/29")].value).toBe("");
+    expect(sheet.rows[taskRowIndex].cells[dateColumns.get("3/27")].fillColor).toBe("#C9D3E1");
+    expect(sheet.rows[taskRowIndex].cells[dateColumns.get("3/28")].fillColor).toBe("#FCE4EC");
+    expect(sheet.rows[taskRowIndex].cells[dateColumns.get("3/29")].fillColor).toBe("#C9D3E1");
   });
 
   it("marks week-start date-band cells with week-start fill", () => {
@@ -500,13 +589,13 @@ describe("mikuproject wbs xlsx", () => {
     const sheet = workbook.sheets[0];
 
     const projectInfoHeaderIndex = findRowIndexByCellValue(sheet, "プロジェクト", 0);
-    expect(sheet.rows[projectInfoHeaderIndex + 7].cells[2].value).toBe(1);
+    expect(sheet.rows[projectInfoHeaderIndex + 7].cells[2].value).toBeGreaterThan(0);
     const headerRowIndex = findRowIndexByCellValue(sheet, "UID");
     expect(sheet.rows[headerRowIndex - 1].cells[24].value).toBe("3/20");
     expect(sheet.rows[headerRowIndex].cells[24].value).toBe("Fri");
     expect(sheet.rows[headerRowIndex - 1].cells[24].fillColor).toBe("#FCE4EC");
-    expect(sheet.rows[headerRowIndex + 1].cells[24].value).toBe("━");
-    expect(sheet.rows[headerRowIndex + 1].cells[24].fillColor).toBe("#9FD5C9");
+    expect(sheet.rows[headerRowIndex + 1].cells[24].value).toBe("");
+    expect(sheet.rows[headerRowIndex + 1].cells[24].fillColor).toBe("#FCE4EC");
   });
 
   it("can limit the displayed date band around base date", () => {
@@ -589,9 +678,9 @@ describe("mikuproject wbs xlsx", () => {
     expect(designRow.cells[20].fillColor).toBe("#5BAE9C");
     expect(designRow.cells[21].fillColor).toBe("#5BAE9C");
     expect(designRow.cells[22].fillColor).toBe("#9FD5C9");
-    expect(designRow.cells[24].fillColor).toBe("#9FD5C9");
-    expect(designRow.cells[25].fillColor).toBe("#9FD5C9");
-    expect(designRow.cells[26].fillColor).toBe("#9FD5C9");
+    expect(designRow.cells[24].fillColor).toBe("#FCE4EC");
+    expect(designRow.cells[25].fillColor).toBe("#C9D3E1");
+    expect(designRow.cells[26].fillColor).toBe("#C9D3E1");
   });
 
   it("truncates long owner, resources, and predecessors labels for wbs display", () => {

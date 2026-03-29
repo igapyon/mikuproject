@@ -48,12 +48,58 @@
         }
         return Array.from(holidaySet).sort();
     }
+    function resolveProjectCalendar(model) {
+        if (model.project.calendarUID) {
+            const projectCalendar = model.calendars.find((calendar) => calendar.uid === model.project.calendarUID);
+            if (projectCalendar) {
+                return projectCalendar;
+            }
+        }
+        return model.calendars.find((calendar) => calendar.isBaseCalendar) || model.calendars[0];
+    }
+    function resolveCalendarDayWorking(calendarByUid, calendar, dayType, visiting = new Set()) {
+        if (!calendar) {
+            return undefined;
+        }
+        if (visiting.has(calendar.uid)) {
+            return undefined;
+        }
+        visiting.add(calendar.uid);
+        const weekDay = calendar.weekDays.find((item) => item.dayType === dayType);
+        if (weekDay) {
+            return weekDay.dayWorking;
+        }
+        if (calendar.baseCalendarUID) {
+            return resolveCalendarDayWorking(calendarByUid, calendarByUid.get(calendar.baseCalendarUID), dayType, visiting);
+        }
+        return undefined;
+    }
+    function collectProjectNonWorkingDayTypes(model) {
+        const calendarByUid = new Map(model.calendars.map((calendar) => [calendar.uid, calendar]));
+        const projectCalendar = resolveProjectCalendar(model);
+        const nonWorkingDayTypes = new Set();
+        for (let dayType = 1; dayType <= 7; dayType += 1) {
+            const dayWorking = resolveCalendarDayWorking(calendarByUid, projectCalendar, dayType);
+            if (dayWorking === false) {
+                nonWorkingDayTypes.add(dayType);
+                continue;
+            }
+            if (dayWorking === undefined && (dayType === 1 || dayType === 7)) {
+                nonWorkingDayTypes.add(dayType);
+            }
+        }
+        return nonWorkingDayTypes;
+    }
     function exportWbsWorkbook(model, options = {}) {
+        const nonWorkingDayTypes = collectProjectNonWorkingDayTypes(model);
         const resourceNameByUid = new Map(model.resources.map((resource) => [resource.uid, resource.name]));
         const predecessorNameByUid = new Map(model.tasks.map((task) => [task.uid, task.name]));
         const calendarNameByUid = new Map(model.calendars.map((calendar) => [calendar.uid, calendar.name]));
         const resourceNamesByTaskUid = new Map();
-        const holidaySet = new Set((options.holidayDates || []).map((day) => day.slice(0, 10)));
+        const holidaySet = new Set([
+            ...collectWbsHolidayDates(model),
+            ...(options.holidayDates || []).map((day) => day.slice(0, 10))
+        ]);
         for (const assignment of model.assignments) {
             const resourceName = resourceNameByUid.get(assignment.resourceUid);
             if (!resourceName) {
@@ -65,7 +111,7 @@
             }
             resourceNamesByTaskUid.set(assignment.taskUid, resourceNames);
         }
-        const dateBand = buildDisplayDateBand(model.project.startDate, model.project.finishDate, model.project.currentDate, options.displayDaysBeforeBaseDate, options.displayDaysAfterBaseDate, holidaySet, options.useBusinessDaysForDisplayRange);
+        const dateBand = buildDisplayDateBand(model.project.startDate, model.project.finishDate, model.project.currentDate, options.displayDaysBeforeBaseDate, options.displayDaysAfterBaseDate, holidaySet, nonWorkingDayTypes, options.useBusinessDaysForDisplayRange);
         const fixedHeaders = [
             "UID",
             "ID",
@@ -98,13 +144,13 @@
         const projectInfoBlock = projectInfoRows(model.project, calendarNameByUid, holidaySet.size, totalColumns, 0, rows.length + 1);
         overlayRows(rows, 2, projectInfoBlock.rows, totalColumns);
         mergedRanges.push(...projectInfoBlock.mergedRanges);
-        const summaryBlock = displaySummaryRows(dateBand.length, countBusinessDays(dateBand, holidaySet), model.project.currentDate, model.tasks.length, model.resources.length, model.assignments.length, model.calendars.length, totalColumns, 5, 3, options.displayDaysBeforeBaseDate, options.displayDaysAfterBaseDate, options.useBusinessDaysForDisplayRange, options.useBusinessDaysForProgressBand);
+        const summaryBlock = displaySummaryRows(dateBand.length, countBusinessDays(dateBand, holidaySet, nonWorkingDayTypes), model.project.currentDate, model.tasks.length, model.resources.length, model.assignments.length, model.calendars.length, totalColumns, 5, 3, options.displayDaysBeforeBaseDate, options.displayDaysAfterBaseDate, options.useBusinessDaysForDisplayRange, options.useBusinessDaysForProgressBand);
         overlayRows(rows, 2, summaryBlock.rows, totalColumns);
         mergedRanges.push(...summaryBlock.mergedRanges);
         const weekBandRanges = buildWeekBandRanges(dateBand, dateBandStartColumnIndex, rows.length + 1);
         rows.push(weekBandRow(fixedHeaders.length + 1, weekBandRanges, dateBand.length));
-        rows.push(dateBandHeaderRow(fixedHeaders.length + 1, dateBand, model.project.currentDate, holidaySet));
-        rows.push(weekdayHeaderRow(fixedHeaders, dateBand, model.project.currentDate, holidaySet));
+        rows.push(dateBandHeaderRow(fixedHeaders.length + 1, dateBand, model.project.currentDate, holidaySet, nonWorkingDayTypes));
+        rows.push(weekdayHeaderRow(fixedHeaders, dateBand, model.project.currentDate, holidaySet, nonWorkingDayTypes));
         rows.push(...model.tasks.map((task) => ({
             height: taskRowHeight(task),
             cells: [
@@ -116,7 +162,7 @@
                 taskCell(task, formatTaskLabel(task), "center"),
                 taskCell(task, formatWbsDate(task.start), "center"),
                 taskCell(task, formatWbsDate(task.finish), "center"),
-                taskCell(task, formatDurationLabel(task, holidaySet, options.useBusinessDaysForProgressBand), "center"),
+                taskCell(task, formatDurationLabel(task, holidaySet, nonWorkingDayTypes, options.useBusinessDaysForProgressBand), "center"),
                 detailCell(task, task.notes),
                 progressCell(task, task.percentComplete),
                 progressCell(task, task.percentWorkComplete),
@@ -128,7 +174,7 @@
                 referenceCell(task, truncateWbsReference((resourceNamesByTaskUid.get(task.uid) || []).join(", "), 18)),
                 referenceCell(task, truncateWbsReference(task.predecessors.map((item) => predecessorNameByUid.get(item.predecessorUid) || item.predecessorUid).join(", "), 18)),
                 dividerCell(),
-                ...dateBand.map((day) => dateBandCell(task, day, model.project.currentDate, holidaySet, options.useBusinessDaysForProgressBand))
+                ...dateBand.map((day) => dateBandCell(task, day, model.project.currentDate, holidaySet, nonWorkingDayTypes, options.useBusinessDaysForProgressBand))
             ]
         })));
         rows.push(emptyRow(totalColumns, 28));
@@ -518,29 +564,29 @@
             })
         };
     }
-    function weekdayRow(fixedColumnCount, dateBand, currentDate, holidaySet) {
+    function weekdayRow(fixedColumnCount, dateBand, currentDate, holidaySet, nonWorkingDayTypes) {
         return {
             height: 24,
             cells: [
                 ...Array.from({ length: fixedColumnCount }, () => ({})),
-                ...dateBand.map((day) => weekdayCell(day, currentDate, holidaySet))
+                ...dateBand.map((day) => weekdayCell(day, currentDate, holidaySet, nonWorkingDayTypes))
             ]
         };
     }
-    function dateBandHeaderRow(fixedColumnCount, dateBand, currentDate, holidaySet) {
+    function dateBandHeaderRow(fixedColumnCount, dateBand, currentDate, holidaySet, nonWorkingDayTypes) {
         return {
             height: 24,
             cells: [
                 ...Array.from({ length: fixedColumnCount }, () => ({})),
-                ...dateBand.map((day) => dateNumberCell(day, currentDate, holidaySet))
+                ...dateBand.map((day) => dateNumberCell(day, currentDate, holidaySet, nonWorkingDayTypes))
             ]
         };
     }
-    function weekdayHeaderRow(fixedHeaders, dateBand, currentDate, holidaySet) {
+    function weekdayHeaderRow(fixedHeaders, dateBand, currentDate, holidaySet, nonWorkingDayTypes) {
         return headerRow([
             ...fixedHeaders,
             dividerCell(),
-            ...dateBand.map((day) => weekdayCell(day, currentDate, holidaySet))
+            ...dateBand.map((day) => weekdayCell(day, currentDate, holidaySet, nonWorkingDayTypes))
         ]);
     }
     function dividerCell() {
@@ -685,9 +731,9 @@
         const bar = `${"#".repeat(filled)}${"-".repeat(10 - filled)}`;
         return `${String(clamped).padStart(3, " ")}%\n[${bar}]`;
     }
-    function formatDurationLabel(task, holidaySet, useBusinessDaysForProgressBand) {
+    function formatDurationLabel(task, holidaySet, nonWorkingDayTypes, useBusinessDaysForProgressBand) {
         if (useBusinessDaysForProgressBand) {
-            const businessDays = enumerateBusinessDays(task.start, task.finish, holidaySet).length;
+            const businessDays = enumerateBusinessDays(task.start, task.finish, holidaySet, nonWorkingDayTypes).length;
             return businessDays > 0 ? `${businessDays}営業日` : "-";
         }
         const calendarDays = buildDateBand(task.start, task.finish).length;
@@ -696,9 +742,9 @@
     function formatWbsDate(value) {
         return value ? value.slice(0, 10) : "-";
     }
-    function dateNumberCell(day, currentDate, holidaySet) {
+    function dateNumberCell(day, currentDate, holidaySet, nonWorkingDayTypes) {
         const isToday = isSameDay(day, currentDate);
-        const isWeekendDay = isWeekend(day);
+        const isWeekendDay = isWeeklyNonWorkingDay(day, nonWorkingDayTypes);
         const isHoliday = holidaySet.has(day);
         const weekStart = isWeekStart(day);
         const monthStart = isMonthStart(day);
@@ -711,9 +757,9 @@
             fillColor: isToday ? TODAY_BAND_FILL : (isHoliday ? HOLIDAY_BAND_FILL : (isWeekendDay ? WEEKEND_BAND_FILL : (monthStart ? MONTH_START_HEADER_FILL : (weekStart ? WEEK_START_BAND_FILL : HEADER_FILL))))
         };
     }
-    function weekdayCell(day, currentDate, holidaySet) {
+    function weekdayCell(day, currentDate, holidaySet, nonWorkingDayTypes) {
         const isToday = isSameDay(day, currentDate);
-        const isWeekendDay = isWeekend(day);
+        const isWeekendDay = isWeeklyNonWorkingDay(day, nonWorkingDayTypes);
         const isHoliday = holidaySet.has(day);
         const weekStart = isWeekStart(day);
         const monthStart = isMonthStart(day);
@@ -726,13 +772,14 @@
             fillColor: isToday ? TODAY_BAND_FILL : (isHoliday ? HOLIDAY_BAND_FILL : (isWeekendDay ? WEEKEND_BAND_FILL : (monthStart ? MONTH_START_HEADER_FILL : (weekStart ? WEEK_START_BAND_FILL : HEADER_FILL))))
         };
     }
-    function dateBandCell(task, day, currentDate, holidaySet, useBusinessDaysForProgressBand) {
-        const active = includesDay(task.start, task.finish, day);
-        const isToday = isSameDay(day, currentDate);
-        const isWeekendDay = isWeekend(day);
+    function dateBandCell(task, day, currentDate, holidaySet, nonWorkingDayTypes, useBusinessDaysForProgressBand) {
+        const isWeekendDay = isWeeklyNonWorkingDay(day, nonWorkingDayTypes);
         const isHoliday = holidaySet.has(day);
+        const isNonWorkingDay = isWeekendDay || isHoliday;
+        const active = includesDay(task.start, task.finish, day) && !isNonWorkingDay;
+        const isToday = isSameDay(day, currentDate);
         const weekStart = isWeekStart(day);
-        const complete = active && isCompletedDay(task, day, holidaySet, useBusinessDaysForProgressBand);
+        const complete = active && isCompletedDay(task, day, holidaySet, nonWorkingDayTypes, useBusinessDaysForProgressBand);
         return {
             value: active ? activeBandMarker(task, complete) : "",
             border: "thin",
@@ -768,7 +815,7 @@
         }
         return days;
     }
-    function buildDisplayDateBand(startDate, finishDate, baseDate, displayDaysBeforeBaseDate, displayDaysAfterBaseDate, holidaySet, useBusinessDaysForDisplayRange) {
+    function buildDisplayDateBand(startDate, finishDate, baseDate, displayDaysBeforeBaseDate, displayDaysAfterBaseDate, holidaySet, nonWorkingDayTypes, useBusinessDaysForDisplayRange) {
         const fullBand = buildDateBand(startDate, finishDate);
         const before = normalizeDisplayDayCount(displayDaysBeforeBaseDate);
         const after = normalizeDisplayDayCount(displayDaysAfterBaseDate);
@@ -785,10 +832,10 @@
             return fullBand;
         }
         const from = useBusinessDaysForDisplayRange
-            ? shiftBusinessDays(base, -(before || 0), holidaySet)
+            ? shiftBusinessDays(base, -(before || 0), holidaySet, nonWorkingDayTypes)
             : shiftCalendarDays(base, -(before || 0));
         const to = useBusinessDaysForDisplayRange
-            ? shiftBusinessDays(base, after || 0, holidaySet)
+            ? shiftBusinessDays(base, after || 0, holidaySet, nonWorkingDayTypes)
             : shiftCalendarDays(base, after || 0);
         const clampedStart = from.getTime() < projectStart.getTime() ? projectStart : from;
         const clampedFinish = to.getTime() > projectFinish.getTime() ? projectFinish : to;
@@ -803,22 +850,22 @@
         }
         return Math.max(0, Math.floor(value));
     }
-    function countBusinessDays(dateBand, holidaySet) {
-        return dateBand.filter((day) => !isWeekend(day) && !holidaySet.has(day)).length;
+    function countBusinessDays(dateBand, holidaySet, nonWorkingDayTypes) {
+        return dateBand.filter((day) => !isWeeklyNonWorkingDay(day, nonWorkingDayTypes) && !holidaySet.has(day)).length;
     }
     function shiftCalendarDays(base, offset) {
         const result = new Date(base.getTime());
         result.setDate(result.getDate() + offset);
         return result;
     }
-    function shiftBusinessDays(base, offset, holidaySet) {
+    function shiftBusinessDays(base, offset, holidaySet, nonWorkingDayTypes) {
         const result = new Date(base.getTime());
         const direction = offset < 0 ? -1 : 1;
         let remaining = Math.abs(offset);
         while (remaining > 0) {
             result.setDate(result.getDate() + direction);
             const day = formatDateOnly(result);
-            if (isWeekend(day) || holidaySet.has(day)) {
+            if (isWeeklyNonWorkingDay(day, nonWorkingDayTypes) || holidaySet.has(day)) {
                 continue;
             }
             remaining -= 1;
@@ -857,7 +904,7 @@
         }
         return start.getTime() <= target.getTime() && target.getTime() <= finish.getTime();
     }
-    function isCompletedDay(task, day, holidaySet, useBusinessDaysForProgressBand) {
+    function isCompletedDay(task, day, holidaySet, nonWorkingDayTypes, useBusinessDaysForProgressBand) {
         const start = parseDateOnly(task.start);
         const finish = parseDateOnly(task.finish);
         const target = parseDateOnly(day);
@@ -865,7 +912,7 @@
             return false;
         }
         if (useBusinessDaysForProgressBand) {
-            const activeBusinessDays = enumerateBusinessDays(task.start, task.finish, holidaySet);
+            const activeBusinessDays = enumerateBusinessDays(task.start, task.finish, holidaySet, nonWorkingDayTypes);
             if (activeBusinessDays.length === 0) {
                 return false;
             }
@@ -884,19 +931,19 @@
         const dayIndex = Math.floor((target.getTime() - start.getTime()) / 86400000);
         return dayIndex >= 0 && dayIndex < completedDays;
     }
-    function enumerateBusinessDays(startDate, finishDate, holidaySet) {
-        return buildDateBand(startDate, finishDate).filter((day) => !isWeekend(day) && !holidaySet.has(day));
+    function enumerateBusinessDays(startDate, finishDate, holidaySet, nonWorkingDayTypes) {
+        return buildDateBand(startDate, finishDate).filter((day) => !isWeeklyNonWorkingDay(day, nonWorkingDayTypes) && !holidaySet.has(day));
     }
     function isSameDay(day, other) {
         return day === (other || "").slice(0, 10);
     }
-    function isWeekend(day) {
+    function isWeeklyNonWorkingDay(day, nonWorkingDayTypes) {
         const target = parseDateOnly(day);
         if (!target) {
             return false;
         }
-        const weekday = target.getDay();
-        return weekday === 0 || weekday === 6;
+        const dayType = target.getDay() === 0 ? 1 : target.getDay() + 1;
+        return nonWorkingDayTypes.has(dayType);
     }
     function isWeekStart(day) {
         const target = parseDateOnly(day);

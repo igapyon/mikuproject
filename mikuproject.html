@@ -2285,6 +2285,7 @@ md-outlined-select.md-outlined-field:focus-within::part(container) {
             既存 project を生成AIへ渡すための projection JSON をここから生成します。
           </p>
           <div class="md-panel-actions">
+            <button id="exportAiBundleBtn" type="button" class="md-button md-button--tonal">full bundle</button>
             <button id="exportProjectOverviewBtn" type="button" class="md-button md-button--tonal">project_overview_view</button>
             <button id="exportPhaseDetailFullBtn" type="button" class="md-button md-button--tonal">phase_detail_view full</button>
           </div>
@@ -2311,10 +2312,10 @@ md-outlined-select.md-outlined-field:focus-within::part(container) {
               <section class="ms-settings-block" aria-label="WBS xlsx export options">
                 <h3 class="ms-settings-subtitle">WBS XLSX の祝日指定</h3>
               <p class="md-note-card__text">
-                `WBS XLSX Export` では、`ProjectModel` から補完した既定祝日と、`YYYY-MM-DD` 形式で指定した追加祝日を合成して WBS 日付帯へ反映します。
+                `WBS XLSX Export` では、`ProjectModel` から補完した既定祝日を WBS 日付帯へ反映します。
               </p>
               <p class="md-note-card__text">
-                既定祝日は、現在の `ProjectModel` に含まれる `Calendar.Exceptions` の非稼働日例外から補完します。追加祝日は改行またはカンマ区切りで入力できます。表示期間を空欄にすると全期間、数値を入れると `BaseDate` 前後の日数で切り出します。営業日ベースを選ぶと土日祝を飛ばします。進捗帯も営業日基準へ切り替えられます。
+                既定祝日は、現在の `ProjectModel` に含まれる `Calendar.Exceptions` の非稼働日例外から補完します。画面では `Calendars / Exceptions` を直接編集せず、必要な変更は `MS Project XML` または `XLSX Import` 側で扱います。表示期間を空欄にすると全期間、数値を入れると `BaseDate` 前後の営業日で切り出します。進捗帯も営業日基準で計算します。
               </p>
               <div class="md-form-grid md-form-grid--two">
                 <lht-text-field-help
@@ -2331,18 +2332,6 @@ md-outlined-select.md-outlined-field:focus-within::part(container) {
                   help-text="空欄なら全期間表示のままです。"></lht-text-field-help>
               </div>
               <div class="md-form-grid">
-                <label class="md-checkbox-row">
-                  <input id="wbsBusinessDayRangeInput" type="checkbox" />
-                  <span>表示期間を営業日ベースで数える</span>
-                </label>
-              </div>
-              <div class="md-form-grid">
-                <label class="md-checkbox-row">
-                  <input id="wbsBusinessDayProgressInput" type="checkbox" />
-                  <span>進捗帯を営業日ベースで計算する</span>
-                </label>
-              </div>
-              <div class="md-form-grid">
                 <div id="wbsHolidaySummary" class="md-status">既定祝日: 未読込</div>
                 <lht-text-field-help
                   field-id="wbsHolidayDatesInput"
@@ -2350,18 +2339,7 @@ md-outlined-select.md-outlined-field:focus-within::part(container) {
                   rows="3"
                   placeholder="2026-03-20"
                   readonly
-                  help-text="現在の ProjectModel から自動補完します。"></lht-text-field-help>
-              </div>
-              <div class="md-form-grid">
-                <lht-text-field-help
-                  field-id="wbsExtraHolidayDatesInput"
-                  label="WBS 追加祝日"
-                  rows="3"
-                  placeholder="2026-03-21&#10;2026-03-22"
-                  help-text="WBS XLSX Export のみで使用します。重複は自動でまとめます。"></lht-text-field-help>
-              </div>
-              <div class="md-panel-actions">
-                <button id="resetWbsHolidayDatesBtn" type="button" class="md-button md-button--surface">WBS 祝日を既定値へ戻す</button>
+                  help-text="現在の ProjectModel から自動補完します。画面上では直接編集しません。"></lht-text-field-help>
               </div>
               </section>
             </div>
@@ -2371,6 +2349,9 @@ md-outlined-select.md-outlined-field:focus-within::part(container) {
         <details class="md-debug-accordion">
           <summary class="md-debug-accordion__summary">デバッグ情報</summary>
           <div class="md-debug-accordion__body">
+            <div class="md-form-grid">
+              <lht-text-field-help field-id="aiBundleOutput" label="ai_projection_bundle" rows="16" readonly></lht-text-field-help>
+            </div>
             <div class="md-form-grid">
               <lht-text-field-help field-id="projectOverviewOutput" label="project_overview_view" rows="14" readonly></lht-text-field-help>
             </div>
@@ -6486,6 +6467,172 @@ if (!customElements.get("lht-page-menu")) {
         const timestamp = Date.parse(value);
         return Number.isFinite(timestamp) ? timestamp : null;
     }
+    function parseDateOnly(value) {
+        const text = String(value || "").trim().slice(0, 10);
+        if (!/^\d{4}-\d{2}-\d{2}$/.test(text)) {
+            return null;
+        }
+        const parsed = new Date(`${text}T00:00:00`);
+        return Number.isNaN(parsed.getTime()) ? null : parsed;
+    }
+    function formatDateOnly(value) {
+        const year = value.getFullYear();
+        const month = String(value.getMonth() + 1).padStart(2, "0");
+        const day = String(value.getDate()).padStart(2, "0");
+        return `${year}-${month}-${day}`;
+    }
+    function addDateDays(base, days) {
+        const next = new Date(base.getTime());
+        next.setDate(next.getDate() + days);
+        return next;
+    }
+    function addDateYears(base, years) {
+        const next = new Date(base.getTime());
+        next.setFullYear(next.getFullYear() + years);
+        return next;
+    }
+    function toMsDayType(value) {
+        const day = value.getDay();
+        return day === 0 ? 1 : day + 1;
+    }
+    function buildNthWeekdayOfMonth(year, monthIndex, jsWeekday, nth) {
+        const first = new Date(year, monthIndex, 1);
+        const offset = (jsWeekday - first.getDay() + 7) % 7;
+        return new Date(year, monthIndex, 1 + offset + ((nth - 1) * 7));
+    }
+    function calculateVernalEquinoxDay(year) {
+        return Math.floor(20.8431 + (0.242194 * (year - 1980)) - Math.floor((year - 1980) / 4));
+    }
+    function calculateAutumnalEquinoxDay(year) {
+        return Math.floor(23.2488 + (0.242194 * (year - 1980)) - Math.floor((year - 1980) / 4));
+    }
+    function buildJapaneseHolidayMapForYear(year) {
+        const holidays = new Map();
+        const addHoliday = (date, name) => {
+            holidays.set(formatDateOnly(date), name);
+        };
+        addHoliday(new Date(year, 0, 1), "元日");
+        addHoliday(buildNthWeekdayOfMonth(year, 0, 1, 2), "成人の日");
+        addHoliday(new Date(year, 1, 11), "建国記念の日");
+        addHoliday(new Date(year, 1, 23), "天皇誕生日");
+        addHoliday(new Date(year, 2, calculateVernalEquinoxDay(year)), "春分の日");
+        addHoliday(new Date(year, 3, 29), "昭和の日");
+        addHoliday(new Date(year, 4, 3), "憲法記念日");
+        addHoliday(new Date(year, 4, 4), "みどりの日");
+        addHoliday(new Date(year, 4, 5), "こどもの日");
+        addHoliday(buildNthWeekdayOfMonth(year, 6, 1, 3), "海の日");
+        addHoliday(new Date(year, 7, 11), "山の日");
+        addHoliday(buildNthWeekdayOfMonth(year, 8, 1, 3), "敬老の日");
+        addHoliday(new Date(year, 8, calculateAutumnalEquinoxDay(year)), "秋分の日");
+        addHoliday(buildNthWeekdayOfMonth(year, 9, 1, 2), "スポーツの日");
+        addHoliday(new Date(year, 10, 3), "文化の日");
+        addHoliday(new Date(year, 10, 23), "勤労感謝の日");
+        const baseHolidayDates = Array.from(holidays.keys()).sort();
+        for (const dateText of baseHolidayDates) {
+            const date = parseDateOnly(dateText);
+            if (!date || date.getDay() !== 0) {
+                continue;
+            }
+            let substitute = addDateDays(date, 1);
+            while (holidays.has(formatDateOnly(substitute))) {
+                substitute = addDateDays(substitute, 1);
+            }
+            holidays.set(formatDateOnly(substitute), "休日");
+        }
+        const sortedDates = Array.from(holidays.keys()).sort();
+        for (let index = 0; index < sortedDates.length - 1; index += 1) {
+            const current = parseDateOnly(sortedDates[index]);
+            const next = parseDateOnly(sortedDates[index + 1]);
+            if (!current || !next) {
+                continue;
+            }
+            const gapDays = Math.floor((next.getTime() - current.getTime()) / 86400000);
+            if (gapDays !== 2) {
+                continue;
+            }
+            const between = addDateDays(current, 1);
+            const betweenText = formatDateOnly(between);
+            if (holidays.has(betweenText) || between.getDay() === 0) {
+                continue;
+            }
+            holidays.set(betweenText, "休日");
+        }
+        return new Map(Array.from(holidays.entries()).sort((left, right) => left[0].localeCompare(right[0])));
+    }
+    function buildDefaultWorkingTimes(project) {
+        const start = project.defaultStartTime || "09:00:00";
+        const finish = project.defaultFinishTime || "18:00:00";
+        if (start < "12:00:00" && finish > "13:00:00") {
+            return [
+                { fromTime: start, toTime: "12:00:00" },
+                { fromTime: "13:00:00", toTime: finish }
+            ];
+        }
+        return [{ fromTime: start, toTime: finish }];
+    }
+    function buildDefaultStandardWeekDays(project) {
+        const workingTimes = buildDefaultWorkingTimes(project);
+        return Array.from({ length: 7 }, (_, index) => {
+            const dayType = index + 1;
+            const dayWorking = dayType !== 1 && dayType !== 7;
+            return {
+                dayType,
+                dayWorking,
+                workingTimes: dayWorking ? workingTimes.map((item) => ({ ...item })) : []
+            };
+        });
+    }
+    function buildDefaultJapaneseHolidayExceptions(project) {
+        const start = parseDateOnly(project.startDate) || parseDateOnly(project.finishDate) || new Date();
+        const finishLimit = addDateYears(start, 5);
+        const exceptions = [];
+        for (let year = start.getFullYear(); year <= finishLimit.getFullYear(); year += 1) {
+            const holidays = buildJapaneseHolidayMapForYear(year);
+            for (const [dateText, name] of holidays.entries()) {
+                const date = parseDateOnly(dateText);
+                if (!date || date.getTime() < start.getTime() || date.getTime() > finishLimit.getTime()) {
+                    continue;
+                }
+                exceptions.push({
+                    name,
+                    fromDate: `${dateText}T00:00:00`,
+                    toDate: `${dateText}T23:59:59`,
+                    dayWorking: false,
+                    workingTimes: []
+                });
+            }
+        }
+        return exceptions;
+    }
+    function findFallbackCalendarUid(model) {
+        var _a;
+        const baseCalendar = model.calendars.find((calendar) => calendar.isBaseCalendar);
+        return (baseCalendar === null || baseCalendar === void 0 ? void 0 : baseCalendar.uid) || ((_a = model.calendars[0]) === null || _a === void 0 ? void 0 : _a.uid);
+    }
+    function allocateDefaultCalendarUid(model) {
+        const usedUids = new Set(model.calendars.map((calendar) => String(calendar.uid)));
+        let candidate = 1;
+        while (usedUids.has(String(candidate))) {
+            candidate += 1;
+        }
+        return String(candidate);
+    }
+    function ensureDefaultProjectCalendar(model) {
+        if (model.calendars.length === 0) {
+            const uid = allocateDefaultCalendarUid(model);
+            model.calendars.push({
+                uid,
+                name: "Standard",
+                isBaseCalendar: true,
+                isBaselineCalendar: true,
+                weekDays: buildDefaultStandardWeekDays(model.project),
+                exceptions: buildDefaultJapaneseHolidayExceptions(model.project),
+                workWeeks: []
+            });
+            model.project.calendarUID = uid;
+        }
+        return model;
+    }
     function parseWeekDays(parent) {
         var _a;
         return Array.from(((_a = parent.getElementsByTagName("WeekDays")[0]) === null || _a === void 0 ? void 0 : _a.getElementsByTagName("WeekDay")) || []).map((weekDay) => {
@@ -6854,10 +7001,14 @@ if (!customElements.get("lht-page-menu")) {
             }
         }
         const projectStart = data.project.planned_start || data.project.planned_finish || toIsoLocalString(new Date());
+        const draftUidMap = new Map();
+        inputTasks.forEach((task, index) => {
+            draftUidMap.set(String(task.uid || "").trim(), String(index + 1));
+        });
         const normalizedTasks = inputTasks.map((task, index) => ({
-            uid: String(task.uid || "").trim(),
+            uid: draftUidMap.get(String(task.uid || "").trim()) || String(index + 1),
             name: String(task.name || "").trim(),
-            parentUid: task.parent_uid == null || task.parent_uid === "" ? null : String(task.parent_uid),
+            parentUid: task.parent_uid == null || task.parent_uid === "" ? null : (draftUidMap.get(String(task.parent_uid)) || null),
             position: typeof task.position === "number" && Number.isFinite(task.position) ? task.position : index,
             isSummary: Boolean(task.is_summary),
             isMilestone: Boolean(task.is_milestone),
@@ -6877,7 +7028,7 @@ if (!customElements.get("lht-page-menu")) {
                         return (item === null || item === void 0 ? void 0 : item.task_uid) ? [item.task_uid] : [];
                     })
                     : [])
-            ].map((item) => String(item))
+            ].map((item) => draftUidMap.get(String(item)) || String(item))
         }));
         const byParent = new Map();
         for (const task of normalizedTasks) {
@@ -6921,7 +7072,7 @@ if (!customElements.get("lht-page-menu")) {
         }
         walk(null, []);
         const taskFinishes = orderedTasks.map((task) => task.finish).filter(Boolean).sort();
-        return {
+        return ensureDefaultProjectCalendar({
             project: {
                 name: data.project.name.trim(),
                 startDate: projectStart,
@@ -6935,7 +7086,7 @@ if (!customElements.get("lht-page-menu")) {
             resources: [],
             assignments: [],
             calendars: []
-        };
+        });
     }
     function exportProjectOverviewView(model) {
         const parentMap = buildTaskParentMap(model.tasks);
@@ -7499,7 +7650,7 @@ if (!customElements.get("lht-page-menu")) {
         });
         const taskStarts = tasks.map((task) => task.start).filter(Boolean).sort();
         const taskFinishes = tasks.map((task) => task.finish).filter(Boolean).sort();
-        return {
+        return ensureDefaultProjectCalendar({
             project: {
                 name: "CSV Imported Project",
                 startDate: taskStarts[0] || "",
@@ -7513,7 +7664,7 @@ if (!customElements.get("lht-page-menu")) {
             resources,
             assignments,
             calendars: []
-        };
+        });
     }
     function importMsProjectXml(xmlText) {
         var _a, _b, _c, _d, _e, _f, _g;
@@ -7523,7 +7674,7 @@ if (!customElements.get("lht-page-menu")) {
         const tasks = Array.from(((_b = projectElement.getElementsByTagName("Tasks")[0]) === null || _b === void 0 ? void 0 : _b.getElementsByTagName("Task")) || []);
         const resources = Array.from(((_c = projectElement.getElementsByTagName("Resources")[0]) === null || _c === void 0 ? void 0 : _c.getElementsByTagName("Resource")) || []);
         const assignments = Array.from(((_d = projectElement.getElementsByTagName("Assignments")[0]) === null || _d === void 0 ? void 0 : _d.getElementsByTagName("Assignment")) || []);
-        return {
+        return ensureDefaultProjectCalendar({
             project: {
                 name: textContent(projectElement, "Name"),
                 title: textContent(projectElement, "Title") || undefined,
@@ -7763,7 +7914,7 @@ if (!customElements.get("lht-page-menu")) {
                     value: textContent(timephasedData, "Value") || undefined
                 }))
             }))
-        };
+        });
     }
     function appendTextElement(doc, parent, name, value) {
         if (value === undefined || value === "") {
@@ -7799,56 +7950,57 @@ if (!customElements.get("lht-page-menu")) {
         return formatted.join("\n");
     }
     function exportMsProjectXml(model) {
+        const normalizedModel = ensureDefaultProjectCalendar(normalizeProjectModel(model));
         const doc = document.implementation.createDocument("", "Project", null);
         const project = doc.documentElement;
         project.setAttribute("xmlns", "http://schemas.microsoft.com/project");
-        appendTextElement(doc, project, "Name", model.project.name);
-        appendTextElement(doc, project, "Title", model.project.title);
-        appendTextElement(doc, project, "Company", model.project.company);
-        appendTextElement(doc, project, "Author", model.project.author);
-        appendTextElement(doc, project, "CreationDate", model.project.creationDate);
-        appendTextElement(doc, project, "LastSaved", model.project.lastSaved);
-        appendTextElement(doc, project, "SaveVersion", model.project.saveVersion);
-        appendTextElement(doc, project, "CurrentDate", model.project.currentDate);
-        appendTextElement(doc, project, "StartDate", model.project.startDate);
-        appendTextElement(doc, project, "FinishDate", model.project.finishDate);
-        appendTextElement(doc, project, "ScheduleFromStart", model.project.scheduleFromStart);
-        appendTextElement(doc, project, "DefaultStartTime", model.project.defaultStartTime);
-        appendTextElement(doc, project, "DefaultFinishTime", model.project.defaultFinishTime);
-        appendTextElement(doc, project, "MinutesPerDay", model.project.minutesPerDay);
-        appendTextElement(doc, project, "MinutesPerWeek", model.project.minutesPerWeek);
-        appendTextElement(doc, project, "DaysPerMonth", model.project.daysPerMonth);
-        appendTextElement(doc, project, "StatusDate", model.project.statusDate);
-        appendTextElement(doc, project, "WeekStartDay", model.project.weekStartDay);
-        appendTextElement(doc, project, "WorkFormat", model.project.workFormat);
-        appendTextElement(doc, project, "DurationFormat", model.project.durationFormat);
-        appendTextElement(doc, project, "CurrencyCode", model.project.currencyCode);
-        appendTextElement(doc, project, "CurrencyDigits", model.project.currencyDigits);
-        appendTextElement(doc, project, "CurrencySymbol", model.project.currencySymbol);
-        appendTextElement(doc, project, "CurrencySymbolPosition", model.project.currencySymbolPosition);
-        appendTextElement(doc, project, "FYStartDate", model.project.fyStartDate);
-        appendTextElement(doc, project, "FiscalYearStart", model.project.fiscalYearStart);
-        appendTextElement(doc, project, "CriticalSlackLimit", model.project.criticalSlackLimit);
-        appendTextElement(doc, project, "DefaultTaskType", model.project.defaultTaskType);
-        appendTextElement(doc, project, "DefaultFixedCostAccrual", model.project.defaultFixedCostAccrual);
-        appendTextElement(doc, project, "DefaultStandardRate", model.project.defaultStandardRate);
-        appendTextElement(doc, project, "DefaultOvertimeRate", model.project.defaultOvertimeRate);
-        appendTextElement(doc, project, "DefaultTaskEVMethod", model.project.defaultTaskEVMethod);
-        appendTextElement(doc, project, "NewTaskStartDate", model.project.newTaskStartDate);
-        appendTextElement(doc, project, "NewTasksAreManual", model.project.newTasksAreManual);
-        appendTextElement(doc, project, "NewTasksEffortDriven", model.project.newTasksEffortDriven);
-        appendTextElement(doc, project, "NewTasksEstimated", model.project.newTasksEstimated);
-        appendTextElement(doc, project, "ActualsInSync", model.project.actualsInSync);
-        appendTextElement(doc, project, "EditableActualCosts", model.project.editableActualCosts);
-        appendTextElement(doc, project, "HonorConstraints", model.project.honorConstraints);
-        appendTextElement(doc, project, "InsertedProjectsLikeSummary", model.project.insertedProjectsLikeSummary);
-        appendTextElement(doc, project, "MultipleCriticalPaths", model.project.multipleCriticalPaths);
-        appendTextElement(doc, project, "TaskUpdatesResource", model.project.taskUpdatesResource);
-        appendTextElement(doc, project, "UpdateManuallyScheduledTasksWhenEditingLinks", model.project.updateManuallyScheduledTasksWhenEditingLinks);
-        appendTextElement(doc, project, "CalendarUID", model.project.calendarUID);
-        if (model.project.outlineCodes.length > 0) {
+        appendTextElement(doc, project, "Name", normalizedModel.project.name);
+        appendTextElement(doc, project, "Title", normalizedModel.project.title);
+        appendTextElement(doc, project, "Company", normalizedModel.project.company);
+        appendTextElement(doc, project, "Author", normalizedModel.project.author);
+        appendTextElement(doc, project, "CreationDate", normalizedModel.project.creationDate);
+        appendTextElement(doc, project, "LastSaved", normalizedModel.project.lastSaved);
+        appendTextElement(doc, project, "SaveVersion", normalizedModel.project.saveVersion);
+        appendTextElement(doc, project, "CurrentDate", normalizedModel.project.currentDate);
+        appendTextElement(doc, project, "StartDate", normalizedModel.project.startDate);
+        appendTextElement(doc, project, "FinishDate", normalizedModel.project.finishDate);
+        appendTextElement(doc, project, "ScheduleFromStart", normalizedModel.project.scheduleFromStart);
+        appendTextElement(doc, project, "DefaultStartTime", normalizedModel.project.defaultStartTime);
+        appendTextElement(doc, project, "DefaultFinishTime", normalizedModel.project.defaultFinishTime);
+        appendTextElement(doc, project, "MinutesPerDay", normalizedModel.project.minutesPerDay);
+        appendTextElement(doc, project, "MinutesPerWeek", normalizedModel.project.minutesPerWeek);
+        appendTextElement(doc, project, "DaysPerMonth", normalizedModel.project.daysPerMonth);
+        appendTextElement(doc, project, "StatusDate", normalizedModel.project.statusDate);
+        appendTextElement(doc, project, "WeekStartDay", normalizedModel.project.weekStartDay);
+        appendTextElement(doc, project, "WorkFormat", normalizedModel.project.workFormat);
+        appendTextElement(doc, project, "DurationFormat", normalizedModel.project.durationFormat);
+        appendTextElement(doc, project, "CurrencyCode", normalizedModel.project.currencyCode);
+        appendTextElement(doc, project, "CurrencyDigits", normalizedModel.project.currencyDigits);
+        appendTextElement(doc, project, "CurrencySymbol", normalizedModel.project.currencySymbol);
+        appendTextElement(doc, project, "CurrencySymbolPosition", normalizedModel.project.currencySymbolPosition);
+        appendTextElement(doc, project, "FYStartDate", normalizedModel.project.fyStartDate);
+        appendTextElement(doc, project, "FiscalYearStart", normalizedModel.project.fiscalYearStart);
+        appendTextElement(doc, project, "CriticalSlackLimit", normalizedModel.project.criticalSlackLimit);
+        appendTextElement(doc, project, "DefaultTaskType", normalizedModel.project.defaultTaskType);
+        appendTextElement(doc, project, "DefaultFixedCostAccrual", normalizedModel.project.defaultFixedCostAccrual);
+        appendTextElement(doc, project, "DefaultStandardRate", normalizedModel.project.defaultStandardRate);
+        appendTextElement(doc, project, "DefaultOvertimeRate", normalizedModel.project.defaultOvertimeRate);
+        appendTextElement(doc, project, "DefaultTaskEVMethod", normalizedModel.project.defaultTaskEVMethod);
+        appendTextElement(doc, project, "NewTaskStartDate", normalizedModel.project.newTaskStartDate);
+        appendTextElement(doc, project, "NewTasksAreManual", normalizedModel.project.newTasksAreManual);
+        appendTextElement(doc, project, "NewTasksEffortDriven", normalizedModel.project.newTasksEffortDriven);
+        appendTextElement(doc, project, "NewTasksEstimated", normalizedModel.project.newTasksEstimated);
+        appendTextElement(doc, project, "ActualsInSync", normalizedModel.project.actualsInSync);
+        appendTextElement(doc, project, "EditableActualCosts", normalizedModel.project.editableActualCosts);
+        appendTextElement(doc, project, "HonorConstraints", normalizedModel.project.honorConstraints);
+        appendTextElement(doc, project, "InsertedProjectsLikeSummary", normalizedModel.project.insertedProjectsLikeSummary);
+        appendTextElement(doc, project, "MultipleCriticalPaths", normalizedModel.project.multipleCriticalPaths);
+        appendTextElement(doc, project, "TaskUpdatesResource", normalizedModel.project.taskUpdatesResource);
+        appendTextElement(doc, project, "UpdateManuallyScheduledTasksWhenEditingLinks", normalizedModel.project.updateManuallyScheduledTasksWhenEditingLinks);
+        appendTextElement(doc, project, "CalendarUID", normalizedModel.project.calendarUID);
+        if (normalizedModel.project.outlineCodes.length > 0) {
             const outlineCodesElement = doc.createElement("OutlineCodes");
-            for (const outlineCode of model.project.outlineCodes) {
+            for (const outlineCode of normalizedModel.project.outlineCodes) {
                 const outlineCodeElement = doc.createElement("OutlineCode");
                 appendTextElement(doc, outlineCodeElement, "FieldID", outlineCode.fieldID);
                 appendTextElement(doc, outlineCodeElement, "FieldName", outlineCode.fieldName);
@@ -7884,9 +8036,9 @@ if (!customElements.get("lht-page-menu")) {
             }
             project.appendChild(outlineCodesElement);
         }
-        if (model.project.wbsMasks.length > 0) {
+        if (normalizedModel.project.wbsMasks.length > 0) {
             const wbsMasksElement = doc.createElement("WBSMasks");
-            for (const wbsMask of model.project.wbsMasks) {
+            for (const wbsMask of normalizedModel.project.wbsMasks) {
                 const wbsMaskElement = doc.createElement("WBSMask");
                 appendTextElement(doc, wbsMaskElement, "Level", wbsMask.level);
                 appendTextElement(doc, wbsMaskElement, "Mask", wbsMask.mask);
@@ -7896,9 +8048,9 @@ if (!customElements.get("lht-page-menu")) {
             }
             project.appendChild(wbsMasksElement);
         }
-        if (model.project.extendedAttributes.length > 0) {
+        if (normalizedModel.project.extendedAttributes.length > 0) {
             const extendedAttributesElement = doc.createElement("ExtendedAttributes");
-            for (const attribute of model.project.extendedAttributes) {
+            for (const attribute of normalizedModel.project.extendedAttributes) {
                 const extendedAttributeElement = doc.createElement("ExtendedAttribute");
                 appendTextElement(doc, extendedAttributeElement, "FieldID", attribute.fieldID);
                 appendTextElement(doc, extendedAttributeElement, "FieldName", attribute.fieldName);
@@ -7911,7 +8063,7 @@ if (!customElements.get("lht-page-menu")) {
             project.appendChild(extendedAttributesElement);
         }
         const calendarsElement = doc.createElement("Calendars");
-        for (const calendar of model.calendars) {
+        for (const calendar of normalizedModel.calendars) {
             const calendarElement = doc.createElement("Calendar");
             appendTextElement(doc, calendarElement, "UID", calendar.uid);
             appendTextElement(doc, calendarElement, "Name", calendar.name);
@@ -7948,7 +8100,7 @@ if (!customElements.get("lht-page-menu")) {
         }
         project.appendChild(calendarsElement);
         const tasksElement = doc.createElement("Tasks");
-        for (const task of model.tasks) {
+        for (const task of normalizedModel.tasks) {
             const taskElement = doc.createElement("Task");
             appendTextElement(doc, taskElement, "UID", task.uid);
             appendTextElement(doc, taskElement, "ID", task.id);
@@ -8020,7 +8172,7 @@ if (!customElements.get("lht-page-menu")) {
         }
         project.appendChild(tasksElement);
         const resourcesElement = doc.createElement("Resources");
-        for (const resource of model.resources) {
+        for (const resource of normalizedModel.resources) {
             const resourceElement = doc.createElement("Resource");
             appendTextElement(doc, resourceElement, "UID", resource.uid);
             appendTextElement(doc, resourceElement, "ID", resource.id);
@@ -8072,7 +8224,7 @@ if (!customElements.get("lht-page-menu")) {
         }
         project.appendChild(resourcesElement);
         const assignmentsElement = doc.createElement("Assignments");
-        for (const assignment of model.assignments) {
+        for (const assignment of normalizedModel.assignments) {
             const assignmentElement = doc.createElement("Assignment");
             appendTextElement(doc, assignmentElement, "UID", assignment.uid);
             appendTextElement(doc, assignmentElement, "TaskUID", assignment.taskUid);
@@ -9582,12 +9734,58 @@ if (!customElements.get("lht-page-menu")) {
         }
         return Array.from(holidaySet).sort();
     }
+    function resolveProjectCalendar(model) {
+        if (model.project.calendarUID) {
+            const projectCalendar = model.calendars.find((calendar) => calendar.uid === model.project.calendarUID);
+            if (projectCalendar) {
+                return projectCalendar;
+            }
+        }
+        return model.calendars.find((calendar) => calendar.isBaseCalendar) || model.calendars[0];
+    }
+    function resolveCalendarDayWorking(calendarByUid, calendar, dayType, visiting = new Set()) {
+        if (!calendar) {
+            return undefined;
+        }
+        if (visiting.has(calendar.uid)) {
+            return undefined;
+        }
+        visiting.add(calendar.uid);
+        const weekDay = calendar.weekDays.find((item) => item.dayType === dayType);
+        if (weekDay) {
+            return weekDay.dayWorking;
+        }
+        if (calendar.baseCalendarUID) {
+            return resolveCalendarDayWorking(calendarByUid, calendarByUid.get(calendar.baseCalendarUID), dayType, visiting);
+        }
+        return undefined;
+    }
+    function collectProjectNonWorkingDayTypes(model) {
+        const calendarByUid = new Map(model.calendars.map((calendar) => [calendar.uid, calendar]));
+        const projectCalendar = resolveProjectCalendar(model);
+        const nonWorkingDayTypes = new Set();
+        for (let dayType = 1; dayType <= 7; dayType += 1) {
+            const dayWorking = resolveCalendarDayWorking(calendarByUid, projectCalendar, dayType);
+            if (dayWorking === false) {
+                nonWorkingDayTypes.add(dayType);
+                continue;
+            }
+            if (dayWorking === undefined && (dayType === 1 || dayType === 7)) {
+                nonWorkingDayTypes.add(dayType);
+            }
+        }
+        return nonWorkingDayTypes;
+    }
     function exportWbsWorkbook(model, options = {}) {
+        const nonWorkingDayTypes = collectProjectNonWorkingDayTypes(model);
         const resourceNameByUid = new Map(model.resources.map((resource) => [resource.uid, resource.name]));
         const predecessorNameByUid = new Map(model.tasks.map((task) => [task.uid, task.name]));
         const calendarNameByUid = new Map(model.calendars.map((calendar) => [calendar.uid, calendar.name]));
         const resourceNamesByTaskUid = new Map();
-        const holidaySet = new Set((options.holidayDates || []).map((day) => day.slice(0, 10)));
+        const holidaySet = new Set([
+            ...collectWbsHolidayDates(model),
+            ...(options.holidayDates || []).map((day) => day.slice(0, 10))
+        ]);
         for (const assignment of model.assignments) {
             const resourceName = resourceNameByUid.get(assignment.resourceUid);
             if (!resourceName) {
@@ -9599,7 +9797,7 @@ if (!customElements.get("lht-page-menu")) {
             }
             resourceNamesByTaskUid.set(assignment.taskUid, resourceNames);
         }
-        const dateBand = buildDisplayDateBand(model.project.startDate, model.project.finishDate, model.project.currentDate, options.displayDaysBeforeBaseDate, options.displayDaysAfterBaseDate, holidaySet, options.useBusinessDaysForDisplayRange);
+        const dateBand = buildDisplayDateBand(model.project.startDate, model.project.finishDate, model.project.currentDate, options.displayDaysBeforeBaseDate, options.displayDaysAfterBaseDate, holidaySet, nonWorkingDayTypes, options.useBusinessDaysForDisplayRange);
         const fixedHeaders = [
             "UID",
             "ID",
@@ -9632,13 +9830,13 @@ if (!customElements.get("lht-page-menu")) {
         const projectInfoBlock = projectInfoRows(model.project, calendarNameByUid, holidaySet.size, totalColumns, 0, rows.length + 1);
         overlayRows(rows, 2, projectInfoBlock.rows, totalColumns);
         mergedRanges.push(...projectInfoBlock.mergedRanges);
-        const summaryBlock = displaySummaryRows(dateBand.length, countBusinessDays(dateBand, holidaySet), model.project.currentDate, model.tasks.length, model.resources.length, model.assignments.length, model.calendars.length, totalColumns, 5, 3, options.displayDaysBeforeBaseDate, options.displayDaysAfterBaseDate, options.useBusinessDaysForDisplayRange, options.useBusinessDaysForProgressBand);
+        const summaryBlock = displaySummaryRows(dateBand.length, countBusinessDays(dateBand, holidaySet, nonWorkingDayTypes), model.project.currentDate, model.tasks.length, model.resources.length, model.assignments.length, model.calendars.length, totalColumns, 5, 3, options.displayDaysBeforeBaseDate, options.displayDaysAfterBaseDate, options.useBusinessDaysForDisplayRange, options.useBusinessDaysForProgressBand);
         overlayRows(rows, 2, summaryBlock.rows, totalColumns);
         mergedRanges.push(...summaryBlock.mergedRanges);
         const weekBandRanges = buildWeekBandRanges(dateBand, dateBandStartColumnIndex, rows.length + 1);
         rows.push(weekBandRow(fixedHeaders.length + 1, weekBandRanges, dateBand.length));
-        rows.push(dateBandHeaderRow(fixedHeaders.length + 1, dateBand, model.project.currentDate, holidaySet));
-        rows.push(weekdayHeaderRow(fixedHeaders, dateBand, model.project.currentDate, holidaySet));
+        rows.push(dateBandHeaderRow(fixedHeaders.length + 1, dateBand, model.project.currentDate, holidaySet, nonWorkingDayTypes));
+        rows.push(weekdayHeaderRow(fixedHeaders, dateBand, model.project.currentDate, holidaySet, nonWorkingDayTypes));
         rows.push(...model.tasks.map((task) => ({
             height: taskRowHeight(task),
             cells: [
@@ -9650,7 +9848,7 @@ if (!customElements.get("lht-page-menu")) {
                 taskCell(task, formatTaskLabel(task), "center"),
                 taskCell(task, formatWbsDate(task.start), "center"),
                 taskCell(task, formatWbsDate(task.finish), "center"),
-                taskCell(task, formatDurationLabel(task, holidaySet, options.useBusinessDaysForProgressBand), "center"),
+                taskCell(task, formatDurationLabel(task, holidaySet, nonWorkingDayTypes, options.useBusinessDaysForProgressBand), "center"),
                 detailCell(task, task.notes),
                 progressCell(task, task.percentComplete),
                 progressCell(task, task.percentWorkComplete),
@@ -9662,7 +9860,7 @@ if (!customElements.get("lht-page-menu")) {
                 referenceCell(task, truncateWbsReference((resourceNamesByTaskUid.get(task.uid) || []).join(", "), 18)),
                 referenceCell(task, truncateWbsReference(task.predecessors.map((item) => predecessorNameByUid.get(item.predecessorUid) || item.predecessorUid).join(", "), 18)),
                 dividerCell(),
-                ...dateBand.map((day) => dateBandCell(task, day, model.project.currentDate, holidaySet, options.useBusinessDaysForProgressBand))
+                ...dateBand.map((day) => dateBandCell(task, day, model.project.currentDate, holidaySet, nonWorkingDayTypes, options.useBusinessDaysForProgressBand))
             ]
         })));
         rows.push(emptyRow(totalColumns, 28));
@@ -10052,29 +10250,29 @@ if (!customElements.get("lht-page-menu")) {
             })
         };
     }
-    function weekdayRow(fixedColumnCount, dateBand, currentDate, holidaySet) {
+    function weekdayRow(fixedColumnCount, dateBand, currentDate, holidaySet, nonWorkingDayTypes) {
         return {
             height: 24,
             cells: [
                 ...Array.from({ length: fixedColumnCount }, () => ({})),
-                ...dateBand.map((day) => weekdayCell(day, currentDate, holidaySet))
+                ...dateBand.map((day) => weekdayCell(day, currentDate, holidaySet, nonWorkingDayTypes))
             ]
         };
     }
-    function dateBandHeaderRow(fixedColumnCount, dateBand, currentDate, holidaySet) {
+    function dateBandHeaderRow(fixedColumnCount, dateBand, currentDate, holidaySet, nonWorkingDayTypes) {
         return {
             height: 24,
             cells: [
                 ...Array.from({ length: fixedColumnCount }, () => ({})),
-                ...dateBand.map((day) => dateNumberCell(day, currentDate, holidaySet))
+                ...dateBand.map((day) => dateNumberCell(day, currentDate, holidaySet, nonWorkingDayTypes))
             ]
         };
     }
-    function weekdayHeaderRow(fixedHeaders, dateBand, currentDate, holidaySet) {
+    function weekdayHeaderRow(fixedHeaders, dateBand, currentDate, holidaySet, nonWorkingDayTypes) {
         return headerRow([
             ...fixedHeaders,
             dividerCell(),
-            ...dateBand.map((day) => weekdayCell(day, currentDate, holidaySet))
+            ...dateBand.map((day) => weekdayCell(day, currentDate, holidaySet, nonWorkingDayTypes))
         ]);
     }
     function dividerCell() {
@@ -10219,9 +10417,9 @@ if (!customElements.get("lht-page-menu")) {
         const bar = `${"#".repeat(filled)}${"-".repeat(10 - filled)}`;
         return `${String(clamped).padStart(3, " ")}%\n[${bar}]`;
     }
-    function formatDurationLabel(task, holidaySet, useBusinessDaysForProgressBand) {
+    function formatDurationLabel(task, holidaySet, nonWorkingDayTypes, useBusinessDaysForProgressBand) {
         if (useBusinessDaysForProgressBand) {
-            const businessDays = enumerateBusinessDays(task.start, task.finish, holidaySet).length;
+            const businessDays = enumerateBusinessDays(task.start, task.finish, holidaySet, nonWorkingDayTypes).length;
             return businessDays > 0 ? `${businessDays}営業日` : "-";
         }
         const calendarDays = buildDateBand(task.start, task.finish).length;
@@ -10230,9 +10428,9 @@ if (!customElements.get("lht-page-menu")) {
     function formatWbsDate(value) {
         return value ? value.slice(0, 10) : "-";
     }
-    function dateNumberCell(day, currentDate, holidaySet) {
+    function dateNumberCell(day, currentDate, holidaySet, nonWorkingDayTypes) {
         const isToday = isSameDay(day, currentDate);
-        const isWeekendDay = isWeekend(day);
+        const isWeekendDay = isWeeklyNonWorkingDay(day, nonWorkingDayTypes);
         const isHoliday = holidaySet.has(day);
         const weekStart = isWeekStart(day);
         const monthStart = isMonthStart(day);
@@ -10245,9 +10443,9 @@ if (!customElements.get("lht-page-menu")) {
             fillColor: isToday ? TODAY_BAND_FILL : (isHoliday ? HOLIDAY_BAND_FILL : (isWeekendDay ? WEEKEND_BAND_FILL : (monthStart ? MONTH_START_HEADER_FILL : (weekStart ? WEEK_START_BAND_FILL : HEADER_FILL))))
         };
     }
-    function weekdayCell(day, currentDate, holidaySet) {
+    function weekdayCell(day, currentDate, holidaySet, nonWorkingDayTypes) {
         const isToday = isSameDay(day, currentDate);
-        const isWeekendDay = isWeekend(day);
+        const isWeekendDay = isWeeklyNonWorkingDay(day, nonWorkingDayTypes);
         const isHoliday = holidaySet.has(day);
         const weekStart = isWeekStart(day);
         const monthStart = isMonthStart(day);
@@ -10260,13 +10458,14 @@ if (!customElements.get("lht-page-menu")) {
             fillColor: isToday ? TODAY_BAND_FILL : (isHoliday ? HOLIDAY_BAND_FILL : (isWeekendDay ? WEEKEND_BAND_FILL : (monthStart ? MONTH_START_HEADER_FILL : (weekStart ? WEEK_START_BAND_FILL : HEADER_FILL))))
         };
     }
-    function dateBandCell(task, day, currentDate, holidaySet, useBusinessDaysForProgressBand) {
-        const active = includesDay(task.start, task.finish, day);
-        const isToday = isSameDay(day, currentDate);
-        const isWeekendDay = isWeekend(day);
+    function dateBandCell(task, day, currentDate, holidaySet, nonWorkingDayTypes, useBusinessDaysForProgressBand) {
+        const isWeekendDay = isWeeklyNonWorkingDay(day, nonWorkingDayTypes);
         const isHoliday = holidaySet.has(day);
+        const isNonWorkingDay = isWeekendDay || isHoliday;
+        const active = includesDay(task.start, task.finish, day) && !isNonWorkingDay;
+        const isToday = isSameDay(day, currentDate);
         const weekStart = isWeekStart(day);
-        const complete = active && isCompletedDay(task, day, holidaySet, useBusinessDaysForProgressBand);
+        const complete = active && isCompletedDay(task, day, holidaySet, nonWorkingDayTypes, useBusinessDaysForProgressBand);
         return {
             value: active ? activeBandMarker(task, complete) : "",
             border: "thin",
@@ -10302,7 +10501,7 @@ if (!customElements.get("lht-page-menu")) {
         }
         return days;
     }
-    function buildDisplayDateBand(startDate, finishDate, baseDate, displayDaysBeforeBaseDate, displayDaysAfterBaseDate, holidaySet, useBusinessDaysForDisplayRange) {
+    function buildDisplayDateBand(startDate, finishDate, baseDate, displayDaysBeforeBaseDate, displayDaysAfterBaseDate, holidaySet, nonWorkingDayTypes, useBusinessDaysForDisplayRange) {
         const fullBand = buildDateBand(startDate, finishDate);
         const before = normalizeDisplayDayCount(displayDaysBeforeBaseDate);
         const after = normalizeDisplayDayCount(displayDaysAfterBaseDate);
@@ -10319,10 +10518,10 @@ if (!customElements.get("lht-page-menu")) {
             return fullBand;
         }
         const from = useBusinessDaysForDisplayRange
-            ? shiftBusinessDays(base, -(before || 0), holidaySet)
+            ? shiftBusinessDays(base, -(before || 0), holidaySet, nonWorkingDayTypes)
             : shiftCalendarDays(base, -(before || 0));
         const to = useBusinessDaysForDisplayRange
-            ? shiftBusinessDays(base, after || 0, holidaySet)
+            ? shiftBusinessDays(base, after || 0, holidaySet, nonWorkingDayTypes)
             : shiftCalendarDays(base, after || 0);
         const clampedStart = from.getTime() < projectStart.getTime() ? projectStart : from;
         const clampedFinish = to.getTime() > projectFinish.getTime() ? projectFinish : to;
@@ -10337,22 +10536,22 @@ if (!customElements.get("lht-page-menu")) {
         }
         return Math.max(0, Math.floor(value));
     }
-    function countBusinessDays(dateBand, holidaySet) {
-        return dateBand.filter((day) => !isWeekend(day) && !holidaySet.has(day)).length;
+    function countBusinessDays(dateBand, holidaySet, nonWorkingDayTypes) {
+        return dateBand.filter((day) => !isWeeklyNonWorkingDay(day, nonWorkingDayTypes) && !holidaySet.has(day)).length;
     }
     function shiftCalendarDays(base, offset) {
         const result = new Date(base.getTime());
         result.setDate(result.getDate() + offset);
         return result;
     }
-    function shiftBusinessDays(base, offset, holidaySet) {
+    function shiftBusinessDays(base, offset, holidaySet, nonWorkingDayTypes) {
         const result = new Date(base.getTime());
         const direction = offset < 0 ? -1 : 1;
         let remaining = Math.abs(offset);
         while (remaining > 0) {
             result.setDate(result.getDate() + direction);
             const day = formatDateOnly(result);
-            if (isWeekend(day) || holidaySet.has(day)) {
+            if (isWeeklyNonWorkingDay(day, nonWorkingDayTypes) || holidaySet.has(day)) {
                 continue;
             }
             remaining -= 1;
@@ -10391,7 +10590,7 @@ if (!customElements.get("lht-page-menu")) {
         }
         return start.getTime() <= target.getTime() && target.getTime() <= finish.getTime();
     }
-    function isCompletedDay(task, day, holidaySet, useBusinessDaysForProgressBand) {
+    function isCompletedDay(task, day, holidaySet, nonWorkingDayTypes, useBusinessDaysForProgressBand) {
         const start = parseDateOnly(task.start);
         const finish = parseDateOnly(task.finish);
         const target = parseDateOnly(day);
@@ -10399,7 +10598,7 @@ if (!customElements.get("lht-page-menu")) {
             return false;
         }
         if (useBusinessDaysForProgressBand) {
-            const activeBusinessDays = enumerateBusinessDays(task.start, task.finish, holidaySet);
+            const activeBusinessDays = enumerateBusinessDays(task.start, task.finish, holidaySet, nonWorkingDayTypes);
             if (activeBusinessDays.length === 0) {
                 return false;
             }
@@ -10418,19 +10617,19 @@ if (!customElements.get("lht-page-menu")) {
         const dayIndex = Math.floor((target.getTime() - start.getTime()) / 86400000);
         return dayIndex >= 0 && dayIndex < completedDays;
     }
-    function enumerateBusinessDays(startDate, finishDate, holidaySet) {
-        return buildDateBand(startDate, finishDate).filter((day) => !isWeekend(day) && !holidaySet.has(day));
+    function enumerateBusinessDays(startDate, finishDate, holidaySet, nonWorkingDayTypes) {
+        return buildDateBand(startDate, finishDate).filter((day) => !isWeeklyNonWorkingDay(day, nonWorkingDayTypes) && !holidaySet.has(day));
     }
     function isSameDay(day, other) {
         return day === (other || "").slice(0, 10);
     }
-    function isWeekend(day) {
+    function isWeeklyNonWorkingDay(day, nonWorkingDayTypes) {
         const target = parseDateOnly(day);
         if (!target) {
             return false;
         }
-        const weekday = target.getDay();
-        return weekday === 0 || weekday === 6;
+        const dayType = target.getDay() === 0 ? 1 : target.getDay() + 1;
+        return nonWorkingDayTypes.has(dayType);
     }
     function isWeekStart(day) {
         const target = parseDateOnly(day);
@@ -13587,9 +13786,6 @@ globalThis["mermaid"] = globalThis.__esbuild_esm_mermaid_nm["mermaid"].default;
     function parseWbsDefaultHolidayDates() {
         return parseHolidayDateList(getTextArea("wbsHolidayDatesInput").value.trim());
     }
-    function parseWbsAdditionalHolidayDates() {
-        return parseHolidayDateList(getTextArea("wbsExtraHolidayDatesInput").value.trim());
-    }
     function parseOptionalNonNegativeInteger(raw) {
         const value = raw.trim();
         if (!value) {
@@ -13608,10 +13804,10 @@ globalThis["mermaid"] = globalThis.__esbuild_esm_mermaid_nm["mermaid"].default;
         return parseOptionalNonNegativeInteger(getInput("wbsDisplayDaysAfterInput").value);
     }
     function useBusinessDaysForWbsDisplayRange() {
-        return getInput("wbsBusinessDayRangeInput").checked;
+        return true;
     }
     function useBusinessDaysForWbsProgressBand() {
-        return getInput("wbsBusinessDayProgressInput").checked;
+        return true;
     }
     function updateWbsHolidaySummary(holidayDates) {
         const summary = getElement("wbsHolidaySummary");
@@ -13625,23 +13821,12 @@ globalThis["mermaid"] = globalThis.__esbuild_esm_mermaid_nm["mermaid"].default;
         const input = getTextArea("wbsHolidayDatesInput");
         if (!model) {
             input.value = "";
-            getTextArea("wbsExtraHolidayDatesInput").value = "";
             updateWbsHolidaySummary([]);
             return;
         }
         const holidayDates = mikuprojectWbsXlsx.collectWbsHolidayDates(model);
         input.value = holidayDates.join("\n");
         updateWbsHolidaySummary(holidayDates);
-    }
-    function resetWbsHolidayDatesInput() {
-        const model = ensureCurrentModel();
-        const holidayDates = mikuprojectWbsXlsx.collectWbsHolidayDates(model);
-        getTextArea("wbsHolidayDatesInput").value = holidayDates.join("\n");
-        getTextArea("wbsExtraHolidayDatesInput").value = "";
-        updateWbsHolidaySummary(holidayDates);
-        setStatus(`WBS 祝日入力を既定値へ戻しました${holidayDates.length > 0 ? ` (${holidayDates.length} 件)` : ""}`);
-        showToast("WBS 祝日を既定値へ戻しました");
-        setActiveTab("output");
     }
     function showToast(message) {
         const toast = document.getElementById("toast");
@@ -14188,6 +14373,26 @@ WorkWeek1=${formatCalendarWorkWeekSummary(calendar)}</div>
         showToast("project_overview_view を保存しました");
         setActiveTab("output");
     }
+    function exportCurrentAiProjectionBundle() {
+        const model = ensureCurrentModel();
+        syncXmlTextFromModel(model);
+        const projectOverview = mikuprojectXml.exportProjectOverviewView(model);
+        const phaseDetailViewsFull = (projectOverview.phases || [])
+            .map((phase) => phase === null || phase === void 0 ? void 0 : phase.uid)
+            .filter((uid) => Boolean(uid))
+            .map((phaseUid) => mikuprojectXml.exportPhaseDetailView(model, phaseUid, { mode: "full" }));
+        const bundle = {
+            view_type: "ai_projection_bundle",
+            project_overview_view: projectOverview,
+            phase_detail_views_full: phaseDetailViewsFull
+        };
+        const bundleText = JSON.stringify(bundle, null, 2);
+        getTextArea("aiBundleOutput").value = bundleText;
+        downloadBlob(new Blob([`${bundleText}\n`], { type: "application/json;charset=utf-8" }), "mikuproject-full-bundle.json");
+        setStatus(`AI 連携用まとめ JSON を生成して保存しました (phase_detail_view full ${phaseDetailViewsFull.length} 件)`);
+        showToast("AI 連携用まとめ JSON を保存しました");
+        setActiveTab("output");
+    }
     function extractLastJsonBlock(value) {
         var _a, _b;
         const matches = Array.from(value.matchAll(/```json\s*([\s\S]*?)```/g));
@@ -14277,22 +14482,17 @@ WorkWeek1=${formatCalendarWorkWeekSummary(calendar)}</div>
         const model = ensureCurrentModel();
         syncXmlTextFromModel(model);
         const defaultHolidayDates = parseWbsDefaultHolidayDates();
-        const additionalHolidayDates = parseWbsAdditionalHolidayDates();
         const displayDaysBeforeBaseDate = parseWbsDisplayDaysBeforeBaseDate();
         const displayDaysAfterBaseDate = parseWbsDisplayDaysAfterBaseDate();
         const useBusinessDaysForDisplayRange = useBusinessDaysForWbsDisplayRange();
         const useBusinessDaysForProgressBand = useBusinessDaysForWbsProgressBand();
-        const effectiveHolidayDates = Array.from(new Set([...defaultHolidayDates, ...additionalHolidayDates]));
         const workbook = mikuprojectWbsXlsx.exportWbsWorkbook(model, {
-            holidayDates: effectiveHolidayDates,
+            holidayDates: defaultHolidayDates,
             displayDaysBeforeBaseDate,
             displayDaysAfterBaseDate,
             useBusinessDaysForDisplayRange,
             useBusinessDaysForProgressBand
         });
-        if (defaultHolidayDates.length === 0 && effectiveHolidayDates.length > 0) {
-            getTextArea("wbsHolidayDatesInput").value = effectiveHolidayDates.join("\n");
-        }
         const codec = new mikuprojectExcelIo.XlsxWorkbookCodec();
         const bytes = codec.exportWorkbook(workbook);
         const now = new Date();
@@ -14305,10 +14505,10 @@ WorkWeek1=${formatCalendarWorkWeekSummary(calendar)}</div>
         ].join("");
         downloadBlob(new Blob([bytes], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" }), `mikuproject-wbs-${stamp}.xlsx`);
         const displayRangeText = displayDaysBeforeBaseDate !== undefined || displayDaysAfterBaseDate !== undefined
-            ? ` / 表示期間 ${useBusinessDaysForDisplayRange ? "営業日" : "暦日"} 基準日前 ${displayDaysBeforeBaseDate || 0} 日, 基準日後 ${displayDaysAfterBaseDate || 0} 日`
+            ? ` / 表示期間 営業日 基準日前 ${displayDaysBeforeBaseDate || 0} 日, 基準日後 ${displayDaysAfterBaseDate || 0} 日`
             : "";
-        const progressBandText = useBusinessDaysForProgressBand ? " / 進捗帯 営業日" : "";
-        setStatus(`WBS XLSX ファイルをエクスポートしました${effectiveHolidayDates.length > 0 ? ` (祝日 ${effectiveHolidayDates.length} 件)` : ""}${displayRangeText}${progressBandText}`);
+        const progressBandText = " / 進捗帯 営業日";
+        setStatus(`WBS XLSX ファイルをエクスポートしました${defaultHolidayDates.length > 0 ? ` (祝日 ${defaultHolidayDates.length} 件)` : ""}${displayRangeText}${progressBandText}`);
         showToast("WBS XLSX を保存しました");
         setActiveTab("output");
     }
@@ -14448,6 +14648,14 @@ WorkWeek1=${formatCalendarWorkWeekSummary(calendar)}</div>
                 setStatus(error instanceof Error ? error.message : "project_overview_view 生成に失敗しました");
             }
         });
+        getElement("exportAiBundleBtn").addEventListener("click", () => {
+            try {
+                exportCurrentAiProjectionBundle();
+            }
+            catch (error) {
+                setStatus(error instanceof Error ? error.message : "AI 連携用まとめ JSON 生成に失敗しました");
+            }
+        });
         getElement("importProjectDraftFileBtn").addEventListener("click", () => {
             getElement("importProjectDraftInput").click();
         });
@@ -14489,14 +14697,6 @@ WorkWeek1=${formatCalendarWorkWeekSummary(calendar)}</div>
             }
             catch (error) {
                 setStatus(error instanceof Error ? error.message : "WBS XLSX エクスポートに失敗しました");
-            }
-        });
-        getElement("resetWbsHolidayDatesBtn").addEventListener("click", () => {
-            try {
-                resetWbsHolidayDatesInput();
-            }
-            catch (error) {
-                setStatus(error instanceof Error ? error.message : "WBS 祝日入力のリセットに失敗しました");
             }
         });
         getElement("parseCsvBtn").addEventListener("click", async () => {

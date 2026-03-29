@@ -68,9 +68,11 @@ describe("mikuproject project xlsx", () => {
     expect(workbook.sheets[0].mergedRanges).toEqual(["A11:B11"]);
     expect(workbook.sheets[0].rows[0].cells[0].value).toBe("Project");
     expect(workbook.sheets[0].rows[0].cells[0].bold).toBe(true);
+    expect(workbook.sheets[0].rows[0].cells[0].fontSize).toBe(16);
     expect(workbook.sheets[0].rows[0].cells[0].fillColor).toBe("#BFD7EA");
     expect(workbook.sheets[0].rows[0].cells[1].fillColor).toBe("#BFD7EA");
     expect(workbook.sheets[0].rows[1].cells[0].value).toBe("Basic Info");
+    expect(workbook.sheets[0].rows[1].cells[0].fontSize).toBe(16);
     expect(workbook.sheets[0].rows[1].cells[1].fillColor).toBe("#BFD7EA");
     expect(workbook.sheets[0].rows[2].cells[0].value).toBe("Field");
     expect(workbook.sheets[0].rows[3].cells[0].value).toBe("Name");
@@ -97,8 +99,10 @@ describe("mikuproject project xlsx", () => {
 
     expect(tasksSheet.mergedRanges).toEqual([]);
     expect(tasksSheet.rows[0].cells[0].value).toBe("Tasks");
+    expect(tasksSheet.rows[0].cells[0].fontSize).toBe(14);
     expect(tasksSheet.rows[0].cells[0].fillColor).toBe("#D4E0EC");
     expect(tasksSheet.rows[1].cells[0].value).toBe("Task List");
+    expect(tasksSheet.rows[1].cells[0].fontSize).toBe(14);
     expect(tasksSheet.rows[2].cells.map((cell) => cell.value)).toEqual([
       "UID",
       "ID",
@@ -133,6 +137,7 @@ describe("mikuproject project xlsx", () => {
 
     expect(resourcesSheet.mergedRanges).toEqual([]);
     expect(resourcesSheet.rows[0].cells[0].value).toBe("Resources");
+    expect(resourcesSheet.rows[0].cells[0].fontSize).toBe(14);
     expect(resourcesSheet.rows[0].cells[0].fillColor).toBe("#C8E3D8");
     expect(resourcesSheet.rows[1].cells[0].value).toBe("Resource List");
     expect(resourcesSheet.rows[2].cells.map((cell) => cell.value)).toEqual([
@@ -158,6 +163,7 @@ describe("mikuproject project xlsx", () => {
 
     expect(assignmentsSheet.mergedRanges).toEqual([]);
     expect(assignmentsSheet.rows[0].cells[0].value).toBe("Assignments");
+    expect(assignmentsSheet.rows[0].cells[0].fontSize).toBe(14);
     expect(assignmentsSheet.rows[0].cells[0].fillColor).toBe("#D7D2EC");
     expect(assignmentsSheet.rows[1].cells[0].value).toBe("Assignment List");
     expect(assignmentsSheet.rows[2].cells.map((cell) => cell.value)).toEqual([
@@ -183,6 +189,7 @@ describe("mikuproject project xlsx", () => {
 
     expect(calendarsSheet.mergedRanges).toEqual([]);
     expect(calendarsSheet.rows[0].cells[0].value).toBe("Calendars");
+    expect(calendarsSheet.rows[0].cells[0].fontSize).toBe(14);
     expect(calendarsSheet.rows[0].cells[0].fillColor).toBe("#D7E3C4");
     expect(calendarsSheet.rows[1].cells[0].value).toBe("Calendar List");
     expect(calendarsSheet.rows[2].cells.map((cell) => cell.value)).toEqual([
@@ -200,6 +207,7 @@ describe("mikuproject project xlsx", () => {
 
     expect(nonWorkingDaysSheet.mergedRanges).toEqual([]);
     expect(nonWorkingDaysSheet.rows[0].cells[0].value).toBe("NonWorkingDays");
+    expect(nonWorkingDaysSheet.rows[0].cells[0].fontSize).toBe(14);
     expect(nonWorkingDaysSheet.rows[0].cells[0].fillColor).toBe("#E9C7D5");
     expect(nonWorkingDaysSheet.rows[1].cells[0].value).toBe("Calendar Exceptions");
     expect(nonWorkingDaysSheet.rows[2].cells.map((cell) => cell.value)).toEqual([

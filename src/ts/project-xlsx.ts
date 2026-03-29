@@ -8,6 +8,7 @@
     numberFormat?: "general" | "integer" | "decimal" | "date" | "datetime" | "percent";
     horizontalAlign?: "left" | "center" | "right";
     bold?: boolean;
+    fontSize?: number;
     fillColor?: string;
     border?: "thin";
   };
@@ -359,6 +360,7 @@
         {
           value: title,
           bold: true,
+          fontSize: 16,
           fillColor,
           horizontalAlign: "left"
         },
@@ -376,6 +378,7 @@
         {
           value: title,
           bold: true,
+          fontSize: 14,
           fillColor,
           horizontalAlign: "left"
         },

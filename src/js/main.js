@@ -745,6 +745,82 @@ WorkWeek1=${formatCalendarWorkWeekSummary(calendar)}</div>
         showToast("CSV を生成しました");
         setActiveTab("output");
     }
+    function exportCurrentProjectOverviewView() {
+        const model = ensureCurrentModel();
+        syncXmlTextFromModel(model);
+        const viewText = JSON.stringify(mikuprojectXml.exportProjectOverviewView(model), null, 2);
+        getTextArea("projectOverviewOutput").value = viewText;
+        downloadBlob(new Blob([`${viewText}\n`], { type: "application/json;charset=utf-8" }), "mikuproject-project-overview-view.json");
+        setStatus("project_overview_view を生成して保存しました");
+        showToast("project_overview_view を保存しました");
+        setActiveTab("output");
+    }
+    function extractLastJsonBlock(value) {
+        var _a, _b;
+        const matches = Array.from(value.matchAll(/```json\s*([\s\S]*?)```/g));
+        if (matches.length > 0) {
+            return ((_b = (_a = matches.at(-1)) === null || _a === void 0 ? void 0 : _a[1]) === null || _b === void 0 ? void 0 : _b.trim()) || "";
+        }
+        return value.trim();
+    }
+    async function importProjectDraftFromText() {
+        const sourceText = getTextArea("projectDraftImportInput").value.trim();
+        if (!sourceText) {
+            throw new Error("project_draft_view JSON を入力してください");
+        }
+        const jsonText = extractLastJsonBlock(sourceText);
+        const draft = JSON.parse(jsonText);
+        currentModel = mikuprojectXml.importProjectDraftView(draft);
+        syncXmlTextFromModel(currentModel);
+        const issues = mikuprojectXml.validateProjectModel(currentModel);
+        updateSummary(currentModel);
+        renderValidationIssues(issues);
+        renderXlsxImportSummary([]);
+        await exportCurrentMermaid({ silent: true });
+        setStatus(issues.length > 0 ? `project_draft_view を取り込みました。検証で ${issues.length} 件の問題があります` : "project_draft_view を取り込みました");
+        showToast("project_draft_view を取り込みました");
+        setActiveTab("transform", { skipTransformRefresh: true });
+    }
+    async function importProjectDraftFromFile(file) {
+        if (!file) {
+            throw new Error("project_draft_view JSON ファイルを選択してください");
+        }
+        const sourceText = await file.text();
+        getTextArea("projectDraftImportInput").value = sourceText;
+        await importProjectDraftFromText();
+    }
+    function exportCurrentPhaseDetailView(mode = "scoped") {
+        var _a, _b, _c, _d, _e, _f, _g, _h, _j;
+        const model = ensureCurrentModel();
+        syncXmlTextFromModel(model);
+        const requestedPhaseUid = getInput("phaseDetailUidInput").value.trim() || undefined;
+        const requestedRootUid = mode === "scoped" ? getInput("phaseDetailRootUidInput").value.trim() || undefined : undefined;
+        const maxDepthText = getInput("phaseDetailMaxDepthInput").value.trim();
+        const requestedMaxDepth = mode === "scoped" && maxDepthText !== "" ? Number.parseInt(maxDepthText, 10) : undefined;
+        if (typeof requestedMaxDepth === "number" && (!Number.isFinite(requestedMaxDepth) || requestedMaxDepth < 0)) {
+            throw new Error("max depth は 0 以上の整数で指定してください");
+        }
+        const view = mikuprojectXml.exportPhaseDetailView(model, requestedPhaseUid, {
+            mode,
+            rootUid: requestedRootUid,
+            maxDepth: requestedMaxDepth
+        });
+        if ((_a = view.phase) === null || _a === void 0 ? void 0 : _a.uid) {
+            getInput("phaseDetailUidInput").value = view.phase.uid;
+        }
+        getInput("phaseDetailRootUidInput").value = ((_b = view.scope) === null || _b === void 0 ? void 0 : _b.root_uid) || "";
+        getInput("phaseDetailMaxDepthInput").value = typeof ((_c = view.scope) === null || _c === void 0 ? void 0 : _c.max_depth) === "number" ? String(view.scope.max_depth) : "";
+        const viewText = JSON.stringify(view, null, 2);
+        getTextArea("phaseDetailOutput").value = viewText;
+        const phaseSuffix = ((_d = view.phase) === null || _d === void 0 ? void 0 : _d.uid) ? `-${view.phase.uid}` : "";
+        const modeSuffix = ((_e = view.scope) === null || _e === void 0 ? void 0 : _e.mode) === "scoped" ? "-scoped" : "-full";
+        const rootSuffix = ((_f = view.scope) === null || _f === void 0 ? void 0 : _f.root_uid) ? `-root-${view.scope.root_uid}` : "";
+        const depthSuffix = typeof ((_g = view.scope) === null || _g === void 0 ? void 0 : _g.max_depth) === "number" ? `-depth-${view.scope.max_depth}` : "";
+        downloadBlob(new Blob([`${viewText}\n`], { type: "application/json;charset=utf-8" }), `mikuproject-phase-detail-view${phaseSuffix}${modeSuffix}${rootSuffix}${depthSuffix}.json`);
+        setStatus(`phase_detail_view (${((_h = view.scope) === null || _h === void 0 ? void 0 : _h.mode) === "scoped" ? "scoped" : "full"}) を生成して保存しました`);
+        showToast(`phase_detail_view (${((_j = view.scope) === null || _j === void 0 ? void 0 : _j.mode) === "scoped" ? "scoped" : "full"}) を保存しました`);
+        setActiveTab("output");
+    }
     function exportCurrentXlsx() {
         const model = ensureCurrentModel();
         syncXmlTextFromModel(model);
@@ -928,6 +1004,41 @@ WorkWeek1=${formatCalendarWorkWeekSummary(calendar)}</div>
                 setStatus(error instanceof Error ? error.message : "CSV 生成に失敗しました");
             }
         });
+        getElement("exportProjectOverviewBtn").addEventListener("click", () => {
+            try {
+                exportCurrentProjectOverviewView();
+            }
+            catch (error) {
+                setStatus(error instanceof Error ? error.message : "project_overview_view 生成に失敗しました");
+            }
+        });
+        getElement("importProjectDraftFileBtn").addEventListener("click", () => {
+            getElement("importProjectDraftInput").click();
+        });
+        getElement("importProjectDraftBtn").addEventListener("click", async () => {
+            try {
+                await importProjectDraftFromText();
+            }
+            catch (error) {
+                setStatus(error instanceof Error ? error.message : "project_draft_view 取り込みに失敗しました");
+            }
+        });
+        getElement("exportPhaseDetailBtn").addEventListener("click", () => {
+            try {
+                exportCurrentPhaseDetailView("scoped");
+            }
+            catch (error) {
+                setStatus(error instanceof Error ? error.message : "phase_detail_view 生成に失敗しました");
+            }
+        });
+        getElement("exportPhaseDetailFullBtn").addEventListener("click", () => {
+            try {
+                exportCurrentPhaseDetailView("full");
+            }
+            catch (error) {
+                setStatus(error instanceof Error ? error.message : "phase_detail_view 生成に失敗しました");
+            }
+        });
         getElement("exportXlsxBtn").addEventListener("click", () => {
             try {
                 exportCurrentXlsx();
@@ -1002,6 +1113,21 @@ WorkWeek1=${formatCalendarWorkWeekSummary(calendar)}</div>
             }
             catch (error) {
                 setStatus(error instanceof Error ? error.message : "XLSX 読み込みに失敗しました");
+            }
+            finally {
+                if (input) {
+                    input.value = "";
+                }
+            }
+        });
+        getElement("importProjectDraftInput").addEventListener("change", async (event) => {
+            const input = event.target;
+            const file = (input === null || input === void 0 ? void 0 : input.files) && input.files[0];
+            try {
+                await importProjectDraftFromFile(file);
+            }
+            catch (error) {
+                setStatus(error instanceof Error ? error.message : "project_draft_view 読み込みに失敗しました");
             }
             finally {
                 if (input) {

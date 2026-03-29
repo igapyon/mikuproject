@@ -56,10 +56,19 @@ function mountDom() {
     <button id="exportWbsXlsxBtn" type="button">WBS XLSX</button>
     <button id="downloadMermaidSvgBtn" type="button" disabled>SVG</button>
     <button id="exportCsvBtn" type="button">CSV</button>
+    <button id="exportProjectOverviewBtn" type="button">project_overview_view</button>
+    <button id="exportPhaseDetailFullBtn" type="button">phase_detail_view full</button>
+    <button id="exportPhaseDetailBtn" type="button">phase_detail_view</button>
+    <button id="importProjectDraftFileBtn" type="button">project_draft_view JSON</button>
+    <button id="importProjectDraftBtn" type="button">project_draft_view を取り込む</button>
     <button id="resetWbsHolidayDatesBtn" type="button">WBS 祝日を既定値へ戻す</button>
     <button id="downloadXmlBtn" type="button">MS Project XML</button>
     <input id="importXmlInput" type="file" />
     <input id="importXlsxInput" type="file" />
+    <input id="importProjectDraftInput" type="file" />
+    <input id="phaseDetailUidInput" type="text" />
+    <input id="phaseDetailRootUidInput" type="text" />
+    <input id="phaseDetailMaxDepthInput" type="text" />
     <div id="statusMessage"></div>
     <div class="md-top-tabs" role="tablist" aria-label="mikuproject sections">
       <button type="button" class="md-top-tab is-active" data-tab="input" role="tab" aria-selected="true" aria-controls="tabPanelInput">
@@ -161,6 +170,12 @@ function mountDom() {
         <summary class="md-debug-accordion__summary">デバッグ情報</summary>
         <div class="md-debug-accordion__body">
           <textarea id="csvOutput"></textarea>
+          <textarea id="projectDraftImportInput"></textarea>
+          <textarea id="projectOverviewOutput"></textarea>
+          <input id="phaseDetailUidInput" />
+          <input id="phaseDetailRootUidInput" />
+          <input id="phaseDetailMaxDepthInput" />
+          <textarea id="phaseDetailOutput"></textarea>
         </div>
       </details>
     </section>
@@ -295,6 +310,79 @@ describe("mikuproject main", () => {
     expect(document.getElementById("tabPanelInput").hidden).toBe(true);
     expect(document.getElementById("tabPanelTransform").hidden).toBe(true);
     expect(document.getElementById("tabPanelOutput").hidden).toBe(false);
+  });
+
+  it("exports ai projection views", () => {
+    bootPage();
+
+    document.getElementById("xmlInput").value = hierarchyXml;
+    parseXmlViaHook();
+    const createObjectUrlCalls = URL.createObjectURL.mock.calls.length;
+    const anchorClickCalls = HTMLAnchorElement.prototype.click.mock.calls.length;
+
+    document.getElementById("exportProjectOverviewBtn").click();
+    document.getElementById("exportPhaseDetailFullBtn").click();
+
+    const projectOverview = JSON.parse(document.getElementById("projectOverviewOutput").value);
+    const phaseDetail = JSON.parse(document.getElementById("phaseDetailOutput").value);
+
+    expect(projectOverview.view_type).toBe("project_overview_view");
+    expect(Array.isArray(projectOverview.phases)).toBe(true);
+    expect(projectOverview.phases.length).toBeGreaterThan(0);
+    expect(phaseDetail.view_type).toBe("phase_detail_view");
+    expect(Array.isArray(phaseDetail.tasks)).toBe(true);
+    expect(phaseDetail.phase.uid).toBeTruthy();
+    expect(phaseDetail.scope).toEqual({ mode: "full", root_uid: null, max_depth: null });
+    expect(URL.createObjectURL.mock.calls.length - createObjectUrlCalls).toBeGreaterThanOrEqual(2);
+    expect(HTMLAnchorElement.prototype.click.mock.calls.length - anchorClickCalls).toBeGreaterThanOrEqual(2);
+  });
+
+  it("exports scoped phase_detail_view", () => {
+    bootPage();
+
+    document.getElementById("xmlInput").value = hierarchyXml;
+    parseXmlViaHook();
+    document.getElementById("phaseDetailUidInput").value = "1";
+    document.getElementById("phaseDetailRootUidInput").value = "2";
+    document.getElementById("phaseDetailMaxDepthInput").value = "1";
+
+    document.getElementById("exportPhaseDetailBtn").click();
+
+    const phaseDetail = JSON.parse(document.getElementById("phaseDetailOutput").value);
+    expect(phaseDetail.scope).toEqual({ mode: "scoped", root_uid: "2", max_depth: 1 });
+    expect(phaseDetail.tasks.every((task) => ["2", "3", "4", "5", "18"].includes(task.uid))).toBe(true);
+    expect(phaseDetail.tasks.some((task) => task.uid === "19")).toBe(false);
+  });
+
+  it("imports project_draft_view", async () => {
+    bootPage();
+
+    document.getElementById("projectDraftImportInput").value = [
+      "説明文",
+      "```json",
+      JSON.stringify({
+        view_type: "project_draft_view",
+        project: {
+          name: "新規基幹刷新",
+          planned_start: "2026-04-01T09:00:00"
+        },
+        tasks: [
+          { uid: "draft-1", name: "要件定義", parent_uid: null, position: 0, is_summary: true },
+          { uid: "draft-2", name: "ヒアリング", parent_uid: "draft-1", position: 0, planned_duration_hours: 40, planned_start: "2026-04-01T09:00:00" },
+          { uid: "draft-3", name: "要件確定", parent_uid: "draft-1", position: 1, is_milestone: true, predecessors: ["draft-2"], planned_start: "2026-04-08T18:00:00", planned_finish: "2026-04-08T18:00:00" }
+        ]
+      }, null, 2),
+      "```"
+    ].join("\n");
+
+    document.getElementById("importProjectDraftBtn").click();
+    await flushAsyncWork();
+    await flushAsyncWork();
+
+    expect(document.getElementById("summaryProjectName").textContent).toBe("新規基幹刷新");
+    expect(document.getElementById("summaryTaskCount").textContent).toBe("3");
+    expect(document.getElementById("xmlInput").value).toContain("<Name>新規基幹刷新</Name>");
+    expect(document.getElementById("modelOutput").value).toContain("\"uid\": \"draft-3\"");
   });
 
   it("parses xml into internal model summary", () => {

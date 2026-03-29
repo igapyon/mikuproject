@@ -10,6 +10,7 @@
     verticalAlign?: "top" | "center" | "bottom";
     wrapText?: boolean;
     bold?: boolean;
+    fontSize?: number;
     fillColor?: string;
     border?: "thin";
   };
@@ -32,6 +33,22 @@
     displayDaysAfterBaseDate?: number;
     useBusinessDaysForDisplayRange?: boolean;
     useBusinessDaysForProgressBand?: boolean;
+  };
+
+  type WbsSheetLayoutHelper = {
+    columnName(columnIndex: number): string;
+    columnIndex(columnReference: string): number;
+    reference(rowNumber: number, columnIndex: number): string;
+    parseCellReference(reference: string): {
+      reference: string;
+      rowNumber: number;
+      rowIndex: number;
+      columnName: string;
+      columnIndex: number;
+    };
+    range(startReference: string, endReference: string): string;
+    describeCell(reference: string): string;
+    logCell(reference: string, label?: string, logger?: (...args: unknown[]) => void): string;
   };
 
   const HEADER_FILL = "#D9EAF7";
@@ -64,6 +81,7 @@
   const SCHEDULE_COLUMN_FILL = "#FCFAF7";
   const PROGRESS_COLUMN_FILL = "#FCF8FB";
   const REFERENCE_COLUMN_FILL = "#F8FBFB";
+  const WBS_LAYOUT = createWbsSheetLayoutHelper();
 
   function collectWbsHolidayDates(model: ProjectModel): string[] {
     const holidaySet = new Set<string>();
@@ -130,7 +148,7 @@
       "先行"
     ];
     const dividerColumnIndex = fixedHeaders.length + 1;
-    const dateBandStartColumnIndex = dividerColumnIndex + 1;
+    const dateBandStartColumnIndex = dividerColumnIndex;
     const totalColumns = fixedHeaders.length + 1 + dateBand.length;
     const rows = [
       sheetTitleRow("WBS", totalColumns),
@@ -328,6 +346,7 @@
         {
           value: title,
           bold: true,
+          fontSize: 16,
           horizontalAlign: "left"
         },
         ...Array.from({ length: Math.max(0, columnCount - 1) }, () => ({
@@ -371,12 +390,21 @@
     ];
     return {
       mergedRanges: [
-        `${columnName(startColumnIndex + 1)}${startRowNumber}:${columnName(startColumnIndex + 4)}${startRowNumber}`,
+        WBS_LAYOUT.range(
+          WBS_LAYOUT.reference(startRowNumber, startColumnIndex),
+          WBS_LAYOUT.reference(startRowNumber, startColumnIndex + 3)
+        ),
         ...items.map((_, index) => {
           const rowNumber = startRowNumber + index + 1;
           return [
-            `${columnName(startColumnIndex + 1)}${rowNumber}:${columnName(startColumnIndex + 2)}${rowNumber}`,
-            `${columnName(startColumnIndex + 3)}${rowNumber}:${columnName(startColumnIndex + 4)}${rowNumber}`
+            WBS_LAYOUT.range(
+              WBS_LAYOUT.reference(rowNumber, startColumnIndex),
+              WBS_LAYOUT.reference(rowNumber, startColumnIndex + 1)
+            ),
+            WBS_LAYOUT.range(
+              WBS_LAYOUT.reference(rowNumber, startColumnIndex + 2),
+              WBS_LAYOUT.reference(rowNumber, startColumnIndex + 3)
+            )
           ];
         }).flat()
       ],
@@ -404,12 +432,15 @@
       { value: "Crit:クリティカル", fillColor: "#F3E1E9" },
       { value: "-:未設定", fillColor: PLACEHOLDER_FILL }
     ];
-    const startColumnRef = columnName(1);
-    const endColumnRef = columnName(3);
+    const startColumnRef = WBS_LAYOUT.reference(startRowNumber, WBS_LAYOUT.columnIndex("A"));
+    const endColumnRef = WBS_LAYOUT.reference(startRowNumber, WBS_LAYOUT.columnIndex("C"));
     return {
       mergedRanges: [
-        `${startColumnRef}${startRowNumber}:${endColumnRef}${startRowNumber}`,
-        ...items.map((_, index) => `${startColumnRef}${startRowNumber + index + 1}:${endColumnRef}${startRowNumber + index + 1}`)
+        WBS_LAYOUT.range(startColumnRef, endColumnRef),
+        ...items.map((_, index) => WBS_LAYOUT.range(
+          WBS_LAYOUT.reference(startRowNumber + index + 1, WBS_LAYOUT.columnIndex("A")),
+          WBS_LAYOUT.reference(startRowNumber + index + 1, WBS_LAYOUT.columnIndex("C"))
+        ))
       ],
       rows: [
         blockHeaderRow(columnCount, 0, "凡例"),
@@ -423,11 +454,14 @@
     weekBandRanges: Array<{ startIndex: number; label: string; hasMonthBoundary: boolean }>,
     dateBandLength: number
   ) {
+    const weekLabelColumnIndex = WBS_LAYOUT.columnIndex("S");
+    const dividerColumnIndex = WBS_LAYOUT.columnIndex("T");
     const bandCells = Array.from({ length: dateBandLength }, () => ({} as WbsXlsxCellLike));
     weekBandRanges.forEach((item, index) => {
       bandCells[item.startIndex] = {
         value: item.label,
         bold: true,
+        fontSize: 14,
         border: "thin" as const,
         horizontalAlign: "center" as const,
         fillColor: item.hasMonthBoundary ? MONTH_BOUNDARY_WEEK_FILL : (index % 2 === 0 ? "#EDF4FB" : "#EAF1F9")
@@ -437,19 +471,20 @@
       height: 24,
       cells: [
         ...Array.from({ length: fixedColumnCount }, (_, index) => {
-          if (index === 18) {
+          if (index === weekLabelColumnIndex) {
             return {
               value: "週",
               bold: true,
+              fontSize: 14,
               border: "thin" as const,
               horizontalAlign: "center" as const,
               fillColor: "#E3EEF9"
             };
           }
-          if (index === 19) {
+          if (index === dividerColumnIndex) {
             return dividerCell();
           }
-          if (index < 18) {
+          if (index < weekLabelColumnIndex) {
             return {};
           }
           return {};
@@ -504,7 +539,10 @@
       overlaySummaryPair(blockRows[rowIndex], startColumnIndex + 3, countItems[index].label, countItems[index].value, countItems[index].fillColor);
     }
     return {
-      mergedRanges: [`${columnName(startColumnIndex + 1)}${startRowNumber}:${columnName(startColumnIndex + 2)}${startRowNumber}`],
+      mergedRanges: [WBS_LAYOUT.range(
+        WBS_LAYOUT.reference(startRowNumber, startColumnIndex),
+        WBS_LAYOUT.reference(startRowNumber, startColumnIndex + 1)
+      )],
       rows: blockRows
     };
   }
@@ -516,6 +554,7 @@
       border: "thin",
       horizontalAlign: "left",
       bold: true,
+      fontSize: 14,
       fillColor: HEADER_ID_FILL
     };
     cells[startColumnIndex + 1] = {
@@ -533,6 +572,7 @@
       border: "thin",
       horizontalAlign: "left",
       bold: true,
+      fontSize: 14,
       fillColor: HEADER_ID_FILL
     };
     for (let offset = 1; offset < 4; offset += 1) {
@@ -1044,11 +1084,12 @@
       while (chunkEnd + 1 < dateBand.length && formatWeekKey(dateBand[chunkEnd + 1]) === weekStart) {
         chunkEnd += 1;
       }
-      const startColumn = columnName(startColumnIndex + chunkStart);
-      const endColumn = columnName(startColumnIndex + chunkEnd);
       const chunkDays = dateBand.slice(chunkStart, chunkEnd + 1);
       ranges.push({
-        range: `${startColumn}${rowNumber}:${endColumn}${rowNumber}`,
+        range: WBS_LAYOUT.range(
+          WBS_LAYOUT.reference(rowNumber, startColumnIndex + chunkStart),
+          WBS_LAYOUT.reference(rowNumber, startColumnIndex + chunkEnd)
+        ),
         startIndex: chunkStart,
         label: formatWeekLabel(weekStart, chunkDays),
         hasMonthBoundary: chunkDays.some((day) => isMonthStart(day))
@@ -1234,24 +1275,80 @@
     return `週 ${startLabel} / ${tailMonths.join(" / ")}`;
   }
 
-  function columnName(index: number): string {
-    let current = index;
-    let name = "";
-    while (current > 0) {
-      const remainder = (current - 1) % 26;
-      name = String.fromCharCode(65 + remainder) + name;
-      current = Math.floor((current - 1) / 26);
-    }
-    return name;
+  function createWbsSheetLayoutHelper(): WbsSheetLayoutHelper {
+    return {
+      columnName(columnIndex: number): string {
+        let current = columnIndex + 1;
+        let name = "";
+        while (current > 0) {
+          const remainder = (current - 1) % 26;
+          name = String.fromCharCode(65 + remainder) + name;
+          current = Math.floor((current - 1) / 26);
+        }
+        return name;
+      },
+      columnIndex(columnReference: string): number {
+        const normalized = (columnReference || "").trim().toUpperCase();
+        if (!/^[A-Z]+$/.test(normalized)) {
+          throw new Error(`Invalid column reference: ${columnReference}`);
+        }
+        let value = 0;
+        for (const character of normalized) {
+          value = (value * 26) + (character.charCodeAt(0) - 64);
+        }
+        return value - 1;
+      },
+      reference(rowNumber: number, columnIndex: number): string {
+        if (!Number.isInteger(rowNumber) || rowNumber <= 0) {
+          throw new Error(`Invalid row number: ${rowNumber}`);
+        }
+        if (!Number.isInteger(columnIndex) || columnIndex < 0) {
+          throw new Error(`Invalid column index: ${columnIndex}`);
+        }
+        return `${this.columnName(columnIndex)}${rowNumber}`;
+      },
+      parseCellReference(reference: string) {
+        const match = /^([A-Z]+)(\d+)$/i.exec((reference || "").trim());
+        if (!match) {
+          throw new Error(`Invalid cell reference: ${reference}`);
+        }
+        const rowNumber = Number(match[2]);
+        const columnName = match[1].toUpperCase();
+        const columnIndex = this.columnIndex(columnName);
+        return {
+          reference: `${columnName}${rowNumber}`,
+          rowNumber,
+          rowIndex: rowNumber - 1,
+          columnName,
+          columnIndex
+        };
+      },
+      range(startReference: string, endReference: string): string {
+        return `${startReference}:${endReference}`;
+      },
+      describeCell(reference: string): string {
+        const cell = this.parseCellReference(reference);
+        return `${cell.reference} (row ${cell.rowNumber}, rowIndex ${cell.rowIndex}, column ${cell.columnName}, columnIndex ${cell.columnIndex})`;
+      },
+      logCell(reference: string, label?: string, logger?: (...args: unknown[]) => void): string {
+        const message = label
+          ? `${label}: ${this.describeCell(reference)}`
+          : this.describeCell(reference);
+        (logger || console.log)(message);
+        return message;
+      }
+    };
   }
 
   (globalThis as typeof globalThis & {
     __mikuprojectWbsXlsx?: {
       collectWbsHolidayDates: typeof collectWbsHolidayDates;
       exportWbsWorkbook: typeof exportWbsWorkbook;
+      layout: WbsSheetLayoutHelper;
     };
   }).__mikuprojectWbsXlsx = {
     collectWbsHolidayDates,
-    exportWbsWorkbook
+    exportWbsWorkbook,
+    layout: WBS_LAYOUT
   };
 })();

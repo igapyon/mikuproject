@@ -36,14 +36,14 @@
 - `tests/`: Vitest ベースのテスト
 - `testdata/`: XML テストデータ
 - `scripts/`: ビルド補助スクリプト
-- `mikuproject-spec.md`: 現行仕様メモ
-- `mikuproject-gap-notes.md`: 保持項目や互換性のギャップメモ
+- `docs/spec.md`: 現行仕様メモ
+- `docs/gap-notes.md`: 保持項目や互換性のギャップメモ
 
 ## ドキュメントの役割
 
 - `README.md`: このリポジトリの入口です。概要、使い方、ビルド方法、運用ルールを簡潔にまとめます。
-- `mikuproject-spec.md`: 仕様と設計判断の置き場です。データモデル、入出力方針、対応範囲、制約を継続的に整理します。
-- `TODO.md`: まだ終わっていない作業だけを書きます。方針メモや完了済み事項は原則ここに残しません。
+- `docs/spec.md`: 仕様と設計判断の置き場です。データモデル、入出力方針、対応範囲、制約を継続的に整理します。
+- `docs/TODO.md`: まだ終わっていない作業だけを書きます。方針メモや完了済み事項は原則ここに残しません。
 
 ## 使い方
 
@@ -143,7 +143,8 @@ npm run build
 
 ## 関連ドキュメント
 
-- [mikuproject-spec.md](/Users/igapyon/Documents/git/mikuproject/mikuproject-spec.md)
-- [mikuproject-gap-notes.md](/Users/igapyon/Documents/git/mikuproject/mikuproject-gap-notes.md)
-- [TODO.md](/Users/igapyon/Documents/git/mikuproject/TODO.md)
+- [docs/spec.md](/Users/igapyon/Documents/git/mikuproject/docs/spec.md)
+- [docs/gap-notes.md](/Users/igapyon/Documents/git/mikuproject/docs/gap-notes.md)
+- [docs/msprojectxml-ai-integration.md](/Users/igapyon/Documents/git/mikuproject/docs/msprojectxml-ai-integration.md)
+- [docs/TODO.md](/Users/igapyon/Documents/git/mikuproject/docs/TODO.md)
 - [LICENSE](/Users/igapyon/Documents/git/mikuproject/LICENSE)

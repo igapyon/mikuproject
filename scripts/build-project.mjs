@@ -103,7 +103,9 @@ function transpileTypeScript(target, tsModule) {
 }
 
 function applyTemplateValues(source) {
-  return source.replaceAll("{{BUILD_DATE}}", formatBuildDate(new Date()));
+  return source
+    .replaceAll("{{BUILD_DATE}}", formatBuildDate(new Date()))
+    .replaceAll("{{AI_PROMPT_TEXT}}", escapeHtml(loadAiPromptText()));
 }
 
 function formatBuildDate(date) {
@@ -111,4 +113,16 @@ function formatBuildDate(date) {
   const month = String(date.getMonth() + 1).padStart(2, "0");
   const day = String(date.getDate()).padStart(2, "0");
   return `${year}-${month}-${day}`;
+}
+
+function loadAiPromptText() {
+  const promptPath = path.resolve(ROOT, "docs/mikuproject-ai-json-spec.md");
+  return fs.readFileSync(promptPath, "utf8");
+}
+
+function escapeHtml(text) {
+  return text
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;");
 }

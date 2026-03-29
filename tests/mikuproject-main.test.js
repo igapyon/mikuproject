@@ -95,6 +95,15 @@ function mountDom() {
       </button>
     </div>
     <section id="tabPanelInput" class="md-flow-section md-tab-panel" data-tab-panel="input">
+      <div class="md-flow-section__header">
+        <h2 class="md-flow-section__title">
+          <span class="md-flow-section__step">1</span>
+          <span>Input</span>
+          <lht-help-tooltip label="Input の説明" wide>
+            <p>MS Project XML、XLSX、mikuproject_workbook_json (.json)、生成AI 向け編集用 JSON (.editjson)、CSV を読み込みます。</p>
+          </lht-help-tooltip>
+        </h2>
+      </div>
       <span class="md-button-with-help">
         <button id="importFileBtnWithHelp" type="button">Load from file help host</button>
         <span class="md-button-help-anchor">
@@ -109,9 +118,39 @@ function mountDom() {
           <textarea id="xmlInput"></textarea>
         </div>
       </details>
+      <details class="md-note-accordion">
+        <summary class="md-note-accordion__summary">新規生成AI連携</summary>
+        <div class="md-note-accordion__body">
+          <section class="md-note-card md-note-card--accent">
+            <div class="md-panel-actions">
+              <button id="copyAiPromptBtnPane" type="button">mikuproject 用の生成AIプロンプト</button>
+              <button id="importProjectDraftBtn" type="button">貼り付けた JSON を取り込む</button>
+              <lht-help-tooltip label="新規生成AI連携の説明" wide>
+                <p>(i) まず生成AIに 生成AIプロンプト を読み込ませます。</p>
+              </lht-help-tooltip>
+              <button id="loadProjectDraftSampleBtn" type="button">サンプル</button>
+            </div>
+            <template id="aiPromptTemplate"># mikuproject AI JSON Spec
+
+あなたはこれから mikuproject とやりとりします。</template>
+            <div class="md-form-grid">
+              <textarea id="projectDraftImportInput"></textarea>
+            </div>
+          </section>
+        </div>
+      </details>
       <div id="xmlSaveState" class="md-save-state md-save-state--dirty">XML 保存状態: 未保存</div>
     </section>
     <section id="tabPanelTransform" class="md-flow-section md-tab-panel" data-tab-panel="transform" hidden>
+      <div class="md-flow-section__header">
+        <h2 class="md-flow-section__title">
+          <span class="md-flow-section__step">2</span>
+          <span>Overview</span>
+          <lht-help-tooltip label="Overview の説明" wide>
+            <p>内部モデル、検証結果、Mermaid preview を確認します。取込後の warning と差分要約もここに表示します。</p>
+          </lht-help-tooltip>
+        </h2>
+      </div>
       <div id="summaryProjectName"></div>
       <div id="summaryTaskCount"></div>
       <div id="summaryResourceCount"></div>
@@ -144,6 +183,15 @@ function mountDom() {
       </div>
     </section>
     <section id="tabPanelOutput" class="md-flow-section md-tab-panel" data-tab-panel="output" hidden>
+      <div class="md-flow-section__header">
+        <h2 class="md-flow-section__title">
+          <span class="md-flow-section__step">3</span>
+          <span>Output</span>
+          <lht-help-tooltip label="Output の説明" wide>
+            <p>MS Project XML、XLSX、JSON、CSV、WBS XLSX、Mermaid、生成AI 向け .editjson を保存します。</p>
+          </lht-help-tooltip>
+        </h2>
+      </div>
       <details class="md-debug-accordion">
         <summary class="md-debug-accordion__summary">設定</summary>
         <div class="md-debug-accordion__body">
@@ -163,7 +211,6 @@ function mountDom() {
       <details class="md-debug-accordion">
         <summary class="md-debug-accordion__summary">デバッグ情報</summary>
         <div class="md-debug-accordion__body">
-          <textarea id="projectDraftImportInput"></textarea>
           <textarea id="workbookJsonOutput"></textarea>
           <textarea id="aiBundleOutput"></textarea>
           <textarea id="projectOverviewOutput"></textarea>
@@ -178,6 +225,10 @@ function mountDom() {
   `;
   const toast = document.getElementById("toast");
   toast.show = vi.fn();
+  const copyButton = document.getElementById("copyAiPromptBtnPane");
+  if (copyButton) {
+    copyButton.id = "copyAiPromptBtn";
+  }
 }
 
 function bootPage() {
@@ -237,6 +288,17 @@ describe("mikuproject main", () => {
       configurable: true
     });
     HTMLAnchorElement.prototype.click = vi.fn();
+    const clipboard = {
+      writeText: vi.fn(async () => {})
+    };
+    Object.defineProperty(globalThis.navigator, "clipboard", {
+      value: clipboard,
+      configurable: true
+    });
+    Object.defineProperty(window.navigator, "clipboard", {
+      value: clipboard,
+      configurable: true
+    });
     vi.useFakeTimers();
     vi.setSystemTime(new Date("2026-03-16T23:12:00+09:00"));
   });
@@ -248,15 +310,22 @@ describe("mikuproject main", () => {
     expect(document.getElementById("statusMessage").textContent).toContain("サンプル XML");
     expect(document.getElementById("xmlSaveState").textContent).toContain("XML 保存状態: 未保存");
     expect(document.querySelector('lht-help-tooltip[label="Load from file の説明"]')).not.toBeNull();
+    expect(document.querySelector('lht-help-tooltip[label="Input の説明"]')).not.toBeNull();
+    expect(document.querySelector('lht-help-tooltip[label="Overview の説明"]')).not.toBeNull();
+    expect(document.querySelector('lht-help-tooltip[label="Output の説明"]')).not.toBeNull();
     expect(document.body.textContent).toContain("取込結果");
     expect(document.body.textContent).toContain("検証メッセージ");
     expect(document.body.textContent).toContain("取込 warning");
     expect(document.body.textContent).toContain("差分要約");
     expect(document.body.textContent).toContain("差分反映・warning・検証結果を確認します");
     expect(document.body.textContent).not.toContain("Workbook JSON");
+    expect(document.body.textContent).not.toContain("入力、読込、編集元データの確認をここにまとめます。");
+    expect(document.body.textContent).not.toContain("内部モデル、要約、検証結果、プレビューをここで確認します。");
+    expect(document.body.textContent).not.toContain("出力設定と生成結果の確認をここにまとめます。");
     expect(document.body.textContent).toContain("デバッグ情報");
     expect(document.querySelector(".md-debug-accordion")?.hasAttribute("open")).toBe(false);
     expect(document.querySelectorAll(".md-debug-accordion")[1]?.hasAttribute("open")).toBe(false);
+    expect(document.querySelector(".md-note-accordion")?.hasAttribute("open")).toBe(false);
     expect(document.body.textContent).toContain("WBS XLSX の祝日指定");
     expect(document.body.textContent).toContain("設定");
     expect(document.querySelectorAll(".md-debug-accordion")[2]?.hasAttribute("open")).toBe(false);
@@ -427,6 +496,17 @@ describe("mikuproject main", () => {
     expect(draftText).toContain("\"name\": \"mikuproject開発\"");
     expect(draftText).toContain("架空検討フェーズ【架空】");
     expect(document.getElementById("statusMessage").textContent).toContain("サンプル project_draft_view");
+  });
+
+  it("copies ai prompt to clipboard", async () => {
+    bootPage();
+
+    document.getElementById("copyAiPromptBtn").click();
+    await flushAsyncWork();
+
+    expect(globalThis.navigator.clipboard.writeText.mock.calls.length).toBeGreaterThan(0);
+    expect(globalThis.navigator.clipboard.writeText.mock.calls.at(-1)[0]).toContain("# mikuproject AI JSON Spec");
+    expect(document.getElementById("statusMessage").textContent).toContain("生成AIプロンプトをクリップボードにコピーしました");
   });
 
   it("parses xml into internal model summary", () => {

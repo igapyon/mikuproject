@@ -261,7 +261,7 @@
 - `CSV + ParentID` は、`ID / ParentID / Name` を最小列とする「まず押さえるべき、よくある交換形式」の第1候補として整理開始した
 - `Mermaid gantt` は可視化・共有向けの片方向補助出力、`CSV + ParentID` は編集・交換向けの候補として切り分けて考える
 - `CSV + ParentID` は最小出力と最小逆変換を実装済みで、現時点の出力列は `ID / ParentID / WBS / Name / Start / Finish / PredecessorID / Resource / PercentComplete / PercentWorkComplete / Milestone / Summary / Critical / Type / Priority / Work / CalendarUID / ConstraintType / ConstraintDate / Deadline / Notes`
-- UI には `CSV を生成` に加えて `CSV を解析` 導線を追加済み
+- UI には `CSV` のダウンロード導線と、CSV ファイル読込導線を追加済み
 - 逆変換では `ParentID` から task 階層を再構築し、`PredecessorID` と `Resource` から最小の dependency / resource / assignment を復元する
 - `PredecessorID / Resource` は `|` に加えて `,` `;` `、` の複数区切りを受け、trim と重複除去をかける
 - 構造エラーとして `ID` 重複、空 `Name`、自己参照 / 欠落 / 循環 `ParentID` を import 時点で弾くようにした

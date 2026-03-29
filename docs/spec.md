@@ -146,6 +146,25 @@ preview / validation の現状メモ:
 - validation では、`PercentComplete` の範囲外や `Start > Finish` のような編集結果も UI 上で追えるようにする
 - validation が残っていても、`XML Export` はその時点の XML をそのまま保存できるようにする
 
+### 現在の UI 上の整理
+
+現行 UI は、概ね次の 3 画面構成で整理している。
+
+- `Input`
+  - `MS Project XML`、`XLSX`、`CSV + ParentID` の読込
+  - サンプル XML の読込
+  - 生成AIが返した `project_draft_view` の取込
+- `Overview`
+  - 内部モデルの要約確認
+  - validation の確認
+  - Mermaid gantt プレビュー
+  - preview 表示
+- `Output`
+  - `MS Project XML`、`XLSX`、`WBS XLSX`、`CSV + ParentID` の保存
+  - 生成AI向け `project_overview_view` / `phase_detail_view` の出力
+
+ここでいう `Overview` は、内部実装上の `transform` 相当タブを、ユーザー向けに読み替えた呼称である。
+
 ## STEP 1 の入力データ前提
 
 `MS Project` 実機を保有していないため、STEP 1 の入力データ前提は次のとおりとする。
@@ -720,6 +739,9 @@ STEP 1 では、次は非目標とする。
 
 - 現時点では仕様草案段階であり、`CSV + ParentID <-> ProjectModel` の完全往復仕様は未確定
 - 将来必要であれば、`tasks.csv / resources.csv / assignments.csv` の複数表構成も比較対象にする
+- 現在の UI では、`CSV + ParentID` は textarea ではなくファイルベースの補助入出力として扱う
+  - `Input` 側は CSV ファイル読込
+  - `Output` 側は CSV ダウンロード
 
 複数 CSV 構成の比較メモ:
 
@@ -832,7 +854,7 @@ STEP 1 では、次は非目標とする。
 - 最小逆変換では `ID / ParentID / Name` を必須とし、`WBS / Start / Finish / PredecessorID / Resource / PercentComplete / PercentWorkComplete / Milestone / Summary / Critical / Type / Priority / Work / CalendarUID / ConstraintType / ConstraintDate / Deadline / Notes` を可能な範囲で復元する
 - 最小逆変換では `PredecessorID / Resource` の複数値区切りとして `|` に加えて `,` `;` `、` を受け付け、trim と重複除去を行う
 - 最小逆変換では `ID` 重複、空 `Name`、自己参照 `ParentID`、欠落 `ParentID`、循環 `ParentID` を import error として扱う
-- UI には `CSV を生成` と `CSV を解析` の両導線を追加済み
+- UI には `CSV` のダウンロード導線と、CSV ファイル読込導線を追加済み
 - 現時点では `Project` 詳細、`Calendars`、`Baseline`、`TimephasedData`、assignment 詳細は CSV から完全復元しない
 
 ## 次に決めること

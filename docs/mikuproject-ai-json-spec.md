@@ -48,7 +48,7 @@ projection JSON の代表例:
   },
   "phases": [
     {
-      "uid": 100,
+      "uid": "100",
       "name": "要件定義",
       "wbs": "1",
       "task_count": 18,
@@ -68,7 +68,7 @@ projection JSON の代表例:
     "name": "新基幹システム導入"
   },
   "phase": {
-    "uid": 100,
+    "uid": "100",
     "name": "要件定義",
     "wbs": "1",
     "planned_start": "2026-04-01",
@@ -81,9 +81,9 @@ projection JSON の代表例:
   },
   "tasks": [
     {
-      "uid": 110,
+      "uid": "110",
       "name": "現状業務整理",
-      "parent_uid": 100,
+      "parent_uid": "100",
       "position": 0,
       "planned_duration": "PT40H",
       "planned_duration_hours": 40,
@@ -93,7 +93,7 @@ projection JSON の代表例:
   ],
   "milestones": [
     {
-      "uid": 190,
+      "uid": "190",
       "name": "要件定義完了",
       "date": "2026-05-15"
     }
@@ -116,13 +116,13 @@ projection JSON の代表例:
     "name": "新基幹システム導入"
   },
   "phase": {
-    "uid": 100,
+    "uid": "100",
     "name": "要件定義"
   },
   "target_task": {
-    "uid": 120,
+    "uid": "120",
     "name": "要件ヒアリング",
-    "parent_uid": 100,
+    "parent_uid": "100",
     "position": 1,
     "planned_duration": "PT80H",
     "planned_duration_hours": 80,
@@ -131,7 +131,7 @@ projection JSON の代表例:
   },
   "predecessors": [
     {
-      "task_uid": 110,
+      "task_uid": "110",
       "name": "現状業務整理",
       "type": "FS",
       "lag": "PT0H",
@@ -140,7 +140,7 @@ projection JSON の代表例:
   ],
   "successors": [
     {
-      "task_uid": 130,
+      "task_uid": "130",
       "name": "要件確定",
       "type": "FS",
       "lag": "PT0H",
@@ -328,8 +328,10 @@ Patch の例:
 出力ルール:
 - 対話インタフェースでは、説明文を返してよいです
 - 変更理由や不確実性を簡潔に説明してよいです
-- ただし、Patch JSON は必ず最後に 1 個の `json` コードフェンスで囲って返してください
-- `mikuproject` が処理対象にするのは、その最後の `json` コードフェンス内の Patch JSON のみです
+- ただし、最終的な機械処理対象 JSON は必ず最後に 1 個の `json` コードフェンスで囲って返してください
+- 既存編集モードでは、その最後の `json` コードフェンス内は `Patch JSON` です
+- 新規生成モードでは、その最後の `json` コードフェンス内は `project_draft_view` です
+- `mikuproject` が処理対象にするのは、その最後の `json` コードフェンス内の JSON のみです
 - 不明な場合は変更を最小にしてください
 - 変更不要なら最後の `json` コードフェンスで空の `operations` を返してください
 - 与えられていない task や field を勝手に推測しないでください

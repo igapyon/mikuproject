@@ -10,11 +10,16 @@
 - WBS workbook と `mikuproject-sample.xlsx` のタイトル行で、フォントサイズ指定をどこまで使うか整理する
 - `Mermaid` ランタイムをこのリポジトリ内でどう扱うか決める
 - `Mermaid` の SVG プレビューを、独立リポジトリ単体で再現できるようにする
+- `mikuproject` の主要入出力を CLI からも扱えるようにするか検討する
 - `local-data/` 配下のファイルを、参照用・検証用・生成物で整理する
 - `local-data/` に置くべきでない生成物や一時ファイルがないか見直す
 - `npm test` を `scripts/run-tests.mjs` ベースへ切り替えるか検討する
 - `main.test.js` に残っている `xlsx import` の file input wiring を、UI 配線確認と import 結果確認へさらに分離する
 - `main.ts` の summary / validation / preview 描画を別モジュール化し、DOM テストをさらに軽くする
+- `phase_detail_view scoped` の `phase UID / root UID / max depth` 指定を、より選びやすい UI に改善する
+- UI の微調整として、`Input / Overview / Output` の各カードの余白・見出し・ボタン階層を見直し、`miku` 系テーマの統一感をさらに整える
+- `Overview` タブの summary / validation / preview の情報密度を見直し、どこを見る画面なのかをより直感的に伝わる構成へ調整する
+- `Output` タブの生成AI連携と各種 export ボタンの優先度表現を見直し、主操作と補助操作の区別をより明確にする
 - `build:xlsx-sample` の所要時間を個別計測し、sample workbook 生成処理の支配要因を確認する
 - `main.test.js` の初期化 DOM をケース別に最小化できるか見直す
 - CI 向けに `test:fast` と `test:full` のような実行導線を分けるか検討する

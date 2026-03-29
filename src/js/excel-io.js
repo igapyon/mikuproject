@@ -7,7 +7,7 @@
     const TEXT_DECODER = new TextDecoder();
     const INVALID_SHEET_NAME_PATTERN = /[:\\/?*\[\]]/;
     const CRC32_TABLE = buildCrc32Table();
-    const NUMBER_FORMATS = ["general", "integer", "decimal", "date", "datetime", "percent"];
+    const NUMBER_FORMATS = ["general", "integer", "decimal", "date", "datetime", "percent", "text"];
     const HORIZONTAL_ALIGNS = ["left", "center", "right"];
     const VERTICAL_ALIGNS = ["top", "center", "bottom"];
     const BORDER_STYLES = ["thin"];
@@ -340,6 +340,7 @@
         const reference = `${encodeColumnName(cellIndex)}${rowIndex + 1}`;
         const styleIndex = resolveStyleIndex(cell, styleBook);
         const styleAttribute = styleIndex > 0 ? ` s="${styleIndex}"` : "";
+        const resolvedNumberFormat = resolveCellNumberFormat(cell);
         if (cell.formula !== undefined) {
             const formulaXml = `<f>${escapeXml(cell.formula)}</f>`;
             const valueXml = buildFormulaValueXml(cell.value);
@@ -349,8 +350,11 @@
         if (cell.value === undefined) {
             return styleIndex > 0 ? `<c r="${reference}"${styleAttribute}/>` : "";
         }
+        if (resolvedNumberFormat === "text") {
+            return `<c r="${reference}"${styleAttribute} t="inlineStr"><is>${buildInlineStringTextXml(String(cell.value))}</is></c>`;
+        }
         if (typeof cell.value === "string") {
-            return `<c r="${reference}"${styleAttribute} t="inlineStr"><is><t>${escapeXml(cell.value)}</t></is></c>`;
+            return `<c r="${reference}"${styleAttribute} t="inlineStr"><is>${buildInlineStringTextXml(cell.value)}</is></c>`;
         }
         if (typeof cell.value === "number") {
             return `<c r="${reference}"${styleAttribute}><v>${formatNumber(cell.value)}</v></c>`;
@@ -408,11 +412,12 @@
         return { styles, styleIndexByKey };
     }
     function getStyleDescriptor(cell) {
-        if (!cell.numberFormat && !cell.horizontalAlign && !cell.verticalAlign && !cell.wrapText && !cell.bold && !cell.fontSize && !cell.fillColor && !cell.border) {
+        const numberFormat = resolveCellNumberFormat(cell);
+        if (numberFormat === "general" && !cell.horizontalAlign && !cell.verticalAlign && !cell.wrapText && !cell.bold && !cell.fontSize && !cell.fillColor && !cell.border) {
             return null;
         }
         return {
-            numberFormat: cell.numberFormat || "general",
+            numberFormat,
             horizontalAlign: cell.horizontalAlign,
             verticalAlign: cell.verticalAlign,
             wrapText: cell.wrapText === true ? true : undefined,
@@ -537,6 +542,8 @@
                 return 1;
             case "decimal":
                 return 2;
+            case "text":
+                return 49;
             case "date":
                 return 14;
             case "datetime":
@@ -814,6 +821,21 @@
                 return "general";
         }
     }
+    function resolveCellNumberFormat(cell) {
+        if (cell.numberFormat) {
+            return cell.numberFormat;
+        }
+        if (cell.formula === undefined && cell.value !== undefined) {
+            return "text";
+        }
+        return "general";
+    }
+    function buildInlineStringTextXml(value) {
+        const sanitizedValue = sanitizeXmlText(value);
+        const preserveWhitespace = /^[\s]/.test(sanitizedValue) || /[\s]$/.test(sanitizedValue) || sanitizedValue.includes("\n") || sanitizedValue.includes("\r") || sanitizedValue.includes("\t");
+        const preserveAttribute = preserveWhitespace ? ` xml:space="preserve"` : "";
+        return `<t${preserveAttribute}>${escapeXml(sanitizedValue)}</t>`;
+    }
     function parseOptionalNumber(value) {
         if (!value) {
             return undefined;
@@ -853,12 +875,15 @@
         return TEXT_DECODER.decode(bytes);
     }
     function escapeXml(value) {
-        return value
+        return sanitizeXmlText(value)
             .replace(/&/g, "&amp;")
             .replace(/</g, "&lt;")
             .replace(/>/g, "&gt;")
             .replace(/"/g, "&quot;")
             .replace(/'/g, "&apos;");
+    }
+    function sanitizeXmlText(value) {
+        return value.replace(/[^\u0009\u000A\u000D\u0020-\uD7FF\uE000-\uFFFD]/g, "");
     }
     function encodeColumnName(columnIndex) {
         let current = columnIndex + 1;

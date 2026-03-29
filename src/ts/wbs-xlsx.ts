@@ -675,7 +675,7 @@
       fillColor
     };
     cells[startColumnIndex + 2] = {
-      value,
+      value: stringifyCellValue(value),
       border: "thin",
       horizontalAlign: typeof value === "number" ? "center" : "left",
       bold: true,
@@ -754,7 +754,7 @@
   function summaryStatCell(value: string | number, fillColor: string, isValueCell: boolean): WbsXlsxCellLike {
     const valueAlign = typeof value === "number" ? "center" : "left";
     return {
-      value,
+      value: stringifyCellValue(value),
       border: "thin",
       horizontalAlign: isValueCell ? valueAlign : "right",
       bold: true,
@@ -869,9 +869,13 @@
       return {};
     }
     return {
-      value,
+      value: stringifyCellValue(value),
       border: "thin"
     };
+  }
+
+  function stringifyCellValue(value: string | number | boolean): string {
+    return typeof value === "string" ? value : String(value);
   }
 
   function taskCell(
@@ -883,7 +887,7 @@
       return {};
     }
     return {
-      value,
+      value: stringifyCellValue(value),
       border: "thin",
       horizontalAlign,
       verticalAlign: "center",
@@ -918,16 +922,32 @@
   }
 
   function taskRowHeight(task: TaskModel): number | undefined {
-    const labelLength = formatTaskLabel(task).length;
-    const notesLength = (task.notes || "").trim().length;
-    const maxLength = Math.max(labelLength, notesLength);
-    if (maxLength > 72) {
+    const labelLineCount = estimateWrappedLineCount(formatTaskLabel(task), 22);
+    const notesLineCount = estimateWrappedLineCount((task.notes || "").trim(), 18);
+    const maxLineCount = Math.max(labelLineCount, notesLineCount, 1);
+    if (maxLineCount >= 5) {
+      return 82;
+    }
+    if (maxLineCount === 4) {
+      return 70;
+    }
+    if (maxLineCount === 3) {
+      return 58;
+    }
+    if (maxLineCount === 2) {
       return 46;
     }
-    if (maxLength > 36) {
-      return 34;
-    }
     return 34;
+  }
+
+  function estimateWrappedLineCount(value: string, charactersPerLine: number): number {
+    const normalized = value.replace(/\r\n/g, "\n").replace(/\r/g, "\n");
+    if (!normalized) {
+      return 1;
+    }
+    return normalized
+      .split("\n")
+      .reduce((count, line) => count + Math.max(1, Math.ceil(line.length / charactersPerLine)), 0);
   }
 
   function kindCell(task: TaskModel): WbsXlsxCellLike {
@@ -946,7 +966,7 @@
       return {};
     }
     return {
-      value,
+      value: stringifyCellValue(value),
       border: "thin",
       horizontalAlign: "center",
       verticalAlign: "center",

@@ -50,3 +50,4 @@
 - `mikuproject-sample.xlsx` の `Resources / Assignments / NonWorkingDays` で、強調色が過剰にならない最終バランスを調整する
 - WBS workbook の表示改善を継続する
 - WBS workbook の見た目改善と、構造忠実 workbook との責務分離を保つ
+- 将来検討: WBS workbook について、表示専用列と Excel 再利用向けの機械利用列（hidden 列）の分離が必要か整理する

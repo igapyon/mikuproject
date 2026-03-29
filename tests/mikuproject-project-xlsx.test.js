@@ -233,7 +233,7 @@ describe("mikuproject project xlsx", () => {
     expect(nonWorkingDaysSheet.rows[3].cells[4].value).toBe(SAMPLE_FIRST_HOLIDAY_DATE);
     expect(nonWorkingDaysSheet.rows[3].cells[5].value).toBe(SAMPLE_FIRST_HOLIDAY_DATE);
     expect(nonWorkingDaysSheet.rows[3].cells[6].value).toBe(SAMPLE_FIRST_HOLIDAY_DATE);
-    expect(nonWorkingDaysSheet.rows[3].cells[7].value).toBe(false);
+    expect(nonWorkingDaysSheet.rows[3].cells[7].value).toBe("false");
     expect(nonWorkingDaysSheet.rows[3].cells[4].fillColor).toBe(EDITABLE_FILL);
     expect(nonWorkingDaysSheet.rows[3].cells[5].fillColor).toBe(EDITABLE_FILL);
     expect(nonWorkingDaysSheet.rows[3].cells[6].fillColor).toBe(EDITABLE_FILL);
@@ -256,6 +256,8 @@ describe("mikuproject project xlsx", () => {
     expect(entries).toContain("xl/styles.xml");
     expect(projectSheetXml).not.toContain('ref="A1:B1"');
     expect(projectSheetXml).toContain('ref="A11:B11"');
+    expect(projectSheetXml).toContain('t="inlineStr"><is><t>1</t></is>');
+    expect(projectSheetXml).toContain('t="inlineStr"><is><t>true</t></is>');
   });
 
   it("imports limited task fields from workbook rows back into ProjectModel", () => {

@@ -17,36 +17,43 @@
     </symbol>
   </svg>
   <div class="md-surface-card md-card">
-    <lht-page-hero
-      title="mikuproject"
-      icon="📋"
-      help-label="mikuproject の説明"
-      help-wide
-      action-href="https://github.com/igapyon/mikuproject"
-      action-label="GitHub"
-      action-aria-label="Open mikuproject repository"
-      action-icon-id="md-icon-github"
-      menu-home-href="README.md"
-      menu-home-label="README">
-      MS Project XML を読み込み、内部モデルへ落として、再度 MS Project XML を生成するための実験アプリです。<br><br>
-      STEP 1 では、意味的ラウンドトリップを主目的にします。
-    </lht-page-hero>
+    <header class="ms-hero">
+      <h1 class="ms-hero-title">
+        <span class="ms-hero-icon" aria-hidden="true">📋</span>
+        <span>mikuproject</span>
+        <lht-help-tooltip label="mikuproject の説明" wide>
+          MS Project XML を読み込み、内部モデル・XLSX・生成AI向け JSON を行き来しながら、プロジェクト計画を確認・編集するためのアプリです。
+        </lht-help-tooltip>
+        <a
+          href="https://github.com/igapyon/mikuproject"
+          class="ms-hero-link"
+          target="_blank"
+          rel="noopener noreferrer"
+          aria-label="Open mikuproject GitHub repository"
+        >
+          <svg aria-hidden="true" viewBox="0 0 16 16" class="ms-btn-icon" fill="currentColor">
+            <use href="#md-icon-github" xlink:href="#md-icon-github"></use>
+          </svg>
+          <span>GitHub</span>
+        </a>
+      </h1>
+    </header>
 
     <section class="md-section md-stack-md">
       <div id="statusMessage" class="md-status">未実行</div>
 
-      <div class="md-top-tabs" role="tablist" aria-label="mikuproject sections">
-        <button type="button" class="md-top-tab is-active" data-tab="input" role="tab" aria-selected="true" aria-controls="tabPanelInput">
-          <span class="md-top-tab-no">1</span>
-          <span class="md-top-tab-label">Input</span>
+      <div class="md-top-tabs ms-top-tabs" role="tablist" aria-label="mikuproject sections">
+        <button type="button" class="md-top-tab ms-top-tab is-active" data-tab="input" role="tab" aria-selected="true" aria-controls="tabPanelInput">
+          <span class="md-top-tab-no ms-top-tab-no">1</span>
+          <span class="md-top-tab-label ms-top-tab-label">Input</span>
         </button>
-        <button type="button" class="md-top-tab" data-tab="transform" role="tab" aria-selected="false" aria-controls="tabPanelTransform">
-          <span class="md-top-tab-no">2</span>
-          <span class="md-top-tab-label">Transform</span>
+        <button type="button" class="md-top-tab ms-top-tab" data-tab="transform" role="tab" aria-selected="false" aria-controls="tabPanelTransform">
+          <span class="md-top-tab-no ms-top-tab-no">2</span>
+          <span class="md-top-tab-label ms-top-tab-label">Transform</span>
         </button>
-        <button type="button" class="md-top-tab" data-tab="output" role="tab" aria-selected="false" aria-controls="tabPanelOutput">
-          <span class="md-top-tab-no">3</span>
-          <span class="md-top-tab-label">Output</span>
+        <button type="button" class="md-top-tab ms-top-tab" data-tab="output" role="tab" aria-selected="false" aria-controls="tabPanelOutput">
+          <span class="md-top-tab-no ms-top-tab-no">3</span>
+          <span class="md-top-tab-label ms-top-tab-label">Output</span>
         </button>
       </div>
 
@@ -108,7 +115,7 @@
             生成AIとの会話は別途行います。生成AIが返した `project_draft_view` は、JSON ファイルとして開くか、JSON テキストを貼り付けてここから取り込みます。
           </p>
           <p class="md-note-card__text">
-            (i) まず生成AIに <a class="md-inline-link" href="https://raw.githubusercontent.com/igapyon/mikuproject/refs/heads/devel/docs/mikuproject-ai-json-spec.md" target="_blank" rel="noopener noreferrer">mikuproject-ai-json-spec.md</a> を読み込ませます。
+            (i) まず生成AIに <a class="md-inline-link" href="https://raw.githubusercontent.com/igapyon/mikuproject/refs/heads/devel/docs/mikuproject-ai-json-spec.md" target="_blank" rel="noopener noreferrer">生成AIプロンプト</a> を読み込ませます。
           </p>
           <p class="md-note-card__text">
             (ii) その前提で生成AIに `project_draft_view` を作らせます。

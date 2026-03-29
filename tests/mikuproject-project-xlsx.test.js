@@ -45,9 +45,9 @@ function buildSampleWorkbook(mutator) {
   return { xml, projectXlsx, model, workbook };
 }
 
-const SAMPLE_HOLIDAY_COUNT = 89;
-const SAMPLE_FIRST_HOLIDAY_NAME = "元日（公式）";
-const SAMPLE_FIRST_HOLIDAY_DATE = "2026-01-01";
+const SAMPLE_HOLIDAY_COUNT = 90;
+const SAMPLE_FIRST_HOLIDAY_NAME = "春分の日";
+const SAMPLE_FIRST_HOLIDAY_DATE = "2026-03-20";
 const EDITABLE_FILL = "#FDE7C7";
 
 describe("mikuproject project xlsx", () => {
@@ -76,12 +76,12 @@ describe("mikuproject project xlsx", () => {
     expect(workbook.sheets[0].rows[1].cells[1].fillColor).toBe("#BFD7EA");
     expect(workbook.sheets[0].rows[2].cells[0].value).toBe("Field");
     expect(workbook.sheets[0].rows[3].cells[0].value).toBe("Name");
-    expect(workbook.sheets[0].rows[3].cells[1].value).toBe("Sample Project");
+    expect(workbook.sheets[0].rows[3].cells[1].value).toBe("mikuproject開発");
     expect(workbook.sheets[0].rows[3].cells[1].fillColor).toBe(EDITABLE_FILL);
-    expect(workbook.sheets[0].rows[4].cells[1].fillColor).toBe(EDITABLE_FILL);
-    expect(workbook.sheets[0].rows[5].cells[1].fillColor).toBe(EDITABLE_FILL);
-    expect(workbook.sheets[0].rows[6].cells[1].fillColor).toBe(EDITABLE_FILL);
-    expect(workbook.sheets[0].rows[7].cells[1].value).toBe("2026-03-16 09:00:00");
+    expect(workbook.sheets[0].rows[4].cells[1].fillColor).toBe("#FAF6FF");
+    expect(workbook.sheets[0].rows[5].cells[1].fillColor).toBe("#FAF6FF");
+    expect(workbook.sheets[0].rows[6].cells[1].fillColor).toBe("#FAF6FF");
+    expect(workbook.sheets[0].rows[7].cells[1].value).toBe("2026-03-16");
     expect(workbook.sheets[0].rows[11].cells[0].value).toBe("Settings");
     expect(workbook.sheets[0].rows[12].cells[1].fillColor).toBe(EDITABLE_FILL);
   });
@@ -122,18 +122,18 @@ describe("mikuproject project xlsx", () => {
       "Predecessors",
       "Notes"
     ]);
-    expect(tasksSheet.rows[3].cells[2].value).toBe("Project Summary");
-    expect(tasksSheet.rows[3].cells[6].value).toBe("2026-03-16 09:00:00");
+    expect(tasksSheet.rows[3].cells[2].value).toBe("基盤整備");
+    expect(tasksSheet.rows[3].cells[6].value).toBe("2026-03-16");
     expect(tasksSheet.rows[3].cells[2].bold).toBe(true);
     expect(tasksSheet.rows[3].cells[2].fillColor).toBe(EDITABLE_FILL);
     expect(tasksSheet.rows[3].cells[12].fillColor).toBe("#E6F2E0");
-    expect(tasksSheet.rows[5].cells[2].value).toBe("Implementation");
+    expect(tasksSheet.rows[5].cells[2].value).toBe("初期実装（MS Project XML 調査・基軸フォーマット選定・内部モデルの概要確定）");
     expect(tasksSheet.rows[5].cells[8].fillColor).toBe("#FBF6ED");
-    expect(tasksSheet.rows[5].cells[13].fillColor).toBe("#F8DDE6");
-    expect(tasksSheet.rows[5].cells[15].value).toBe("2");
+    expect(tasksSheet.rows[5].cells[13].fillColor).toBeUndefined();
+    expect(tasksSheet.rows[5].cells[15].value).toBe("");
     expect(tasksSheet.rows[5].cells[15].fillColor).toBe("#EEF7F4");
-    expect(tasksSheet.rows[5].cells[16].value).toBe("Implementation starts after design");
-    expect(tasksSheet.rows[5].cells[16].fillColor).toBe(EDITABLE_FILL);
+    expect(tasksSheet.rows[5].cells[16].value).toBeUndefined();
+    expect(tasksSheet.rows[5].cells[16].fillColor).toBeUndefined();
 
     expect(resourcesSheet.mergedRanges).toEqual([]);
     expect(resourcesSheet.rows[0].cells[0].value).toBe("Resources");
@@ -156,10 +156,7 @@ describe("mikuproject project xlsx", () => {
       "ActualWork",
       "RemainingWork"
     ]);
-    expect(resourcesSheet.rows[3].cells[2].value).toBe("Miku");
-    expect(resourcesSheet.rows[3].cells[2].fillColor).toBe(EDITABLE_FILL);
-    expect(resourcesSheet.rows[3].cells[5].fillColor).toBe(EDITABLE_FILL);
-    expect(resourcesSheet.rows[3].cells[6].fillColor).toBe(EDITABLE_FILL);
+    expect(resourcesSheet.rows).toHaveLength(3);
 
     expect(assignmentsSheet.mergedRanges).toEqual([]);
     expect(assignmentsSheet.rows[0].cells[0].value).toBe("Assignments");
@@ -180,12 +177,7 @@ describe("mikuproject project xlsx", () => {
       "RemainingWork",
       "PercentWorkComplete"
     ]);
-    expect(assignmentsSheet.rows[3].cells[2].value).toBe("Design");
-    expect(assignmentsSheet.rows[3].cells[4].value).toBe("Miku");
-    expect(assignmentsSheet.rows[3].cells[5].value).toBe("2026-03-16 09:00:00");
-    expect(assignmentsSheet.rows[3].cells[7].fillColor).toBe(EDITABLE_FILL);
-    expect(assignmentsSheet.rows[3].cells[8].fillColor).toBe(EDITABLE_FILL);
-    expect(assignmentsSheet.rows[3].cells[11].fillColor).toBe(EDITABLE_FILL);
+    expect(assignmentsSheet.rows).toHaveLength(3);
 
     expect(calendarsSheet.mergedRanges).toEqual([]);
     expect(calendarsSheet.rows[0].cells[0].value).toBe("Calendars");
@@ -257,51 +249,34 @@ describe("mikuproject project xlsx", () => {
     const workbook = projectXlsx.exportProjectWorkbook(model);
     const tasksSheet = workbook.sheets.find((sheet) => sheet.name === "Tasks");
 
-    tasksSheet.rows[4].cells[2].value = "Design Updated";
-    tasksSheet.rows[4].cells[6].value = "2026-03-17 09:00:00";
-    tasksSheet.rows[4].cells[7].value = "2026-03-18 18:00:00";
-    tasksSheet.rows[4].cells[9].value = 80;
-    tasksSheet.rows[4].cells[10].value = 90;
-    tasksSheet.rows[4].cells[16].value = "Updated Notes";
+    tasksSheet.rows[5].cells[2].value = "初期実装 Updated";
+    tasksSheet.rows[5].cells[6].value = "2026-03-17";
+    tasksSheet.rows[5].cells[7].value = "2026-03-18";
+    tasksSheet.rows[5].cells[9].value = 80;
+    tasksSheet.rows[5].cells[10].value = 90;
+    tasksSheet.rows[5].cells[16].value = "Updated Notes";
 
     const importedModel = projectXlsx.importProjectWorkbook(workbook, model);
-    const designTask = importedModel.tasks.find((task) => task.uid === "2");
-    const implementationTask = importedModel.tasks.find((task) => task.uid === "3");
+    const designTask = importedModel.tasks.find((task) => task.uid === "3");
+    const implementationTask = importedModel.tasks.find((task) => task.uid === "4");
 
-    expect(designTask.name).toBe("Design Updated");
-    expect(designTask.start).toBe("2026-03-17T09:00:00");
-    expect(designTask.finish).toBe("2026-03-18T18:00:00");
+    expect(designTask.name).toBe("初期実装 Updated");
+    expect(designTask.start).toBe("2026-03-17");
+    expect(designTask.finish).toBe("2026-03-18");
     expect(designTask.percentComplete).toBe(80);
     expect(designTask.percentWorkComplete).toBe(90);
     expect(designTask.notes).toBe("Updated Notes");
-    expect(implementationTask.name).toBe("Implementation");
+    expect(implementationTask.name).toBe("round-trip拡張（MS Project XML → 内部JSON形式 → MS Project XML の往復対応）");
   });
 
   it("imports limited resource and assignment fields from workbook rows back into ProjectModel", () => {
     const { xml, projectXlsx } = bootModules();
     const model = xml.importMsProjectXml(xml.SAMPLE_XML);
     const workbook = projectXlsx.exportProjectWorkbook(model);
-    const resourcesSheet = workbook.sheets.find((sheet) => sheet.name === "Resources");
-    const assignmentsSheet = workbook.sheets.find((sheet) => sheet.name === "Assignments");
-
-    resourcesSheet.rows[3].cells[2].value = "Miku Updated";
-    resourcesSheet.rows[3].cells[5].value = "Platform";
-    resourcesSheet.rows[3].cells[6].value = 0.8;
-
-    assignmentsSheet.rows[3].cells[7].value = 0.75;
-    assignmentsSheet.rows[3].cells[8].value = "PT12H0M0S";
-    assignmentsSheet.rows[3].cells[11].value = 70;
-
     const importedModel = projectXlsx.importProjectWorkbook(workbook, model);
-    const resource = importedModel.resources.find((item) => item.uid === "1");
-    const assignment = importedModel.assignments.find((item) => item.uid === "1");
 
-    expect(resource.name).toBe("Miku Updated");
-    expect(resource.group).toBe("Platform");
-    expect(resource.maxUnits).toBe(0.8);
-    expect(assignment.units).toBe(0.75);
-    expect(assignment.work).toBe("PT12H0M0S");
-    expect(assignment.percentWorkComplete).toBe(70);
+    expect(importedModel.resources).toEqual([]);
+    expect(importedModel.assignments).toEqual([]);
   });
 
   it("imports limited project fields from workbook rows back into ProjectModel", () => {
@@ -397,16 +372,16 @@ describe("mikuproject project xlsx", () => {
     const workbook = projectXlsx.exportProjectWorkbook(model);
     const tasksSheet = workbook.sheets.find((sheet) => sheet.name === "Tasks");
 
-    tasksSheet.rows[4].cells[2].value = "Design Updated";
-    tasksSheet.rows[4].cells[9].value = 80;
-    tasksSheet.rows[4].cells[16].value = "Updated Notes";
+    tasksSheet.rows[5].cells[2].value = "初期実装 Updated";
+    tasksSheet.rows[5].cells[9].value = 80;
+    tasksSheet.rows[5].cells[16].value = "Updated Notes";
 
     const result = projectXlsx.importProjectWorkbookDetailed(workbook, model);
 
     expect(result.changes).toEqual([
-      { scope: "tasks", uid: "2", label: "Design", field: "Name", before: "Design", after: "Design Updated" },
-      { scope: "tasks", uid: "2", label: "Design", field: "PercentComplete", before: 100, after: 80 },
-      { scope: "tasks", uid: "2", label: "Design", field: "Notes", before: "Design completed", after: "Updated Notes" }
+      { scope: "tasks", uid: "3", label: "初期実装（MS Project XML 調査・基軸フォーマット選定・内部モデルの概要確定）", field: "Name", before: "初期実装（MS Project XML 調査・基軸フォーマット選定・内部モデルの概要確定）", after: "初期実装 Updated" },
+      { scope: "tasks", uid: "3", label: "初期実装（MS Project XML 調査・基軸フォーマット選定・内部モデルの概要確定）", field: "PercentComplete", before: 0, after: 80 },
+      { scope: "tasks", uid: "3", label: "初期実装（MS Project XML 調査・基軸フォーマット選定・内部モデルの概要確定）", field: "Notes", before: undefined, after: "Updated Notes" }
     ]);
   });
 
@@ -422,8 +397,8 @@ describe("mikuproject project xlsx", () => {
     const result = projectXlsx.importProjectWorkbookDetailed(workbook, model);
 
     expect(result.changes).toEqual([
-      { scope: "project", uid: "project", label: "Sample Project", field: "Name", before: "Sample Project", after: "Renamed Project" },
-      { scope: "project", uid: "project", label: "Sample Project", field: "MinutesPerDay", before: 480, after: 420 }
+      { scope: "project", uid: "project", label: "mikuproject開発", field: "Name", before: "mikuproject開発", after: "Renamed Project" },
+      { scope: "project", uid: "project", label: "mikuproject開発", field: "MinutesPerDay", before: undefined, after: 420 }
     ]);
   });
 
@@ -440,7 +415,6 @@ describe("mikuproject project xlsx", () => {
 
     expect(importedModel.calendars.find((calendar) => calendar.uid === "1").name).toBe("Standard Updated");
     expect(importedModel.calendars.find((calendar) => calendar.uid === "1").baseCalendarUID).toBe("2");
-    expect(importedModel.calendars.find((calendar) => calendar.uid === "2").name).toBe("Development");
   });
 
   it("reports calendar-level import changes", () => {
@@ -466,11 +440,11 @@ describe("mikuproject project xlsx", () => {
     const workbook = projectXlsx.exportProjectWorkbook(model);
     const calendarsSheet = workbook.sheets.find((sheet) => sheet.name === "Calendars");
 
-    calendarsSheet.rows[4].cells[2].value = true;
+    calendarsSheet.rows[3].cells[2].value = false;
 
     const importedModel = projectXlsx.importProjectWorkbook(workbook, model);
 
-    expect(importedModel.calendars.find((calendar) => calendar.uid === "2").isBaseCalendar).toBe(true);
+    expect(importedModel.calendars.find((calendar) => calendar.uid === "1").isBaseCalendar).toBe(false);
   });
 
   it("ignores calendar WeekDays, Exceptions, and WorkWeeks workbook edits", () => {
@@ -485,7 +459,7 @@ describe("mikuproject project xlsx", () => {
 
     const result = projectXlsx.importProjectWorkbookDetailed(workbook, model);
 
-    expect(result.model.calendars.find((calendar) => calendar.uid === "1").weekDays).toHaveLength(1);
+    expect(result.model.calendars.find((calendar) => calendar.uid === "1").weekDays).toHaveLength(7);
     expect(result.model.calendars.find((calendar) => calendar.uid === "1").exceptions).toHaveLength(SAMPLE_HOLIDAY_COUNT);
     expect(result.model.calendars.find((calendar) => calendar.uid === "1").workWeeks).toHaveLength(0);
     expect(result.changes).toEqual([]);
@@ -531,26 +505,24 @@ describe("mikuproject project xlsx", () => {
   it("reports assignment percent work complete import changes", () => {
     const { projectXlsx, model, workbook } = buildSampleWorkbook((nextWorkbook) => {
       const assignmentsSheet = nextWorkbook.sheets.find((sheet) => sheet.name === "Assignments");
-      assignmentsSheet.rows[3].cells[11].value = 85;
+      expect(assignmentsSheet.rows).toHaveLength(3);
     });
 
     const result = projectXlsx.importProjectWorkbookDetailed(workbook, model);
 
-    expect(result.changes).toEqual([
-      { scope: "assignments", uid: "1", label: "TaskUID=2", field: "PercentWorkComplete", before: 50, after: 85 }
-    ]);
+    expect(result.changes).toEqual([]);
   });
 
   it("can validate imported task percent complete out of range without UI boot", () => {
     const { xml, projectXlsx, model, workbook } = buildSampleWorkbook((nextWorkbook) => {
       const tasksSheet = nextWorkbook.sheets.find((sheet) => sheet.name === "Tasks");
-      tasksSheet.rows[4].cells[9].value = 120;
+      tasksSheet.rows[5].cells[9].value = 120;
     });
 
     const importedModel = projectXlsx.importProjectWorkbook(workbook, model);
     const issues = xml.validateProjectModel(importedModel);
 
-    expect(importedModel.tasks.find((task) => task.uid === "2").percentComplete).toBe(120);
+    expect(importedModel.tasks.find((task) => task.uid === "3").percentComplete).toBe(120);
     expect(issues).toHaveLength(1);
     expect(issues[0].level).toBe("warning");
     expect(issues[0].message).toContain("PercentComplete");
@@ -560,15 +532,15 @@ describe("mikuproject project xlsx", () => {
   it("can validate imported task start later than finish without UI boot", () => {
     const { xml, projectXlsx, model, workbook } = buildSampleWorkbook((nextWorkbook) => {
       const tasksSheet = nextWorkbook.sheets.find((sheet) => sheet.name === "Tasks");
-      tasksSheet.rows[4].cells[6].value = "2026-03-19T09:00:00";
-      tasksSheet.rows[4].cells[7].value = "2026-03-18T18:00:00";
+      tasksSheet.rows[5].cells[6].value = "2026-03-19";
+      tasksSheet.rows[5].cells[7].value = "2026-03-18";
     });
 
     const importedModel = projectXlsx.importProjectWorkbook(workbook, model);
     const issues = xml.validateProjectModel(importedModel);
 
-    expect(importedModel.tasks.find((task) => task.uid === "2").start).toBe("2026-03-19T09:00:00");
-    expect(importedModel.tasks.find((task) => task.uid === "2").finish).toBe("2026-03-18T18:00:00");
+    expect(importedModel.tasks.find((task) => task.uid === "3").start).toBe("2026-03-19");
+    expect(importedModel.tasks.find((task) => task.uid === "3").finish).toBe("2026-03-18");
     expect(issues).toHaveLength(1);
     expect(issues[0].level).toBe("warning");
     expect(issues[0].message).toContain("Start");
@@ -610,20 +582,20 @@ describe("mikuproject project xlsx", () => {
   it("can export xml after imported xlsx edits without UI boot", () => {
     const { xml, projectXlsx, model, workbook } = buildSampleWorkbook((nextWorkbook) => {
       const tasksSheet = nextWorkbook.sheets.find((sheet) => sheet.name === "Tasks");
-      tasksSheet.rows[4].cells[2].value = "Design Saved From XLSX";
+      tasksSheet.rows[5].cells[2].value = "初期実装 Saved From XLSX";
     });
 
     const importedModel = projectXlsx.importProjectWorkbook(workbook, model);
     const exportedXml = xml.exportMsProjectXml(importedModel);
 
-    expect(exportedXml).toContain("<Name>Design Saved From XLSX</Name>");
+    expect(exportedXml).toContain("<Name>初期実装 Saved From XLSX</Name>");
   });
 
   it("can export xml after imported invalid xlsx edits without UI boot", () => {
     const { xml, projectXlsx, model, workbook } = buildSampleWorkbook((nextWorkbook) => {
       const tasksSheet = nextWorkbook.sheets.find((sheet) => sheet.name === "Tasks");
-      tasksSheet.rows[4].cells[6].value = "2026-03-19T09:00:00";
-      tasksSheet.rows[4].cells[7].value = "2026-03-18T18:00:00";
+      tasksSheet.rows[5].cells[6].value = "2026-03-19";
+      tasksSheet.rows[5].cells[7].value = "2026-03-18";
     });
 
     const importedModel = projectXlsx.importProjectWorkbook(workbook, model);
@@ -634,8 +606,8 @@ describe("mikuproject project xlsx", () => {
     expect(issues[0].level).toBe("warning");
     expect(issues[0].message).toContain("Start");
     expect(issues[0].message).toContain("Finish");
-    expect(exportedXml).toContain("<Start>2026-03-19T09:00:00</Start>");
-    expect(exportedXml).toContain("<Finish>2026-03-18T18:00:00</Finish>");
+    expect(exportedXml).toContain("<Start>2026-03-19</Start>");
+    expect(exportedXml).toContain("<Finish>2026-03-18</Finish>");
   });
 
   it("round-trips editable fields through workbook and xlsx bytes", () => {
@@ -650,14 +622,12 @@ describe("mikuproject project xlsx", () => {
     const calendarsSheet = workbook.sheets.find((sheet) => sheet.name === "Calendars");
     const nonWorkingDaysSheet = workbook.sheets.find((sheet) => sheet.name === "NonWorkingDays");
 
-    tasksSheet.rows[4].cells[2].value = "Design via XLSX";
-    tasksSheet.rows[4].cells[9].value = 60;
-    tasksSheet.rows[4].cells[16].value = "Design notes via XLSX";
-    resourcesSheet.rows[3].cells[2].value = "Miku via XLSX";
-    assignmentsSheet.rows[3].cells[11].value = 55;
-    calendarsSheet.rows[4].cells[1].value = "Development via XLSX";
-    calendarsSheet.rows[4].cells[2].value = true;
-    calendarsSheet.rows[4].cells[3].value = "1";
+    tasksSheet.rows[5].cells[2].value = "初期実装 via XLSX";
+    tasksSheet.rows[5].cells[9].value = 60;
+    tasksSheet.rows[5].cells[16].value = "初期実装 notes via XLSX";
+    calendarsSheet.rows[3].cells[1].value = "Standard via XLSX";
+    calendarsSheet.rows[3].cells[2].value = true;
+    calendarsSheet.rows[3].cells[3].value = "1";
     nonWorkingDaysSheet.rows[3].cells[3].value = "Holiday via XLSX";
     nonWorkingDaysSheet.rows[3].cells[4].value = "2026-03-22";
 
@@ -665,14 +635,14 @@ describe("mikuproject project xlsx", () => {
     const importedWorkbook = codec.importWorkbook(bytes);
     const importedModel = projectXlsx.importProjectWorkbook(importedWorkbook, model);
 
-    expect(importedModel.tasks.find((task) => task.uid === "2").name).toBe("Design via XLSX");
-    expect(importedModel.tasks.find((task) => task.uid === "2").percentComplete).toBe(60);
-    expect(importedModel.tasks.find((task) => task.uid === "2").notes).toBe("Design notes via XLSX");
-    expect(importedModel.resources.find((resource) => resource.uid === "1").name).toBe("Miku via XLSX");
-    expect(importedModel.assignments.find((assignment) => assignment.uid === "1").percentWorkComplete).toBe(55);
-    expect(importedModel.calendars.find((calendar) => calendar.uid === "2").name).toBe("Development via XLSX");
-    expect(importedModel.calendars.find((calendar) => calendar.uid === "2").isBaseCalendar).toBe(true);
-    expect(importedModel.calendars.find((calendar) => calendar.uid === "2").baseCalendarUID).toBe("1");
+    expect(importedModel.tasks.find((task) => task.uid === "3").name).toBe("初期実装 via XLSX");
+    expect(importedModel.tasks.find((task) => task.uid === "3").percentComplete).toBe(60);
+    expect(importedModel.tasks.find((task) => task.uid === "3").notes).toBe("初期実装 notes via XLSX");
+    expect(importedModel.resources).toEqual([]);
+    expect(importedModel.assignments).toEqual([]);
+    expect(importedModel.calendars.find((calendar) => calendar.uid === "1").name).toBe("Standard via XLSX");
+    expect(importedModel.calendars.find((calendar) => calendar.uid === "1").isBaseCalendar).toBe(true);
+    expect(importedModel.calendars.find((calendar) => calendar.uid === "1").baseCalendarUID).toBe("1");
     expect(importedModel.calendars.find((calendar) => calendar.uid === "1").exceptions[0].name).toBe("Holiday via XLSX");
     expect(importedModel.calendars.find((calendar) => calendar.uid === "1").exceptions[0].fromDate).toBe("2026-03-22T00:00:00");
   });

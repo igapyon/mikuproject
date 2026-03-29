@@ -6,6 +6,7 @@
   const mikuprojectXml = (globalThis as typeof globalThis & {
     __mikuprojectXml?: {
       SAMPLE_XML: string;
+      SAMPLE_PROJECT_DRAFT_VIEW: unknown;
       importMsProjectXml: (xmlText: string) => ProjectModel;
       importCsvParentId: (csvText: string) => ProjectModel;
       exportMsProjectXml: (model: ProjectModel) => string;
@@ -976,6 +977,13 @@ WorkWeek1=${formatCalendarWorkWeekSummary(calendar)}</div>
     setActiveTab("transform", { skipTransformRefresh: true });
   }
 
+  function loadProjectDraftSample(): void {
+    const sampleDraftText = JSON.stringify(mikuprojectXml.SAMPLE_PROJECT_DRAFT_VIEW, null, 2);
+    getTextArea("projectDraftImportInput").value = sampleDraftText;
+    setStatus("サンプル project_draft_view を読み込みました");
+    setActiveTab("input");
+  }
+
   async function importProjectDraftFromFile(file?: File | null): Promise<void> {
     if (!file) {
       throw new Error("project_draft_view JSON ファイルを選択してください");
@@ -1233,6 +1241,7 @@ WorkWeek1=${formatCalendarWorkWeekSummary(calendar)}</div>
     getElement<HTMLButtonElement>("importProjectDraftFileBtn").addEventListener("click", () => {
       getElement<HTMLInputElement>("importProjectDraftInput").click();
     });
+    getElement<HTMLButtonElement>("loadProjectDraftSampleBtn").addEventListener("click", loadProjectDraftSample);
     getElement<HTMLButtonElement>("importProjectDraftBtn").addEventListener("click", async () => {
       try {
         await importProjectDraftFromText();

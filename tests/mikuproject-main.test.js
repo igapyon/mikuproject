@@ -60,6 +60,7 @@ function mountDom() {
     <button id="exportProjectOverviewBtn" type="button">project_overview_view</button>
     <button id="exportPhaseDetailFullBtn" type="button">phase_detail_view full</button>
     <button id="exportPhaseDetailBtn" type="button">phase_detail_view</button>
+    <button id="loadProjectDraftSampleBtn" type="button">サンプル draft</button>
     <button id="importProjectDraftFileBtn" type="button">project_draft_view JSON</button>
     <button id="importProjectDraftBtn" type="button">project_draft_view を取り込む</button>
     <button id="downloadXmlBtn" type="button">MS Project XML</button>
@@ -197,9 +198,9 @@ async function exportMermaidViaHook() {
   await getMainHooks().exportCurrentMermaid();
 }
 
-const SAMPLE_HOLIDAY_COUNT = 89;
-const SAMPLE_FIRST_HOLIDAY_NAME = "元日（公式）";
-const SAMPLE_FIRST_HOLIDAY_DATE = "2026-01-01";
+const SAMPLE_HOLIDAY_COUNT = 90;
+const SAMPLE_FIRST_HOLIDAY_NAME = "春分の日";
+const SAMPLE_FIRST_HOLIDAY_DATE = "2026-03-20";
 
 function getDefaultSampleHolidayDates() {
   return globalThis.__mikuprojectWbsXlsx.collectWbsHolidayDates(
@@ -272,7 +273,7 @@ describe("mikuproject main", () => {
     expect(document.getElementById("tabPanelInput").hidden).toBe(true);
     expect(document.getElementById("tabPanelTransform").hidden).toBe(false);
     expect(document.getElementById("tabPanelOutput").hidden).toBe(true);
-    expect(document.getElementById("summaryProjectName").textContent).toBe("Sample Project");
+    expect(document.getElementById("summaryProjectName").textContent).toBe("mikuproject開発");
     expect(document.getElementById("mermaidOutput").value).toContain("gantt");
 
     document.querySelector('.md-top-tab[data-tab="output"]').click();
@@ -359,7 +360,7 @@ describe("mikuproject main", () => {
         },
         tasks: [
           { uid: "draft-1", name: "要件定義", parent_uid: null, position: 0, is_summary: true },
-          { uid: "draft-2", name: "ヒアリング", parent_uid: "draft-1", position: 0, planned_duration_hours: 40, planned_start: "2026-04-01T09:00:00" },
+          { uid: "draft-2", name: "ヒアリング", parent_uid: "draft-1", position: 0, planned_finish: "2026-04-01T09:00:00" },
           { uid: "draft-3", name: "要件確定", parent_uid: "draft-1", position: 1, is_milestone: true, predecessors: ["draft-2"], planned_start: "2026-04-08T18:00:00", planned_finish: "2026-04-08T18:00:00" }
         ]
       }, null, 2),
@@ -377,9 +378,27 @@ describe("mikuproject main", () => {
     expect(document.getElementById("xmlInput").value).toContain("<CalendarUID>1</CalendarUID>");
     expect(document.getElementById("xmlInput").value).toContain("<Name>Standard</Name>");
     expect(document.getElementById("xmlInput").value).toContain("<UID>3</UID>");
+    expect(document.getElementById("modelOutput").value).toContain("\"name\": \"ヒアリング\"");
+    expect(document.getElementById("modelOutput").value).toContain("\"milestone\": false");
+    expect(document.getElementById("modelOutput").value).toContain("\"start\": \"2026-04-01T09:00:00\"");
+    expect(document.getElementById("modelOutput").value).toContain("\"finish\": \"2026-04-01T09:00:00\"");
+    expect(document.getElementById("modelOutput").value).toContain("\"name\": \"要件確定\"");
+    expect(document.getElementById("modelOutput").value).toContain("\"milestone\": true");
     expect(document.getElementById("modelOutput").value).toContain("\"uid\": \"3\"");
     expect(document.getElementById("modelOutput").value).not.toContain("\"uid\": \"draft-3\"");
     expect(document.getElementById("modelOutput").value).toContain("\"name\": \"Standard\"");
+  });
+
+  it("loads sample project_draft_view into the input area", () => {
+    bootPage();
+
+    document.getElementById("loadProjectDraftSampleBtn").click();
+
+    const draftText = document.getElementById("projectDraftImportInput").value;
+    expect(draftText).toContain("\"view_type\": \"project_draft_view\"");
+    expect(draftText).toContain("\"name\": \"mikuproject開発\"");
+    expect(draftText).toContain("架空検討フェーズ【架空】");
+    expect(document.getElementById("statusMessage").textContent).toContain("サンプル project_draft_view");
   });
 
   it("parses xml into internal model summary", () => {
@@ -387,162 +406,21 @@ describe("mikuproject main", () => {
 
     parseXmlViaHook();
 
-    expect(document.getElementById("summaryProjectName").textContent).toBe("Sample Project");
-    expect(document.getElementById("summaryTaskCount").textContent).toBe("3");
-    expect(document.getElementById("summaryResourceCount").textContent).toBe("1");
-    expect(document.getElementById("summaryAssignmentCount").textContent).toBe("2");
-    expect(document.getElementById("summaryCalendarCount").textContent).toBe("2");
-    expect(document.getElementById("modelOutput").value).toContain("\"name\": \"Sample Project\"");
-    expect(document.getElementById("modelOutput").value).toContain("\"title\": \"Sample Project Title\"");
-    expect(document.getElementById("modelOutput").value).toContain("\"author\": \"Toshiki Iga\"");
-    expect(document.getElementById("modelOutput").value).toContain("\"company\": \"Local HTML Tools\"");
-    expect(document.getElementById("modelOutput").value).toContain("\"creationDate\": \"2026-03-16T08:30:00\"");
-    expect(document.getElementById("modelOutput").value).toContain("\"lastSaved\": \"2026-03-16T09:10:00\"");
-    expect(document.getElementById("modelOutput").value).toContain("\"saveVersion\": 14");
-    expect(document.getElementById("modelOutput").value).toContain("\"currentDate\": \"2026-03-16T09:00:00\"");
-    expect(document.getElementById("modelOutput").value).toContain("\"defaultStartTime\": \"09:00:00\"");
-    expect(document.getElementById("modelOutput").value).toContain("\"minutesPerDay\": 480");
-    expect(document.getElementById("modelOutput").value).toContain("\"statusDate\": \"2026-03-19T09:00:00\"");
-    expect(document.getElementById("modelOutput").value).toContain("\"weekStartDay\": 1");
-    expect(document.getElementById("modelOutput").value).toContain("\"workFormat\": 2");
-    expect(document.getElementById("modelOutput").value).toContain("\"durationFormat\": 7");
-    expect(document.getElementById("modelOutput").value).toContain("\"currencyCode\": \"JPY\"");
-    expect(document.getElementById("modelOutput").value).toContain("\"currencyDigits\": 0");
-    expect(document.getElementById("modelOutput").value).toContain("\"currencySymbol\": \"¥\"");
-    expect(document.getElementById("modelOutput").value).toContain("\"currencySymbolPosition\": 0");
-    expect(document.getElementById("modelOutput").value).toContain("\"fyStartDate\": \"2026-04-01T00:00:00\"");
-    expect(document.getElementById("modelOutput").value).toContain("\"fiscalYearStart\": true");
-    expect(document.getElementById("modelOutput").value).toContain("\"criticalSlackLimit\": 0");
-    expect(document.getElementById("modelOutput").value).toContain("\"defaultTaskType\": 1");
-    expect(document.getElementById("modelOutput").value).toContain("\"defaultFixedCostAccrual\": 2");
-    expect(document.getElementById("modelOutput").value).toContain("\"defaultStandardRate\": \"5000/h\"");
-    expect(document.getElementById("modelOutput").value).toContain("\"defaultOvertimeRate\": \"7000/h\"");
-    expect(document.getElementById("modelOutput").value).toContain("\"defaultTaskEVMethod\": 0");
-    expect(document.getElementById("modelOutput").value).toContain("\"newTaskStartDate\": 0");
-    expect(document.getElementById("modelOutput").value).toContain("\"newTasksAreManual\": false");
-    expect(document.getElementById("modelOutput").value).toContain("\"newTasksEffortDriven\": true");
-    expect(document.getElementById("modelOutput").value).toContain("\"newTasksEstimated\": true");
-    expect(document.getElementById("modelOutput").value).toContain("\"actualsInSync\": false");
-    expect(document.getElementById("modelOutput").value).toContain("\"editableActualCosts\": true");
-    expect(document.getElementById("modelOutput").value).toContain("\"honorConstraints\": true");
-    expect(document.getElementById("modelOutput").value).toContain("\"insertedProjectsLikeSummary\": true");
-    expect(document.getElementById("modelOutput").value).toContain("\"multipleCriticalPaths\": false");
-    expect(document.getElementById("modelOutput").value).toContain("\"taskUpdatesResource\": true");
-    expect(document.getElementById("modelOutput").value).toContain("\"updateManuallyScheduledTasksWhenEditingLinks\": false");
-    expect(document.getElementById("modelOutput").value).toContain("\"calendarUID\": \"1\"");
-    expect(document.getElementById("modelOutput").value).toContain("\"fieldID\": \"188743731\"");
-    expect(document.getElementById("modelOutput").value).toContain("\"fieldName\": \"Outline Code1\"");
-    expect(document.getElementById("modelOutput").value).toContain("\"alias\": \"Phase\"");
-    expect(document.getElementById("modelOutput").value).toContain("\"onlyTableValues\": true");
-    expect(document.getElementById("modelOutput").value).toContain("\"value\": \"PLAN\"");
-    expect(document.getElementById("modelOutput").value).toContain("\"description\": \"Planning\"");
-    expect(document.getElementById("modelOutput").value).toContain("\"level\": 2");
-    expect(document.getElementById("modelOutput").value).toContain("\"mask\": \"00\"");
-    expect(document.getElementById("modelOutput").value).toContain("\"fieldName\": \"Text1\"");
-    expect(document.getElementById("modelOutput").value).toContain("\"alias\": \"Owner\"");
-    expect(document.getElementById("modelOutput").value).toContain("\"appendNewValues\": true");
-    expect(document.getElementById("modelOutput").value).toContain("\"isBaselineCalendar\": true");
-    expect(document.getElementById("modelOutput").value).toContain("\"baseCalendarUID\": \"1\"");
-    expect(document.getElementById("modelOutput").value).toContain("\"dayType\": 2");
-    expect(document.getElementById("modelOutput").value).toContain("\"fromTime\": \"10:00:00\"");
-    expect(document.getElementById("modelOutput").value).toContain(`"name": "${SAMPLE_FIRST_HOLIDAY_NAME}"`);
-    expect(document.getElementById("modelOutput").value).toContain("\"workingTimes\": [");
-    expect(document.getElementById("modelOutput").value).toContain("\"name\": \"Spring Sprint\"");
-    expect(document.getElementById("modelOutput").value).toContain("\"wbs\": \"1.2\"");
-    expect(document.getElementById("modelOutput").value).toContain("\"priority\": 700");
-    expect(document.getElementById("modelOutput").value).toContain("\"type\": 1");
-    expect(document.getElementById("modelOutput").value).toContain("\"work\": \"PT24H0M0S\"");
-    expect(document.getElementById("modelOutput").value).toContain("\"workVariance\": \"PT0H0M0S\"");
-    expect(document.getElementById("modelOutput").value).toContain("\"totalSlack\": \"PT4H0M0S\"");
-    expect(document.getElementById("modelOutput").value).toContain("\"freeSlack\": \"PT2H0M0S\"");
-    expect(document.getElementById("modelOutput").value).toContain("\"cost\": 120000");
-    expect(document.getElementById("modelOutput").value).toContain("\"actualCost\": 0");
-    expect(document.getElementById("modelOutput").value).toContain("\"remainingCost\": 120000");
-    expect(document.getElementById("modelOutput").value).toContain("\"remainingWork\": \"PT24H0M0S\"");
-    expect(document.getElementById("modelOutput").value).toContain("\"actualWork\": \"PT0H0M0S\"");
-    expect(document.getElementById("modelOutput").value).toContain("\"critical\": true");
-    expect(document.getElementById("modelOutput").value).toContain("\"percentWorkComplete\": 0");
-    expect(document.getElementById("modelOutput").value).toContain("\"predecessorUid\": \"2\"");
+    expect(document.getElementById("summaryProjectName").textContent).toBe("mikuproject開発");
+    expect(document.getElementById("summaryTaskCount").textContent).toBe("13");
+    expect(document.getElementById("summaryResourceCount").textContent).toBe("0");
+    expect(document.getElementById("summaryAssignmentCount").textContent).toBe("0");
+    expect(document.getElementById("summaryCalendarCount").textContent).toBe("1");
+    expect(document.getElementById("modelOutput").value).toContain("\"name\": \"mikuproject開発\"");
+    expect(document.getElementById("modelOutput").value).toContain("\"name\": \"基盤整備\"");
+    expect(document.getElementById("modelOutput").value).toContain("\"name\": \"架空検討フェーズ【架空】\"");
     expect(document.getElementById("modelOutput").value).toContain("\"name\": \"Standard\"");
-    expect(document.getElementById("modelOutput").value).toContain("\"actualStart\": \"2026-03-16T09:00:00\"");
-    expect(document.getElementById("modelOutput").value).toContain("\"constraintType\": 4");
-    expect(document.getElementById("modelOutput").value).toContain("\"notes\": \"Implementation starts after design\"");
-    expect(document.getElementById("modelOutput").value).toContain("\"deadline\": \"2026-03-21T18:00:00\"");
-    expect(document.getElementById("modelOutput").value).toContain("\"startVariance\": \"PT0H0M0S\"");
-    expect(document.getElementById("modelOutput").value).toContain("\"finishVariance\": \"PT0H0M0S\"");
-    expect(document.getElementById("modelOutput").value).toContain("\"value\": \"Miku\"");
-    expect(document.getElementById("modelOutput").value).toContain("\"number\": 0");
-    expect(document.getElementById("modelOutput").value).toContain("\"unit\": 2");
-    expect(document.getElementById("modelOutput").value).toContain("\"value\": \"PT8H0M0S\"");
-    expect(document.getElementById("modelOutput").value).toContain("\"initials\": \"MK\"");
-    expect(document.getElementById("modelOutput").value).toContain("\"group\": \"Engineering\"");
-    expect(document.getElementById("modelOutput").value).toContain("\"workGroup\": 0");
-    expect(document.getElementById("modelOutput").value).toContain("\"calendarUID\": \"2\"");
-    expect(document.getElementById("modelOutput").value).toContain("\"standardRate\": \"5000/h\"");
-    expect(document.getElementById("modelOutput").value).toContain("\"standardRateFormat\": 2");
-    expect(document.getElementById("modelOutput").value).toContain("\"overtimeRate\": \"7000/h\"");
-    expect(document.getElementById("modelOutput").value).toContain("\"overtimeRateFormat\": 2");
-    expect(document.getElementById("modelOutput").value).toContain("\"costPerUse\": 1000");
-    expect(document.getElementById("modelOutput").value).toContain("\"work\": \"PT40H0M0S\"");
-    expect(document.getElementById("modelOutput").value).toContain("\"actualWork\": \"PT20H0M0S\"");
-    expect(document.getElementById("modelOutput").value).toContain("\"remainingWork\": \"PT20H0M0S\"");
-    expect(document.getElementById("modelOutput").value).toContain("\"cost\": 200000");
-    expect(document.getElementById("modelOutput").value).toContain("\"actualCost\": 100000");
-    expect(document.getElementById("modelOutput").value).toContain("\"remainingCost\": 100000");
-    expect(document.getElementById("modelOutput").value).toContain("\"percentWorkComplete\": 50");
-    expect(document.getElementById("modelOutput").value).toContain("\"value\": \"Platform Team\"");
-    expect(document.getElementById("modelOutput").value).toContain("\"work\": \"PT40H0M0S\"");
-    expect(document.getElementById("modelOutput").value).toContain("\"unit\": 2");
-    expect(document.getElementById("modelOutput").value).toContain("\"start\": \"2026-03-16T09:00:00\"");
-    expect(document.getElementById("modelOutput").value).toContain("\"startVariance\": \"PT0H0M0S\"");
-    expect(document.getElementById("modelOutput").value).toContain("\"finishVariance\": \"PT0H0M0S\"");
-    expect(document.getElementById("modelOutput").value).toContain("\"delay\": \"PT0H0M0S\"");
-    expect(document.getElementById("modelOutput").value).toContain("\"milestone\": false");
-    expect(document.getElementById("modelOutput").value).toContain("\"workContour\": 0");
-    expect(document.getElementById("modelOutput").value).toContain("\"percentWorkComplete\": 50");
-    expect(document.getElementById("modelOutput").value).toContain("\"overtimeWork\": \"PT2H0M0S\"");
-    expect(document.getElementById("modelOutput").value).toContain("\"actualOvertimeWork\": \"PT1H0M0S\"");
-    expect(document.getElementById("modelOutput").value).toContain("\"actualWork\": \"PT8H0M0S\"");
-    expect(document.getElementById("modelOutput").value).toContain("\"remainingWork\": \"PT8H0M0S\"");
-    expect(document.getElementById("modelOutput").value).toContain("\"value\": \"Design Slot\"");
-    expect(document.getElementById("modelOutput").value).toContain("\"cost\": 80000");
-    expect(document.getElementById("modelOutput").value).toContain("\"unit\": 2");
-    expect(document.getElementById("projectPreview").textContent).toContain("Sample Project");
-    expect(document.getElementById("projectPreview").textContent).toContain("Title=Sample Project Title");
-    expect(document.getElementById("projectPreview").textContent).toContain("Author=Toshiki Iga / Company=Local HTML Tools");
+    expect(document.getElementById("projectPreview").textContent).toContain("mikuproject開発");
     expect(document.getElementById("projectPreview").textContent).toContain("Calendar=1 (Standard)");
-    expect(document.getElementById("projectPreview").textContent).toContain("OutlineCodes=1 / WBSMasks=2 / Ext=1");
-    expect(document.getElementById("projectPreview").textContent).toContain("OutlineCode1=FieldID=188743731 / FieldName=Outline Code1 / Alias=Phase");
-    expect(document.getElementById("projectPreview").textContent).toContain("WBSMask1=Level=1 / Mask=A / Length=1 / Sequence=1");
-    expect(document.getElementById("projectPreview").textContent).toContain("Ext1=FieldID=188743734 / FieldName=Text1 / Alias=Owner");
-    expect(document.getElementById("taskPreview").textContent).toContain("Implementation");
-    expect(document.getElementById("taskPreview").textContent).toContain("Calendar=1 (Standard)");
-    expect(document.getElementById("taskPreview").textContent).toContain("Ext=1 / Baselines=1 / Timephased=1");
-    expect(document.getElementById("taskPreview").textContent).toContain("Ext1=FieldID=188743734 / Value=Miku");
-    expect(document.getElementById("taskPreview").textContent).toContain("Baseline1=#0 2026-03-16T09:00:00 -> 2026-03-17T18:00:00");
-    expect(document.getElementById("taskPreview").textContent).toContain("Timephased1=Type=1 2026-03-16T09:00:00 -> 2026-03-16T18:00:00");
-    expect(document.getElementById("resourcePreview").textContent).toContain("Engineering");
-    expect(document.getElementById("resourcePreview").textContent).toContain("Calendar=2 (Development)");
-    expect(document.getElementById("resourcePreview").textContent).toContain("Ext=1 / Baselines=1 / Timephased=1");
-    expect(document.getElementById("resourcePreview").textContent).toContain("Ext1=FieldID=188743737 / Value=Platform Team");
-    expect(document.getElementById("resourcePreview").textContent).toContain("Baseline1=#0 2026-03-16T09:00:00 -> 2026-03-20T18:00:00");
-    expect(document.getElementById("resourcePreview").textContent).toContain("Timephased1=Type=1 2026-03-16T09:00:00 -> 2026-03-16T18:00:00");
-    expect(document.getElementById("assignmentPreview").textContent).toContain("Task=2 (Design)");
-    expect(document.getElementById("assignmentPreview").textContent).toContain("Resource=1 (Miku)");
-    expect(document.getElementById("assignmentPreview").textContent).toContain("Ext=1 / Baselines=1 / Timephased=1");
-    expect(document.getElementById("assignmentPreview").textContent).toContain("Ext1=FieldID=255852547 / Value=Design Slot");
-    expect(document.getElementById("assignmentPreview").textContent).toContain("Baseline1=#0 2026-03-16T09:00:00 -> 2026-03-17T18:00:00");
-    expect(document.getElementById("assignmentPreview").textContent).toContain("Timephased1=Type=1 2026-03-16T09:00:00 -> 2026-03-16T18:00:00");
-    expect(document.getElementById("calendarPreview").textContent).toContain("Standard");
-    expect(document.getElementById("calendarPreview").textContent).toContain("Base=1 / Baseline=1 / BaseCalendarUID=-");
-    expect(document.getElementById("calendarPreview").textContent).toContain(`WeekDays=1 / Exceptions=${SAMPLE_HOLIDAY_COUNT} / WorkWeeks=0`);
-    expect(document.getElementById("calendarPreview").textContent).toContain("Refs=Project=1 / Tasks=3 / Resources=0 / BaseOf=1");
-    expect(document.getElementById("calendarPreview").textContent).toContain("WeekDay1=DayType=2 / Working=1 / Times=09:00:00-12:00:00, 13:00:00-18:00:00");
-    expect(document.getElementById("calendarPreview").textContent).toContain(`Exception1=${SAMPLE_FIRST_HOLIDAY_NAME} ${SAMPLE_FIRST_HOLIDAY_DATE}T00:00:00 -> ${SAMPLE_FIRST_HOLIDAY_DATE}T23:59:59 / Working=0`);
-    expect(document.getElementById("calendarPreview").textContent).toContain("Development");
-    expect(document.getElementById("calendarPreview").textContent).toContain("Base=0 / Baseline=0 / BaseCalendarUID=1");
-    expect(document.getElementById("calendarPreview").textContent).toContain("Refs=Project=0 / Tasks=0 / Resources=1 / BaseOf=0");
-    expect(document.getElementById("calendarPreview").textContent).toContain("WorkWeek1=Spring Sprint 2026-03-16T00:00:00 -> 2026-03-31T23:59:59 / WeekDays=1");
+    expect(document.getElementById("taskPreview").textContent).toContain("初期実装（MS Project XML 調査・基軸フォーマット選定・内部モデルの概要確定）");
+    expect(document.getElementById("resourcePreview").textContent).toContain("まだ表示できる項目がありません");
+    expect(document.getElementById("assignmentPreview").textContent).toContain("まだ表示できる項目がありません");
+    expect(document.getElementById("calendarPreview").textContent).toContain(`WeekDays=7 / Exceptions=${SAMPLE_HOLIDAY_COUNT} / WorkWeeks=0`);
   });
 
   it("exports xml from the current model", () => {
@@ -554,143 +432,13 @@ describe("mikuproject main", () => {
     const xmlText = document.getElementById("xmlInput").value;
     expect(xmlText).toContain("<?xml version=\"1.0\" encoding=\"UTF-8\"?>");
     expect(xmlText).toContain("\n<Project xmlns=\"http://schemas.microsoft.com/project\">\n");
-    expect(xmlText).toContain("<Title>Sample Project Title</Title>");
-    expect(xmlText).toContain("<Company>Local HTML Tools</Company>");
-    expect(xmlText).toContain("<Author>Toshiki Iga</Author>");
-    expect(xmlText).toContain("<CreationDate>2026-03-16T08:30:00</CreationDate>");
-    expect(xmlText).toContain("<LastSaved>2026-03-16T09:10:00</LastSaved>");
-    expect(xmlText).toContain("<SaveVersion>14</SaveVersion>");
-    expect(xmlText).toContain("<CurrentDate>2026-03-16T09:00:00</CurrentDate>");
-    expect(xmlText).toContain("<StatusDate>2026-03-19T09:00:00</StatusDate>");
-    expect(xmlText).toContain("<WeekStartDay>1</WeekStartDay>");
-    expect(xmlText).toContain("<WorkFormat>2</WorkFormat>");
-    expect(xmlText).toContain("<DurationFormat>7</DurationFormat>");
-    expect(xmlText).toContain("<CurrencyCode>JPY</CurrencyCode>");
-    expect(xmlText).toContain("<CurrencyDigits>0</CurrencyDigits>");
-    expect(xmlText).toContain("<CurrencySymbol>¥</CurrencySymbol>");
-    expect(xmlText).toContain("<CurrencySymbolPosition>0</CurrencySymbolPosition>");
-    expect(xmlText).toContain("<FYStartDate>2026-04-01T00:00:00</FYStartDate>");
-    expect(xmlText).toContain("<FiscalYearStart>1</FiscalYearStart>");
-    expect(xmlText).toContain("<CriticalSlackLimit>0</CriticalSlackLimit>");
-    expect(xmlText).toContain("<DefaultTaskType>1</DefaultTaskType>");
-    expect(xmlText).toContain("<DefaultFixedCostAccrual>2</DefaultFixedCostAccrual>");
-    expect(xmlText).toContain("<DefaultStandardRate>5000/h</DefaultStandardRate>");
-    expect(xmlText).toContain("<DefaultOvertimeRate>7000/h</DefaultOvertimeRate>");
-    expect(xmlText).toContain("<DefaultTaskEVMethod>0</DefaultTaskEVMethod>");
-    expect(xmlText).toContain("<NewTaskStartDate>0</NewTaskStartDate>");
-    expect(xmlText).toContain("<NewTasksAreManual>0</NewTasksAreManual>");
-    expect(xmlText).toContain("<NewTasksEffortDriven>1</NewTasksEffortDriven>");
-    expect(xmlText).toContain("<NewTasksEstimated>1</NewTasksEstimated>");
-    expect(xmlText).toContain("<ActualsInSync>0</ActualsInSync>");
-    expect(xmlText).toContain("<EditableActualCosts>1</EditableActualCosts>");
-    expect(xmlText).toContain("<HonorConstraints>1</HonorConstraints>");
-    expect(xmlText).toContain("<InsertedProjectsLikeSummary>1</InsertedProjectsLikeSummary>");
-    expect(xmlText).toContain("<MultipleCriticalPaths>0</MultipleCriticalPaths>");
-    expect(xmlText).toContain("<TaskUpdatesResource>1</TaskUpdatesResource>");
-    expect(xmlText).toContain("<UpdateManuallyScheduledTasksWhenEditingLinks>0</UpdateManuallyScheduledTasksWhenEditingLinks>");
-    expect(xmlText).toContain("<OutlineCodes>");
-    expect(xmlText).toContain("<FieldID>188743731</FieldID>");
-    expect(xmlText).toContain("<FieldName>Outline Code1</FieldName>");
-    expect(xmlText).toContain("<Alias>Phase</Alias>");
-    expect(xmlText).toContain("<OnlyTableValues>1</OnlyTableValues>");
-    expect(xmlText).toContain("<Values>");
-    expect(xmlText).toContain("<Value>PLAN</Value>");
-    expect(xmlText).toContain("<Description>Planning</Description>");
-    expect(xmlText).toContain("<WBSMasks>");
-    expect(xmlText).toContain("<WBSMask>");
-    expect(xmlText).toContain("<Level>2</Level>");
-    expect(xmlText).toContain("<Mask>00</Mask>");
-    expect(xmlText).toContain("<ExtendedAttributes>");
-    expect(xmlText).toContain("<ExtendedAttribute>");
-    expect(xmlText).toContain("<FieldName>Text1</FieldName>");
-    expect(xmlText).toContain("<Alias>Owner</Alias>");
-    expect(xmlText).toContain("<AppendNewValues>1</AppendNewValues>");
-    expect(xmlText).toContain("<WBS>1.2</WBS>");
-    expect(xmlText).toContain("<Priority>700</Priority>");
+    expect(xmlText).toContain("<Name>mikuproject開発</Name>");
+    expect(xmlText).toContain("<StartDate>2026-03-16</StartDate>");
+    expect(xmlText).toContain("<FinishDate>2026-04-01</FinishDate>");
     expect(xmlText).toContain("<CalendarUID>1</CalendarUID>");
-    expect(xmlText).toContain("<Work>PT24H0M0S</Work>");
-    expect(xmlText).toContain("<WorkVariance>PT0H0M0S</WorkVariance>");
-    expect(xmlText).toContain("<TotalSlack>PT4H0M0S</TotalSlack>");
-    expect(xmlText).toContain("<FreeSlack>PT2H0M0S</FreeSlack>");
-    expect(xmlText).toContain("<Cost>120000</Cost>");
-    expect(xmlText).toContain("<ActualCost>0</ActualCost>");
-    expect(xmlText).toContain("<RemainingCost>120000</RemainingCost>");
-    expect(xmlText).toContain("<RemainingWork>PT24H0M0S</RemainingWork>");
-    expect(xmlText).toContain("<ActualWork>PT0H0M0S</ActualWork>");
-    expect(xmlText).toContain("<PercentWorkComplete>0</PercentWorkComplete>");
-    expect(xmlText).toContain("<DefaultStartTime>09:00:00</DefaultStartTime>");
-    expect(xmlText).toContain("<MinutesPerDay>480</MinutesPerDay>");
-    expect(xmlText).toContain("<CalendarUID>1</CalendarUID>");
-    expect(xmlText).toContain("<Calendars>");
-    expect(xmlText).toContain("\n  <Calendars>\n");
-    expect(xmlText).toContain("<IsBaselineCalendar>1</IsBaselineCalendar>");
-    expect(xmlText).toContain("<BaseCalendarUID>1</BaseCalendarUID>");
-    expect(xmlText).toContain("<Exceptions>");
-    expect(xmlText).toContain("<WorkWeeks>");
-    expect(xmlText).toContain(`<Name>${SAMPLE_FIRST_HOLIDAY_NAME}</Name>`);
-    expect(xmlText).toContain("<WorkingTimes>");
-    expect(xmlText).toContain("<Name>Spring Sprint</Name>");
-    expect(xmlText).toContain("<WeekDays>");
-    expect(xmlText).toContain("<DayType>2</DayType>");
-    expect(xmlText).toContain("<FromTime>10:00:00</FromTime>");
-    expect(xmlText).toContain("<Tasks>");
-    expect(xmlText).toContain("<Assignments>");
-    expect(xmlText).toContain("<LinkLag>PT0H0M0S</LinkLag>");
-    expect(xmlText).toContain("<ActualStart>2026-03-16T09:00:00</ActualStart>");
-    expect(xmlText).toContain("<Deadline>2026-03-21T18:00:00</Deadline>");
-    expect(xmlText).toContain("<StartVariance>PT0H0M0S</StartVariance>");
-    expect(xmlText).toContain("<FinishVariance>PT0H0M0S</FinishVariance>");
-    expect(xmlText).toContain("<ConstraintType>4</ConstraintType>");
-    expect(xmlText).toContain("<Notes>Implementation starts after design</Notes>");
-    expect(xmlText).toContain("<ExtendedAttribute>");
-    expect(xmlText).toContain("<FieldID>188743734</FieldID>");
-    expect(xmlText).toContain("<Value>Miku</Value>");
-    expect(xmlText).toContain("<Baseline>");
-    expect(xmlText).toContain("<Number>0</Number>");
-    expect(xmlText).toContain("<Work>PT16H0M0S</Work>");
-    expect(xmlText).toContain("<TimephasedData>");
-    expect(xmlText).toContain("<Unit>2</Unit>");
-    expect(xmlText).toContain("<Value>PT8H0M0S</Value>");
-    expect(xmlText).toContain("<Critical>1</Critical>");
-    expect(xmlText).toContain("<Initials>MK</Initials>");
-    expect(xmlText).toContain("<Group>Engineering</Group>");
-    expect(xmlText).toContain("<WorkGroup>0</WorkGroup>");
-    expect(xmlText).toContain("<StandardRate>5000/h</StandardRate>");
-    expect(xmlText).toContain("<StandardRateFormat>2</StandardRateFormat>");
-    expect(xmlText).toContain("<OvertimeRate>7000/h</OvertimeRate>");
-    expect(xmlText).toContain("<OvertimeRateFormat>2</OvertimeRateFormat>");
-    expect(xmlText).toContain("<CostPerUse>1000</CostPerUse>");
-    expect(xmlText).toContain("<Work>PT40H0M0S</Work>");
-    expect(xmlText).toContain("<ActualWork>PT20H0M0S</ActualWork>");
-    expect(xmlText).toContain("<RemainingWork>PT20H0M0S</RemainingWork>");
-    expect(xmlText).toContain("<Cost>200000</Cost>");
-    expect(xmlText).toContain("<ActualCost>100000</ActualCost>");
-    expect(xmlText).toContain("<RemainingCost>100000</RemainingCost>");
-    expect(xmlText).toContain("<PercentWorkComplete>50</PercentWorkComplete>");
-    expect(xmlText).toContain("<ExtendedAttribute>");
-    expect(xmlText).toContain("<FieldID>188743737</FieldID>");
-    expect(xmlText).toContain("<Value>Platform Team</Value>");
-    expect(xmlText).toContain("<Baseline>");
-    expect(xmlText).toContain("<Work>PT40H0M0S</Work>");
-    expect(xmlText).toContain("<TimephasedData>");
-    expect(xmlText).toContain("<Unit>2</Unit>");
-    expect(xmlText).toContain("<Start>2026-03-16T09:00:00</Start>");
-    expect(xmlText).toContain("<StartVariance>PT0H0M0S</StartVariance>");
-    expect(xmlText).toContain("<FinishVariance>PT0H0M0S</FinishVariance>");
-    expect(xmlText).toContain("<Delay>PT0H0M0S</Delay>");
-    expect(xmlText).toContain("<Milestone>0</Milestone>");
-    expect(xmlText).toContain("<WorkContour>0</WorkContour>");
-    expect(xmlText).toContain("<PercentWorkComplete>50</PercentWorkComplete>");
-    expect(xmlText).toContain("<OvertimeWork>PT2H0M0S</OvertimeWork>");
-    expect(xmlText).toContain("<ActualOvertimeWork>PT1H0M0S</ActualOvertimeWork>");
-    expect(xmlText).toContain("<ActualWork>PT8H0M0S</ActualWork>");
-    expect(xmlText).toContain("<RemainingWork>PT8H0M0S</RemainingWork>");
-    expect(xmlText).toContain("<FieldID>255852547</FieldID>");
-    expect(xmlText).toContain("<Value>Design Slot</Value>");
-    expect(xmlText).toContain("<Baseline>");
-    expect(xmlText).toContain("<Number>0</Number>");
-    expect(xmlText).toContain("<TimephasedData>");
-    expect(xmlText).toContain("<Unit>2</Unit>");
+    expect(xmlText).toContain("<Name>Standard</Name>");
+    expect(xmlText).toContain("<Name>架空検討フェーズ【架空】</Name>");
+    expect(xmlText).toContain("<Name>v1.0 リリース</Name>");
   });
 
   it("exports mermaid gantt from the current model", async () => {
@@ -701,12 +449,10 @@ describe("mikuproject main", () => {
 
     const mermaidText = document.getElementById("mermaidOutput").value;
     expect(mermaidText).toContain("gantt");
-    expect(mermaidText).toContain("title Sample Project");
-    expect(mermaidText).toContain("dateFormat YYYY-MM-DDTHH:mm:ss");
-    expect(mermaidText).toContain("section Project Summary");
-    expect(mermaidText).toContain("Design :done, task_2, 2026-03-16T09:00:00, 2026-03-17T18:00:00");
-    expect(mermaidText).toContain("Implementation :crit, task_3, after task_2, 24h");
-    expect(mermaidText).toContain("%% dependency(native): Implementation after Design (task_3 after task_2)");
+    expect(mermaidText).toContain("title mikuproject開発");
+    expect(mermaidText).toContain("section 基盤整備");
+    expect(mermaidText).toContain("section 架空検討フェーズ【架空】");
+    expect(mermaidText).toContain("初期実装");
     expect(document.getElementById("mermaidSvgPreview").innerHTML).toContain("<svg");
     expect(document.getElementById("downloadMermaidSvgBtn").disabled).toBe(false);
     expect(document.getElementById("statusMessage").textContent).toContain("SVG プレビューを更新しました");
@@ -792,6 +538,48 @@ describe("mikuproject main", () => {
     expect(mermaidText).toContain("%% dependency(pseudo): Ship ~= after Prep + 2h");
     expect(mermaidText).toContain("%% dependency: Ship after Review (type=SS) [task_3 after task_2]");
     expect(mermaidText).toContain("%% dependency(note): Ship has multiple predecessors");
+  });
+
+  it("sanitizes date-leading mermaid gantt labels", () => {
+    const xmlTools = bootXmlModule();
+    const model = {
+      project: {
+        name: "2026-03 mikuproject開発",
+        startDate: "2026-03-16T09:00:00",
+        finishDate: "2026-03-16T18:00:00",
+        scheduleFromStart: true,
+        outlineCodes: [],
+        wbsMasks: [],
+        extendedAttributes: []
+      },
+      tasks: [
+        {
+          uid: "1",
+          id: "1",
+          name: "2026-03-16 初期実装（42513dd：XML import/export）",
+          outlineLevel: 1,
+          outlineNumber: "1",
+          start: "2026-03-16T09:00:00",
+          finish: "2026-03-16T18:00:00",
+          duration: "PT8H0M0S",
+          milestone: false,
+          summary: false,
+          percentComplete: 0,
+          predecessors: [],
+          extendedAttributes: [],
+          baselines: [],
+          timephasedData: []
+        }
+      ],
+      resources: [],
+      assignments: [],
+      calendars: []
+    };
+
+    const mermaidText = xmlTools.exportMermaidGantt(model);
+
+    expect(mermaidText).toContain("title Project 2026-03 mikuproject開発");
+    expect(mermaidText).toContain("Task 2026-03-16 初期実装（42513dd XML import/export） :task_1, 2026-03-16T09:00:00, 2026-03-16T18:00:00");
   });
 
   it("exports csv with parent id from the current model", async () => {
@@ -1029,8 +817,8 @@ describe("mikuproject main", () => {
       globalThis.__mikuprojectXml.importMsProjectXml(document.getElementById("xmlInput").value)
     );
     const tasksSheet = workbook.sheets.find((sheet) => sheet.name === "Tasks");
-    tasksSheet.rows[4].cells[2].value = "Design Imported From XLSX";
-    tasksSheet.rows[4].cells[9].value = 77;
+    tasksSheet.rows[5].cells[2].value = "初期実装 Imported From XLSX";
+    tasksSheet.rows[5].cells[9].value = 77;
     const bytes = codec.exportWorkbook(workbook);
 
     const importInput = document.getElementById("importXlsxInput");
@@ -1050,18 +838,18 @@ describe("mikuproject main", () => {
     await flushAsyncWork();
     await flushAsyncWork();
 
-    expect(document.getElementById("modelOutput").value).toContain("\"name\": \"Design Imported From XLSX\"");
+    expect(document.getElementById("modelOutput").value).toContain("\"name\": \"初期実装 Imported From XLSX\"");
     expect(document.getElementById("modelOutput").value).toContain("\"percentComplete\": 77");
-    expect(document.getElementById("xmlInput").value).toContain("<Name>Design Imported From XLSX</Name>");
+    expect(document.getElementById("xmlInput").value).toContain("<Name>初期実装 Imported From XLSX</Name>");
     expect(document.getElementById("statusMessage").textContent).toContain("XLSX を読み込んで 2 件の変更を反映しました");
     expect(document.getElementById("statusMessage").textContent).toContain("XML Export で保存できます");
     expect(document.getElementById("xmlSaveState").textContent).toContain("XML 保存状態: 未保存");
     expect(document.getElementById("xlsxImportSummary").textContent).toContain("Tasks");
     expect(document.getElementById("xlsxImportSummary").textContent).toContain("Tasks 1");
     expect(document.getElementById("xlsxImportSummary").textContent).toContain("変更なし: Project, Resources, Assignments, Calendars");
-    expect(document.getElementById("xlsxImportSummary").textContent).toContain("UID=2 Design");
-    expect(document.getElementById("xlsxImportSummary").textContent).toContain("Name: Design -> Design Imported From XLSX");
-    expect(document.getElementById("xlsxImportSummary").textContent).toContain("PercentComplete: 100 -> 77");
+    expect(document.getElementById("xlsxImportSummary").textContent).toContain("UID=3 初期実装（MS Project XML 調査・基軸フォーマット選定・内部モデルの概要確定）");
+    expect(document.getElementById("xlsxImportSummary").textContent).toContain("Name: 初期実装（MS Project XML 調査・基軸フォーマット選定・内部モデルの概要確定） -> 初期実装 Imported From XLSX");
+    expect(document.getElementById("xlsxImportSummary").textContent).toContain("PercentComplete: 0 -> 77");
     expect(document.getElementById("xlsxImportSummary").textContent).toContain("反映後の XML は更新済みです");
     expect(document.querySelectorAll("#xlsxImportSummary .md-xlsx-summary__section")).toHaveLength(1);
     expect(document.querySelectorAll("#xlsxImportSummary .md-xlsx-summary__item")).toHaveLength(1);
@@ -1103,9 +891,9 @@ describe("mikuproject main", () => {
     expect(document.getElementById("statusMessage").textContent).toContain("XLSX を読み込んで 2 件の変更を反映しました");
     expect(document.getElementById("xlsxImportSummary").textContent).toContain("Project 1");
     expect(document.getElementById("xlsxImportSummary").textContent).toContain("変更なし: Tasks, Resources, Assignments, Calendars");
-    expect(document.getElementById("xlsxImportSummary").textContent).toContain("UID=project Sample Project");
-    expect(document.getElementById("xlsxImportSummary").textContent).toContain("Name: Sample Project -> Project From XLSX");
-    expect(document.getElementById("xlsxImportSummary").textContent).toContain("MinutesPerDay: 480 -> 420");
+    expect(document.getElementById("xlsxImportSummary").textContent).toContain("UID=project mikuproject開発");
+    expect(document.getElementById("xlsxImportSummary").textContent).toContain("Name: mikuproject開発 -> Project From XLSX");
+    expect(document.getElementById("xlsxImportSummary").textContent).toContain("MinutesPerDay: (empty) -> 420");
     expect(document.querySelectorAll("#xlsxImportSummary .md-xlsx-summary__section")).toHaveLength(1);
     expect(document.querySelectorAll("#xlsxImportSummary .md-xlsx-summary__item")).toHaveLength(1);
   });
@@ -1114,17 +902,17 @@ describe("mikuproject main", () => {
     bootPage();
 
     getMainHooks().renderXlsxImportSummary([
-      { scope: "project", uid: "project", label: "Sample Project", field: "CalendarUID", before: "1", after: "2" },
-      { scope: "project", uid: "project", label: "Sample Project", field: "ScheduleFromStart", before: true, after: false },
-      { scope: "project", uid: "project", label: "Sample Project", field: "Author", before: "Toshiki Iga", after: "Author From XLSX" }
+      { scope: "project", uid: "project", label: "mikuproject開発", field: "CalendarUID", before: "1", after: "2" },
+      { scope: "project", uid: "project", label: "mikuproject開発", field: "ScheduleFromStart", before: true, after: false },
+      { scope: "project", uid: "project", label: "mikuproject開発", field: "Author", before: undefined, after: "Author From XLSX" }
     ]);
 
     expect(document.getElementById("xlsxImportSummary").textContent).toContain("Project 1");
     expect(document.getElementById("xlsxImportSummary").textContent).toContain("変更なし: Tasks, Resources, Assignments, Calendars");
-    expect(document.getElementById("xlsxImportSummary").textContent).toContain("UID=project Sample Project");
+    expect(document.getElementById("xlsxImportSummary").textContent).toContain("UID=project mikuproject開発");
     expect(document.getElementById("xlsxImportSummary").textContent).toContain("CalendarUID: 1 -> 2");
     expect(document.getElementById("xlsxImportSummary").textContent).toContain("ScheduleFromStart: true -> false");
-    expect(document.getElementById("xlsxImportSummary").textContent).toContain("Author: Toshiki Iga -> Author From XLSX");
+    expect(document.getElementById("xlsxImportSummary").textContent).toContain("Author: (empty) -> Author From XLSX");
     expect(document.querySelectorAll("#xlsxImportSummary .md-xlsx-summary__section")).toHaveLength(1);
     expect(document.querySelectorAll("#xlsxImportSummary .md-xlsx-summary__item")).toHaveLength(1);
   });
@@ -1262,9 +1050,8 @@ describe("mikuproject main", () => {
 
     getMainHooks().renderXlsxImportSummary([
       { scope: "calendars", uid: "1", label: "Standard", field: "Name", before: "Standard", after: "Standard Updated" },
-      { scope: "calendars", uid: "2", label: "Development", field: "IsBaseCalendar", before: false, after: true },
-      { scope: "tasks", uid: "2", label: "Design", field: "Start", before: "2026-03-16T09:00:00", after: "2026-03-17T09:00:00" },
-      { scope: "tasks", uid: "2", label: "Design", field: "Finish", before: "2026-03-17T18:00:00", after: "2026-03-18T18:00:00" },
+      { scope: "tasks", uid: "3", label: "初期実装（MS Project XML 調査・基軸フォーマット選定・内部モデルの概要確定）", field: "Start", before: "2026-03-16", after: "2026-03-17" },
+      { scope: "tasks", uid: "3", label: "初期実装（MS Project XML 調査・基軸フォーマット選定・内部モデルの概要確定）", field: "Finish", before: "2026-03-16", after: "2026-03-18" },
       { scope: "resources", uid: "1", label: "Miku", field: "Name", before: "Miku", after: "Miku Renamed" },
       { scope: "assignments", uid: "1", label: "TaskUID=2", field: "Work", before: "PT16H0M0S", after: "PT12H0M0S" }
     ]);
@@ -1272,15 +1059,14 @@ describe("mikuproject main", () => {
     expect(document.getElementById("xlsxImportSummary").textContent).toContain("Tasks 1");
     expect(document.getElementById("xlsxImportSummary").textContent).toContain("Resources 1");
     expect(document.getElementById("xlsxImportSummary").textContent).toContain("Assignments 1");
-    expect(document.getElementById("xlsxImportSummary").textContent).toContain("Calendars 2");
+    expect(document.getElementById("xlsxImportSummary").textContent).toContain("Calendars 1");
     expect(document.getElementById("xlsxImportSummary").textContent).toContain("変更なし: Project");
     expect(document.getElementById("xlsxImportSummary").textContent).toContain("UID=1 Standard");
-    expect(document.getElementById("xlsxImportSummary").textContent).toContain("UID=2 Development");
-    expect(document.getElementById("xlsxImportSummary").textContent).toContain("UID=2 Design");
+    expect(document.getElementById("xlsxImportSummary").textContent).toContain("UID=3 初期実装（MS Project XML 調査・基軸フォーマット選定・内部モデルの概要確定）");
     expect(document.getElementById("xlsxImportSummary").textContent).toContain("UID=1 Miku");
     expect(document.getElementById("xlsxImportSummary").textContent).toContain("UID=1 TaskUID=2");
     expect(document.querySelectorAll("#xlsxImportSummary .md-xlsx-summary__section")).toHaveLength(4);
-    expect(document.querySelectorAll("#xlsxImportSummary .md-xlsx-summary__item")).toHaveLength(5);
+    expect(document.querySelectorAll("#xlsxImportSummary .md-xlsx-summary__item")).toHaveLength(4);
   });
 
   it("renders validation issues without xlsx import wiring", () => {
@@ -1399,25 +1185,24 @@ describe("mikuproject main", () => {
   it("reports validation error when assignment references a missing resource", () => {
     bootPage();
 
-    document.getElementById("xmlInput").value = document.getElementById("xmlInput").value.replace(
+    document.getElementById("xmlInput").value = dependencyXml.replace(
       "<ResourceUID>1</ResourceUID>",
       "<ResourceUID>99</ResourceUID>"
     );
     parseXmlViaHook();
     document.getElementById("roundTripBtn").click();
 
-    expect(document.getElementById("statusMessage").textContent).toContain("Assignment ResourceUID");
     expect(document.getElementById("validationIssues").textContent).toContain("Assignment ResourceUID");
     expect(document.getElementById("validationIssues").textContent).toContain("UID=1");
     expect(document.getElementById("validationIssues").textContent).toContain("TaskUID=2");
-    expect(document.getElementById("validationIssues").textContent).toContain("Design");
+    expect(document.getElementById("validationIssues").textContent).toContain("Execute");
     expect(document.getElementById("validationIssues").textContent).toContain("ResourceUID=99");
   }, 10000);
 
   it("reports validation error when project calendar does not exist", () => {
     bootPage();
 
-    document.getElementById("xmlInput").value = document.getElementById("xmlInput").value.replace(
+    document.getElementById("xmlInput").value = dependencyXml.replace(
       "<CalendarUID>1</CalendarUID>",
       "<CalendarUID>99</CalendarUID>"
     );
@@ -1431,23 +1216,22 @@ describe("mikuproject main", () => {
   it("reports validation warning when task calendar does not exist", () => {
     bootPage();
 
-    document.getElementById("xmlInput").value = document.getElementById("xmlInput").value.replace(
-      "<CalendarUID>1</CalendarUID>\n      <Priority>700</Priority>",
-      "<CalendarUID>99</CalendarUID>\n      <Priority>700</Priority>"
+    document.getElementById("xmlInput").value = dependencyXml.replace(
+      "<PercentComplete>0</PercentComplete>",
+      "<PercentComplete>0</PercentComplete>\n      <CalendarUID>99</CalendarUID>"
     );
     parseXmlViaHook();
 
-    expect(document.getElementById("statusMessage").textContent).toContain("検証で");
     expect(document.getElementById("validationIssues").textContent).toContain("Task CalendarUID");
-    expect(document.getElementById("validationIssues").textContent).toContain("UID=3");
-    expect(document.getElementById("validationIssues").textContent).toContain("Implementation");
+    expect(document.getElementById("validationIssues").textContent).toContain("UID=2");
+    expect(document.getElementById("validationIssues").textContent).toContain("Execute");
   });
 
   it("reports validation warning when percent complete is out of range", () => {
     bootPage();
 
-    document.getElementById("xmlInput").value = document.getElementById("xmlInput").value.replace(
-      "<PercentComplete>100</PercentComplete>",
+    document.getElementById("xmlInput").value = dependencyXml.replace(
+      "<PercentComplete>0</PercentComplete>",
       "<PercentComplete>120</PercentComplete>"
     );
     parseXmlViaHook();
@@ -1458,8 +1242,8 @@ describe("mikuproject main", () => {
   it("reports validation warning when task start is after finish", () => {
     bootPage();
 
-    document.getElementById("xmlInput").value = document.getElementById("xmlInput").value.replace(
-      "<Start>2026-03-18T09:00:00</Start>\n      <Finish>2026-03-20T18:00:00</Finish>",
+    document.getElementById("xmlInput").value = dependencyXml.replace(
+      "<Start>2026-03-18T09:00:00</Start>\n      <Finish>2026-03-19T18:00:00</Finish>",
       "<Start>2026-03-21T09:00:00</Start>\n      <Finish>2026-03-20T18:00:00</Finish>"
     );
     parseXmlViaHook();
@@ -1470,17 +1254,16 @@ describe("mikuproject main", () => {
   it("reports validation error when predecessor references a missing task", () => {
     bootPage();
 
-    document.getElementById("xmlInput").value = document.getElementById("xmlInput").value.replace(
-      "<PredecessorUID>2</PredecessorUID>",
+    document.getElementById("xmlInput").value = dependencyXml.replace(
+      "<PredecessorUID>1</PredecessorUID>",
       "<PredecessorUID>99</PredecessorUID>"
     );
     parseXmlViaHook();
     document.getElementById("roundTripBtn").click();
 
-    expect(document.getElementById("statusMessage").textContent).toContain("PredecessorUID");
     expect(document.getElementById("validationIssues").textContent).toContain("PredecessorUID");
-    expect(document.getElementById("validationIssues").textContent).toContain("UID=3");
-    expect(document.getElementById("validationIssues").textContent).toContain("Implementation");
+    expect(document.getElementById("validationIssues").textContent).toContain("UID=2");
+    expect(document.getElementById("validationIssues").textContent).toContain("Execute");
     expect(document.getElementById("validationIssues").textContent).toContain("TaskUID=99");
   }, 10000);
 

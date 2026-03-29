@@ -2153,6 +2153,7 @@ md-outlined-select.md-outlined-field:focus-within::part(container) {
           <div class="md-panel-actions">
             <button id="importProjectDraftFileBtn" type="button" class="md-button md-button--tonal">JSON ファイルを開く</button>
             <button id="importProjectDraftBtn" type="button" class="md-button md-button--tonal">貼り付けた JSON を取り込む</button>
+            <button id="loadProjectDraftSampleBtn" type="button" class="md-button md-button--surface">サンプル</button>
           </div>
           <div class="md-form-grid">
             <lht-text-field-help field-id="projectDraftImportInput" label="生成AIが返した JSON" rows="14" help-text="生成AIが返した `project_draft_view` の JSON テキストを貼り付けます。最後に json フェンスを持つ応答全体でもかまいません。"></lht-text-field-help>
@@ -5519,936 +5520,1062 @@ if (!customElements.get("lht-page-menu")) {
  * SPDX-License-Identifier: Apache-2.0
  */
 (() => {
-    const SAMPLE_XML = `<?xml version="1.0" encoding="UTF-8"?>
-<Project xmlns="http://schemas.microsoft.com/project">
-  <Name>Sample Project</Name>
-  <Title>Sample Project Title</Title>
-  <Company>Local HTML Tools</Company>
-  <Author>Toshiki Iga</Author>
-  <CreationDate>2026-03-16T08:30:00</CreationDate>
-  <LastSaved>2026-03-16T09:10:00</LastSaved>
-  <SaveVersion>14</SaveVersion>
-  <CurrentDate>2026-03-16T09:00:00</CurrentDate>
-  <StartDate>2026-03-16T09:00:00</StartDate>
-  <FinishDate>2026-03-31T18:00:00</FinishDate>
-  <ScheduleFromStart>1</ScheduleFromStart>
-  <DefaultStartTime>09:00:00</DefaultStartTime>
-  <DefaultFinishTime>18:00:00</DefaultFinishTime>
-  <MinutesPerDay>480</MinutesPerDay>
-  <MinutesPerWeek>2400</MinutesPerWeek>
-  <DaysPerMonth>20</DaysPerMonth>
-  <StatusDate>2026-03-19T09:00:00</StatusDate>
-  <WeekStartDay>1</WeekStartDay>
-  <WorkFormat>2</WorkFormat>
-  <DurationFormat>7</DurationFormat>
-  <CurrencyCode>JPY</CurrencyCode>
-  <CurrencyDigits>0</CurrencyDigits>
-  <CurrencySymbol>¥</CurrencySymbol>
-  <CurrencySymbolPosition>0</CurrencySymbolPosition>
-  <FYStartDate>2026-04-01T00:00:00</FYStartDate>
-  <FiscalYearStart>1</FiscalYearStart>
-  <CriticalSlackLimit>0</CriticalSlackLimit>
-  <DefaultTaskType>1</DefaultTaskType>
-  <DefaultFixedCostAccrual>2</DefaultFixedCostAccrual>
-  <DefaultStandardRate>5000/h</DefaultStandardRate>
-  <DefaultOvertimeRate>7000/h</DefaultOvertimeRate>
-  <DefaultTaskEVMethod>0</DefaultTaskEVMethod>
-  <NewTaskStartDate>0</NewTaskStartDate>
-  <NewTasksAreManual>0</NewTasksAreManual>
-  <NewTasksEffortDriven>1</NewTasksEffortDriven>
-  <NewTasksEstimated>1</NewTasksEstimated>
-  <ActualsInSync>0</ActualsInSync>
-  <EditableActualCosts>1</EditableActualCosts>
-  <HonorConstraints>1</HonorConstraints>
-  <InsertedProjectsLikeSummary>1</InsertedProjectsLikeSummary>
-  <MultipleCriticalPaths>0</MultipleCriticalPaths>
-  <TaskUpdatesResource>1</TaskUpdatesResource>
-  <UpdateManuallyScheduledTasksWhenEditingLinks>0</UpdateManuallyScheduledTasksWhenEditingLinks>
-  <CalendarUID>1</CalendarUID>
-  <OutlineCodes>
-    <OutlineCode>
-      <FieldID>188743731</FieldID>
-      <FieldName>Outline Code1</FieldName>
-      <Alias>Phase</Alias>
-      <OnlyTableValues>1</OnlyTableValues>
-      <Enterprise>0</Enterprise>
-      <ResourceSubstitutionEnabled>0</ResourceSubstitutionEnabled>
-      <LeafOnly>0</LeafOnly>
-      <AllLevelsRequired>0</AllLevelsRequired>
-      <Masks>
-        <Mask>
-          <Level>1</Level>
-          <Mask>*</Mask>
-          <Length>0</Length>
-          <Sequence>0</Sequence>
-        </Mask>
-      </Masks>
-      <Values>
-        <Value>
-          <Value>PLAN</Value>
-          <Description>Planning</Description>
-        </Value>
-        <Value>
-          <Value>BUILD</Value>
-          <Description>Implementation</Description>
-        </Value>
-      </Values>
-    </OutlineCode>
-  </OutlineCodes>
-  <WBSMasks>
-    <WBSMask>
-      <Level>1</Level>
-      <Mask>A</Mask>
-      <Length>1</Length>
-      <Sequence>1</Sequence>
-    </WBSMask>
-    <WBSMask>
-      <Level>2</Level>
-      <Mask>00</Mask>
-      <Length>2</Length>
-      <Sequence>1</Sequence>
-    </WBSMask>
-  </WBSMasks>
-  <ExtendedAttributes>
-    <ExtendedAttribute>
-      <FieldID>188743734</FieldID>
-      <FieldName>Text1</FieldName>
-      <Alias>Owner</Alias>
-      <CalculationType>0</CalculationType>
-      <RestrictValues>0</RestrictValues>
-      <AppendNewValues>1</AppendNewValues>
-    </ExtendedAttribute>
-  </ExtendedAttributes>
-  <Calendars>
-    <Calendar>
-      <UID>1</UID>
-      <Name>Standard</Name>
-      <IsBaseCalendar>1</IsBaseCalendar>
-      <IsBaselineCalendar>1</IsBaselineCalendar>
-      <Exceptions>
-        <Exception>
-          <Name>元日（公式）</Name>
-          <FromDate>2026-01-01T00:00:00</FromDate>
-          <ToDate>2026-01-01T23:59:59</ToDate>
-          <DayWorking>0</DayWorking>
-        </Exception>
-        <Exception>
-          <Name>成人の日（公式）</Name>
-          <FromDate>2026-01-12T00:00:00</FromDate>
-          <ToDate>2026-01-12T23:59:59</ToDate>
-          <DayWorking>0</DayWorking>
-        </Exception>
-        <Exception>
-          <Name>建国記念の日（公式）</Name>
-          <FromDate>2026-02-11T00:00:00</FromDate>
-          <ToDate>2026-02-11T23:59:59</ToDate>
-          <DayWorking>0</DayWorking>
-        </Exception>
-        <Exception>
-          <Name>天皇誕生日（公式）</Name>
-          <FromDate>2026-02-23T00:00:00</FromDate>
-          <ToDate>2026-02-23T23:59:59</ToDate>
-          <DayWorking>0</DayWorking>
-        </Exception>
-        <Exception>
-          <Name>春分の日（公式）</Name>
-          <FromDate>2026-03-20T00:00:00</FromDate>
-          <ToDate>2026-03-20T23:59:59</ToDate>
-          <DayWorking>0</DayWorking>
-        </Exception>
-        <Exception>
-          <Name>昭和の日（公式）</Name>
-          <FromDate>2026-04-29T00:00:00</FromDate>
-          <ToDate>2026-04-29T23:59:59</ToDate>
-          <DayWorking>0</DayWorking>
-        </Exception>
-        <Exception>
-          <Name>憲法記念日（公式）</Name>
-          <FromDate>2026-05-03T00:00:00</FromDate>
-          <ToDate>2026-05-03T23:59:59</ToDate>
-          <DayWorking>0</DayWorking>
-        </Exception>
-        <Exception>
-          <Name>みどりの日（公式）</Name>
-          <FromDate>2026-05-04T00:00:00</FromDate>
-          <ToDate>2026-05-04T23:59:59</ToDate>
-          <DayWorking>0</DayWorking>
-        </Exception>
-        <Exception>
-          <Name>こどもの日（公式）</Name>
-          <FromDate>2026-05-05T00:00:00</FromDate>
-          <ToDate>2026-05-05T23:59:59</ToDate>
-          <DayWorking>0</DayWorking>
-        </Exception>
-        <Exception>
-          <Name>休日（公式）</Name>
-          <FromDate>2026-05-06T00:00:00</FromDate>
-          <ToDate>2026-05-06T23:59:59</ToDate>
-          <DayWorking>0</DayWorking>
-        </Exception>
-        <Exception>
-          <Name>海の日（公式）</Name>
-          <FromDate>2026-07-20T00:00:00</FromDate>
-          <ToDate>2026-07-20T23:59:59</ToDate>
-          <DayWorking>0</DayWorking>
-        </Exception>
-        <Exception>
-          <Name>山の日（公式）</Name>
-          <FromDate>2026-08-11T00:00:00</FromDate>
-          <ToDate>2026-08-11T23:59:59</ToDate>
-          <DayWorking>0</DayWorking>
-        </Exception>
-        <Exception>
-          <Name>敬老の日（公式）</Name>
-          <FromDate>2026-09-21T00:00:00</FromDate>
-          <ToDate>2026-09-21T23:59:59</ToDate>
-          <DayWorking>0</DayWorking>
-        </Exception>
-        <Exception>
-          <Name>休日（公式）</Name>
-          <FromDate>2026-09-22T00:00:00</FromDate>
-          <ToDate>2026-09-22T23:59:59</ToDate>
-          <DayWorking>0</DayWorking>
-        </Exception>
-        <Exception>
-          <Name>秋分の日（公式）</Name>
-          <FromDate>2026-09-23T00:00:00</FromDate>
-          <ToDate>2026-09-23T23:59:59</ToDate>
-          <DayWorking>0</DayWorking>
-        </Exception>
-        <Exception>
-          <Name>スポーツの日（公式）</Name>
-          <FromDate>2026-10-12T00:00:00</FromDate>
-          <ToDate>2026-10-12T23:59:59</ToDate>
-          <DayWorking>0</DayWorking>
-        </Exception>
-        <Exception>
-          <Name>文化の日（公式）</Name>
-          <FromDate>2026-11-03T00:00:00</FromDate>
-          <ToDate>2026-11-03T23:59:59</ToDate>
-          <DayWorking>0</DayWorking>
-        </Exception>
-        <Exception>
-          <Name>勤労感謝の日（公式）</Name>
-          <FromDate>2026-11-23T00:00:00</FromDate>
-          <ToDate>2026-11-23T23:59:59</ToDate>
-          <DayWorking>0</DayWorking>
-        </Exception>
-        <Exception>
-          <Name>元日（公式）</Name>
-          <FromDate>2027-01-01T00:00:00</FromDate>
-          <ToDate>2027-01-01T23:59:59</ToDate>
-          <DayWorking>0</DayWorking>
-        </Exception>
-        <Exception>
-          <Name>成人の日（公式）</Name>
-          <FromDate>2027-01-11T00:00:00</FromDate>
-          <ToDate>2027-01-11T23:59:59</ToDate>
-          <DayWorking>0</DayWorking>
-        </Exception>
-        <Exception>
-          <Name>建国記念の日（公式）</Name>
-          <FromDate>2027-02-11T00:00:00</FromDate>
-          <ToDate>2027-02-11T23:59:59</ToDate>
-          <DayWorking>0</DayWorking>
-        </Exception>
-        <Exception>
-          <Name>天皇誕生日（公式）</Name>
-          <FromDate>2027-02-23T00:00:00</FromDate>
-          <ToDate>2027-02-23T23:59:59</ToDate>
-          <DayWorking>0</DayWorking>
-        </Exception>
-        <Exception>
-          <Name>春分の日（公式）</Name>
-          <FromDate>2027-03-21T00:00:00</FromDate>
-          <ToDate>2027-03-21T23:59:59</ToDate>
-          <DayWorking>0</DayWorking>
-        </Exception>
-        <Exception>
-          <Name>休日（公式）</Name>
-          <FromDate>2027-03-22T00:00:00</FromDate>
-          <ToDate>2027-03-22T23:59:59</ToDate>
-          <DayWorking>0</DayWorking>
-        </Exception>
-        <Exception>
-          <Name>昭和の日（公式）</Name>
-          <FromDate>2027-04-29T00:00:00</FromDate>
-          <ToDate>2027-04-29T23:59:59</ToDate>
-          <DayWorking>0</DayWorking>
-        </Exception>
-        <Exception>
-          <Name>憲法記念日（公式）</Name>
-          <FromDate>2027-05-03T00:00:00</FromDate>
-          <ToDate>2027-05-03T23:59:59</ToDate>
-          <DayWorking>0</DayWorking>
-        </Exception>
-        <Exception>
-          <Name>みどりの日（公式）</Name>
-          <FromDate>2027-05-04T00:00:00</FromDate>
-          <ToDate>2027-05-04T23:59:59</ToDate>
-          <DayWorking>0</DayWorking>
-        </Exception>
-        <Exception>
-          <Name>こどもの日（公式）</Name>
-          <FromDate>2027-05-05T00:00:00</FromDate>
-          <ToDate>2027-05-05T23:59:59</ToDate>
-          <DayWorking>0</DayWorking>
-        </Exception>
-        <Exception>
-          <Name>海の日（公式）</Name>
-          <FromDate>2027-07-19T00:00:00</FromDate>
-          <ToDate>2027-07-19T23:59:59</ToDate>
-          <DayWorking>0</DayWorking>
-        </Exception>
-        <Exception>
-          <Name>山の日（公式）</Name>
-          <FromDate>2027-08-11T00:00:00</FromDate>
-          <ToDate>2027-08-11T23:59:59</ToDate>
-          <DayWorking>0</DayWorking>
-        </Exception>
-        <Exception>
-          <Name>敬老の日（公式）</Name>
-          <FromDate>2027-09-20T00:00:00</FromDate>
-          <ToDate>2027-09-20T23:59:59</ToDate>
-          <DayWorking>0</DayWorking>
-        </Exception>
-        <Exception>
-          <Name>秋分の日（公式）</Name>
-          <FromDate>2027-09-23T00:00:00</FromDate>
-          <ToDate>2027-09-23T23:59:59</ToDate>
-          <DayWorking>0</DayWorking>
-        </Exception>
-        <Exception>
-          <Name>スポーツの日（公式）</Name>
-          <FromDate>2027-10-11T00:00:00</FromDate>
-          <ToDate>2027-10-11T23:59:59</ToDate>
-          <DayWorking>0</DayWorking>
-        </Exception>
-        <Exception>
-          <Name>文化の日（公式）</Name>
-          <FromDate>2027-11-03T00:00:00</FromDate>
-          <ToDate>2027-11-03T23:59:59</ToDate>
-          <DayWorking>0</DayWorking>
-        </Exception>
-        <Exception>
-          <Name>勤労感謝の日（公式）</Name>
-          <FromDate>2027-11-23T00:00:00</FromDate>
-          <ToDate>2027-11-23T23:59:59</ToDate>
-          <DayWorking>0</DayWorking>
-        </Exception>
-        <Exception>
-          <Name>元日（推定）</Name>
-          <FromDate>2028-01-01T00:00:00</FromDate>
-          <ToDate>2028-01-01T23:59:59</ToDate>
-          <DayWorking>0</DayWorking>
-        </Exception>
-        <Exception>
-          <Name>成人の日（推定）</Name>
-          <FromDate>2028-01-10T00:00:00</FromDate>
-          <ToDate>2028-01-10T23:59:59</ToDate>
-          <DayWorking>0</DayWorking>
-        </Exception>
-        <Exception>
-          <Name>建国記念の日（推定）</Name>
-          <FromDate>2028-02-11T00:00:00</FromDate>
-          <ToDate>2028-02-11T23:59:59</ToDate>
-          <DayWorking>0</DayWorking>
-        </Exception>
-        <Exception>
-          <Name>天皇誕生日（推定）</Name>
-          <FromDate>2028-02-23T00:00:00</FromDate>
-          <ToDate>2028-02-23T23:59:59</ToDate>
-          <DayWorking>0</DayWorking>
-        </Exception>
-        <Exception>
-          <Name>春分の日（推定）</Name>
-          <FromDate>2028-03-20T00:00:00</FromDate>
-          <ToDate>2028-03-20T23:59:59</ToDate>
-          <DayWorking>0</DayWorking>
-        </Exception>
-        <Exception>
-          <Name>昭和の日（推定）</Name>
-          <FromDate>2028-04-29T00:00:00</FromDate>
-          <ToDate>2028-04-29T23:59:59</ToDate>
-          <DayWorking>0</DayWorking>
-        </Exception>
-        <Exception>
-          <Name>憲法記念日（推定）</Name>
-          <FromDate>2028-05-03T00:00:00</FromDate>
-          <ToDate>2028-05-03T23:59:59</ToDate>
-          <DayWorking>0</DayWorking>
-        </Exception>
-        <Exception>
-          <Name>みどりの日（推定）</Name>
-          <FromDate>2028-05-04T00:00:00</FromDate>
-          <ToDate>2028-05-04T23:59:59</ToDate>
-          <DayWorking>0</DayWorking>
-        </Exception>
-        <Exception>
-          <Name>こどもの日（推定）</Name>
-          <FromDate>2028-05-05T00:00:00</FromDate>
-          <ToDate>2028-05-05T23:59:59</ToDate>
-          <DayWorking>0</DayWorking>
-        </Exception>
-        <Exception>
-          <Name>海の日（推定）</Name>
-          <FromDate>2028-07-17T00:00:00</FromDate>
-          <ToDate>2028-07-17T23:59:59</ToDate>
-          <DayWorking>0</DayWorking>
-        </Exception>
-        <Exception>
-          <Name>山の日（推定）</Name>
-          <FromDate>2028-08-11T00:00:00</FromDate>
-          <ToDate>2028-08-11T23:59:59</ToDate>
-          <DayWorking>0</DayWorking>
-        </Exception>
-        <Exception>
-          <Name>敬老の日（推定）</Name>
-          <FromDate>2028-09-18T00:00:00</FromDate>
-          <ToDate>2028-09-18T23:59:59</ToDate>
-          <DayWorking>0</DayWorking>
-        </Exception>
-        <Exception>
-          <Name>秋分の日（推定）</Name>
-          <FromDate>2028-09-22T00:00:00</FromDate>
-          <ToDate>2028-09-22T23:59:59</ToDate>
-          <DayWorking>0</DayWorking>
-        </Exception>
-        <Exception>
-          <Name>スポーツの日（推定）</Name>
-          <FromDate>2028-10-09T00:00:00</FromDate>
-          <ToDate>2028-10-09T23:59:59</ToDate>
-          <DayWorking>0</DayWorking>
-        </Exception>
-        <Exception>
-          <Name>文化の日（推定）</Name>
-          <FromDate>2028-11-03T00:00:00</FromDate>
-          <ToDate>2028-11-03T23:59:59</ToDate>
-          <DayWorking>0</DayWorking>
-        </Exception>
-        <Exception>
-          <Name>勤労感謝の日（推定）</Name>
-          <FromDate>2028-11-23T00:00:00</FromDate>
-          <ToDate>2028-11-23T23:59:59</ToDate>
-          <DayWorking>0</DayWorking>
-        </Exception>
-        <Exception>
-          <Name>元日（推定）</Name>
-          <FromDate>2029-01-01T00:00:00</FromDate>
-          <ToDate>2029-01-01T23:59:59</ToDate>
-          <DayWorking>0</DayWorking>
-        </Exception>
-        <Exception>
-          <Name>成人の日（推定）</Name>
-          <FromDate>2029-01-08T00:00:00</FromDate>
-          <ToDate>2029-01-08T23:59:59</ToDate>
-          <DayWorking>0</DayWorking>
-        </Exception>
-        <Exception>
-          <Name>建国記念の日（推定）</Name>
-          <FromDate>2029-02-11T00:00:00</FromDate>
-          <ToDate>2029-02-11T23:59:59</ToDate>
-          <DayWorking>0</DayWorking>
-        </Exception>
-        <Exception>
-          <Name>休日（推定）</Name>
-          <FromDate>2029-02-12T00:00:00</FromDate>
-          <ToDate>2029-02-12T23:59:59</ToDate>
-          <DayWorking>0</DayWorking>
-        </Exception>
-        <Exception>
-          <Name>天皇誕生日（推定）</Name>
-          <FromDate>2029-02-23T00:00:00</FromDate>
-          <ToDate>2029-02-23T23:59:59</ToDate>
-          <DayWorking>0</DayWorking>
-        </Exception>
-        <Exception>
-          <Name>春分の日（推定）</Name>
-          <FromDate>2029-03-20T00:00:00</FromDate>
-          <ToDate>2029-03-20T23:59:59</ToDate>
-          <DayWorking>0</DayWorking>
-        </Exception>
-        <Exception>
-          <Name>昭和の日（推定）</Name>
-          <FromDate>2029-04-29T00:00:00</FromDate>
-          <ToDate>2029-04-29T23:59:59</ToDate>
-          <DayWorking>0</DayWorking>
-        </Exception>
-        <Exception>
-          <Name>休日（推定）</Name>
-          <FromDate>2029-04-30T00:00:00</FromDate>
-          <ToDate>2029-04-30T23:59:59</ToDate>
-          <DayWorking>0</DayWorking>
-        </Exception>
-        <Exception>
-          <Name>憲法記念日（推定）</Name>
-          <FromDate>2029-05-03T00:00:00</FromDate>
-          <ToDate>2029-05-03T23:59:59</ToDate>
-          <DayWorking>0</DayWorking>
-        </Exception>
-        <Exception>
-          <Name>みどりの日（推定）</Name>
-          <FromDate>2029-05-04T00:00:00</FromDate>
-          <ToDate>2029-05-04T23:59:59</ToDate>
-          <DayWorking>0</DayWorking>
-        </Exception>
-        <Exception>
-          <Name>こどもの日（推定）</Name>
-          <FromDate>2029-05-05T00:00:00</FromDate>
-          <ToDate>2029-05-05T23:59:59</ToDate>
-          <DayWorking>0</DayWorking>
-        </Exception>
-        <Exception>
-          <Name>海の日（推定）</Name>
-          <FromDate>2029-07-16T00:00:00</FromDate>
-          <ToDate>2029-07-16T23:59:59</ToDate>
-          <DayWorking>0</DayWorking>
-        </Exception>
-        <Exception>
-          <Name>山の日（推定）</Name>
-          <FromDate>2029-08-11T00:00:00</FromDate>
-          <ToDate>2029-08-11T23:59:59</ToDate>
-          <DayWorking>0</DayWorking>
-        </Exception>
-        <Exception>
-          <Name>敬老の日（推定）</Name>
-          <FromDate>2029-09-17T00:00:00</FromDate>
-          <ToDate>2029-09-17T23:59:59</ToDate>
-          <DayWorking>0</DayWorking>
-        </Exception>
-        <Exception>
-          <Name>秋分の日（推定）</Name>
-          <FromDate>2029-09-23T00:00:00</FromDate>
-          <ToDate>2029-09-23T23:59:59</ToDate>
-          <DayWorking>0</DayWorking>
-        </Exception>
-        <Exception>
-          <Name>休日（推定）</Name>
-          <FromDate>2029-09-24T00:00:00</FromDate>
-          <ToDate>2029-09-24T23:59:59</ToDate>
-          <DayWorking>0</DayWorking>
-        </Exception>
-        <Exception>
-          <Name>スポーツの日（推定）</Name>
-          <FromDate>2029-10-08T00:00:00</FromDate>
-          <ToDate>2029-10-08T23:59:59</ToDate>
-          <DayWorking>0</DayWorking>
-        </Exception>
-        <Exception>
-          <Name>文化の日（推定）</Name>
-          <FromDate>2029-11-03T00:00:00</FromDate>
-          <ToDate>2029-11-03T23:59:59</ToDate>
-          <DayWorking>0</DayWorking>
-        </Exception>
-        <Exception>
-          <Name>勤労感謝の日（推定）</Name>
-          <FromDate>2029-11-23T00:00:00</FromDate>
-          <ToDate>2029-11-23T23:59:59</ToDate>
-          <DayWorking>0</DayWorking>
-        </Exception>
-        <Exception>
-          <Name>元日（推定）</Name>
-          <FromDate>2030-01-01T00:00:00</FromDate>
-          <ToDate>2030-01-01T23:59:59</ToDate>
-          <DayWorking>0</DayWorking>
-        </Exception>
-        <Exception>
-          <Name>成人の日（推定）</Name>
-          <FromDate>2030-01-14T00:00:00</FromDate>
-          <ToDate>2030-01-14T23:59:59</ToDate>
-          <DayWorking>0</DayWorking>
-        </Exception>
-        <Exception>
-          <Name>建国記念の日（推定）</Name>
-          <FromDate>2030-02-11T00:00:00</FromDate>
-          <ToDate>2030-02-11T23:59:59</ToDate>
-          <DayWorking>0</DayWorking>
-        </Exception>
-        <Exception>
-          <Name>天皇誕生日（推定）</Name>
-          <FromDate>2030-02-23T00:00:00</FromDate>
-          <ToDate>2030-02-23T23:59:59</ToDate>
-          <DayWorking>0</DayWorking>
-        </Exception>
-        <Exception>
-          <Name>春分の日（推定）</Name>
-          <FromDate>2030-03-20T00:00:00</FromDate>
-          <ToDate>2030-03-20T23:59:59</ToDate>
-          <DayWorking>0</DayWorking>
-        </Exception>
-        <Exception>
-          <Name>昭和の日（推定）</Name>
-          <FromDate>2030-04-29T00:00:00</FromDate>
-          <ToDate>2030-04-29T23:59:59</ToDate>
-          <DayWorking>0</DayWorking>
-        </Exception>
-        <Exception>
-          <Name>憲法記念日（推定）</Name>
-          <FromDate>2030-05-03T00:00:00</FromDate>
-          <ToDate>2030-05-03T23:59:59</ToDate>
-          <DayWorking>0</DayWorking>
-        </Exception>
-        <Exception>
-          <Name>みどりの日（推定）</Name>
-          <FromDate>2030-05-04T00:00:00</FromDate>
-          <ToDate>2030-05-04T23:59:59</ToDate>
-          <DayWorking>0</DayWorking>
-        </Exception>
-        <Exception>
-          <Name>こどもの日（推定）</Name>
-          <FromDate>2030-05-05T00:00:00</FromDate>
-          <ToDate>2030-05-05T23:59:59</ToDate>
-          <DayWorking>0</DayWorking>
-        </Exception>
-        <Exception>
-          <Name>休日（推定）</Name>
-          <FromDate>2030-05-06T00:00:00</FromDate>
-          <ToDate>2030-05-06T23:59:59</ToDate>
-          <DayWorking>0</DayWorking>
-        </Exception>
-        <Exception>
-          <Name>海の日（推定）</Name>
-          <FromDate>2030-07-15T00:00:00</FromDate>
-          <ToDate>2030-07-15T23:59:59</ToDate>
-          <DayWorking>0</DayWorking>
-        </Exception>
-        <Exception>
-          <Name>山の日（推定）</Name>
-          <FromDate>2030-08-11T00:00:00</FromDate>
-          <ToDate>2030-08-11T23:59:59</ToDate>
-          <DayWorking>0</DayWorking>
-        </Exception>
-        <Exception>
-          <Name>休日（推定）</Name>
-          <FromDate>2030-08-12T00:00:00</FromDate>
-          <ToDate>2030-08-12T23:59:59</ToDate>
-          <DayWorking>0</DayWorking>
-        </Exception>
-        <Exception>
-          <Name>敬老の日（推定）</Name>
-          <FromDate>2030-09-16T00:00:00</FromDate>
-          <ToDate>2030-09-16T23:59:59</ToDate>
-          <DayWorking>0</DayWorking>
-        </Exception>
-        <Exception>
-          <Name>秋分の日（推定）</Name>
-          <FromDate>2030-09-23T00:00:00</FromDate>
-          <ToDate>2030-09-23T23:59:59</ToDate>
-          <DayWorking>0</DayWorking>
-        </Exception>
-        <Exception>
-          <Name>スポーツの日（推定）</Name>
-          <FromDate>2030-10-14T00:00:00</FromDate>
-          <ToDate>2030-10-14T23:59:59</ToDate>
-          <DayWorking>0</DayWorking>
-        </Exception>
-        <Exception>
-          <Name>文化の日（推定）</Name>
-          <FromDate>2030-11-03T00:00:00</FromDate>
-          <ToDate>2030-11-03T23:59:59</ToDate>
-          <DayWorking>0</DayWorking>
-        </Exception>
-        <Exception>
-          <Name>休日（推定）</Name>
-          <FromDate>2030-11-04T00:00:00</FromDate>
-          <ToDate>2030-11-04T23:59:59</ToDate>
-          <DayWorking>0</DayWorking>
-        </Exception>
-        <Exception>
-          <Name>勤労感謝の日（推定）</Name>
-          <FromDate>2030-11-23T00:00:00</FromDate>
-          <ToDate>2030-11-23T23:59:59</ToDate>
-          <DayWorking>0</DayWorking>
-        </Exception>
-      </Exceptions>
-      <WeekDays>
-        <WeekDay>
-          <DayType>2</DayType>
-          <DayWorking>1</DayWorking>
-          <WorkingTimes>
-            <WorkingTime>
-              <FromTime>09:00:00</FromTime>
-              <ToTime>12:00:00</ToTime>
-            </WorkingTime>
-            <WorkingTime>
-              <FromTime>13:00:00</FromTime>
-              <ToTime>18:00:00</ToTime>
-            </WorkingTime>
-          </WorkingTimes>
-        </WeekDay>
-      </WeekDays>
-    </Calendar>
-    <Calendar>
-      <UID>2</UID>
-      <Name>Development</Name>
-      <IsBaseCalendar>0</IsBaseCalendar>
-      <BaseCalendarUID>1</BaseCalendarUID>
-      <WorkWeeks>
-        <WorkWeek>
-          <Name>Spring Sprint</Name>
-          <FromDate>2026-03-16T00:00:00</FromDate>
-          <ToDate>2026-03-31T23:59:59</ToDate>
-          <WeekDays>
-            <WeekDay>
-              <DayType>2</DayType>
-              <DayWorking>1</DayWorking>
-              <WorkingTimes>
-                <WorkingTime>
-                  <FromTime>10:00:00</FromTime>
-                  <ToTime>18:00:00</ToTime>
-                </WorkingTime>
-              </WorkingTimes>
-            </WeekDay>
-          </WeekDays>
-        </WorkWeek>
-      </WorkWeeks>
-      <WeekDays>
-        <WeekDay>
-          <DayType>6</DayType>
-          <DayWorking>1</DayWorking>
-          <WorkingTimes>
-            <WorkingTime>
-              <FromTime>10:00:00</FromTime>
-              <ToTime>15:00:00</ToTime>
-            </WorkingTime>
-          </WorkingTimes>
-        </WeekDay>
-      </WeekDays>
-    </Calendar>
-  </Calendars>
-  <Tasks>
-    <Task>
-      <UID>1</UID>
-      <ID>1</ID>
-      <Name>Project Summary</Name>
-      <OutlineLevel>1</OutlineLevel>
-      <OutlineNumber>1</OutlineNumber>
-      <WBS>1</WBS>
-      <Type>1</Type>
-      <CalendarUID>1</CalendarUID>
-      <Priority>500</Priority>
-      <Start>2026-03-16T09:00:00</Start>
-      <Finish>2026-03-20T18:00:00</Finish>
-      <Duration>PT40H0M0S</Duration>
-      <StartVariance>PT0H0M0S</StartVariance>
-      <FinishVariance>PT0H0M0S</FinishVariance>
-      <Work>PT40H0M0S</Work>
-      <WorkVariance>PT0H0M0S</WorkVariance>
-      <TotalSlack>PT0H0M0S</TotalSlack>
-      <FreeSlack>PT0H0M0S</FreeSlack>
-      <Cost>200000</Cost>
-      <ActualCost>100000</ActualCost>
-      <RemainingCost>100000</RemainingCost>
-      <RemainingWork>PT20H0M0S</RemainingWork>
-      <ActualWork>PT20H0M0S</ActualWork>
-      <Milestone>0</Milestone>
-      <Summary>1</Summary>
-      <Critical>0</Critical>
-      <PercentComplete>50</PercentComplete>
-      <PercentWorkComplete>50</PercentWorkComplete>
-    </Task>
-    <Task>
-      <UID>2</UID>
-      <ID>2</ID>
-      <Name>Design</Name>
-      <OutlineLevel>2</OutlineLevel>
-      <OutlineNumber>1.1</OutlineNumber>
-      <WBS>1.1</WBS>
-      <Type>1</Type>
-      <CalendarUID>1</CalendarUID>
-      <Priority>500</Priority>
-      <Start>2026-03-16T09:00:00</Start>
-      <Finish>2026-03-17T18:00:00</Finish>
-      <Duration>PT16H0M0S</Duration>
-      <ActualStart>2026-03-16T09:00:00</ActualStart>
-      <ActualFinish>2026-03-17T18:00:00</ActualFinish>
-      <StartVariance>PT0H0M0S</StartVariance>
-      <FinishVariance>PT0H0M0S</FinishVariance>
-      <Work>PT16H0M0S</Work>
-      <WorkVariance>PT0H0M0S</WorkVariance>
-      <TotalSlack>PT0H0M0S</TotalSlack>
-      <FreeSlack>PT0H0M0S</FreeSlack>
-      <Cost>80000</Cost>
-      <ActualCost>80000</ActualCost>
-      <RemainingCost>0</RemainingCost>
-      <RemainingWork>PT0H0M0S</RemainingWork>
-      <ActualWork>PT16H0M0S</ActualWork>
-      <Milestone>0</Milestone>
-      <Summary>0</Summary>
-      <Critical>0</Critical>
-      <PercentComplete>100</PercentComplete>
-      <PercentWorkComplete>100</PercentWorkComplete>
-      <Notes>Design completed</Notes>
+    const SAMPLE_PROJECT_DRAFT_VIEW = {
+        view_type: "project_draft_view",
+        project: {
+            name: "mikuproject開発",
+            planned_start: "2026-03-16",
+            planned_finish: "2026-04-01"
+        },
+        tasks: [
+            {
+                uid: "draft-100",
+                name: "基盤整備",
+                parent_uid: null,
+                position: 0,
+                is_summary: true,
+                planned_start: "2026-03-16",
+                planned_finish: "2026-03-17"
+            },
+            {
+                uid: "draft-110",
+                name: "着手",
+                parent_uid: "draft-100",
+                position: 0,
+                is_milestone: true,
+                planned_start: "2026-03-16",
+                planned_finish: "2026-03-16"
+            },
+            {
+                uid: "draft-120",
+                name: "初期実装（MS Project XML 調査・基軸フォーマット選定・内部モデルの概要確定）",
+                parent_uid: "draft-100",
+                position: 1,
+                planned_start: "2026-03-16",
+                planned_finish: "2026-03-16"
+            },
+            {
+                uid: "draft-130",
+                name: "round-trip拡張（MS Project XML → 内部JSON形式 → MS Project XML の往復対応）",
+                parent_uid: "draft-100",
+                position: 2,
+                planned_start: "2026-03-17",
+                planned_finish: "2026-03-17"
+            },
+            {
+                uid: "draft-150",
+                name: "架空検討フェーズ【架空】",
+                parent_uid: null,
+                position: 1,
+                is_summary: true,
+                planned_start: "2026-03-19",
+                planned_finish: "2026-03-25"
+            },
+            {
+                uid: "draft-160",
+                name: "ユーザー操作フローの見直し【架空】",
+                parent_uid: "draft-150",
+                position: 0,
+                planned_start: "2026-03-19",
+                planned_finish: "2026-03-23"
+            },
+            {
+                uid: "draft-170",
+                name: "画面構成の再整理【架空】",
+                parent_uid: "draft-150",
+                position: 1,
+                planned_start: "2026-03-24",
+                planned_finish: "2026-03-25"
+            },
+            {
+                uid: "draft-200",
+                name: "XLSX / UI 強化",
+                parent_uid: null,
+                position: 2,
+                is_summary: true,
+                planned_start: "2026-03-27",
+                planned_finish: "2026-03-28"
+            },
+            {
+                uid: "draft-210",
+                name: "GitHub リポジトリ独立化",
+                parent_uid: "draft-200",
+                position: 0,
+                is_milestone: true,
+                planned_start: "2026-03-27",
+                planned_finish: "2026-03-27"
+            },
+            {
+                uid: "draft-220",
+                name: "MS Project XML と XLSX の相互変換・round-trip実装",
+                parent_uid: "draft-200",
+                position: 1,
+                planned_start: "2026-03-27",
+                planned_finish: "2026-03-27"
+            },
+            {
+                uid: "draft-230",
+                name: "XLSXレイアウト再設計・再整理",
+                parent_uid: "draft-200",
+                position: 2,
+                planned_start: "2026-03-28",
+                planned_finish: "2026-03-28"
+            },
+            {
+                uid: "draft-300",
+                name: "リリース",
+                parent_uid: null,
+                position: 3,
+                is_summary: true,
+                planned_start: "2026-03-29",
+                planned_finish: "2026-03-29"
+            },
+            {
+                uid: "draft-310",
+                name: "v1.0 リリース",
+                parent_uid: "draft-300",
+                position: 0,
+                is_milestone: true,
+                planned_start: "2026-03-29",
+                planned_finish: "2026-03-29"
+            }
+        ]
+    };
+    const SAMPLE_XML = buildSampleXml();
+    /*
+  
+    <Title>Sample Project Title</Title>
+    <Company>Local HTML Tools</Company>
+    <Author>Toshiki Iga</Author>
+    <CreationDate>2026-03-16T08:30:00</CreationDate>
+    <LastSaved>2026-03-16T09:10:00</LastSaved>
+    <SaveVersion>14</SaveVersion>
+    <CurrentDate>2026-03-16T09:00:00</CurrentDate>
+    <StartDate>2026-03-16T09:00:00</StartDate>
+    <FinishDate>2026-03-31T18:00:00</FinishDate>
+    <ScheduleFromStart>1</ScheduleFromStart>
+    <DefaultStartTime>09:00:00</DefaultStartTime>
+    <DefaultFinishTime>18:00:00</DefaultFinishTime>
+    <MinutesPerDay>480</MinutesPerDay>
+    <MinutesPerWeek>2400</MinutesPerWeek>
+    <DaysPerMonth>20</DaysPerMonth>
+    <StatusDate>2026-03-19T09:00:00</StatusDate>
+    <WeekStartDay>1</WeekStartDay>
+    <WorkFormat>2</WorkFormat>
+    <DurationFormat>7</DurationFormat>
+    <CurrencyCode>JPY</CurrencyCode>
+    <CurrencyDigits>0</CurrencyDigits>
+    <CurrencySymbol>¥</CurrencySymbol>
+    <CurrencySymbolPosition>0</CurrencySymbolPosition>
+    <FYStartDate>2026-04-01T00:00:00</FYStartDate>
+    <FiscalYearStart>1</FiscalYearStart>
+    <CriticalSlackLimit>0</CriticalSlackLimit>
+    <DefaultTaskType>1</DefaultTaskType>
+    <DefaultFixedCostAccrual>2</DefaultFixedCostAccrual>
+    <DefaultStandardRate>5000/h</DefaultStandardRate>
+    <DefaultOvertimeRate>7000/h</DefaultOvertimeRate>
+    <DefaultTaskEVMethod>0</DefaultTaskEVMethod>
+    <NewTaskStartDate>0</NewTaskStartDate>
+    <NewTasksAreManual>0</NewTasksAreManual>
+    <NewTasksEffortDriven>1</NewTasksEffortDriven>
+    <NewTasksEstimated>1</NewTasksEstimated>
+    <ActualsInSync>0</ActualsInSync>
+    <EditableActualCosts>1</EditableActualCosts>
+    <HonorConstraints>1</HonorConstraints>
+    <InsertedProjectsLikeSummary>1</InsertedProjectsLikeSummary>
+    <MultipleCriticalPaths>0</MultipleCriticalPaths>
+    <TaskUpdatesResource>1</TaskUpdatesResource>
+    <UpdateManuallyScheduledTasksWhenEditingLinks>0</UpdateManuallyScheduledTasksWhenEditingLinks>
+    <CalendarUID>1</CalendarUID>
+    <OutlineCodes>
+      <OutlineCode>
+        <FieldID>188743731</FieldID>
+        <FieldName>Outline Code1</FieldName>
+        <Alias>Phase</Alias>
+        <OnlyTableValues>1</OnlyTableValues>
+        <Enterprise>0</Enterprise>
+        <ResourceSubstitutionEnabled>0</ResourceSubstitutionEnabled>
+        <LeafOnly>0</LeafOnly>
+        <AllLevelsRequired>0</AllLevelsRequired>
+        <Masks>
+          <Mask>
+            <Level>1</Level>
+            <Mask>*</Mask>
+            <Length>0</Length>
+            <Sequence>0</Sequence>
+          </Mask>
+        </Masks>
+        <Values>
+          <Value>
+            <Value>PLAN</Value>
+            <Description>Planning</Description>
+          </Value>
+          <Value>
+            <Value>BUILD</Value>
+            <Description>Implementation</Description>
+          </Value>
+        </Values>
+      </OutlineCode>
+    </OutlineCodes>
+    <WBSMasks>
+      <WBSMask>
+        <Level>1</Level>
+        <Mask>A</Mask>
+        <Length>1</Length>
+        <Sequence>1</Sequence>
+      </WBSMask>
+      <WBSMask>
+        <Level>2</Level>
+        <Mask>00</Mask>
+        <Length>2</Length>
+        <Sequence>1</Sequence>
+      </WBSMask>
+    </WBSMasks>
+    <ExtendedAttributes>
       <ExtendedAttribute>
         <FieldID>188743734</FieldID>
-        <Value>Miku</Value>
+        <FieldName>Text1</FieldName>
+        <Alias>Owner</Alias>
+        <CalculationType>0</CalculationType>
+        <RestrictValues>0</RestrictValues>
+        <AppendNewValues>1</AppendNewValues>
       </ExtendedAttribute>
-      <Baseline>
-        <Number>0</Number>
-        <Start>2026-03-16T09:00:00</Start>
-        <Finish>2026-03-17T18:00:00</Finish>
-        <Work>PT16H0M0S</Work>
-        <Cost>80000</Cost>
-      </Baseline>
-      <TimephasedData>
-        <Type>1</Type>
+    </ExtendedAttributes>
+    <Calendars>
+      <Calendar>
+        <UID>1</UID>
+        <Name>Standard</Name>
+        <IsBaseCalendar>1</IsBaseCalendar>
+        <IsBaselineCalendar>1</IsBaselineCalendar>
+        <Exceptions>
+          <Exception>
+            <Name>元日（公式）</Name>
+            <FromDate>2026-01-01T00:00:00</FromDate>
+            <ToDate>2026-01-01T23:59:59</ToDate>
+            <DayWorking>0</DayWorking>
+          </Exception>
+          <Exception>
+            <Name>成人の日（公式）</Name>
+            <FromDate>2026-01-12T00:00:00</FromDate>
+            <ToDate>2026-01-12T23:59:59</ToDate>
+            <DayWorking>0</DayWorking>
+          </Exception>
+          <Exception>
+            <Name>建国記念の日（公式）</Name>
+            <FromDate>2026-02-11T00:00:00</FromDate>
+            <ToDate>2026-02-11T23:59:59</ToDate>
+            <DayWorking>0</DayWorking>
+          </Exception>
+          <Exception>
+            <Name>天皇誕生日（公式）</Name>
+            <FromDate>2026-02-23T00:00:00</FromDate>
+            <ToDate>2026-02-23T23:59:59</ToDate>
+            <DayWorking>0</DayWorking>
+          </Exception>
+          <Exception>
+            <Name>春分の日（公式）</Name>
+            <FromDate>2026-03-20T00:00:00</FromDate>
+            <ToDate>2026-03-20T23:59:59</ToDate>
+            <DayWorking>0</DayWorking>
+          </Exception>
+          <Exception>
+            <Name>昭和の日（公式）</Name>
+            <FromDate>2026-04-29T00:00:00</FromDate>
+            <ToDate>2026-04-29T23:59:59</ToDate>
+            <DayWorking>0</DayWorking>
+          </Exception>
+          <Exception>
+            <Name>憲法記念日（公式）</Name>
+            <FromDate>2026-05-03T00:00:00</FromDate>
+            <ToDate>2026-05-03T23:59:59</ToDate>
+            <DayWorking>0</DayWorking>
+          </Exception>
+          <Exception>
+            <Name>みどりの日（公式）</Name>
+            <FromDate>2026-05-04T00:00:00</FromDate>
+            <ToDate>2026-05-04T23:59:59</ToDate>
+            <DayWorking>0</DayWorking>
+          </Exception>
+          <Exception>
+            <Name>こどもの日（公式）</Name>
+            <FromDate>2026-05-05T00:00:00</FromDate>
+            <ToDate>2026-05-05T23:59:59</ToDate>
+            <DayWorking>0</DayWorking>
+          </Exception>
+          <Exception>
+            <Name>休日（公式）</Name>
+            <FromDate>2026-05-06T00:00:00</FromDate>
+            <ToDate>2026-05-06T23:59:59</ToDate>
+            <DayWorking>0</DayWorking>
+          </Exception>
+          <Exception>
+            <Name>海の日（公式）</Name>
+            <FromDate>2026-07-20T00:00:00</FromDate>
+            <ToDate>2026-07-20T23:59:59</ToDate>
+            <DayWorking>0</DayWorking>
+          </Exception>
+          <Exception>
+            <Name>山の日（公式）</Name>
+            <FromDate>2026-08-11T00:00:00</FromDate>
+            <ToDate>2026-08-11T23:59:59</ToDate>
+            <DayWorking>0</DayWorking>
+          </Exception>
+          <Exception>
+            <Name>敬老の日（公式）</Name>
+            <FromDate>2026-09-21T00:00:00</FromDate>
+            <ToDate>2026-09-21T23:59:59</ToDate>
+            <DayWorking>0</DayWorking>
+          </Exception>
+          <Exception>
+            <Name>休日（公式）</Name>
+            <FromDate>2026-09-22T00:00:00</FromDate>
+            <ToDate>2026-09-22T23:59:59</ToDate>
+            <DayWorking>0</DayWorking>
+          </Exception>
+          <Exception>
+            <Name>秋分の日（公式）</Name>
+            <FromDate>2026-09-23T00:00:00</FromDate>
+            <ToDate>2026-09-23T23:59:59</ToDate>
+            <DayWorking>0</DayWorking>
+          </Exception>
+          <Exception>
+            <Name>スポーツの日（公式）</Name>
+            <FromDate>2026-10-12T00:00:00</FromDate>
+            <ToDate>2026-10-12T23:59:59</ToDate>
+            <DayWorking>0</DayWorking>
+          </Exception>
+          <Exception>
+            <Name>文化の日（公式）</Name>
+            <FromDate>2026-11-03T00:00:00</FromDate>
+            <ToDate>2026-11-03T23:59:59</ToDate>
+            <DayWorking>0</DayWorking>
+          </Exception>
+          <Exception>
+            <Name>勤労感謝の日（公式）</Name>
+            <FromDate>2026-11-23T00:00:00</FromDate>
+            <ToDate>2026-11-23T23:59:59</ToDate>
+            <DayWorking>0</DayWorking>
+          </Exception>
+          <Exception>
+            <Name>元日（公式）</Name>
+            <FromDate>2027-01-01T00:00:00</FromDate>
+            <ToDate>2027-01-01T23:59:59</ToDate>
+            <DayWorking>0</DayWorking>
+          </Exception>
+          <Exception>
+            <Name>成人の日（公式）</Name>
+            <FromDate>2027-01-11T00:00:00</FromDate>
+            <ToDate>2027-01-11T23:59:59</ToDate>
+            <DayWorking>0</DayWorking>
+          </Exception>
+          <Exception>
+            <Name>建国記念の日（公式）</Name>
+            <FromDate>2027-02-11T00:00:00</FromDate>
+            <ToDate>2027-02-11T23:59:59</ToDate>
+            <DayWorking>0</DayWorking>
+          </Exception>
+          <Exception>
+            <Name>天皇誕生日（公式）</Name>
+            <FromDate>2027-02-23T00:00:00</FromDate>
+            <ToDate>2027-02-23T23:59:59</ToDate>
+            <DayWorking>0</DayWorking>
+          </Exception>
+          <Exception>
+            <Name>春分の日（公式）</Name>
+            <FromDate>2027-03-21T00:00:00</FromDate>
+            <ToDate>2027-03-21T23:59:59</ToDate>
+            <DayWorking>0</DayWorking>
+          </Exception>
+          <Exception>
+            <Name>休日（公式）</Name>
+            <FromDate>2027-03-22T00:00:00</FromDate>
+            <ToDate>2027-03-22T23:59:59</ToDate>
+            <DayWorking>0</DayWorking>
+          </Exception>
+          <Exception>
+            <Name>昭和の日（公式）</Name>
+            <FromDate>2027-04-29T00:00:00</FromDate>
+            <ToDate>2027-04-29T23:59:59</ToDate>
+            <DayWorking>0</DayWorking>
+          </Exception>
+          <Exception>
+            <Name>憲法記念日（公式）</Name>
+            <FromDate>2027-05-03T00:00:00</FromDate>
+            <ToDate>2027-05-03T23:59:59</ToDate>
+            <DayWorking>0</DayWorking>
+          </Exception>
+          <Exception>
+            <Name>みどりの日（公式）</Name>
+            <FromDate>2027-05-04T00:00:00</FromDate>
+            <ToDate>2027-05-04T23:59:59</ToDate>
+            <DayWorking>0</DayWorking>
+          </Exception>
+          <Exception>
+            <Name>こどもの日（公式）</Name>
+            <FromDate>2027-05-05T00:00:00</FromDate>
+            <ToDate>2027-05-05T23:59:59</ToDate>
+            <DayWorking>0</DayWorking>
+          </Exception>
+          <Exception>
+            <Name>海の日（公式）</Name>
+            <FromDate>2027-07-19T00:00:00</FromDate>
+            <ToDate>2027-07-19T23:59:59</ToDate>
+            <DayWorking>0</DayWorking>
+          </Exception>
+          <Exception>
+            <Name>山の日（公式）</Name>
+            <FromDate>2027-08-11T00:00:00</FromDate>
+            <ToDate>2027-08-11T23:59:59</ToDate>
+            <DayWorking>0</DayWorking>
+          </Exception>
+          <Exception>
+            <Name>敬老の日（公式）</Name>
+            <FromDate>2027-09-20T00:00:00</FromDate>
+            <ToDate>2027-09-20T23:59:59</ToDate>
+            <DayWorking>0</DayWorking>
+          </Exception>
+          <Exception>
+            <Name>秋分の日（公式）</Name>
+            <FromDate>2027-09-23T00:00:00</FromDate>
+            <ToDate>2027-09-23T23:59:59</ToDate>
+            <DayWorking>0</DayWorking>
+          </Exception>
+          <Exception>
+            <Name>スポーツの日（公式）</Name>
+            <FromDate>2027-10-11T00:00:00</FromDate>
+            <ToDate>2027-10-11T23:59:59</ToDate>
+            <DayWorking>0</DayWorking>
+          </Exception>
+          <Exception>
+            <Name>文化の日（公式）</Name>
+            <FromDate>2027-11-03T00:00:00</FromDate>
+            <ToDate>2027-11-03T23:59:59</ToDate>
+            <DayWorking>0</DayWorking>
+          </Exception>
+          <Exception>
+            <Name>勤労感謝の日（公式）</Name>
+            <FromDate>2027-11-23T00:00:00</FromDate>
+            <ToDate>2027-11-23T23:59:59</ToDate>
+            <DayWorking>0</DayWorking>
+          </Exception>
+          <Exception>
+            <Name>元日（推定）</Name>
+            <FromDate>2028-01-01T00:00:00</FromDate>
+            <ToDate>2028-01-01T23:59:59</ToDate>
+            <DayWorking>0</DayWorking>
+          </Exception>
+          <Exception>
+            <Name>成人の日（推定）</Name>
+            <FromDate>2028-01-10T00:00:00</FromDate>
+            <ToDate>2028-01-10T23:59:59</ToDate>
+            <DayWorking>0</DayWorking>
+          </Exception>
+          <Exception>
+            <Name>建国記念の日（推定）</Name>
+            <FromDate>2028-02-11T00:00:00</FromDate>
+            <ToDate>2028-02-11T23:59:59</ToDate>
+            <DayWorking>0</DayWorking>
+          </Exception>
+          <Exception>
+            <Name>天皇誕生日（推定）</Name>
+            <FromDate>2028-02-23T00:00:00</FromDate>
+            <ToDate>2028-02-23T23:59:59</ToDate>
+            <DayWorking>0</DayWorking>
+          </Exception>
+          <Exception>
+            <Name>春分の日（推定）</Name>
+            <FromDate>2028-03-20T00:00:00</FromDate>
+            <ToDate>2028-03-20T23:59:59</ToDate>
+            <DayWorking>0</DayWorking>
+          </Exception>
+          <Exception>
+            <Name>昭和の日（推定）</Name>
+            <FromDate>2028-04-29T00:00:00</FromDate>
+            <ToDate>2028-04-29T23:59:59</ToDate>
+            <DayWorking>0</DayWorking>
+          </Exception>
+          <Exception>
+            <Name>憲法記念日（推定）</Name>
+            <FromDate>2028-05-03T00:00:00</FromDate>
+            <ToDate>2028-05-03T23:59:59</ToDate>
+            <DayWorking>0</DayWorking>
+          </Exception>
+          <Exception>
+            <Name>みどりの日（推定）</Name>
+            <FromDate>2028-05-04T00:00:00</FromDate>
+            <ToDate>2028-05-04T23:59:59</ToDate>
+            <DayWorking>0</DayWorking>
+          </Exception>
+          <Exception>
+            <Name>こどもの日（推定）</Name>
+            <FromDate>2028-05-05T00:00:00</FromDate>
+            <ToDate>2028-05-05T23:59:59</ToDate>
+            <DayWorking>0</DayWorking>
+          </Exception>
+          <Exception>
+            <Name>海の日（推定）</Name>
+            <FromDate>2028-07-17T00:00:00</FromDate>
+            <ToDate>2028-07-17T23:59:59</ToDate>
+            <DayWorking>0</DayWorking>
+          </Exception>
+          <Exception>
+            <Name>山の日（推定）</Name>
+            <FromDate>2028-08-11T00:00:00</FromDate>
+            <ToDate>2028-08-11T23:59:59</ToDate>
+            <DayWorking>0</DayWorking>
+          </Exception>
+          <Exception>
+            <Name>敬老の日（推定）</Name>
+            <FromDate>2028-09-18T00:00:00</FromDate>
+            <ToDate>2028-09-18T23:59:59</ToDate>
+            <DayWorking>0</DayWorking>
+          </Exception>
+          <Exception>
+            <Name>秋分の日（推定）</Name>
+            <FromDate>2028-09-22T00:00:00</FromDate>
+            <ToDate>2028-09-22T23:59:59</ToDate>
+            <DayWorking>0</DayWorking>
+          </Exception>
+          <Exception>
+            <Name>スポーツの日（推定）</Name>
+            <FromDate>2028-10-09T00:00:00</FromDate>
+            <ToDate>2028-10-09T23:59:59</ToDate>
+            <DayWorking>0</DayWorking>
+          </Exception>
+          <Exception>
+            <Name>文化の日（推定）</Name>
+            <FromDate>2028-11-03T00:00:00</FromDate>
+            <ToDate>2028-11-03T23:59:59</ToDate>
+            <DayWorking>0</DayWorking>
+          </Exception>
+          <Exception>
+            <Name>勤労感謝の日（推定）</Name>
+            <FromDate>2028-11-23T00:00:00</FromDate>
+            <ToDate>2028-11-23T23:59:59</ToDate>
+            <DayWorking>0</DayWorking>
+          </Exception>
+          <Exception>
+            <Name>元日（推定）</Name>
+            <FromDate>2029-01-01T00:00:00</FromDate>
+            <ToDate>2029-01-01T23:59:59</ToDate>
+            <DayWorking>0</DayWorking>
+          </Exception>
+          <Exception>
+            <Name>成人の日（推定）</Name>
+            <FromDate>2029-01-08T00:00:00</FromDate>
+            <ToDate>2029-01-08T23:59:59</ToDate>
+            <DayWorking>0</DayWorking>
+          </Exception>
+          <Exception>
+            <Name>建国記念の日（推定）</Name>
+            <FromDate>2029-02-11T00:00:00</FromDate>
+            <ToDate>2029-02-11T23:59:59</ToDate>
+            <DayWorking>0</DayWorking>
+          </Exception>
+          <Exception>
+            <Name>休日（推定）</Name>
+            <FromDate>2029-02-12T00:00:00</FromDate>
+            <ToDate>2029-02-12T23:59:59</ToDate>
+            <DayWorking>0</DayWorking>
+          </Exception>
+          <Exception>
+            <Name>天皇誕生日（推定）</Name>
+            <FromDate>2029-02-23T00:00:00</FromDate>
+            <ToDate>2029-02-23T23:59:59</ToDate>
+            <DayWorking>0</DayWorking>
+          </Exception>
+          <Exception>
+            <Name>春分の日（推定）</Name>
+            <FromDate>2029-03-20T00:00:00</FromDate>
+            <ToDate>2029-03-20T23:59:59</ToDate>
+            <DayWorking>0</DayWorking>
+          </Exception>
+          <Exception>
+            <Name>昭和の日（推定）</Name>
+            <FromDate>2029-04-29T00:00:00</FromDate>
+            <ToDate>2029-04-29T23:59:59</ToDate>
+            <DayWorking>0</DayWorking>
+          </Exception>
+          <Exception>
+            <Name>休日（推定）</Name>
+            <FromDate>2029-04-30T00:00:00</FromDate>
+            <ToDate>2029-04-30T23:59:59</ToDate>
+            <DayWorking>0</DayWorking>
+          </Exception>
+          <Exception>
+            <Name>憲法記念日（推定）</Name>
+            <FromDate>2029-05-03T00:00:00</FromDate>
+            <ToDate>2029-05-03T23:59:59</ToDate>
+            <DayWorking>0</DayWorking>
+          </Exception>
+          <Exception>
+            <Name>みどりの日（推定）</Name>
+            <FromDate>2029-05-04T00:00:00</FromDate>
+            <ToDate>2029-05-04T23:59:59</ToDate>
+            <DayWorking>0</DayWorking>
+          </Exception>
+          <Exception>
+            <Name>こどもの日（推定）</Name>
+            <FromDate>2029-05-05T00:00:00</FromDate>
+            <ToDate>2029-05-05T23:59:59</ToDate>
+            <DayWorking>0</DayWorking>
+          </Exception>
+          <Exception>
+            <Name>海の日（推定）</Name>
+            <FromDate>2029-07-16T00:00:00</FromDate>
+            <ToDate>2029-07-16T23:59:59</ToDate>
+            <DayWorking>0</DayWorking>
+          </Exception>
+          <Exception>
+            <Name>山の日（推定）</Name>
+            <FromDate>2029-08-11T00:00:00</FromDate>
+            <ToDate>2029-08-11T23:59:59</ToDate>
+            <DayWorking>0</DayWorking>
+          </Exception>
+          <Exception>
+            <Name>敬老の日（推定）</Name>
+            <FromDate>2029-09-17T00:00:00</FromDate>
+            <ToDate>2029-09-17T23:59:59</ToDate>
+            <DayWorking>0</DayWorking>
+          </Exception>
+          <Exception>
+            <Name>秋分の日（推定）</Name>
+            <FromDate>2029-09-23T00:00:00</FromDate>
+            <ToDate>2029-09-23T23:59:59</ToDate>
+            <DayWorking>0</DayWorking>
+          </Exception>
+          <Exception>
+            <Name>休日（推定）</Name>
+            <FromDate>2029-09-24T00:00:00</FromDate>
+            <ToDate>2029-09-24T23:59:59</ToDate>
+            <DayWorking>0</DayWorking>
+          </Exception>
+          <Exception>
+            <Name>スポーツの日（推定）</Name>
+            <FromDate>2029-10-08T00:00:00</FromDate>
+            <ToDate>2029-10-08T23:59:59</ToDate>
+            <DayWorking>0</DayWorking>
+          </Exception>
+          <Exception>
+            <Name>文化の日（推定）</Name>
+            <FromDate>2029-11-03T00:00:00</FromDate>
+            <ToDate>2029-11-03T23:59:59</ToDate>
+            <DayWorking>0</DayWorking>
+          </Exception>
+          <Exception>
+            <Name>勤労感謝の日（推定）</Name>
+            <FromDate>2029-11-23T00:00:00</FromDate>
+            <ToDate>2029-11-23T23:59:59</ToDate>
+            <DayWorking>0</DayWorking>
+          </Exception>
+          <Exception>
+            <Name>元日（推定）</Name>
+            <FromDate>2030-01-01T00:00:00</FromDate>
+            <ToDate>2030-01-01T23:59:59</ToDate>
+            <DayWorking>0</DayWorking>
+          </Exception>
+          <Exception>
+            <Name>成人の日（推定）</Name>
+            <FromDate>2030-01-14T00:00:00</FromDate>
+            <ToDate>2030-01-14T23:59:59</ToDate>
+            <DayWorking>0</DayWorking>
+          </Exception>
+          <Exception>
+            <Name>建国記念の日（推定）</Name>
+            <FromDate>2030-02-11T00:00:00</FromDate>
+            <ToDate>2030-02-11T23:59:59</ToDate>
+            <DayWorking>0</DayWorking>
+          </Exception>
+          <Exception>
+            <Name>天皇誕生日（推定）</Name>
+            <FromDate>2030-02-23T00:00:00</FromDate>
+            <ToDate>2030-02-23T23:59:59</ToDate>
+            <DayWorking>0</DayWorking>
+          </Exception>
+          <Exception>
+            <Name>春分の日（推定）</Name>
+            <FromDate>2030-03-20T00:00:00</FromDate>
+            <ToDate>2030-03-20T23:59:59</ToDate>
+            <DayWorking>0</DayWorking>
+          </Exception>
+          <Exception>
+            <Name>昭和の日（推定）</Name>
+            <FromDate>2030-04-29T00:00:00</FromDate>
+            <ToDate>2030-04-29T23:59:59</ToDate>
+            <DayWorking>0</DayWorking>
+          </Exception>
+          <Exception>
+            <Name>憲法記念日（推定）</Name>
+            <FromDate>2030-05-03T00:00:00</FromDate>
+            <ToDate>2030-05-03T23:59:59</ToDate>
+            <DayWorking>0</DayWorking>
+          </Exception>
+          <Exception>
+            <Name>みどりの日（推定）</Name>
+            <FromDate>2030-05-04T00:00:00</FromDate>
+            <ToDate>2030-05-04T23:59:59</ToDate>
+            <DayWorking>0</DayWorking>
+          </Exception>
+          <Exception>
+            <Name>こどもの日（推定）</Name>
+            <FromDate>2030-05-05T00:00:00</FromDate>
+            <ToDate>2030-05-05T23:59:59</ToDate>
+            <DayWorking>0</DayWorking>
+          </Exception>
+          <Exception>
+            <Name>休日（推定）</Name>
+            <FromDate>2030-05-06T00:00:00</FromDate>
+            <ToDate>2030-05-06T23:59:59</ToDate>
+            <DayWorking>0</DayWorking>
+          </Exception>
+          <Exception>
+            <Name>海の日（推定）</Name>
+            <FromDate>2030-07-15T00:00:00</FromDate>
+            <ToDate>2030-07-15T23:59:59</ToDate>
+            <DayWorking>0</DayWorking>
+          </Exception>
+          <Exception>
+            <Name>山の日（推定）</Name>
+            <FromDate>2030-08-11T00:00:00</FromDate>
+            <ToDate>2030-08-11T23:59:59</ToDate>
+            <DayWorking>0</DayWorking>
+          </Exception>
+          <Exception>
+            <Name>休日（推定）</Name>
+            <FromDate>2030-08-12T00:00:00</FromDate>
+            <ToDate>2030-08-12T23:59:59</ToDate>
+            <DayWorking>0</DayWorking>
+          </Exception>
+          <Exception>
+            <Name>敬老の日（推定）</Name>
+            <FromDate>2030-09-16T00:00:00</FromDate>
+            <ToDate>2030-09-16T23:59:59</ToDate>
+            <DayWorking>0</DayWorking>
+          </Exception>
+          <Exception>
+            <Name>秋分の日（推定）</Name>
+            <FromDate>2030-09-23T00:00:00</FromDate>
+            <ToDate>2030-09-23T23:59:59</ToDate>
+            <DayWorking>0</DayWorking>
+          </Exception>
+          <Exception>
+            <Name>スポーツの日（推定）</Name>
+            <FromDate>2030-10-14T00:00:00</FromDate>
+            <ToDate>2030-10-14T23:59:59</ToDate>
+            <DayWorking>0</DayWorking>
+          </Exception>
+          <Exception>
+            <Name>文化の日（推定）</Name>
+            <FromDate>2030-11-03T00:00:00</FromDate>
+            <ToDate>2030-11-03T23:59:59</ToDate>
+            <DayWorking>0</DayWorking>
+          </Exception>
+          <Exception>
+            <Name>休日（推定）</Name>
+            <FromDate>2030-11-04T00:00:00</FromDate>
+            <ToDate>2030-11-04T23:59:59</ToDate>
+            <DayWorking>0</DayWorking>
+          </Exception>
+          <Exception>
+            <Name>勤労感謝の日（推定）</Name>
+            <FromDate>2030-11-23T00:00:00</FromDate>
+            <ToDate>2030-11-23T23:59:59</ToDate>
+            <DayWorking>0</DayWorking>
+          </Exception>
+        </Exceptions>
+        <WeekDays>
+          <WeekDay>
+            <DayType>2</DayType>
+            <DayWorking>1</DayWorking>
+            <WorkingTimes>
+              <WorkingTime>
+                <FromTime>09:00:00</FromTime>
+                <ToTime>12:00:00</ToTime>
+              </WorkingTime>
+              <WorkingTime>
+                <FromTime>13:00:00</FromTime>
+                <ToTime>18:00:00</ToTime>
+              </WorkingTime>
+            </WorkingTimes>
+          </WeekDay>
+        </WeekDays>
+      </Calendar>
+      <Calendar>
         <UID>2</UID>
-        <Start>2026-03-16T09:00:00</Start>
-        <Finish>2026-03-16T18:00:00</Finish>
-        <Unit>2</Unit>
-        <Value>PT8H0M0S</Value>
-      </TimephasedData>
-    </Task>
-    <Task>
-      <UID>3</UID>
-      <ID>3</ID>
-      <Name>Implementation</Name>
-      <OutlineLevel>2</OutlineLevel>
-      <OutlineNumber>1.2</OutlineNumber>
-      <WBS>1.2</WBS>
-      <Type>1</Type>
-      <CalendarUID>1</CalendarUID>
-      <Priority>700</Priority>
-      <Start>2026-03-18T09:00:00</Start>
-      <Finish>2026-03-20T18:00:00</Finish>
-      <Duration>PT24H0M0S</Duration>
-      <Deadline>2026-03-21T18:00:00</Deadline>
-      <StartVariance>PT0H0M0S</StartVariance>
-      <FinishVariance>PT0H0M0S</FinishVariance>
-      <Work>PT24H0M0S</Work>
-      <WorkVariance>PT0H0M0S</WorkVariance>
-      <TotalSlack>PT4H0M0S</TotalSlack>
-      <FreeSlack>PT2H0M0S</FreeSlack>
-      <Cost>120000</Cost>
-      <ActualCost>0</ActualCost>
-      <RemainingCost>120000</RemainingCost>
-      <RemainingWork>PT24H0M0S</RemainingWork>
-      <ActualWork>PT0H0M0S</ActualWork>
-      <ConstraintType>4</ConstraintType>
-      <ConstraintDate>2026-03-18T09:00:00</ConstraintDate>
-      <Milestone>0</Milestone>
-      <Summary>0</Summary>
-      <Critical>1</Critical>
-      <PercentComplete>0</PercentComplete>
-      <PercentWorkComplete>0</PercentWorkComplete>
-      <Notes>Implementation starts after design</Notes>
-      <PredecessorLink>
-        <PredecessorUID>2</PredecessorUID>
+        <Name>Development</Name>
+        <IsBaseCalendar>0</IsBaseCalendar>
+        <BaseCalendarUID>1</BaseCalendarUID>
+        <WorkWeeks>
+          <WorkWeek>
+            <Name>Spring Sprint</Name>
+            <FromDate>2026-03-16T00:00:00</FromDate>
+            <ToDate>2026-03-31T23:59:59</ToDate>
+            <WeekDays>
+              <WeekDay>
+                <DayType>2</DayType>
+                <DayWorking>1</DayWorking>
+                <WorkingTimes>
+                  <WorkingTime>
+                    <FromTime>10:00:00</FromTime>
+                    <ToTime>18:00:00</ToTime>
+                  </WorkingTime>
+                </WorkingTimes>
+              </WeekDay>
+            </WeekDays>
+          </WorkWeek>
+        </WorkWeeks>
+        <WeekDays>
+          <WeekDay>
+            <DayType>6</DayType>
+            <DayWorking>1</DayWorking>
+            <WorkingTimes>
+              <WorkingTime>
+                <FromTime>10:00:00</FromTime>
+                <ToTime>15:00:00</ToTime>
+              </WorkingTime>
+            </WorkingTimes>
+          </WeekDay>
+        </WeekDays>
+      </Calendar>
+    </Calendars>
+    <Tasks>
+      <Task>
+        <UID>1</UID>
+        <ID>1</ID>
+        <Name>Project Summary</Name>
+        <OutlineLevel>1</OutlineLevel>
+        <OutlineNumber>1</OutlineNumber>
+        <WBS>1</WBS>
         <Type>1</Type>
-        <LinkLag>PT0H0M0S</LinkLag>
-      </PredecessorLink>
-    </Task>
-  </Tasks>
-  <Resources>
-    <Resource>
-      <UID>1</UID>
-      <ID>1</ID>
-      <Name>Miku</Name>
-      <Type>1</Type>
-      <Initials>MK</Initials>
-      <Group>Engineering</Group>
-      <WorkGroup>0</WorkGroup>
-      <MaxUnits>1</MaxUnits>
-      <CalendarUID>2</CalendarUID>
-      <StandardRate>5000/h</StandardRate>
-      <StandardRateFormat>2</StandardRateFormat>
-      <OvertimeRate>7000/h</OvertimeRate>
-      <OvertimeRateFormat>2</OvertimeRateFormat>
-      <CostPerUse>1000</CostPerUse>
-      <Work>PT40H0M0S</Work>
-      <ActualWork>PT20H0M0S</ActualWork>
-      <RemainingWork>PT20H0M0S</RemainingWork>
-      <Cost>200000</Cost>
-      <ActualCost>100000</ActualCost>
-      <RemainingCost>100000</RemainingCost>
-      <PercentWorkComplete>50</PercentWorkComplete>
-      <ExtendedAttribute>
-        <FieldID>188743737</FieldID>
-        <Value>Platform Team</Value>
-      </ExtendedAttribute>
-      <Baseline>
-        <Number>0</Number>
+        <CalendarUID>1</CalendarUID>
+        <Priority>500</Priority>
         <Start>2026-03-16T09:00:00</Start>
         <Finish>2026-03-20T18:00:00</Finish>
+        <Duration>PT40H0M0S</Duration>
+        <StartVariance>PT0H0M0S</StartVariance>
+        <FinishVariance>PT0H0M0S</FinishVariance>
         <Work>PT40H0M0S</Work>
+        <WorkVariance>PT0H0M0S</WorkVariance>
+        <TotalSlack>PT0H0M0S</TotalSlack>
+        <FreeSlack>PT0H0M0S</FreeSlack>
         <Cost>200000</Cost>
-      </Baseline>
-      <TimephasedData>
+        <ActualCost>100000</ActualCost>
+        <RemainingCost>100000</RemainingCost>
+        <RemainingWork>PT20H0M0S</RemainingWork>
+        <ActualWork>PT20H0M0S</ActualWork>
+        <Milestone>0</Milestone>
+        <Summary>1</Summary>
+        <Critical>0</Critical>
+        <PercentComplete>50</PercentComplete>
+        <PercentWorkComplete>50</PercentWorkComplete>
+      </Task>
+      <Task>
+        <UID>2</UID>
+        <ID>2</ID>
+        <Name>Design</Name>
+        <OutlineLevel>2</OutlineLevel>
+        <OutlineNumber>1.1</OutlineNumber>
+        <WBS>1.1</WBS>
         <Type>1</Type>
-        <UID>1</UID>
-        <Start>2026-03-16T09:00:00</Start>
-        <Finish>2026-03-16T18:00:00</Finish>
-        <Unit>2</Unit>
-        <Value>PT8H0M0S</Value>
-      </TimephasedData>
-    </Resource>
-  </Resources>
-  <Assignments>
-    <Assignment>
-      <UID>1</UID>
-      <TaskUID>2</TaskUID>
-      <ResourceUID>1</ResourceUID>
-      <Start>2026-03-16T09:00:00</Start>
-      <Finish>2026-03-17T18:00:00</Finish>
-      <StartVariance>PT0H0M0S</StartVariance>
-      <FinishVariance>PT0H0M0S</FinishVariance>
-      <Delay>PT0H0M0S</Delay>
-      <Milestone>0</Milestone>
-      <WorkContour>0</WorkContour>
-      <Units>1</Units>
-      <Work>PT16H0M0S</Work>
-      <Cost>80000</Cost>
-      <ActualCost>40000</ActualCost>
-      <RemainingCost>40000</RemainingCost>
-      <PercentWorkComplete>50</PercentWorkComplete>
-      <OvertimeWork>PT2H0M0S</OvertimeWork>
-      <ActualOvertimeWork>PT1H0M0S</ActualOvertimeWork>
-      <ActualWork>PT8H0M0S</ActualWork>
-      <RemainingWork>PT8H0M0S</RemainingWork>
-      <ExtendedAttribute>
-        <FieldID>255852547</FieldID>
-        <Value>Design Slot</Value>
-      </ExtendedAttribute>
-      <Baseline>
-        <Number>0</Number>
+        <CalendarUID>1</CalendarUID>
+        <Priority>500</Priority>
         <Start>2026-03-16T09:00:00</Start>
         <Finish>2026-03-17T18:00:00</Finish>
+        <Duration>PT16H0M0S</Duration>
+        <ActualStart>2026-03-16T09:00:00</ActualStart>
+        <ActualFinish>2026-03-17T18:00:00</ActualFinish>
+        <StartVariance>PT0H0M0S</StartVariance>
+        <FinishVariance>PT0H0M0S</FinishVariance>
+        <Work>PT16H0M0S</Work>
+        <WorkVariance>PT0H0M0S</WorkVariance>
+        <TotalSlack>PT0H0M0S</TotalSlack>
+        <FreeSlack>PT0H0M0S</FreeSlack>
+        <Cost>80000</Cost>
+        <ActualCost>80000</ActualCost>
+        <RemainingCost>0</RemainingCost>
+        <RemainingWork>PT0H0M0S</RemainingWork>
+        <ActualWork>PT16H0M0S</ActualWork>
+        <Milestone>0</Milestone>
+        <Summary>0</Summary>
+        <Critical>0</Critical>
+        <PercentComplete>100</PercentComplete>
+        <PercentWorkComplete>100</PercentWorkComplete>
+        <Notes>Design completed</Notes>
+        <ExtendedAttribute>
+          <FieldID>188743734</FieldID>
+          <Value>Miku</Value>
+        </ExtendedAttribute>
+        <Baseline>
+          <Number>0</Number>
+          <Start>2026-03-16T09:00:00</Start>
+          <Finish>2026-03-17T18:00:00</Finish>
+          <Work>PT16H0M0S</Work>
+          <Cost>80000</Cost>
+        </Baseline>
+        <TimephasedData>
+          <Type>1</Type>
+          <UID>2</UID>
+          <Start>2026-03-16T09:00:00</Start>
+          <Finish>2026-03-16T18:00:00</Finish>
+          <Unit>2</Unit>
+          <Value>PT8H0M0S</Value>
+        </TimephasedData>
+      </Task>
+      <Task>
+        <UID>3</UID>
+        <ID>3</ID>
+        <Name>Implementation</Name>
+        <OutlineLevel>2</OutlineLevel>
+        <OutlineNumber>1.2</OutlineNumber>
+        <WBS>1.2</WBS>
+        <Type>1</Type>
+        <CalendarUID>1</CalendarUID>
+        <Priority>700</Priority>
+        <Start>2026-03-18T09:00:00</Start>
+        <Finish>2026-03-20T18:00:00</Finish>
+        <Duration>PT24H0M0S</Duration>
+        <Deadline>2026-03-21T18:00:00</Deadline>
+        <StartVariance>PT0H0M0S</StartVariance>
+        <FinishVariance>PT0H0M0S</FinishVariance>
+        <Work>PT24H0M0S</Work>
+        <WorkVariance>PT0H0M0S</WorkVariance>
+        <TotalSlack>PT4H0M0S</TotalSlack>
+        <FreeSlack>PT2H0M0S</FreeSlack>
+        <Cost>120000</Cost>
+        <ActualCost>0</ActualCost>
+        <RemainingCost>120000</RemainingCost>
+        <RemainingWork>PT24H0M0S</RemainingWork>
+        <ActualWork>PT0H0M0S</ActualWork>
+        <ConstraintType>4</ConstraintType>
+        <ConstraintDate>2026-03-18T09:00:00</ConstraintDate>
+        <Milestone>0</Milestone>
+        <Summary>0</Summary>
+        <Critical>1</Critical>
+        <PercentComplete>0</PercentComplete>
+        <PercentWorkComplete>0</PercentWorkComplete>
+        <Notes>Implementation starts after design</Notes>
+        <PredecessorLink>
+          <PredecessorUID>2</PredecessorUID>
+          <Type>1</Type>
+          <LinkLag>PT0H0M0S</LinkLag>
+        </PredecessorLink>
+      </Task>
+    </Tasks>
+    <Resources>
+      <Resource>
+        <UID>1</UID>
+        <ID>1</ID>
+        <Name>Miku</Name>
+        <Type>1</Type>
+        <Initials>MK</Initials>
+        <Group>Engineering</Group>
+        <WorkGroup>0</WorkGroup>
+        <MaxUnits>1</MaxUnits>
+        <CalendarUID>2</CalendarUID>
+        <StandardRate>5000/h</StandardRate>
+        <StandardRateFormat>2</StandardRateFormat>
+        <OvertimeRate>7000/h</OvertimeRate>
+        <OvertimeRateFormat>2</OvertimeRateFormat>
+        <CostPerUse>1000</CostPerUse>
+        <Work>PT40H0M0S</Work>
+        <ActualWork>PT20H0M0S</ActualWork>
+        <RemainingWork>PT20H0M0S</RemainingWork>
+        <Cost>200000</Cost>
+        <ActualCost>100000</ActualCost>
+        <RemainingCost>100000</RemainingCost>
+        <PercentWorkComplete>50</PercentWorkComplete>
+        <ExtendedAttribute>
+          <FieldID>188743737</FieldID>
+          <Value>Platform Team</Value>
+        </ExtendedAttribute>
+        <Baseline>
+          <Number>0</Number>
+          <Start>2026-03-16T09:00:00</Start>
+          <Finish>2026-03-20T18:00:00</Finish>
+          <Work>PT40H0M0S</Work>
+          <Cost>200000</Cost>
+        </Baseline>
+        <TimephasedData>
+          <Type>1</Type>
+          <UID>1</UID>
+          <Start>2026-03-16T09:00:00</Start>
+          <Finish>2026-03-16T18:00:00</Finish>
+          <Unit>2</Unit>
+          <Value>PT8H0M0S</Value>
+        </TimephasedData>
+      </Resource>
+    </Resources>
+    <Assignments>
+      <Assignment>
+        <UID>1</UID>
+        <TaskUID>2</TaskUID>
+        <ResourceUID>1</ResourceUID>
+        <Start>2026-03-16T09:00:00</Start>
+        <Finish>2026-03-17T18:00:00</Finish>
+        <StartVariance>PT0H0M0S</StartVariance>
+        <FinishVariance>PT0H0M0S</FinishVariance>
+        <Delay>PT0H0M0S</Delay>
+        <Milestone>0</Milestone>
+        <WorkContour>0</WorkContour>
+        <Units>1</Units>
         <Work>PT16H0M0S</Work>
         <Cost>80000</Cost>
-      </Baseline>
-      <TimephasedData>
-        <Type>1</Type>
-        <UID>1</UID>
-        <Start>2026-03-16T09:00:00</Start>
-        <Finish>2026-03-16T18:00:00</Finish>
-        <Unit>2</Unit>
-        <Value>PT8H0M0S</Value>
-      </TimephasedData>
-    </Assignment>
-    <Assignment>
-      <UID>2</UID>
-      <TaskUID>3</TaskUID>
-      <ResourceUID>1</ResourceUID>
-      <Start>2026-03-18T09:00:00</Start>
-      <Finish>2026-03-20T18:00:00</Finish>
-      <StartVariance>PT0H0M0S</StartVariance>
-      <FinishVariance>PT0H0M0S</FinishVariance>
-      <Delay>PT0H0M0S</Delay>
-      <Milestone>0</Milestone>
-      <WorkContour>0</WorkContour>
-      <Units>1</Units>
-      <Work>PT24H0M0S</Work>
-      <Cost>120000</Cost>
-      <ActualCost>0</ActualCost>
-      <RemainingCost>120000</RemainingCost>
-      <PercentWorkComplete>0</PercentWorkComplete>
-      <OvertimeWork>PT0H0M0S</OvertimeWork>
-      <ActualOvertimeWork>PT0H0M0S</ActualOvertimeWork>
-      <ActualWork>PT0H0M0S</ActualWork>
-      <RemainingWork>PT24H0M0S</RemainingWork>
-    </Assignment>
-  </Assignments>
-</Project>`;
+        <ActualCost>40000</ActualCost>
+        <RemainingCost>40000</RemainingCost>
+        <PercentWorkComplete>50</PercentWorkComplete>
+        <OvertimeWork>PT2H0M0S</OvertimeWork>
+        <ActualOvertimeWork>PT1H0M0S</ActualOvertimeWork>
+        <ActualWork>PT8H0M0S</ActualWork>
+        <RemainingWork>PT8H0M0S</RemainingWork>
+        <ExtendedAttribute>
+          <FieldID>255852547</FieldID>
+          <Value>Design Slot</Value>
+        </ExtendedAttribute>
+        <Baseline>
+          <Number>0</Number>
+          <Start>2026-03-16T09:00:00</Start>
+          <Finish>2026-03-17T18:00:00</Finish>
+          <Work>PT16H0M0S</Work>
+          <Cost>80000</Cost>
+        </Baseline>
+        <TimephasedData>
+          <Type>1</Type>
+          <UID>1</UID>
+          <Start>2026-03-16T09:00:00</Start>
+          <Finish>2026-03-16T18:00:00</Finish>
+          <Unit>2</Unit>
+          <Value>PT8H0M0S</Value>
+        </TimephasedData>
+      </Assignment>
+      <Assignment>
+        <UID>2</UID>
+        <TaskUID>3</TaskUID>
+        <ResourceUID>1</ResourceUID>
+        <Start>2026-03-18T09:00:00</Start>
+        <Finish>2026-03-20T18:00:00</Finish>
+        <StartVariance>PT0H0M0S</StartVariance>
+        <FinishVariance>PT0H0M0S</FinishVariance>
+        <Delay>PT0H0M0S</Delay>
+        <Milestone>0</Milestone>
+        <WorkContour>0</WorkContour>
+        <Units>1</Units>
+        <Work>PT24H0M0S</Work>
+        <Cost>120000</Cost>
+        <ActualCost>0</ActualCost>
+        <RemainingCost>120000</RemainingCost>
+        <PercentWorkComplete>0</PercentWorkComplete>
+        <OvertimeWork>PT0H0M0S</OvertimeWork>
+        <ActualOvertimeWork>PT0H0M0S</ActualOvertimeWork>
+        <ActualWork>PT0H0M0S</ActualWork>
+        <RemainingWork>PT24H0M0S</RemainingWork>
+      </Assignment>
+    </Assignments>
+  
+  
+    */
+    function buildSampleXml() {
+        return exportMsProjectXml(importProjectDraftView(SAMPLE_PROJECT_DRAFT_VIEW));
+    }
     function textContent(parent, tagName) {
         const element = parent.getElementsByTagName(tagName)[0];
         return String((element === null || element === void 0 ? void 0 : element.textContent) || "").trim();
@@ -6758,8 +6885,12 @@ if (!customElements.get("lht-page-menu")) {
         return xml;
     }
     function normalizeMermaidText(value, fallback) {
-        const text = String(value || fallback).replace(/[:#,]/g, " ").replace(/\s+/g, " ").trim();
+        const text = String(value || fallback).replace(/[:：#,，]/g, " ").replace(/\s+/g, " ").trim();
         return text || fallback;
+    }
+    function normalizeMermaidGanttLabel(value, fallback, leadingPrefix) {
+        const text = normalizeMermaidText(value, fallback);
+        return /^\d/.test(text) ? `${leadingPrefix} ${text}` : text;
     }
     function normalizeMermaidTaskId(value, fallback) {
         return String(value || fallback).replace(/[^A-Za-z0-9_]/g, "_");
@@ -7045,7 +7176,7 @@ if (!customElements.get("lht-page-menu")) {
             siblings.forEach((task, index) => {
                 const currentPath = [...outlinePath, index + 1];
                 const outlineNumber = currentPath.join(".");
-                const start = task.plannedStart || projectStart;
+                const start = task.plannedStart || task.plannedFinish || projectStart;
                 const finish = task.plannedFinish
                     || (typeof task.plannedDurationHours === "number" ? addHoursToDateTime(start, task.plannedDurationHours) : start);
                 const hasChildren = (byParent.get(task.uid) || []).length > 0;
@@ -7059,7 +7190,7 @@ if (!customElements.get("lht-page-menu")) {
                     start,
                     finish,
                     duration: task.plannedDuration || (typeof task.plannedDurationHours === "number" ? `PT${task.plannedDurationHours}H` : "PT0H0M0S"),
-                    milestone: task.isMilestone || start === finish,
+                    milestone: task.isMilestone,
                     summary: task.isSummary || hasChildren,
                     percentComplete: 0,
                     predecessors: task.predecessorUids.map((predecessorUid) => ({ predecessorUid })),
@@ -7259,8 +7390,8 @@ if (!customElements.get("lht-page-menu")) {
                 continue;
             }
             const sectionName = summaryStack.length > 0
-                ? normalizeMermaidText(summaryStack[summaryStack.length - 1].name, "Summary")
-                : normalizeMermaidText(projectName, "Tasks");
+                ? normalizeMermaidGanttLabel(summaryStack[summaryStack.length - 1].name, "Summary", "Section")
+                : normalizeMermaidGanttLabel(projectName, "Tasks", "Section");
             sectionMap.set(task.uid, sectionName);
         }
         return sectionMap;
@@ -7268,12 +7399,15 @@ if (!customElements.get("lht-page-menu")) {
     function exportMermaidGantt(model) {
         const lines = [
             "gantt",
-            `  title ${normalizeMermaidText(model.project.name, "Project")}`,
+            `  title ${normalizeMermaidGanttLabel(model.project.name, "Project", "Project")}`,
             "  dateFormat YYYY-MM-DDTHH:mm:ss",
             "  axisFormat %m/%d"
         ];
         const sectionMap = buildTaskSectionMap(model.tasks, model.project.name);
-        const taskNameMap = new Map(model.tasks.map((task) => [task.uid, normalizeMermaidText(task.name, `Task ${task.uid}`)]));
+        const taskNameMap = new Map(model.tasks.map((task) => [
+            task.uid,
+            normalizeMermaidGanttLabel(task.name, `Task ${task.uid}`, "Task")
+        ]));
         const exportedTasks = model.tasks.filter((task) => !task.summary && task.start && task.finish);
         let currentSection = "";
         for (const task of exportedTasks) {
@@ -7309,7 +7443,7 @@ if (!customElements.get("lht-page-menu")) {
             const fields = useNativeDependency
                 ? [...tags, taskId, `after ${nativeDependencyTarget}`, nativeDuration]
                 : [...tags, taskId, task.start, task.finish].filter(Boolean);
-            lines.push(`  ${normalizeMermaidText(task.name, `Task ${task.uid}`)} :${fields.join(", ")}`);
+            lines.push(`  ${normalizeMermaidGanttLabel(task.name, `Task ${task.uid}`, "Task")} :${fields.join(", ")}`);
             for (const predecessor of task.predecessors) {
                 const predecessorTaskId = `task_${normalizeMermaidTaskId(predecessor.predecessorUid, "x")}`;
                 const predecessorName = taskNameMap.get(predecessor.predecessorUid) || `Task ${predecessor.predecessorUid}`;
@@ -8848,6 +8982,7 @@ if (!customElements.get("lht-page-menu")) {
     }
     globalThis.__mikuprojectXml = {
         SAMPLE_XML,
+        SAMPLE_PROJECT_DRAFT_VIEW,
         parseXmlDocument,
         importMsProjectXml,
         importCsvParentId,
@@ -10462,7 +10597,9 @@ if (!customElements.get("lht-page-menu")) {
         const isWeekendDay = isWeeklyNonWorkingDay(day, nonWorkingDayTypes);
         const isHoliday = holidaySet.has(day);
         const isNonWorkingDay = isWeekendDay || isHoliday;
-        const active = includesDay(task.start, task.finish, day) && !isNonWorkingDay;
+        const isTaskStart = isSameDay(day, task.start);
+        const isTaskFinish = isSameDay(day, task.finish);
+        const active = includesDay(task.start, task.finish, day) && (!isNonWorkingDay || isTaskStart || isTaskFinish);
         const isToday = isSameDay(day, currentDate);
         const weekStart = isWeekStart(day);
         const complete = active && isCompletedDay(task, day, holidaySet, nonWorkingDayTypes, useBusinessDaysForProgressBand);
@@ -14419,6 +14556,12 @@ WorkWeek1=${formatCalendarWorkWeekSummary(calendar)}</div>
         showToast("project_draft_view を取り込みました");
         setActiveTab("transform", { skipTransformRefresh: true });
     }
+    function loadProjectDraftSample() {
+        const sampleDraftText = JSON.stringify(mikuprojectXml.SAMPLE_PROJECT_DRAFT_VIEW, null, 2);
+        getTextArea("projectDraftImportInput").value = sampleDraftText;
+        setStatus("サンプル project_draft_view を読み込みました");
+        setActiveTab("input");
+    }
     async function importProjectDraftFromFile(file) {
         if (!file) {
             throw new Error("project_draft_view JSON ファイルを選択してください");
@@ -14659,6 +14802,7 @@ WorkWeek1=${formatCalendarWorkWeekSummary(calendar)}</div>
         getElement("importProjectDraftFileBtn").addEventListener("click", () => {
             getElement("importProjectDraftInput").click();
         });
+        getElement("loadProjectDraftSampleBtn").addEventListener("click", loadProjectDraftSample);
         getElement("importProjectDraftBtn").addEventListener("click", async () => {
             try {
                 await importProjectDraftFromText();

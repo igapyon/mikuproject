@@ -149,6 +149,9 @@
         if (cell.border !== undefined && !BORDER_STYLES.includes(cell.border)) {
             throw new Error(`Unsupported cell border: ${cell.border}`);
         }
+        if (cell.fontSize !== undefined) {
+            normalizeOptionalPositiveNumber(cell.fontSize, "Cell fontSize");
+        }
         if (cell.fillColor !== undefined) {
             assertColor(cell.fillColor);
         }
@@ -160,6 +163,7 @@
             verticalAlign: cell.verticalAlign,
             wrapText: cell.wrapText === true ? true : undefined,
             bold: cell.bold === true ? true : undefined,
+            fontSize: cell.fontSize,
             fillColor: cell.fillColor ? normalizeColor(cell.fillColor) : undefined,
             border: cell.border
         };
@@ -393,7 +397,7 @@
         return { styles, styleIndexByKey };
     }
     function getStyleDescriptor(cell) {
-        if (!cell.numberFormat && !cell.horizontalAlign && !cell.verticalAlign && !cell.wrapText && !cell.bold && !cell.fillColor && !cell.border) {
+        if (!cell.numberFormat && !cell.horizontalAlign && !cell.verticalAlign && !cell.wrapText && !cell.bold && !cell.fontSize && !cell.fillColor && !cell.border) {
             return null;
         }
         return {
@@ -402,6 +406,7 @@
             verticalAlign: cell.verticalAlign,
             wrapText: cell.wrapText === true ? true : undefined,
             bold: cell.bold === true ? true : undefined,
+            fontSize: cell.fontSize,
             fillColor: cell.fillColor,
             border: cell.border
         };
@@ -413,6 +418,7 @@
             style.verticalAlign || "",
             style.wrapText ? "wrap" : "",
             style.bold ? "bold" : "",
+            style.fontSize !== undefined ? String(style.fontSize) : "",
             style.fillColor || "",
             style.border || ""
         ].join(STYLE_KEY_DELIMITER);
@@ -425,12 +431,12 @@
         return styleBook.styleIndexByKey.get(styleKey(descriptor)) || 0;
     }
     function buildStylesXml(styles) {
-        const fonts = dedupeDescriptors(styles.map((style) => ({ bold: style.bold })), fontKey, { bold: undefined });
+        const fonts = dedupeDescriptors(styles.map((style) => ({ bold: style.bold, fontSize: style.fontSize })), fontKey, { bold: undefined, fontSize: undefined });
         const fills = dedupeDescriptors(styles.map((style) => ({ fillColor: style.fillColor })), fillKey, { fillColor: undefined });
         const borders = dedupeDescriptors(styles.map((style) => ({ border: style.border })), borderKey, { border: undefined });
         const styleNodes = styles.map((style) => {
             const numFmtId = mapNumberFormatId(style.numberFormat);
-            const fontId = fonts.indexByKey.get(fontKey({ bold: style.bold })) || 0;
+            const fontId = fonts.indexByKey.get(fontKey({ bold: style.bold, fontSize: style.fontSize })) || 0;
             const fillId = fills.indexByKey.get(fillKey({ fillColor: style.fillColor })) || 0;
             const borderId = borders.indexByKey.get(borderKey({ border: style.border })) || 0;
             const applyNumberFormat = numFmtId !== 0 ? ` applyNumberFormat="1"` : "";
@@ -484,7 +490,10 @@
         return { items: uniqueItems, indexByKey };
     }
     function fontKey(font) {
-        return font.bold ? "bold" : "";
+        return [
+            font.bold ? "bold" : "",
+            font.fontSize !== undefined ? String(font.fontSize) : ""
+        ].join(STYLE_KEY_DELIMITER);
     }
     function fillKey(fill) {
         return fill.fillColor || "";
@@ -493,7 +502,11 @@
         return border.border || "";
     }
     function buildFontXml(font) {
-        return font.bold ? `<font><b/></font>` : `<font/>`;
+        const parts = [
+            font.bold ? "<b/>" : "",
+            font.fontSize !== undefined ? `<sz val="${escapeXml(formatNumber(font.fontSize))}"/>` : ""
+        ].join("");
+        return parts ? `<font>${parts}</font>` : `<font/>`;
     }
     function buildFillXml(fill) {
         if (!fill.fillColor) {
@@ -670,6 +683,9 @@
         if (style.bold) {
             cell.bold = true;
         }
+        if (style.fontSize !== undefined) {
+            cell.fontSize = style.fontSize;
+        }
         if (style.fillColor) {
             cell.fillColor = denormalizeColor(style.fillColor);
         }
@@ -697,7 +713,7 @@
             return [DEFAULT_STYLE];
         }
         return xfElements.map((xfElement) => {
-            var _a, _b, _c;
+            var _a, _b, _c, _d;
             const numFmtId = Number(xfElement.getAttribute("numFmtId") || "0");
             const fontId = Number(xfElement.getAttribute("fontId") || "0");
             const fillId = Number(xfElement.getAttribute("fillId") || "0");
@@ -711,15 +727,20 @@
                 verticalAlign: verticalAlign || undefined,
                 wrapText: (alignmentElement === null || alignmentElement === void 0 ? void 0 : alignmentElement.getAttribute("wrapText")) === "1" ? true : undefined,
                 bold: ((_a = fonts[fontId]) === null || _a === void 0 ? void 0 : _a.bold) ? true : undefined,
-                fillColor: (_b = fills[fillId]) === null || _b === void 0 ? void 0 : _b.fillColor,
-                border: (_c = borders[borderId]) === null || _c === void 0 ? void 0 : _c.border
+                fontSize: (_b = fonts[fontId]) === null || _b === void 0 ? void 0 : _b.fontSize,
+                fillColor: (_c = fills[fillId]) === null || _c === void 0 ? void 0 : _c.fillColor,
+                border: (_d = borders[borderId]) === null || _d === void 0 ? void 0 : _d.border
             };
         });
     }
     function parseFonts(document) {
-        return Array.from(document.getElementsByTagNameNS("http://schemas.openxmlformats.org/spreadsheetml/2006/main", "font")).map((fontElement) => ({
-            bold: findDirectChild(fontElement, "b") ? true : undefined
-        }));
+        return Array.from(document.getElementsByTagNameNS("http://schemas.openxmlformats.org/spreadsheetml/2006/main", "font")).map((fontElement) => {
+            var _a;
+            return ({
+                bold: findDirectChild(fontElement, "b") ? true : undefined,
+                fontSize: parseOptionalNumber(((_a = findDirectChild(fontElement, "sz")) === null || _a === void 0 ? void 0 : _a.getAttribute("val")) || null)
+            });
+        });
     }
     function parseFills(document) {
         return Array.from(document.getElementsByTagNameNS("http://schemas.openxmlformats.org/spreadsheetml/2006/main", "fill")).map((fillElement) => {

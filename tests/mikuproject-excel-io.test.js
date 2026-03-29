@@ -249,6 +249,34 @@ describe("mikuproject excel io", () => {
     expect(imported).toEqual(workbook);
   });
 
+  it("round-trips font size styles", () => {
+    const excelIo = bootExcelIoModule();
+    const codec = new excelIo.XlsxWorkbookCodec();
+    const workbook = {
+      sheets: [
+        {
+          name: "Sized",
+          rows: [
+            {
+              cells: [
+                {
+                  value: "Title",
+                  bold: true,
+                  fontSize: 16
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    };
+
+    const bytes = codec.exportWorkbook(workbook);
+    const imported = codec.importWorkbook(bytes);
+
+    expect(imported).toEqual(workbook);
+  });
+
   it("round-trips merged cell ranges", () => {
     const excelIo = bootExcelIoModule();
     const codec = new excelIo.XlsxWorkbookCodec();
@@ -481,6 +509,33 @@ describe("mikuproject excel io", () => {
     expect(stylesXml).toContain("<left style=\"thin\"/>");
     expect(stylesXml).toContain("applyFill=\"1\"");
     expect(stylesXml).toContain("applyBorder=\"1\"");
+    expect(stylesXml).toContain("applyFont=\"1\"");
+  });
+
+  it("writes font size definitions when font size is present", () => {
+    const excelIo = bootExcelIoModule();
+    const codec = new excelIo.XlsxWorkbookCodec();
+    const bytes = codec.exportWorkbook({
+      sheets: [
+        {
+          name: "FontSized",
+          rows: [
+            {
+              cells: [
+                {
+                  value: "Title",
+                  fontSize: 16
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    });
+
+    const stylesXml = decodeUtf8(codec.unpackEntries(bytes)["xl/styles.xml"]);
+
+    expect(stylesXml).toContain('<sz val="16"/>');
     expect(stylesXml).toContain("applyFont=\"1\"");
   });
 

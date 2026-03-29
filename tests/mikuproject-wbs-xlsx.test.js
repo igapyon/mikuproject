@@ -46,6 +46,38 @@ function findRowIndexByPredicate(sheet, predicate) {
 const SAMPLE_HOLIDAY_COUNT = 89;
 
 describe("mikuproject wbs xlsx", () => {
+  it("provides Excel-style layout references for WBS worksheet tuning", () => {
+    const { wbsXlsx } = bootModules();
+
+    expect(wbsXlsx.layout.columnIndex("A")).toBe(0);
+    expect(wbsXlsx.layout.columnIndex("S")).toBe(18);
+    expect(wbsXlsx.layout.columnName(18)).toBe("S");
+    expect(wbsXlsx.layout.reference(17, 2)).toBe("C17");
+    expect(wbsXlsx.layout.range("A1", "C17")).toBe("A1:C17");
+    expect(wbsXlsx.layout.parseCellReference("C17")).toEqual({
+      reference: "C17",
+      rowNumber: 17,
+      rowIndex: 16,
+      columnName: "C",
+      columnIndex: 2
+    });
+    expect(wbsXlsx.layout.describeCell("C17")).toBe("C17 (row 17, rowIndex 16, column C, columnIndex 2)");
+  });
+
+  it("can log WBS layout cell references on demand", () => {
+    const { wbsXlsx } = bootModules();
+    const messages = [];
+
+    const message = wbsXlsx.layout.logCell("S12", "week header", (line) => {
+      messages.push(line);
+    });
+
+    expect(message).toBe("week header: S12 (row 12, rowIndex 11, column S, columnIndex 18)");
+    expect(messages).toEqual([
+      "week header: S12 (row 12, rowIndex 11, column S, columnIndex 18)"
+    ]);
+  });
+
   it("collects holiday dates from calendar exceptions", () => {
     const { xml, wbsXlsx } = bootModules();
     const model = xml.importMsProjectXml(xml.SAMPLE_XML);
@@ -91,11 +123,13 @@ describe("mikuproject wbs xlsx", () => {
     expect(sheet.mergedRanges).toContain("A3:D3");
     expect(sheet.mergedRanges).toContain("F3:G3");
     expect(sheet.rows[0].cells[0].value).toBe("WBS");
+    expect(sheet.rows[0].cells[0].fontSize).toBe(16);
     expect(sheet.rows[0].cells[0].fillColor).toBeUndefined();
     expect(sheet.rows[0].cells[1].fillColor).toBe("#EEF4FA");
     expect(sheet.rows[1].cells[0].value).toBeUndefined();
     const projectInfoHeaderIndex = findRowIndexByCellValue(sheet, "プロジェクト", 0);
     expect(projectInfoHeaderIndex).toBe(2);
+    expect(sheet.rows[projectInfoHeaderIndex].cells[0].fontSize).toBe(14);
     expect(sheet.rows[projectInfoHeaderIndex + 1].cells[0].value).toBe("題名");
     expect(sheet.rows[projectInfoHeaderIndex + 1].cells[2].value).toBe("Sample Project ...");
     expect(sheet.rows[projectInfoHeaderIndex + 2].cells[0].value).toBe("カレンダ");
@@ -113,6 +147,7 @@ describe("mikuproject wbs xlsx", () => {
     const summaryHeaderIndex = findRowIndexByCellValue(sheet, "サマリ", 5);
     expect(summaryHeaderIndex).toBe(2);
     expect(sheet.rows[summaryHeaderIndex].height).toBe(24);
+    expect(sheet.rows[summaryHeaderIndex].cells[5].fontSize).toBe(14);
     expect(sheet.rows[summaryHeaderIndex].cells[5].fillColor).toBe("#E1EDF8");
     expect(sheet.rows[summaryHeaderIndex + 1].cells[5].value).toBe("表示日");
     expect(sheet.rows[summaryHeaderIndex + 1].cells[6].value).toBe(16);
@@ -149,9 +184,11 @@ describe("mikuproject wbs xlsx", () => {
     expect(dateRowIndex).toBe(12);
     expect(sheet.rows[weekRowIndex].height).toBe(24);
     expect(sheet.rows[weekRowIndex].cells[5].value).toBeUndefined();
+    expect(sheet.rows[weekRowIndex].cells[18].fontSize).toBe(14);
     expect(sheet.rows[weekRowIndex].cells[18].fillColor).toBe("#E3EEF9");
     expect(sheet.rows[weekRowIndex].cells[19].fillColor).toBe("#D9E2EA");
     expect(sheet.rows[weekRowIndex].cells[20].value).toBe("週 03/15");
+    expect(sheet.rows[weekRowIndex].cells[20].fontSize).toBe(14);
     expect(sheet.rows[headerRowIndex].cells.slice(0, 19).map((cell) => cell.value)).toEqual([
       "UID",
       "ID",
@@ -286,6 +323,7 @@ describe("mikuproject wbs xlsx", () => {
     expect(sheet.rows[legendHeaderIndex - 1].height).toBe(28);
     expect(sheet.rows[legendHeaderIndex - 1].cells[0].value).toBeUndefined();
     expect(sheet.rows[legendHeaderIndex].height).toBe(24);
+    expect(sheet.rows[legendHeaderIndex].cells[0].fontSize).toBe(14);
     expect(sheet.rows[legendHeaderIndex + 1].height).toBe(24);
     expect(sheet.rows[legendHeaderIndex + 1].cells[0].value).toBe("進捗済み");
     expect(sheet.rows[legendHeaderIndex + 1].cells[0].bold).toBe(true);
@@ -311,12 +349,16 @@ describe("mikuproject wbs xlsx", () => {
     const workbook = wbsXlsx.exportWbsWorkbook(model);
     const bytes = codec.exportWorkbook(workbook);
     const entries = codec.listEntries(bytes);
-    const sheetXml = new TextDecoder().decode(codec.unpackEntries(bytes)["xl/worksheets/sheet1.xml"]);
+    const unpackedEntries = codec.unpackEntries(bytes);
+    const sheetXml = new TextDecoder().decode(unpackedEntries["xl/worksheets/sheet1.xml"]);
+    const stylesXml = new TextDecoder().decode(unpackedEntries["xl/styles.xml"]);
 
     expect(entries).toContain("xl/workbook.xml");
     expect(entries).toContain("xl/worksheets/sheet1.xml");
     expect(sheetXml).toContain('ref="A3:D3"');
     expect(sheetXml).toContain('ref="F3:G3"');
+    expect(sheetXml).toContain('s="1"');
+    expect(stylesXml).toContain('<sz val="16"/>');
     expect(sheetXml).toContain('ref="U12:Z12"');
     expect(sheetXml).toContain('min="12" max="12" width="18" customWidth="1" hidden="1"');
     expect(sheetXml).toContain('min="13" max="13" width="12" customWidth="1" hidden="1"');

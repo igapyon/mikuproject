@@ -2,11 +2,11 @@
 
 `mikuproject` は、MS Project XML 形式の入出力を扱うプロジェクト管理アプリとして設計する。
 
-この文書は `mikuproject` の仕様メモであり、README の代わりではない。利用方法やビルド手順は `README.md` に置き、未完了タスクは `TODO.md` に置く。
+この文書は `mikuproject` の仕様メモであり、README の代わりではない。利用方法やビルド手順は `README.md` に置き、未完了タスクは `docs/TODO.md` に置く。
 
 配置先:
 
-- リポジトリ直下
+- `docs/spec.md`
 
 アプリ名:
 
@@ -164,7 +164,7 @@ preview / validation の現状メモ:
 - 一時的な検証用データの参照元として `https://github.com/rpbouman/open-msp-viewer/` を利用する
 - ただし、Git 管理下へそのまま格納するかどうかは別途判断する
 - `open-msp-viewer` プロジェクトのサンプルには大いに助けられた。感謝する
-- 実例 XML から見えた保持項目ギャップは `mikuproject-gap-notes.md` に整理する
+- 実例 XML から見えた保持項目ギャップは `docs/gap-notes.md` に整理する
 - 仕様判断で迷った場合は、MicrosoftDocs の Project XML Data Interchange リファレンスも補助資料として参照する
   - `https://github.com/MicrosoftDocs/office-developer-msproject-xml-docs/tree/main/project-xml-data-interchange`
 

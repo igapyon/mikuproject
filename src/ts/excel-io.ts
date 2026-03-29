@@ -17,6 +17,7 @@
     verticalAlign?: XlsxVerticalAlign;
     wrapText?: boolean;
     bold?: boolean;
+    fontSize?: number;
     fillColor?: string;
     border?: XlsxBorderStyle;
   };
@@ -59,6 +60,7 @@
     verticalAlign?: XlsxVerticalAlign;
     wrapText?: boolean;
     bold?: boolean;
+    fontSize?: number;
     fillColor?: string;
     border?: XlsxBorderStyle;
   };
@@ -70,6 +72,7 @@
 
   type FontDescriptor = {
     bold?: boolean;
+    fontSize?: number;
   };
 
   type FillDescriptor = {
@@ -239,6 +242,9 @@
     if (cell.border !== undefined && !BORDER_STYLES.includes(cell.border)) {
       throw new Error(`Unsupported cell border: ${cell.border}`);
     }
+    if (cell.fontSize !== undefined) {
+      normalizeOptionalPositiveNumber(cell.fontSize, "Cell fontSize");
+    }
     if (cell.fillColor !== undefined) {
       assertColor(cell.fillColor);
     }
@@ -250,6 +256,7 @@
       verticalAlign: cell.verticalAlign,
       wrapText: cell.wrapText === true ? true : undefined,
       bold: cell.bold === true ? true : undefined,
+      fontSize: cell.fontSize,
       fillColor: cell.fillColor ? normalizeColor(cell.fillColor) : undefined,
       border: cell.border
     };
@@ -528,7 +535,7 @@
   }
 
   function getStyleDescriptor(cell: XlsxCellModel): StyleDescriptor | null {
-    if (!cell.numberFormat && !cell.horizontalAlign && !cell.verticalAlign && !cell.wrapText && !cell.bold && !cell.fillColor && !cell.border) {
+    if (!cell.numberFormat && !cell.horizontalAlign && !cell.verticalAlign && !cell.wrapText && !cell.bold && !cell.fontSize && !cell.fillColor && !cell.border) {
       return null;
     }
     return {
@@ -537,6 +544,7 @@
       verticalAlign: cell.verticalAlign,
       wrapText: cell.wrapText === true ? true : undefined,
       bold: cell.bold === true ? true : undefined,
+      fontSize: cell.fontSize,
       fillColor: cell.fillColor,
       border: cell.border
     };
@@ -549,6 +557,7 @@
       style.verticalAlign || "",
       style.wrapText ? "wrap" : "",
       style.bold ? "bold" : "",
+      style.fontSize !== undefined ? String(style.fontSize) : "",
       style.fillColor || "",
       style.border || ""
     ].join(STYLE_KEY_DELIMITER);
@@ -563,13 +572,17 @@
   }
 
   function buildStylesXml(styles: StyleDescriptor[]): string {
-    const fonts = dedupeDescriptors(styles.map((style) => ({ bold: style.bold } as FontDescriptor)), fontKey, { bold: undefined });
+    const fonts = dedupeDescriptors(
+      styles.map((style) => ({ bold: style.bold, fontSize: style.fontSize } as FontDescriptor)),
+      fontKey,
+      { bold: undefined, fontSize: undefined }
+    );
     const fills = dedupeDescriptors(styles.map((style) => ({ fillColor: style.fillColor } as FillDescriptor)), fillKey, { fillColor: undefined });
     const borders = dedupeDescriptors(styles.map((style) => ({ border: style.border } as BorderDescriptor)), borderKey, { border: undefined });
 
     const styleNodes = styles.map((style) => {
       const numFmtId = mapNumberFormatId(style.numberFormat);
-      const fontId = fonts.indexByKey.get(fontKey({ bold: style.bold })) || 0;
+      const fontId = fonts.indexByKey.get(fontKey({ bold: style.bold, fontSize: style.fontSize })) || 0;
       const fillId = fills.indexByKey.get(fillKey({ fillColor: style.fillColor })) || 0;
       const borderId = borders.indexByKey.get(borderKey({ border: style.border })) || 0;
       const applyNumberFormat = numFmtId !== 0 ? ` applyNumberFormat="1"` : "";
@@ -626,7 +639,10 @@
   }
 
   function fontKey(font: FontDescriptor): string {
-    return font.bold ? "bold" : "";
+    return [
+      font.bold ? "bold" : "",
+      font.fontSize !== undefined ? String(font.fontSize) : ""
+    ].join(STYLE_KEY_DELIMITER);
   }
 
   function fillKey(fill: FillDescriptor): string {
@@ -638,7 +654,11 @@
   }
 
   function buildFontXml(font: FontDescriptor): string {
-    return font.bold ? `<font><b/></font>` : `<font/>`;
+    const parts = [
+      font.bold ? "<b/>" : "",
+      font.fontSize !== undefined ? `<sz val="${escapeXml(formatNumber(font.fontSize))}"/>` : ""
+    ].join("");
+    return parts ? `<font>${parts}</font>` : `<font/>`;
   }
 
   function buildFillXml(fill: FillDescriptor): string {
@@ -855,6 +875,9 @@
     if (style.bold) {
       cell.bold = true;
     }
+    if (style.fontSize !== undefined) {
+      cell.fontSize = style.fontSize;
+    }
     if (style.fillColor) {
       cell.fillColor = denormalizeColor(style.fillColor);
     }
@@ -901,6 +924,7 @@
         verticalAlign: verticalAlign || undefined,
         wrapText: alignmentElement?.getAttribute("wrapText") === "1" ? true : undefined,
         bold: fonts[fontId]?.bold ? true : undefined,
+        fontSize: fonts[fontId]?.fontSize,
         fillColor: fills[fillId]?.fillColor,
         border: borders[borderId]?.border
       };
@@ -912,7 +936,8 @@
       "http://schemas.openxmlformats.org/spreadsheetml/2006/main",
       "font"
     )).map((fontElement) => ({
-      bold: findDirectChild(fontElement, "b") ? true : undefined
+      bold: findDirectChild(fontElement, "b") ? true : undefined,
+      fontSize: parseOptionalNumber(findDirectChild(fontElement, "sz")?.getAttribute("val") || null)
     }));
   }
 

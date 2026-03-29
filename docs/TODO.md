@@ -1,6 +1,6 @@
 # TODO
 
-この文書には、未完了の作業だけを書く。概要説明や仕様判断は `README.md` と `mikuproject-spec.md` に寄せる。
+この文書には、未完了の作業だけを書く。概要説明や仕様判断は `README.md` と `docs/spec.md` に寄せる。
 
 ## mikuproject
 
@@ -18,7 +18,7 @@
 - `build:xlsx-sample` の所要時間を個別計測し、sample workbook 生成処理の支配要因を確認する
 - `main.test.js` の初期化 DOM をケース別に最小化できるか見直す
 - CI 向けに `test:fast` と `test:full` のような実行導線を分けるか検討する
-- `mikuproject-spec.md` に残っている実装済み前提との差分を定期的に解消する
+- `docs/spec.md` に残っている実装済み前提との差分を定期的に解消する
 - `.xlsx import` の次段として、どのシート・列を今後 import 対象に広げるか整理する
 - WBS 用の `ステータス` は `Task.ExtendedAttribute` で扱う前提で、`FieldID / FieldName / 値候補` を設計する
 - `TaskStatus` 用 `ExtendedAttribute` を `mikuproject-sample.xlsx` と `WBS workbook` のどちらまで見せるか決める

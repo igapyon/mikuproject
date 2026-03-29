@@ -1151,6 +1151,486 @@
     return typeMap[type] || `type=${type}`;
   }
 
+  function formatDependencyType(type: number | undefined): string {
+    if (type === undefined) {
+      return "FS";
+    }
+    const typeMap: Record<number, string> = {
+      0: "FF",
+      1: "FS",
+      2: "FF",
+      3: "SF",
+      4: "SS"
+    };
+    return typeMap[type] || String(type);
+  }
+
+  function parseDurationHours(duration: string | undefined): number | undefined {
+    const text = String(duration || "").trim();
+    if (!text) {
+      return undefined;
+    }
+    const match = /^(-)?P(?:T(?:(\d+)H)?(?:(\d+)M)?(?:(\d+)S)?)$/.exec(text);
+    if (!match) {
+      return undefined;
+    }
+    const sign = match[1] ? -1 : 1;
+    const hours = Number(match[2] || 0);
+    const minutes = Number(match[3] || 0);
+    const seconds = Number(match[4] || 0);
+    return sign * (hours + minutes / 60 + seconds / 3600);
+  }
+
+  function buildTaskParentMap(tasks: TaskModel[]): Map<string, string | null> {
+    const parentMap = new Map<string, string | null>();
+    const stack: TaskModel[] = [];
+    for (const task of tasks) {
+      while (stack.length > 0 && task.outlineLevel <= stack[stack.length - 1].outlineLevel) {
+        stack.pop();
+      }
+      parentMap.set(task.uid, stack.length > 0 ? stack[stack.length - 1].uid : null);
+      if (task.summary) {
+        stack.push(task);
+      }
+    }
+    return parentMap;
+  }
+
+  function buildTaskPositionMap(tasks: TaskModel[], parentMap: Map<string, string | null>): Map<string, number> {
+    const counters = new Map<string, number>();
+    const positionMap = new Map<string, number>();
+    for (const task of tasks) {
+      const parentUid = parentMap.get(task.uid) || "__root__";
+      const position = counters.get(parentUid) || 0;
+      positionMap.set(task.uid, position);
+      counters.set(parentUid, position + 1);
+    }
+    return positionMap;
+  }
+
+  function collectTopLevelPhases(tasks: TaskModel[]): TaskModel[] {
+    return tasks.filter((task) => !isPlaceholderUid(task.uid) && task.summary && task.outlineLevel === 1);
+  }
+
+  function collectPhaseTaskUids(tasks: TaskModel[], phaseUid: string): Set<string> {
+    const phaseIndex = tasks.findIndex((task) => task.uid === phaseUid);
+    if (phaseIndex < 0) {
+      return new Set<string>();
+    }
+    const phase = tasks[phaseIndex];
+    const uids = new Set<string>();
+    for (let index = phaseIndex + 1; index < tasks.length; index += 1) {
+      const task = tasks[index];
+      if (task.outlineLevel <= phase.outlineLevel) {
+        break;
+      }
+      if (!isPlaceholderUid(task.uid)) {
+        uids.add(task.uid);
+      }
+    }
+    return uids;
+  }
+
+  function collectTaskSubtreeUids(tasks: TaskModel[], rootUid: string, maxDepth?: number): Set<string> {
+    const rootIndex = tasks.findIndex((task) => task.uid === rootUid);
+    if (rootIndex < 0) {
+      return new Set<string>();
+    }
+    const rootTask = tasks[rootIndex];
+    const uids = new Set<string>();
+    if (!isPlaceholderUid(rootTask.uid)) {
+      uids.add(rootTask.uid);
+    }
+    for (let index = rootIndex + 1; index < tasks.length; index += 1) {
+      const task = tasks[index];
+      if (task.outlineLevel <= rootTask.outlineLevel) {
+        break;
+      }
+      const relativeDepth = task.outlineLevel - rootTask.outlineLevel;
+      if (typeof maxDepth === "number" && relativeDepth > maxDepth) {
+        continue;
+      }
+      if (!isPlaceholderUid(task.uid)) {
+        uids.add(task.uid);
+      }
+    }
+    return uids;
+  }
+
+  function resolvePhaseUidForTask(taskUid: string, parentMap: Map<string, string | null>, phaseUidSet: Set<string>): string | undefined {
+    let currentUid: string | null | undefined = taskUid;
+    while (currentUid) {
+      if (phaseUidSet.has(currentUid)) {
+        return currentUid;
+      }
+      currentUid = parentMap.get(currentUid) || null;
+    }
+    return undefined;
+  }
+
+  function buildDefaultRules(scope: "project_overview_view" | "phase_detail_view") {
+    if (scope === "project_overview_view") {
+      return {
+        allow_patch_ops: ["add_task", "update_task", "move_task"],
+        forbid_completed_task_changes: true,
+        forbid_summary_task_direct_edit: true
+      };
+    }
+    return {
+      allow_patch_ops: ["add_task", "update_task", "move_task", "link_tasks", "unlink_tasks"],
+      forbid_completed_task_changes: true,
+      forbid_summary_task_direct_edit: true
+    };
+  }
+
+  function toIsoLocalString(value: Date): string {
+    const year = value.getFullYear();
+    const month = String(value.getMonth() + 1).padStart(2, "0");
+    const day = String(value.getDate()).padStart(2, "0");
+    const hour = String(value.getHours()).padStart(2, "0");
+    const minute = String(value.getMinutes()).padStart(2, "0");
+    const second = String(value.getSeconds()).padStart(2, "0");
+    return `${year}-${month}-${day}T${hour}:${minute}:${second}`;
+  }
+
+  function addHoursToDateTime(dateTime: string, hours: number): string {
+    const parsed = new Date(dateTime);
+    if (Number.isNaN(parsed.getTime())) {
+      return dateTime;
+    }
+    parsed.setTime(parsed.getTime() + (hours * 60 * 60 * 1000));
+    return toIsoLocalString(parsed);
+  }
+
+  function buildProjectDraftRequest(input: {
+    name: string;
+    plannedStart?: string;
+    goal?: string;
+    teamCount?: number;
+    mustHavePhases?: string[];
+    mustHaveMilestones?: string[];
+  }) {
+    return {
+      view_type: "project_draft_request",
+      project: {
+        name: input.name,
+        planned_start: input.plannedStart || undefined
+      },
+      requirements: {
+        goal: input.goal || undefined,
+        team_count: input.teamCount,
+        must_have_phases: input.mustHavePhases || [],
+        must_have_milestones: input.mustHaveMilestones || []
+      }
+    };
+  }
+
+  function importProjectDraftView(draft: unknown): ProjectModel {
+    if (!draft || typeof draft !== "object") {
+      throw new Error("project_draft_view がオブジェクトではありません");
+    }
+    const data = draft as {
+      view_type?: string;
+      project?: {
+        name?: string;
+        planned_start?: string;
+        planned_finish?: string;
+      };
+      tasks?: Array<{
+        uid?: string;
+        name?: string;
+        parent_uid?: string | null;
+        position?: number;
+        is_summary?: boolean;
+        is_milestone?: boolean;
+        planned_duration?: string;
+        planned_duration_hours?: number;
+        planned_start?: string;
+        planned_finish?: string;
+        predecessors?: Array<string | { task_uid?: string }>;
+        predecessor_uids?: string[];
+      }>;
+    };
+    if (data.view_type !== "project_draft_view") {
+      throw new Error("view_type が project_draft_view ではありません");
+    }
+    if (!data.project?.name?.trim()) {
+      throw new Error("project.name がありません");
+    }
+    const inputTasks = Array.isArray(data.tasks) ? data.tasks : [];
+    const seenUids = new Set<string>();
+    for (const task of inputTasks) {
+      const uid = String(task.uid || "").trim();
+      if (!uid) {
+        throw new Error("draft task の uid がありません");
+      }
+      if (seenUids.has(uid)) {
+        throw new Error(`draft task の uid が重複しています: ${uid}`);
+      }
+      seenUids.add(uid);
+      if (!String(task.name || "").trim()) {
+        throw new Error(`draft task の name がありません: ${uid}`);
+      }
+    }
+    for (const task of inputTasks) {
+      const parentUid = task.parent_uid == null || task.parent_uid === "" ? null : String(task.parent_uid);
+      if (parentUid && !seenUids.has(parentUid)) {
+        throw new Error(`draft task の parent_uid が既存 uid を指していません: ${String(task.uid || "")} -> ${parentUid}`);
+      }
+    }
+    const projectStart = data.project.planned_start || data.project.planned_finish || toIsoLocalString(new Date());
+    const normalizedTasks = inputTasks.map((task, index) => ({
+      uid: String(task.uid || "").trim(),
+      name: String(task.name || "").trim(),
+      parentUid: task.parent_uid == null || task.parent_uid === "" ? null : String(task.parent_uid),
+      position: typeof task.position === "number" && Number.isFinite(task.position) ? task.position : index,
+      isSummary: Boolean(task.is_summary),
+      isMilestone: Boolean(task.is_milestone),
+      plannedDuration: task.planned_duration || undefined,
+      plannedDurationHours: typeof task.planned_duration_hours === "number" && Number.isFinite(task.planned_duration_hours)
+        ? task.planned_duration_hours
+        : undefined,
+      plannedStart: task.planned_start || undefined,
+      plannedFinish: task.planned_finish || undefined,
+      predecessorUids: [
+        ...(Array.isArray(task.predecessor_uids) ? task.predecessor_uids : []),
+        ...(Array.isArray(task.predecessors)
+          ? task.predecessors.flatMap((item) => {
+            if (typeof item === "string") {
+              return [item];
+            }
+            return item?.task_uid ? [item.task_uid] : [];
+          })
+          : [])
+      ].map((item) => String(item))
+    }));
+    const byParent = new Map<string | null, typeof normalizedTasks>();
+    for (const task of normalizedTasks) {
+      const siblings = byParent.get(task.parentUid) || [];
+      siblings.push(task);
+      byParent.set(task.parentUid, siblings);
+    }
+    for (const siblings of byParent.values()) {
+      siblings.sort((left, right) => left.position - right.position || left.uid.localeCompare(right.uid));
+    }
+    const orderedTasks: TaskModel[] = [];
+    function walk(parentUid: string | null, outlinePath: number[]): void {
+      const siblings = byParent.get(parentUid) || [];
+      siblings.forEach((task, index) => {
+        const currentPath = [...outlinePath, index + 1];
+        const outlineNumber = currentPath.join(".");
+        const start = task.plannedStart || projectStart;
+        const finish = task.plannedFinish
+          || (typeof task.plannedDurationHours === "number" ? addHoursToDateTime(start, task.plannedDurationHours) : start);
+        const hasChildren = (byParent.get(task.uid) || []).length > 0;
+        orderedTasks.push({
+          uid: task.uid,
+          id: task.uid,
+          name: task.name,
+          outlineLevel: currentPath.length,
+          outlineNumber,
+          wbs: outlineNumber,
+          start,
+          finish,
+          duration: task.plannedDuration || (typeof task.plannedDurationHours === "number" ? `PT${task.plannedDurationHours}H` : "PT0H0M0S"),
+          milestone: task.isMilestone || start === finish,
+          summary: task.isSummary || hasChildren,
+          percentComplete: 0,
+          predecessors: task.predecessorUids.map((predecessorUid) => ({ predecessorUid })),
+          extendedAttributes: [],
+          baselines: [],
+          timephasedData: []
+        });
+        walk(task.uid, currentPath);
+      });
+    }
+    walk(null, []);
+    const taskFinishes = orderedTasks.map((task) => task.finish).filter(Boolean).sort();
+    return {
+      project: {
+        name: data.project.name.trim(),
+        startDate: projectStart,
+        finishDate: data.project.planned_finish || taskFinishes.at(-1) || projectStart,
+        scheduleFromStart: true,
+        outlineCodes: [],
+        wbsMasks: [],
+        extendedAttributes: []
+      },
+      tasks: orderedTasks,
+      resources: [],
+      assignments: [],
+      calendars: []
+    };
+  }
+
+  function exportProjectOverviewView(model: ProjectModel) {
+    const parentMap = buildTaskParentMap(model.tasks);
+    const phaseTasks = collectTopLevelPhases(model.tasks);
+    const phaseUidSet = new Set(phaseTasks.map((task) => task.uid));
+    const allMilestones = model.tasks.filter((task) => !isPlaceholderUid(task.uid) && task.milestone);
+    const topLevelDependencyMap = new Map<string, {
+      from_uid: string;
+      to_uid: string;
+      type: string;
+    }>();
+    for (const task of model.tasks) {
+      const toPhaseUid = resolvePhaseUidForTask(task.uid, parentMap, phaseUidSet);
+      if (!toPhaseUid) {
+        continue;
+      }
+      for (const predecessor of task.predecessors) {
+        const fromPhaseUid = resolvePhaseUidForTask(predecessor.predecessorUid, parentMap, phaseUidSet);
+        if (!fromPhaseUid || fromPhaseUid === toPhaseUid) {
+          continue;
+        }
+        const key = `${fromPhaseUid}->${toPhaseUid}:${formatDependencyType(predecessor.type)}`;
+        if (!topLevelDependencyMap.has(key)) {
+          topLevelDependencyMap.set(key, {
+            from_uid: fromPhaseUid,
+            to_uid: toPhaseUid,
+            type: formatDependencyType(predecessor.type)
+          });
+        }
+      }
+    }
+    return {
+      view_type: "project_overview_view",
+      project: {
+        name: model.project.name,
+        planned_start: model.project.startDate,
+        planned_finish: model.project.finishDate,
+        status_date: model.project.statusDate
+      },
+      summary: {
+        task_count: model.tasks.filter((task) => !isPlaceholderUid(task.uid)).length,
+        summary_task_count: model.tasks.filter((task) => !isPlaceholderUid(task.uid) && task.summary).length,
+        milestone_count: allMilestones.length,
+        max_outline_level: model.tasks.reduce((max, task) => Math.max(max, task.outlineLevel || 0), 0)
+      },
+      phases: phaseTasks.map((phase) => {
+        const phaseTaskUids = collectPhaseTaskUids(model.tasks, phase.uid);
+        const descendantTasks = model.tasks.filter((task) => phaseTaskUids.has(task.uid));
+        return {
+          uid: phase.uid,
+          name: phase.name,
+          wbs: phase.wbs || phase.outlineNumber,
+          task_count: descendantTasks.length,
+          milestone_count: descendantTasks.filter((task) => task.milestone).length,
+          planned_start: phase.start,
+          planned_finish: phase.finish,
+          duration: phase.duration,
+          duration_hours: parseDurationHours(phase.duration),
+          percent_complete: phase.percentComplete,
+          sample_tasks: descendantTasks.slice(0, 3).map((task) => ({
+            uid: task.uid,
+            name: task.name
+          }))
+        };
+      }),
+      milestones: allMilestones.map((task) => ({
+        uid: task.uid,
+        name: task.name,
+        parent_uid: parentMap.get(task.uid),
+        date: task.finish || task.start
+      })),
+      top_level_dependencies: Array.from(topLevelDependencyMap.values()),
+      rules: buildDefaultRules("project_overview_view")
+    };
+  }
+
+  function exportPhaseDetailView(
+    model: ProjectModel,
+    requestedPhaseUid?: string,
+    options?: {
+      mode?: "full" | "scoped";
+      rootUid?: string;
+      maxDepth?: number;
+    }
+  ) {
+    const phaseTasks = collectTopLevelPhases(model.tasks);
+    if (phaseTasks.length === 0) {
+      throw new Error("phase が見つかりません");
+    }
+    const phase = requestedPhaseUid
+      ? phaseTasks.find((task) => task.uid === requestedPhaseUid)
+      : phaseTasks[0];
+    if (!phase) {
+      throw new Error(`phase が見つかりません: ${requestedPhaseUid}`);
+    }
+    const parentMap = buildTaskParentMap(model.tasks);
+    const positionMap = buildTaskPositionMap(model.tasks, parentMap);
+    const phaseTaskUids = collectPhaseTaskUids(model.tasks, phase.uid);
+    const phaseTasksOnly = model.tasks.filter((task) => phaseTaskUids.has(task.uid));
+    const mode = options?.mode === "scoped" ? "scoped" : "full";
+    const rootUid = mode === "scoped" ? options?.rootUid?.trim() || undefined : undefined;
+    const maxDepth = mode === "scoped" && typeof options?.maxDepth === "number" && Number.isFinite(options.maxDepth) && options.maxDepth >= 0
+      ? Math.floor(options.maxDepth)
+      : undefined;
+    let scopedTaskUids = phaseTaskUids;
+    if (rootUid) {
+      const rootTask = phaseTasksOnly.find((task) => task.uid === rootUid);
+      if (!rootTask) {
+        throw new Error(`phase 配下に root_uid が見つかりません: ${rootUid}`);
+      }
+      scopedTaskUids = collectTaskSubtreeUids(phaseTasksOnly, rootUid, maxDepth);
+    }
+    const descendantTasks = phaseTasksOnly.filter((task) => scopedTaskUids.has(task.uid));
+    return {
+      view_type: "phase_detail_view",
+      project: {
+        name: model.project.name,
+        planned_start: model.project.startDate,
+        planned_finish: model.project.finishDate
+      },
+      phase: {
+        uid: phase.uid,
+        name: phase.name,
+        wbs: phase.wbs || phase.outlineNumber,
+        planned_start: phase.start,
+        planned_finish: phase.finish,
+        task_count: descendantTasks.length,
+        milestone_count: descendantTasks.filter((task) => task.milestone).length,
+        percent_complete: phase.percentComplete
+      },
+      scope: {
+        mode,
+        root_uid: rootUid || null,
+        max_depth: maxDepth ?? null
+      },
+      tasks: descendantTasks.map((task) => ({
+        uid: task.uid,
+        name: task.name,
+        parent_uid: parentMap.get(task.uid),
+        position: positionMap.get(task.uid) ?? 0,
+        is_summary: task.summary,
+        is_milestone: task.milestone,
+        planned_duration: task.duration,
+        planned_duration_hours: parseDurationHours(task.duration),
+        planned_start: task.start,
+        planned_finish: task.finish,
+        percent_complete: task.percentComplete,
+        predecessor_uids: task.predecessors.map((item) => item.predecessorUid)
+      })),
+      milestones: descendantTasks.filter((task) => task.milestone).map((task) => ({
+        uid: task.uid,
+        name: task.name,
+        date: task.finish || task.start
+      })),
+      dependency_summary: descendantTasks.flatMap((task) =>
+        task.predecessors
+          .filter((predecessor) => scopedTaskUids.has(predecessor.predecessorUid))
+          .map((predecessor) => ({
+            from_uid: predecessor.predecessorUid,
+            to_uid: task.uid,
+            type: formatDependencyType(predecessor.type),
+            lag: predecessor.linkLag || "PT0H0M0S",
+            lag_hours: parseDurationHours(predecessor.linkLag || "PT0H0M0S") ?? 0
+          }))
+      ),
+      rules: buildDefaultRules("phase_detail_view")
+    };
+  }
+
   function buildTaskSectionMap(tasks: TaskModel[], projectName: string): Map<string, string> {
     const sectionMap = new Map<string, string>();
     const summaryStack: TaskModel[] = [];
@@ -2814,6 +3294,17 @@
       importCsvParentId: (csvText: string) => ProjectModel;
       exportMsProjectXml: (model: ProjectModel) => string;
       exportMermaidGantt: (model: ProjectModel) => string;
+      buildProjectDraftRequest: (input: {
+        name: string;
+        plannedStart?: string;
+        goal?: string;
+        teamCount?: number;
+        mustHavePhases?: string[];
+        mustHaveMilestones?: string[];
+      }) => unknown;
+      importProjectDraftView: (draft: unknown) => ProjectModel;
+      exportProjectOverviewView: (model: ProjectModel) => unknown;
+      exportPhaseDetailView: (model: ProjectModel, phaseUid?: string) => unknown;
       exportCsvParentId: (model: ProjectModel) => string;
       normalizeProjectModel: (model: ProjectModel) => ProjectModel;
       validateProjectModel: (model: ProjectModel) => ValidationIssue[];
@@ -2825,6 +3316,10 @@
     importCsvParentId,
     exportMsProjectXml,
     exportMermaidGantt,
+    buildProjectDraftRequest,
+    importProjectDraftView,
+    exportProjectOverviewView,
+    exportPhaseDetailView,
     exportCsvParentId,
     normalizeProjectModel,
     validateProjectModel

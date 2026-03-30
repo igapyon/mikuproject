@@ -1,0 +1,71 @@
+# TODO
+
+この文書には、未完了の作業だけを書く。概要説明や仕様判断は `README.md` と `docs/spec.md` に寄せる。
+
+## mikuproject
+
+- 最優先: サンプルデータを更新し、利用者の好みに合う題材・構造・見た目へ見直す
+- `excel-io` の workbook スタイルにフォントサイズ指定を追加し、XLSX 出力で大きい見出し文字を使えるようにする
+- WBS workbook と `mikuproject-sample.xlsx` のタイトル行で、フォントサイズ指定をどこまで使うか整理する
+- `Mermaid` 出力は Markdown / 設計資料向けに残しつつ、見た目を制御しやすい native SVG 描画を別系統で追加するか検討する
+- native `SVG` について、今の既定である `近接ラベル` 表示だけを残し、左側にテキストを描画する `一覧ラベル` モードは将来的に廃止したい
+- `mikuproject` の主要入出力を CLI からも扱えるようにするか検討する
+- 作成するテキストファイルについて、BOM 付き / なしを切り替えるスイッチを追加する
+- `local-data/` 配下のファイルを、参照用・検証用・生成物で整理する
+- `local-data/` に置くべきでない生成物や一時ファイルがないか見直す
+- `npm test` を `scripts/run-tests.mjs` ベースへ切り替えるか検討する
+- `main.test.js` に残っている `xlsx import` の file input wiring を、UI 配線確認と import 結果確認へさらに分離する
+- `XLSX Import` の実地回帰観点を明文化し、少なくとも次を継続確認する
+  - export した `.xlsx` をそのまま import できる
+  - Excel で 1 セル変更した `.xlsx` を import できる
+  - 同じファイル名で保存し直した `.xlsx` を連続 import できる
+  - 空 editable セルを埋めた変更を import できる
+  - `Name / Start / Finish / PercentComplete / PercentWorkComplete / Notes` など主要 editable 列が戻る
+  - `Milestone / Summary / Critical` など表示専用列は戻らない
+- `main.ts` の summary / validation / preview 描画を別モジュール化し、DOM テストをさらに軽くする
+- `phase_detail_view scoped` の `phase UID / root UID / max depth` 指定を、より選びやすい UI に改善する
+- `task_edit_view` の projection を実装する
+- `.editjson` の import で現状 `project_draft_view` だけを受けている制約を見直し、将来の `task_edit_view` / Patch JSON など他の `view_type` も扱えるようにする
+- 既存 project 向け Patch JSON の schema を具体化する
+- Patch JSON を内部モデルへ適用する処理を実装する
+- Patch JSON import 後の validation と差分要約 UI を実装する
+- import 前後で、どの `task / calendar / assignment` がどう変わったかを見やすく確認できる差分可視化を追加する
+- 差分適用を前提として、生成AI や外部編集結果を全件置換ではなく部分適用できる運用を強化する
+- `project_draft_request` を UI から生成しやすくするか整理する
+- UI の微調整として、`Input / Overview / Output` の各カードの余白・見出し・ボタン階層を見直し、`miku` 系テーマの統一感をさらに整える
+- `Overview` タブの summary / validation / preview の情報密度を見直し、どこを見る画面なのかをより直感的に伝わる構成へ調整する
+- `Output` タブの生成AI連携と各種 export ボタンの優先度表現を見直し、主操作と補助操作の区別をより明確にする
+- calendar 未設定時に自動補完する既定 calendar の祝日 `Exceptions` を、project 期間内だけに限定する
+- WBS 上で土日と祝日を別色表示する場合も、`MS Project XML` 正本へ独自の非稼働日種別を追加せず、`WeekDays / Exceptions` の由来で描き分ける
+- `build:xlsx-sample` の所要時間を個別計測し、sample workbook 生成処理の支配要因を確認する
+- `main.test.js` の初期化 DOM をケース別に最小化できるか見直す
+- CI 向けに `test:fast` と `test:full` のような実行導線を分けるか検討する
+- `docs/spec.md` に残っている実装済み前提との差分を定期的に解消する
+- 正本 / 表示用 / import 対象 / export 専用 の扱いを、UI または docs で分かりやすく可視化する
+- `.xlsx import` の次段として、どのシート・列を今後 import 対象に広げるか整理する
+- タスク実績について、`ActualStart / ActualFinish / ActualWork / RemainingWork / ActualCost / RemainingCost` などを今後どう扱うか整理し、将来的に対応する
+- 将来検討: Earned Value (`PV / EV / AC / SPI / CPI` など) をどこまで扱うか整理し、必要なら対応する
+- 実績・Earned Value 系は、いきなり広く対応せず、まず最小整理と小さな仕様を作って MVP から段階的に進める
+- WBS 用の `ステータス` は `Task.ExtendedAttribute` で扱う前提で、`FieldID / FieldName / 値候補` を設計する
+- `TaskStatus` 用 `ExtendedAttribute` を `mikuproject-sample.xlsx` と `WBS workbook` のどちらまで見せるか決める
+- `TaskStatus` 用 `ExtendedAttribute` の値候補と、`PercentComplete` / `Active` との関係を整理する
+- 画面検索ではなく、条件指定にもとづく task の部分 export / scoped export を強化できるか整理する
+- `phase_detail_view scoped` の延長として、phase 単位の入出力をうまく取り回す方法を整理し、使い勝手のよい導線を検討する
+- 画面では `Calendars / Exceptions` を read-only 確認に留める前提で、`XLSX Import` 側の `WeekDays / Exceptions / WorkWeeks` 編集導線をどこまで整えるか整理する
+- `Calendar / Baseline / TimephasedData / ExtendedAttributes` をどの順で扱うか優先順位を決める
+- validation について、warning の重要度分け、修正候補のヒント、入力由来別の注意をどこまで出すか整理する
+- `mikuproject-sample.xlsx` の `Project` シートで、構造忠実方針を崩さない範囲の見た目調整を続ける
+- `mikuproject-sample.xlsx` の `Resources / Assignments / NonWorkingDays` で、強調色が過剰にならない最終バランスを調整する
+- `WBS` の `プロジェクト情報` / `凡例` などと、`Project` シートの `Basic Info` に入っているドット編みかけ表現を除去する
+- WBS workbook の表示改善を継続する
+- WBS workbook の見た目改善と、構造忠実 workbook との責務分離を保つ
+- WBS について、完了タスクの表示 / 非表示を切り替えるオプションを追加する
+- 将来検討: WBS workbook について、表示専用列と Excel 再利用向けの機械利用列（hidden 列）の分離が必要か整理する
+- WBS Markdown の `プロジェクト情報` / `サマリ` / `WBS ツリー` / `WBS テーブル` をどう出すか sample ベースで固める
+- `project summary markdown` のような、WBS 以外の Markdown 出力拡張を検討する
+- `phase summary markdown` のような scoped Markdown 出力を追加するか検討する
+- 高優先: `WBS記述書 Markdown` の最小版に着手したいが、現時点では実施できないため保留にする
+- `WBS記述書 Markdown` 出力を追加し、task ごとの説明を別 Markdown として保存できるようにする
+- `WBS記述書` 用 `Task.ExtendedAttribute` の最小項目として `TaskPurpose / TaskDeliverable / TaskOutOfScope / TaskDoneDefinition / TaskOwner` を扱う
+- `WBS記述書 Markdown` では、長文補足を `Task.Notes` から出す
+- `WBS記述書 Markdown` の sample 出力を作成し、1 task 1 節構成で読みやすいか確認する

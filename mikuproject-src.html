@@ -1,0 +1,373 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>mikuproject</title>
+  <link rel="stylesheet" href="lht-cmn/css/components.css" />
+  <link rel="stylesheet" href="src/css/app.css" />
+  <script src="lht-cmn/vendor/material-web-outlined-text-field.bundle.js"></script>
+  <script src="lht-cmn/js/components.js" defer></script>
+</head>
+<body class="md-page">
+  <main class="md-shell">
+  <svg width="0" height="0" aria-hidden="true" focusable="false" class="md-icons">
+    <symbol id="md-icon-github" viewBox="0 0 16 16">
+      <path d="M8 0C3.58 0 0 3.58 0 8a8 8 0 0 0 5.47 7.59c.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.5-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82a7.5 7.5 0 0 1 4 0c1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8 8 0 0 0 16 8c0-4.42-3.58-8-8-8Z"></path>
+    </symbol>
+    <symbol id="md-icon-clipboard" viewBox="0 0 16 16">
+      <path d="M6 2.5A1.5 1.5 0 0 1 7.5 1h1A1.5 1.5 0 0 1 10 2.5h1.25A1.75 1.75 0 0 1 13 4.25v8A1.75 1.75 0 0 1 11.25 14h-6.5A1.75 1.75 0 0 1 3 12.25v-8A1.75 1.75 0 0 1 4.75 2.5H6Zm1.5 0h1v-.25h-1v.25Zm-2.75 1.5a.25.25 0 0 0-.25.25v8c0 .138.112.25.25.25h6.5a.25.25 0 0 0 .25-.25v-8a.25.25 0 0 0-.25-.25H10v.25A1.25 1.25 0 0 1 8.75 5.5h-1.5A1.25 1.25 0 0 1 6 4.25V4H4.75Z"></path>
+    </symbol>
+  </svg>
+  <div class="md-surface-card md-card">
+    <header class="ms-hero">
+      <h1 class="ms-hero-title">
+        <span class="ms-hero-icon" aria-hidden="true">📋</span>
+        <span>mikuproject</span>
+        <lht-help-tooltip label="mikuproject の説明" wide>
+          MS Project XML を読み込み、内部モデル・XLSX・生成AI向け JSON を行き来しながら、プロジェクト計画を確認・編集するためのアプリです。
+        </lht-help-tooltip>
+        <a
+          href="https://github.com/igapyon/mikuproject"
+          class="ms-hero-link"
+          target="_blank"
+          rel="noopener noreferrer"
+          aria-label="Open mikuproject GitHub repository"
+        >
+          <svg aria-hidden="true" viewBox="0 0 16 16" class="ms-btn-icon" fill="currentColor">
+            <use href="#md-icon-github" xlink:href="#md-icon-github"></use>
+          </svg>
+          <span>GitHub</span>
+        </a>
+      </h1>
+    </header>
+
+    <section class="md-section md-stack-md">
+      <div class="md-top-tabs ms-top-tabs" role="tablist" aria-label="mikuproject sections">
+        <button type="button" class="md-top-tab ms-top-tab is-active" data-tab="input" role="tab" aria-selected="true" aria-controls="tabPanelInput">
+          <span class="md-top-tab-no ms-top-tab-no">1</span>
+          <span class="md-top-tab-label ms-top-tab-label">Input</span>
+        </button>
+        <button type="button" class="md-top-tab ms-top-tab" data-tab="transform" role="tab" aria-selected="false" aria-controls="tabPanelTransform">
+          <span class="md-top-tab-no ms-top-tab-no">2</span>
+          <span class="md-top-tab-label ms-top-tab-label">Overview</span>
+        </button>
+        <button type="button" class="md-top-tab ms-top-tab" data-tab="output" role="tab" aria-selected="false" aria-controls="tabPanelOutput">
+          <span class="md-top-tab-no ms-top-tab-no">3</span>
+          <span class="md-top-tab-label ms-top-tab-label">Output</span>
+        </button>
+      </div>
+
+      <div id="statusMessage" class="md-status">未実行</div>
+
+      <section id="tabPanelInput" class="md-flow-section md-tab-panel" data-tab-panel="input" aria-label="input">
+        <div class="md-flow-section__header">
+          <h2 class="md-flow-section__title">
+            <span class="md-flow-section__step">1</span>
+            <span>Input</span>
+            <lht-help-tooltip label="Input の説明" wide>
+              `MS Project XML`、`XLSX`、`mikuproject_workbook_json (.json)`、生成AI 向け編集用 JSON (`.editjson`)、`CSV` を読み込みます。
+            </lht-help-tooltip>
+          </h2>
+        </div>
+
+        <div class="md-panel-actions">
+          <span class="md-button-with-help">
+            <button id="importFileBtn" type="button" class="md-button md-button--primary">Load from file</button>
+            <span class="md-button-help-anchor">
+              <lht-help-tooltip label="Load from file の説明" placement="right" wide>
+                <p class="md-note-card__text">
+                  `Load from file` は、`.xml` / `.xlsx` / `.json` / `.editjson` / `.csv` を拡張子で判別して取り込みます。
+                </p>
+                <p class="md-note-card__text">
+                  `.xlsx` と `mikuproject_workbook_json (.json)` は `MS Project XML` の代替正本ではなく、確認と限定編集のための周辺表現として扱います。
+                </p>
+                <p class="md-note-card__text">
+                  `project_draft_view (.editjson)` は生成AI 向けの編集用 JSON として扱います。反映結果は、`Project / Tasks / Resources / Assignments / Calendars` ごとの件数と、`UID` 単位の差分要約として画面上に表示します。
+                </p>
+                <p class="md-note-card__text"><strong>反映対象</strong></p>
+                <ul class="md-note-list">
+                  <li>`Project`: `Name / Title / Author / Company / StartDate / FinishDate / CurrentDate / StatusDate / CalendarUID / MinutesPerDay / MinutesPerWeek / DaysPerMonth / ScheduleFromStart`</li>
+                  <li>`Tasks`: `Name / Start / Finish / PercentComplete / PercentWorkComplete / Notes`</li>
+                  <li>`Resources`: `Name / Group / MaxUnits`</li>
+                  <li>`Assignments`: `Units / Work / PercentWorkComplete`</li>
+                  <li>`Calendars`: `Name / IsBaseCalendar / BaseCalendarUID`</li>
+                  <li>`NonWorkingDays`: `Name / Date / FromDate / ToDate / DayWorking`</li>
+                </ul>
+                <p class="md-note-card__text"><strong>現在は反映しないもの</strong></p>
+                <ul class="md-note-list">
+                  <li>対象外の列や未対応シートの編集</li>
+                  <li>`Calendars` の `WeekDays / WorkWeeks` と、`Baseline / TimephasedData / ExtendedAttributes`</li>
+                </ul>
+              </lht-help-tooltip>
+            </span>
+          </span>
+          <button id="loadSampleBtn" type="button" class="md-button md-button--surface">サンプル</button>
+          <input id="importFileInput" type="file" accept=".xml,.xlsx,.json,.editjson,.csv,text/xml,application/xml,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/json,text/csv,text/plain" class="md-hidden" />
+        </div>
+
+        <details class="md-note-accordion" aria-label="AI draft generation">
+          <summary class="md-note-accordion__summary">生成AI連携</summary>
+          <div class="md-note-accordion__body">
+            <section class="md-note-card md-note-card--accent">
+              <div class="md-panel-actions md-panel-actions--ai-draft">
+                <button id="copyAiPromptBtn" type="button" class="md-button md-button--tonal md-button--compact-link">
+                  <svg aria-hidden="true" viewBox="0 0 16 16" class="md-button__icon" fill="currentColor">
+                    <use href="#md-icon-clipboard" xlink:href="#md-icon-clipboard"></use>
+                  </svg>
+                  <span>mikuproject 用の生成AIプロンプト</span>
+                </button>
+                <lht-help-tooltip label="新規生成AI連携の説明" wide>
+                  クリップボードにコピーしたプロンプトを用いて生成AIと会話してください。結果として得られた JSON を下のテキストエリアに貼り付けて、<code>貼り付けた JSON を取り込む</code> ボタンをクリックしてください。
+                </lht-help-tooltip>
+                <button id="importProjectDraftBtn" type="button" class="md-button md-button--tonal">貼り付けた JSON を取り込む</button>
+                <button id="loadProjectDraftSampleBtn" type="button" class="md-button md-button--surface">サンプル</button>
+              </div>
+              <template id="aiPromptTemplate">{{AI_PROMPT_TEXT}}</template>
+              <div class="md-form-grid">
+                <lht-text-field-help field-id="projectDraftImportInput" label="生成AIが返した JSON" rows="14" help-text="生成AIが返した `project_draft_view` の JSON テキストを貼り付けます。最後に json フェンスを持つ応答全体でもかまいません。"></lht-text-field-help>
+              </div>
+            </section>
+          </div>
+        </details>
+
+        <details class="md-debug-accordion">
+          <summary class="md-debug-accordion__summary">デバッグ情報</summary>
+          <div class="md-debug-accordion__body">
+            <div class="md-form-grid">
+              <lht-text-field-help field-id="xmlInput" label="MS Project XML" rows="16" placeholder="ここに XML を入力" help-text="MS Project XML を読み込みます。"></lht-text-field-help>
+            </div>
+          </div>
+        </details>
+
+        <div id="xmlSaveState" class="md-save-state md-save-state--dirty" aria-live="polite">XML 保存状態: 未保存</div>
+      </section>
+
+      <section id="tabPanelTransform" class="md-flow-section md-tab-panel" data-tab-panel="transform" aria-label="overview" hidden>
+        <div class="md-flow-section__header">
+          <h2 class="md-flow-section__title">
+            <span class="md-flow-section__step">2</span>
+            <span>Overview</span>
+            <lht-help-tooltip label="Overview の説明" wide>
+              内部モデル、検証結果、SVG preview を確認します。取込後の warning と差分要約もここに表示します。
+            </lht-help-tooltip>
+          </h2>
+        </div>
+
+        <section class="md-note-card md-note-card--feature">
+          <div id="nativeSvgPreview" class="md-svg-preview-stage">
+            <div class="md-preview-empty">SVG を生成すると、ここにプレビューを表示します。</div>
+          </div>
+        </section>
+
+        <div class="md-summary-grid">
+          <div class="md-summary-card">
+            <div class="md-summary-label">プロジェクト名</div>
+            <div id="summaryProjectName" class="md-summary-value">-</div>
+          </div>
+          <div class="md-summary-card">
+            <div class="md-summary-label">タスク数</div>
+            <div id="summaryTaskCount" class="md-summary-value">0</div>
+          </div>
+          <div class="md-summary-card">
+            <div class="md-summary-label">リソース数</div>
+            <div id="summaryResourceCount" class="md-summary-value">0</div>
+          </div>
+          <div class="md-summary-card">
+            <div class="md-summary-label">割当数</div>
+            <div id="summaryAssignmentCount" class="md-summary-value">0</div>
+          </div>
+          <div class="md-summary-card">
+            <div class="md-summary-label">カレンダー数</div>
+            <div id="summaryCalendarCount" class="md-summary-value">0</div>
+          </div>
+        </div>
+
+        <details class="md-debug-accordion">
+          <summary class="md-debug-accordion__summary">デバッグ情報</summary>
+          <div class="md-debug-accordion__body">
+            <div class="md-panel-actions">
+              <button id="roundTripBtn" type="button" class="md-button md-button--tonal">再読込テスト</button>
+            </div>
+
+            <div class="md-form-grid">
+              <lht-text-field-help field-id="modelOutput" label="内部モデル(JSON)" rows="16" readonly></lht-text-field-help>
+            </div>
+
+            <div class="md-form-grid">
+              <lht-text-field-help field-id="mermaidOutput" label="Mermaid gantt" rows="12" readonly></lht-text-field-help>
+            </div>
+
+            <div class="md-preview-grid">
+              <section class="md-preview-card">
+                <h3 class="md-preview-card__title">Project</h3>
+                <div id="projectPreview" class="md-preview-list"></div>
+              </section>
+              <section class="md-preview-card">
+                <h3 class="md-preview-card__title">Tasks</h3>
+                <div id="taskPreview" class="md-preview-list"></div>
+              </section>
+              <section class="md-preview-card">
+                <h3 class="md-preview-card__title">Resources</h3>
+                <div id="resourcePreview" class="md-preview-list"></div>
+              </section>
+              <section class="md-preview-card">
+                <h3 class="md-preview-card__title">Assignments</h3>
+                <div id="assignmentPreview" class="md-preview-list"></div>
+              </section>
+              <section class="md-preview-card">
+                <h3 class="md-preview-card__title">Calendars</h3>
+                <div id="calendarPreview" class="md-preview-list"></div>
+              </section>
+            </div>
+          </div>
+        </details>
+
+        <div class="md-feedback-stack md-hidden" aria-label="import feedback">
+          <div class="md-feedback-stack__title">取込結果</div>
+          <div class="md-feedback-stack__text">取込後は、ここで差分反映・warning・検証結果を確認します。</div>
+          <div class="md-feedback-stack__label">検証メッセージ</div>
+          <div id="validationIssues" class="md-issues md-hidden" aria-live="polite"></div>
+          <div class="md-feedback-stack__label">取込 warning</div>
+          <div id="importWarnings" class="md-issues md-hidden" aria-live="polite"></div>
+          <div class="md-feedback-stack__label">差分要約</div>
+          <div id="xlsxImportSummary" class="md-xlsx-summary md-hidden" aria-live="polite"></div>
+        </div>
+      </section>
+
+      <section id="tabPanelOutput" class="md-flow-section md-tab-panel" data-tab-panel="output" aria-label="output" hidden>
+        <div class="md-flow-section__header">
+          <h2 class="md-flow-section__title">
+            <span class="md-flow-section__step">3</span>
+            <span>Output</span>
+            <lht-help-tooltip label="Output の説明" wide>
+              `MS Project XML`、`XLSX`、`JSON`、`CSV`、`WBS XLSX`、`Mermaid`、生成AI 向け `.editjson` を保存します。
+            </lht-help-tooltip>
+          </h2>
+        </div>
+
+        <div class="md-output-actions">
+          <div class="md-panel-actions">
+            <button id="downloadXmlBtn" type="button" class="md-button md-button--primary">MS Project XML</button>
+            <button id="exportXlsxBtn" type="button" class="md-button md-button--tonal">XLSX</button>
+            <button id="exportWorkbookJsonBtn" type="button" class="md-button md-button--tonal">JSON</button>
+            <button id="exportCsvBtn" type="button" class="md-button md-button--tonal">CSV</button>
+          </div>
+          <div class="md-panel-actions">
+            <button id="exportWbsXlsxBtn" type="button" class="md-button md-button--tonal">WBS XLSX</button>
+            <button id="exportWbsMdBtn" type="button" class="md-button md-button--tonal">WBS Markdown</button>
+            <button id="exportMermaidMdBtn" type="button" class="md-button md-button--tonal">Mermaid</button>
+            <button id="downloadSvgBtn" type="button" class="md-button md-button--surface" disabled>SVG</button>
+          </div>
+        </div>
+
+        <details class="md-note-accordion" aria-label="AI integration exports">
+          <summary class="md-note-accordion__summary">生成AI連携</summary>
+          <div class="md-note-accordion__body">
+            <section class="md-note-card md-note-card--accent" aria-label="AI integration exports">
+              <div class="md-panel-actions">
+                <button id="exportAiBundleBtn" type="button" class="md-button md-button--tonal">full bundle</button>
+                <lht-help-tooltip label="生成AI連携の説明" wide>
+                  既存 project を生成AIへ渡すための projection JSON をここから生成します。
+                </lht-help-tooltip>
+                <button id="exportProjectOverviewBtn" type="button" class="md-button md-button--tonal">project_overview_view</button>
+                <button id="exportPhaseDetailFullBtn" type="button" class="md-button md-button--tonal">phase_detail_view full</button>
+              </div>
+              <section class="md-note-card md-note-card--subtle" aria-label="AI scoped phase detail">
+                <h4 class="md-note-card__title">phase_detail_view scoped</h4>
+                <p class="md-note-card__text">
+                  phase の一部だけを生成AIへ渡したい時に使います。
+                </p>
+                <div class="md-form-grid md-form-grid--three">
+                  <lht-text-field-help field-id="phaseDetailUidInput" label="対象 phase UID" rows="1" placeholder="空欄なら先頭 phase" help-text="どの phase を対象にするかを指定します。"></lht-text-field-help>
+                  <lht-text-field-help field-id="phaseDetailRootUidInput" label="部分木の起点 task UID" rows="1" placeholder="空欄なら phase 全体" help-text="phase_detail_view scoped で切り出したい task UID を指定します。まず full を出して UID を確認してください。"></lht-text-field-help>
+                  <lht-text-field-help field-id="phaseDetailMaxDepthInput" label="何階層下まで含めるか" rows="1" placeholder="空欄なら全階層" help-text="起点 task から何階層下まで含めるかを指定します。0 は起点 task のみです。"></lht-text-field-help>
+                </div>
+                <div class="md-panel-actions">
+                  <button id="exportPhaseDetailBtn" type="button" class="md-button md-button--tonal">phase_detail_view scoped</button>
+                </div>
+              </section>
+            </section>
+          </div>
+        </details>
+
+        <section class="ms-settings-card" aria-label="Output settings">
+          <details class="ms-settings-accordion">
+            <summary class="ms-settings-summary">設定</summary>
+            <div class="ms-settings-body">
+              <section class="ms-settings-block" aria-label="WBS xlsx export options">
+                <h3 class="ms-settings-subtitle">WBS XLSX の祝日指定</h3>
+              <p class="md-note-card__text">
+                `WBS XLSX Export` では、`ProjectModel` から補完した既定祝日を WBS 日付帯へ反映します。
+              </p>
+              <p class="md-note-card__text">
+                既定祝日は、現在の `ProjectModel` に含まれる `Calendar.Exceptions` の非稼働日例外から補完します。画面では `Calendars / Exceptions` を直接編集せず、必要な変更は `MS Project XML` または `XLSX Import` 側で扱います。表示期間を空欄にすると全期間、数値を入れると `BaseDate` 前後の営業日で切り出します。進捗帯も営業日基準で計算します。
+              </p>
+              <div class="md-form-grid md-form-grid--two">
+                <lht-text-field-help
+                  field-id="wbsDisplayDaysBeforeInput"
+                  label="表示期間: 基準日前"
+                  rows="1"
+                  placeholder="3"
+                  help-text="空欄なら全期間表示のままです。"></lht-text-field-help>
+                <lht-text-field-help
+                  field-id="wbsDisplayDaysAfterInput"
+                  label="表示期間: 基準日後"
+                  rows="1"
+                  placeholder="7"
+                  help-text="空欄なら全期間表示のままです。"></lht-text-field-help>
+              </div>
+              <div class="md-form-grid">
+                <div id="wbsHolidaySummary" class="md-status">既定祝日: 未読込</div>
+                <label class="md-label" for="wbsHolidayDatesInput">WBS 既定祝日</label>
+                <textarea
+                  id="wbsHolidayDatesInput"
+                  class="md-textarea"
+                  rows="3"
+                  placeholder="2026-03-20"
+                  readonly
+                ></textarea>
+                <div class="md-caption">現在の ProjectModel から自動補完します。画面上では直接編集しません。</div>
+              </div>
+              </section>
+            </div>
+          </details>
+        </section>
+
+        <details class="md-debug-accordion">
+          <summary class="md-debug-accordion__summary">デバッグ情報</summary>
+          <div class="md-debug-accordion__body">
+            <div class="md-form-grid">
+              <lht-text-field-help field-id="workbookJsonOutput" label="mikuproject_workbook_json" rows="16" readonly></lht-text-field-help>
+            </div>
+
+            <div class="md-form-grid">
+              <lht-text-field-help field-id="aiBundleOutput" label="ai_projection_bundle" rows="16" readonly></lht-text-field-help>
+            </div>
+            <div class="md-form-grid">
+              <lht-text-field-help field-id="projectOverviewOutput" label="project_overview_view" rows="14" readonly></lht-text-field-help>
+            </div>
+            <div class="md-form-grid">
+              <lht-text-field-help field-id="phaseDetailOutput" label="phase_detail_view" rows="16" readonly></lht-text-field-help>
+            </div>
+          </div>
+        </details>
+      </section>
+    </section>
+
+    <lht-toast id="toast"></lht-toast>
+  </div>
+  </main>
+  <script src="src/js/types.js"></script>
+  <script src="src/js/markdown-escape.js"></script>
+  <script src="src/js/excel-io.js"></script>
+  <script src="src/js/msproject-xml.js"></script>
+  <script src="src/js/project-workbook-schema.js"></script>
+  <script src="src/js/project-xlsx.js"></script>
+  <script src="src/js/project-workbook-json.js"></script>
+  <script src="src/js/wbs-xlsx.js"></script>
+  <script src="src/js/wbs-markdown.js"></script>
+  <script src="src/js/native-svg.js"></script>
+  <script src="src/js/main.js"></script>
+</body>
+</html>

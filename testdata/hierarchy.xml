@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Project xmlns="http://schemas.microsoft.com/project">
+  <Name>Hierarchy Project</Name>
+  <CurrentDate>2026-03-16T09:00:00</CurrentDate>
+  <StartDate>2026-03-16T09:00:00</StartDate>
+  <FinishDate>2026-03-18T18:00:00</FinishDate>
+  <ScheduleFromStart>1</ScheduleFromStart>
+  <Tasks>
+    <Task>
+      <UID>1</UID>
+      <ID>1</ID>
+      <Name>Summary</Name>
+      <OutlineLevel>1</OutlineLevel>
+      <OutlineNumber>1</OutlineNumber>
+      <Start>2026-03-16T09:00:00</Start>
+      <Finish>2026-03-18T18:00:00</Finish>
+      <Duration>PT24H0M0S</Duration>
+      <Milestone>0</Milestone>
+      <Summary>1</Summary>
+      <PercentComplete>0</PercentComplete>
+    </Task>
+    <Task>
+      <UID>2</UID>
+      <ID>2</ID>
+      <Name>Child A</Name>
+      <OutlineLevel>2</OutlineLevel>
+      <OutlineNumber>1.1</OutlineNumber>
+      <Start>2026-03-16T09:00:00</Start>
+      <Finish>2026-03-16T18:00:00</Finish>
+      <Duration>PT8H0M0S</Duration>
+      <Milestone>0</Milestone>
+      <Summary>0</Summary>
+      <PercentComplete>100</PercentComplete>
+    </Task>
+    <Task>
+      <UID>3</UID>
+      <ID>3</ID>
+      <Name>Child B</Name>
+      <OutlineLevel>2</OutlineLevel>
+      <OutlineNumber>1.2</OutlineNumber>
+      <Start>2026-03-17T09:00:00</Start>
+      <Finish>2026-03-18T18:00:00</Finish>
+      <Duration>PT16H0M0S</Duration>
+      <Milestone>0</Milestone>
+      <Summary>0</Summary>
+      <PercentComplete>0</PercentComplete>
+      <Notes>Second child task</Notes>
+    </Task>
+  </Tasks>
+  <Resources />
+  <Assignments />
+</Project>

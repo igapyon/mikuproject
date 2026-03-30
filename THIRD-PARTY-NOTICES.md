@@ -4,13 +4,6 @@ This document lists third-party software and reference materials used or referre
 
 ## Third-party software
 
-### Mermaid (`mermaid.min.js`)
-
-- Usage: Bundled runtime used for Mermaid preview, Mermaid SVG export, and Mermaid fenced code block related rendering flow
-- License: MIT License
-- Source: https://cdn.jsdelivr.net/npm/mermaid@11.12.0/dist/mermaid.min.js
-- Local file: `src/vendor/mermaid/mermaid.min.js`
-
 ## Reference materials
 
 ### `open-msp-viewer`
@@ -32,13 +25,6 @@ This document lists third-party software and reference materials used or referre
 この文書は、`mikuproject` が利用または参照している第三者ソフトウェアおよび参考資料を記載したものです。
 
 ## 第三者ソフトウェア
-
-### Mermaid (`mermaid.min.js`)
-
-- 用途: Mermaid preview、Mermaid SVG export、および Mermaid fenced code block 関連の描画処理で利用
-- ライセンス: MIT License
-- Source: https://cdn.jsdelivr.net/npm/mermaid@11.12.0/dist/mermaid.min.js
-- ローカル配置: `src/vendor/mermaid/mermaid.min.js`
 
 ## 参考資料
 

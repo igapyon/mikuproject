@@ -30,7 +30,7 @@
 
 ### Overview
 
-内部モデルの確認、validation、Mermaid プレビューをここで行う。
+内部モデルの確認、validation、native SVG preview をここで行う。
 
 ![Overview](docs/screenshots/screen02.png)
 
@@ -68,7 +68,7 @@
 - `Load from file` からの `MS Project XML / XLSX / workbook JSON (.json) / 生成AI向け編集用 JSON (.editjson) / CSV + ParentID` の読込
 - `project_draft_view` ベースで生成したサンプル XML の読込
 - 生成AIが返した `project_draft_view` の JSON 貼り付け取込
-- 内部モデル、validation、Mermaid プレビュー、各 preview の確認
+- 内部モデル、validation、native SVG preview、各 preview の確認
 - `MS Project XML / XLSX / WBS XLSX / workbook JSON / CSV + ParentID / Mermaid / 生成AI向け .editjson` の保存
 
 ## 開発

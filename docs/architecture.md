@@ -43,16 +43,8 @@
 - TypeScript source: `src/ts/`
 - generated JavaScript: `src/js/`
 - CSS: `src/css/`
-- vendor runtime: `src/vendor/`
 
-`mikuproject.html` は `mikuproject-src.html` をもとに、ローカル CSS / JS と `src/vendor/mermaid/mermaid.min.js` を単一 HTML へインライン展開して生成する。
-
-`Mermaid Preview` を single-file web app のままオフライン再現するため、`Mermaid` ランタイムは `src/vendor/mermaid/mermaid.min.js` を同梱する。
-
-- 同梱ファイル: `src/vendor/mermaid/mermaid.min.js`
-- バージョン: `mermaid@11.12.0`
-- 取得元: `https://cdn.jsdelivr.net/npm/mermaid@11.12.0/dist/mermaid.min.js`
-- 更新手順: 上記 URL のバージョンを差し替えて `src/vendor/mermaid/mermaid.min.js` を更新し、`npm run build:app` を実行する
+`mikuproject.html` は `mikuproject-src.html` をもとに、ローカル CSS / JS を単一 HTML へインライン展開して生成する。
 
 ## リポジトリ構成
 
@@ -80,8 +72,7 @@
 
 - 内部モデルの要約確認
 - validation メッセージの確認
-- Mermaid gantt プレビューの確認
-- Mermaid gantt の `done / active / normal` 状態色と phase 背景の確認
+- native `SVG` プレビューの確認
 - `Project / Tasks / Resources / Assignments / Calendars` の preview 確認
 
 ### Output
@@ -92,7 +83,7 @@
 - `XLSX` 相当 workbook JSON の保存
 - `CSV + ParentID` の保存
 - Mermaid fenced code block を含む `.md` の保存
-- Mermaid SVG の保存
+- native `SVG` の保存
 - 生成AI向け `project_overview_view` / `phase_detail_view` / `full bundle` の `.editjson` 保存
 
 ## 生成AI連携
@@ -171,7 +162,6 @@ npm run build
 
 - `package.json` と `package-lock.json` を持つ単独の Node.js プロジェクトとして扱える
 - ソース配置は `src/ts/`, `src/js/`, `src/css/`
-- 外部ランタイムの同梱先は `src/vendor/`
 - `npm run build:js`、`npm run build:html`、`npm test` は通る
 - `local-data/` と `node_modules/` は Git 管理対象外
 - `local-data/` は確認用の再生成可能な生成物置き場として扱う
@@ -185,7 +175,6 @@ npm run build
 - workbook JSON import の反映対象も同じ限定列のみ
 - `CSV + ParentID` は現在ファイルベースの補助入出力として扱う
 - `Calendars` の `WeekDays / Exceptions / WorkWeeks` などは現時点では反映対象外
-- Mermaid の SVG プレビューは `src/vendor/mermaid/mermaid.min.js` を `build:html` で内包した `mikuproject.html` を前提とする
 
 ## ドキュメントの役割
 

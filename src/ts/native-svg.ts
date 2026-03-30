@@ -21,15 +21,21 @@
     y: number;
   };
 
+  type NativeSvgLabelPlacement = {
+    x: number;
+    anchor: "start" | "end";
+    width: number;
+  };
+
   const DAY_WIDTH = 56;
   const LIST_LABEL_WIDTH = 360;
-  const NEAR_LEFT_LABEL_WIDTH = 220;
-  const NEAR_RIGHT_LABEL_WIDTH = 300;
+  const NEAR_LEFT_LABEL_WIDTH = 0;
+  const NEAR_RIGHT_LABEL_WIDTH = 0;
   const HEADER_HEIGHT = 82;
   const ROW_HEIGHT = 38;
-  const LEFT_PADDING = 20;
+  const LEFT_PADDING = 0;
   const TOP_PADDING = 22;
-  const RIGHT_PADDING = 24;
+  const RIGHT_PADDING = 0;
   const BOTTOM_PADDING = 28;
 
   function exportNativeSvg(model: ProjectModel, options: NativeSvgExportOptions = {}): string {
@@ -53,7 +59,19 @@
     const chartWidth = dateBand.length * DAY_WIDTH;
     const leftLabelWidth = labelMode === "list" ? LIST_LABEL_WIDTH : NEAR_LEFT_LABEL_WIDTH;
     const rightLabelWidth = labelMode === "list" ? 0 : NEAR_RIGHT_LABEL_WIDTH;
-    const svgWidth = LEFT_PADDING + leftLabelWidth + chartWidth + rightLabelWidth + RIGHT_PADDING;
+    const chartOriginXBase = LEFT_PADDING + leftLabelWidth;
+    const labelPlacements = rows.map((row) => resolveLabelPlacement(row, chartOriginXBase, chartWidth, labelMode));
+    const labelMinX = labelPlacements.reduce((min, placement) => {
+      const placementMinX = placement.anchor === "start" ? placement.x : placement.x - placement.width;
+      return Math.min(min, placementMinX);
+    }, chartOriginXBase);
+    const labelMaxX = labelPlacements.reduce((max, placement) => {
+      const placementMaxX = placement.anchor === "start" ? placement.x + placement.width : placement.x;
+      return Math.max(max, placementMaxX);
+    }, chartOriginXBase + chartWidth + rightLabelWidth);
+    const shiftX = labelMode === "near" ? Math.max(0, -labelMinX) : 0;
+    const chartOriginX = chartOriginXBase + shiftX;
+    const svgWidth = (labelMaxX + shiftX) + RIGHT_PADDING;
     const svgHeight = TOP_PADDING + HEADER_HEIGHT + (rows.length * ROW_HEIGHT) + BOTTOM_PADDING;
     const todayIndex = indexOfDate(dateBand, model.project.currentDate);
 
@@ -69,10 +87,9 @@
       ".today { stroke: #ff6b5a; stroke-width: 2; }",
       "</style>",
       `<rect x="0" y="0" width="${svgWidth}" height="${svgHeight}" fill="#ffffff"/>`,
-      `<text class="title" x="${LEFT_PADDING + leftLabelWidth + (chartWidth / 2)}" y="${TOP_PADDING + 18}" text-anchor="middle">${escapeXml(model.project.name || "-")}</text>`
+      `<text class="title" x="${chartOriginX + (chartWidth / 2)}" y="${TOP_PADDING + 18}" text-anchor="middle">${escapeXml(model.project.name || "-")}</text>`
     ];
 
-    const chartOriginX = LEFT_PADDING + leftLabelWidth;
     const chartOriginY = TOP_PADDING + HEADER_HEIGHT;
 
     for (let index = 0; index < dateBand.length; index += 1) {
@@ -127,8 +144,8 @@
           }
         }
       }
-      const labelPlacement = resolveLabelPlacement(row, chartOriginX, chartWidth, svgWidth, labelMode);
-      parts.push(`<text class="${row.kind === "phase" ? "phaseLabel" : "label"}" x="${labelPlacement.x}" y="${rowY + 24}" text-anchor="${labelPlacement.anchor}">${escapeXml(formatTaskLabel(row.task, labelMode))}</text>`);
+      const labelPlacement = labelPlacements[rows.indexOf(row)];
+      parts.push(`<text class="${row.kind === "phase" ? "phaseLabel" : "label"}" x="${labelPlacement.x + shiftX}" y="${rowY + 24}" text-anchor="${labelPlacement.anchor}">${escapeXml(formatTaskLabel(row.task, labelMode))}</text>`);
     }
 
     parts.push("</svg>");
@@ -157,38 +174,25 @@
     row: NativeSvgTaskRow,
     chartOriginX: number,
     chartWidth: number,
-    svgWidth: number,
     labelMode: "near" | "list"
-  ): { x: number; anchor: "start" | "end" } {
+  ): NativeSvgLabelPlacement {
     if (labelMode === "list" || row.startIndex === null || row.endIndex === null) {
-      return { x: LEFT_PADDING + 10, anchor: "start" };
+      return { x: LEFT_PADDING + 10, anchor: "start", width: estimateLabelWidth(row.label, row.kind === "phase") };
     }
 
     const textWidth = estimateLabelWidth(row.label, row.kind === "phase");
     const gap = 12;
-    const chartEndX = chartOriginX + chartWidth;
     const shapeStartX = row.kind === "milestone"
       ? chartOriginX + (row.startIndex * DAY_WIDTH) + (DAY_WIDTH / 2) - 13
       : chartOriginX + (row.startIndex * DAY_WIDTH) + 6;
     const shapeEndX = row.kind === "milestone"
       ? chartOriginX + (row.startIndex * DAY_WIDTH) + (DAY_WIDTH / 2) + 13
       : chartOriginX + (row.endIndex * DAY_WIDTH) + DAY_WIDTH - 6;
-
-    const preferredRightX = shapeEndX + gap;
-    if ((preferredRightX + textWidth) <= (svgWidth - RIGHT_PADDING)) {
-      return { x: preferredRightX, anchor: "start" };
+    const chartMidX = chartOriginX + (chartWidth / 2);
+    if (shapeEndX <= chartMidX) {
+      return { x: shapeEndX + gap, anchor: "start", width: textWidth };
     }
-
-    const preferredLeftX = shapeStartX - gap;
-    if ((preferredLeftX - textWidth) >= LEFT_PADDING) {
-      return { x: preferredLeftX, anchor: "end" };
-    }
-
-    const fallbackX = Math.max(LEFT_PADDING + 10, chartOriginX - gap);
-    if ((fallbackX + textWidth) <= chartEndX) {
-      return { x: fallbackX, anchor: "start" };
-    }
-    return { x: preferredLeftX, anchor: "end" };
+    return { x: shapeStartX - gap, anchor: "end", width: textWidth };
   }
 
   function estimateLabelWidth(label: string, isPhase: boolean): number {

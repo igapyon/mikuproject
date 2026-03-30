@@ -11,17 +11,14 @@ const __dirname = path.dirname(__filename);
 const ROOT = path.resolve(__dirname, "..");
 
 describe("mikuproject single html build", () => {
-  it("inlines vendored mermaid runtime into mikuproject html", () => {
+  it("inlines local app assets and does not reference removed mermaid runtime", () => {
     const srcHtmlPath = path.resolve(ROOT, "mikuproject-src.html");
     const sourceHtml = readFileSync(srcHtmlPath, "utf8");
     const builtHtml = buildSingleHtmlFromSource(sourceHtml, srcHtmlPath);
-    const vendoredMermaid = readFileSync(
-      path.resolve(ROOT, "src/vendor/mermaid/mermaid.min.js"),
-      "utf8"
-    ).trimEnd();
 
-    expect(builtHtml).toContain(vendoredMermaid.slice(0, 120));
-    expect(builtHtml).not.toContain('src="src/vendor/mermaid/mermaid.min.js"');
     expect(builtHtml).not.toContain('src="src/js/main.js"');
+    expect(builtHtml).not.toContain("src/vendor/mermaid/");
+    expect(builtHtml).not.toContain("mermaid.min.js");
+    expect(builtHtml).toContain("function initialize()");
   });
 });

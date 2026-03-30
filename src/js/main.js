@@ -31,10 +31,8 @@
     if (!mikuprojectNativeSvg) {
         throw new Error("mikuproject native SVG module is not loaded");
     }
-    const mermaidApi = globalThis.mermaid;
     let currentModel = null;
     let currentNativeSvg = "";
-    let mermaidRenderCount = 0;
     let lastSavedXmlText = "";
     let lastSavedXmlStamp = "";
     let currentTabId = "input";
@@ -257,21 +255,11 @@
         showToast("生成AIプロンプトをクリップボードにコピーしました");
         setStatus("生成AIプロンプトをクリップボードにコピーしました");
     }
-    function setMermaidError(message) {
-        const errorNode = getElement("mermaidSvgError");
-        errorNode.textContent = message;
-        errorNode.classList.remove("md-hidden");
+    function setSvgPreviewMarkup(markup) {
+        getElement("nativeSvgPreview").innerHTML = markup;
     }
-    function clearMermaidError() {
-        const errorNode = getElement("mermaidSvgError");
-        errorNode.textContent = "";
-        errorNode.classList.add("md-hidden");
-    }
-    function setMermaidPreviewMarkup(markup) {
-        getElement("mermaidSvgPreview").innerHTML = markup;
-    }
-    function updateMermaidSvgButton() {
-        getElement("downloadMermaidSvgBtn").disabled = !currentModel;
+    function updateSvgButton() {
+        getElement("downloadSvgBtn").disabled = !currentModel;
     }
     function buildCurrentWbsOptions(model) {
         syncWbsHolidayDatesInput(model);
@@ -283,46 +271,6 @@
             useBusinessDaysForProgressBand: useBusinessDaysForWbsProgressBand()
         };
     }
-    function normalizeSvgForXml(svgText) {
-        if (!svgText) {
-            return "";
-        }
-        const candidate = svgText
-            .replace(/<br\s*>/gi, "<br/>")
-            .replace(/<br([^/>]*)><\/br>/gi, "<br$1/>");
-        try {
-            const parsed = new DOMParser().parseFromString(candidate, "image/svg+xml");
-            if (parsed.querySelector("parsererror")) {
-                return candidate;
-            }
-            return new XMLSerializer().serializeToString(parsed.documentElement);
-        }
-        catch (_error) {
-            return candidate;
-        }
-    }
-    function applyMermaidSvgTheme(svgText) {
-        if (!svgText) {
-            return svgText;
-        }
-        const styleBlock = [
-            "<style>",
-            ".section0, .section2, .section4, .section6, .section8, rect.section0, rect.section2, rect.section4, rect.section6, rect.section8, .section0 rect, .section2 rect, .section4 rect, .section6 rect, .section8 rect, g.section0 rect, g.section2 rect, g.section4 rect, g.section6 rect, g.section8 rect { fill: #d8efe8 !important; }",
-            ".section1, .section3, .section5, .section7, .section9, rect.section1, rect.section3, rect.section5, rect.section7, rect.section9, .section1 rect, .section3 rect, .section5 rect, .section7 rect, .section9 rect, g.section1 rect, g.section3 rect, g.section5 rect, g.section7 rect, g.section9 rect { fill: #ffe8c7 !important; }",
-            ".task, .task0, .task1, .task2, .task3, .task4 { fill: #8f95e8 !important; stroke: #5d63cf !important; }",
-            ".active, .active0, .active1, .active2, .active3, .active4 { fill: #7fc8a9 !important; stroke: #3f8f72 !important; }",
-            ".done, .done0, .done1, .done2, .done3, .done4 { fill: #5ba98f !important; stroke: #2e6e5b !important; }",
-            ".milestone, .milestone0, .milestone1, .milestone2, .milestone3 { fill: #666666 !important; stroke: #444444 !important; }",
-            ".grid .tick line, .tick line { stroke: #707b94 !important; }",
-            ".today { stroke: #ff3b30 !important; }",
-            ".taskText, .taskTextOutsideRight, .taskTextOutsideLeft, .sectionTitle, .titleText, text { fill: #1d2740; }",
-            "</style>"
-        ].join("");
-        if (svgText.includes(".task0") || svgText.includes(".section0")) {
-            return svgText.replace(/(<svg\b[^>]*>)/i, `$1${styleBlock}`);
-        }
-        return svgText;
-    }
     function downloadBlob(blob, filename) {
         const objectUrl = URL.createObjectURL(blob);
         const link = document.createElement("a");
@@ -333,53 +281,16 @@
         document.body.removeChild(link);
         window.setTimeout(() => URL.revokeObjectURL(objectUrl), 0);
     }
-    function getMermaidRenderConfig() {
-        return {
-            startOnLoad: false,
-            securityLevel: "strict",
-            theme: "default",
-            themeVariables: {
-                sectionBkgColor: "#eaf6f3",
-                altSectionBkgColor: "#fff3df",
-                sectionBkgColor2: "#eaf6f3",
-                sectionBkgColor3: "#fff3df",
-                sectionBkgColor4: "#eaf6f3",
-                taskBkgColor: "#8f95e8",
-                taskBorderColor: "#5d63cf",
-                taskTextColor: "#1d2740",
-                activeTaskBkgColor: "#7fc8a9",
-                activeTaskBorderColor: "#3f8f72",
-                doneTaskBkgColor: "#5ba98f",
-                doneTaskBorderColor: "#2e6e5b",
-                milestoneBkgColor: "#666666",
-                milestoneBorderColor: "#444444",
-                gridColor: "#707b94",
-                lineColor: "#707b94",
-                todayLineColor: "#ff3b30"
-            }
-        };
-    }
-    async function renderMermaidPreview(_source) {
+    async function renderSvgPreview() {
         if (!currentModel) {
             currentNativeSvg = "";
-            updateMermaidSvgButton();
-            setMermaidPreviewMarkup(`<div class="md-preview-empty">SVG を生成すると、ここにプレビューを表示します。</div>`);
+            updateSvgButton();
+            setSvgPreviewMarkup(`<div class="md-preview-empty">SVG を生成すると、ここにプレビューを表示します。</div>`);
             return;
         }
-        clearMermaidError();
         currentNativeSvg = mikuprojectNativeSvg.exportNativeSvg(currentModel, buildCurrentWbsOptions(currentModel));
-        setMermaidPreviewMarkup(currentNativeSvg);
-        updateMermaidSvgButton();
-        if (mermaidApi) {
-            const renderId = `mikuprojectMermaidRender${++mermaidRenderCount}`;
-            mermaidApi.initialize(getMermaidRenderConfig());
-            try {
-                await mermaidApi.render(renderId, _source);
-            }
-            catch (_error) {
-                // Mermaid text export remains useful even if native SVG preview is used.
-            }
-        }
+        setSvgPreviewMarkup(currentNativeSvg);
+        updateSvgButton();
     }
     function setStatus(message) {
         getElement("statusMessage").textContent = message;
@@ -698,7 +609,7 @@
             .replace(/'/g, "&#39;");
     }
     function updateSummary(model) {
-        updateMermaidSvgButton();
+        updateSvgButton();
         syncWbsHolidayDatesInput(model);
         getElement("summaryProjectName").textContent = (model === null || model === void 0 ? void 0 : model.project.name) || "-";
         getElement("summaryTaskCount").textContent = String((model === null || model === void 0 ? void 0 : model.tasks.length) || 0);
@@ -837,9 +748,9 @@ WorkWeek1=${formatCalendarWorkWeekSummary(calendar)}</div>
         }
         const mermaidText = mikuprojectXml.exportMermaidGantt(currentModel);
         getTextArea("mermaidOutput").value = mermaidText;
-        await renderMermaidPreview(mermaidText);
+        await renderSvgPreview();
         if (!options.silent) {
-            setStatus("内部モデルから Mermaid gantt を生成し、SVG プレビューを更新しました");
+            setStatus("内部モデルから Mermaid gantt を生成し、native SVG preview を更新しました");
             showToast("Mermaid を生成しました");
         }
         setActiveTab("transform", { skipTransformRefresh: true });
@@ -1197,12 +1108,12 @@ WorkWeek1=${formatCalendarWorkWeekSummary(calendar)}</div>
         showToast("XML を保存しました");
         setActiveTab("output");
     }
-    async function downloadCurrentMermaidSvg() {
+    async function downloadCurrentSvg() {
         const model = ensureCurrentModel();
         syncXmlTextFromModel(model);
         const mermaidText = mikuprojectXml.exportMermaidGantt(model);
         getTextArea("mermaidOutput").value = mermaidText;
-        await renderMermaidPreview(mermaidText);
+        await renderSvgPreview();
         if (!currentNativeSvg) {
             setStatus("出力する SVG がありません");
             return;
@@ -1292,8 +1203,8 @@ WorkWeek1=${formatCalendarWorkWeekSummary(calendar)}</div>
             input.value = "";
             input.click();
         });
-        getElement("downloadMermaidSvgBtn").addEventListener("click", () => {
-            void downloadCurrentMermaidSvg().catch((error) => {
+        getElement("downloadSvgBtn").addEventListener("click", () => {
+            void downloadCurrentSvg().catch((error) => {
                 setStatus(error instanceof Error ? error.message : "SVG 保存に失敗しました");
             });
         });
@@ -1441,8 +1352,7 @@ WorkWeek1=${formatCalendarWorkWeekSummary(calendar)}</div>
         renderValidationIssues([]);
         renderImportWarnings([]);
         renderXlsxImportSummary([]);
-        updateMermaidSvgButton();
-        clearMermaidError();
+        updateSvgButton();
         loadSample();
     }
     globalThis.__mikuprojectMainTestHooks = {

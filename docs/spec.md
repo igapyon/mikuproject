@@ -366,11 +366,11 @@ preview / validation の現状メモ:
 - `Overview`
   - 内部モデルの要約確認
   - validation の確認
-  - Mermaid gantt プレビュー
+  - native `SVG` preview の確認
   - preview 表示
 - `Output`
   - `MS Project XML`、`XLSX`、`WBS XLSX`、workbook JSON、`CSV + ParentID` の保存
-  - Mermaid fenced code block を含む `.md` と Mermaid SVG の保存
+  - Mermaid fenced code block を含む `.md` と native `SVG` の保存
   - 生成AI向け `project_overview_view` / `phase_detail_view` / `full bundle` の `.editjson` 出力
 
 生成AI連携の現状実装範囲:
@@ -895,9 +895,8 @@ STEP 1 では、次は非目標とする。
 - 上記に当てはまらない predecessor は、task 名を含むコメント行で補助出力する
 - comment 側の `lag` は、可能な範囲で `2h` のような短い人間向け表現に整形して出力する
 - `lag` がある場合は、`after Prep + 2h` のような擬似読解用 comment も追加する
-- preview と SVG export は同じ Mermaid レンダリング設定を使う
+- preview と SVG export は native `SVG` 描画を使う
 - phase 背景は交互の淡色で視認補助する
-- Mermaid が返す SVG には追加 CSS を注入し、task / milestone / phase 背景 / grid / today line の見た目を固定する
 
 `project_draft_view` からの補完メモ:
 

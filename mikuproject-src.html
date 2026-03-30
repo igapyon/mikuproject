@@ -149,15 +149,14 @@
             <span class="md-flow-section__step">2</span>
             <span>Overview</span>
             <lht-help-tooltip label="Overview の説明" wide>
-              内部モデル、検証結果、Mermaid preview を確認します。取込後の warning と差分要約もここに表示します。
+              内部モデル、検証結果、SVG preview を確認します。取込後の warning と差分要約もここに表示します。
             </lht-help-tooltip>
           </h2>
         </div>
 
         <section class="md-note-card md-note-card--feature">
-          <p id="mermaidSvgError" class="md-mermaid-error md-hidden" aria-live="polite"></p>
-          <div id="mermaidSvgPreview" class="md-mermaid-preview-stage">
-            <div class="md-preview-empty">Mermaid を生成すると、ここに SVG を表示します。</div>
+          <div id="nativeSvgPreview" class="md-svg-preview-stage">
+            <div class="md-preview-empty">SVG を生成すると、ここにプレビューを表示します。</div>
           </div>
         </section>
 
@@ -258,7 +257,7 @@
             <button id="exportWbsXlsxBtn" type="button" class="md-button md-button--tonal">WBS XLSX</button>
             <button id="exportWbsMdBtn" type="button" class="md-button md-button--tonal">WBS Markdown</button>
             <button id="exportMermaidMdBtn" type="button" class="md-button md-button--tonal">Mermaid</button>
-            <button id="downloadMermaidSvgBtn" type="button" class="md-button md-button--surface" disabled>SVG</button>
+            <button id="downloadSvgBtn" type="button" class="md-button md-button--surface" disabled>SVG</button>
           </div>
         </div>
 
@@ -369,7 +368,6 @@
   <script src="src/js/wbs-xlsx.js"></script>
   <script src="src/js/wbs-markdown.js"></script>
   <script src="src/js/native-svg.js"></script>
-  <script src="src/vendor/mermaid/mermaid.min.js"></script>
   <script src="src/js/main.js"></script>
 </body>
 </html>

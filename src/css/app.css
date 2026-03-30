@@ -1006,18 +1006,7 @@ md-outlined-select.md-outlined-field:focus-within::part(container) {
   font-size: 0.86rem;
 }
 
-.md-mermaid-error {
-  margin: 0 0 10px;
-  color: #b3261e;
-  font-size: 0.9rem;
-  font-weight: 600;
-}
-
-.md-mermaid-error.md-hidden {
-  display: none;
-}
-
-.md-mermaid-preview-stage {
+.md-svg-preview-stage {
   min-height: 16rem;
   overflow: auto;
   border-radius: 14px;
@@ -1025,7 +1014,7 @@ md-outlined-select.md-outlined-field:focus-within::part(container) {
   padding: 12px;
 }
 
-.md-mermaid-preview-stage svg {
+.md-svg-preview-stage svg {
   display: block;
   max-width: 100%;
   height: auto;

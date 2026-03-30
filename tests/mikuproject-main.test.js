@@ -80,7 +80,7 @@ function mountDom() {
     <button id="exportWbsXlsxBtn" type="button">WBS XLSX</button>
     <button id="exportWbsMdBtn" type="button">WBS Markdown</button>
     <button id="exportMermaidMdBtn" type="button">Mermaid</button>
-    <button id="downloadMermaidSvgBtn" type="button" disabled>SVG</button>
+    <button id="downloadSvgBtn" type="button" disabled>SVG</button>
     <button id="exportAiBundleBtn" type="button">project_overview + all phase_detail full</button>
     <button id="exportProjectOverviewBtn" type="button">project_overview_view</button>
     <button id="exportPhaseDetailFullBtn" type="button">phase_detail_view full</button>
@@ -160,7 +160,7 @@ function mountDom() {
           <span class="md-flow-section__step">2</span>
           <span>Overview</span>
           <lht-help-tooltip label="Overview の説明" wide>
-            <p>内部モデル、検証結果、Mermaid preview を確認します。取込後の warning と差分要約もここに表示します。</p>
+            <p>内部モデル、検証結果、SVG preview を確認します。取込後の warning と差分要約もここに表示します。</p>
           </lht-help-tooltip>
         </h2>
       </div>
@@ -169,8 +169,7 @@ function mountDom() {
       <div id="summaryResourceCount"></div>
       <div id="summaryAssignmentCount"></div>
       <div id="summaryCalendarCount"></div>
-      <div id="mermaidSvgError" class="md-hidden"></div>
-      <div id="mermaidSvgPreview"></div>
+      <div id="nativeSvgPreview"></div>
       <details class="md-debug-accordion">
         <summary class="md-debug-accordion__summary">デバッグ情報</summary>
         <div class="md-debug-accordion__body">
@@ -201,7 +200,7 @@ function mountDom() {
           <span class="md-flow-section__step">3</span>
           <span>Output</span>
           <lht-help-tooltip label="Output の説明" wide>
-            <p>MS Project XML、XLSX、JSON、CSV、WBS XLSX、Mermaid、生成AI 向け .editjson を保存します。</p>
+            <p>MS Project XML、XLSX、JSON、CSV、WBS XLSX、Mermaid テキスト、SVG、生成AI 向け .editjson を保存します。</p>
           </lht-help-tooltip>
         </h2>
       </div>
@@ -246,12 +245,6 @@ function mountDom() {
 
 function bootPage() {
   mountDom();
-  globalThis.mermaid = {
-    initialize: vi.fn(),
-    render: vi.fn(async (_id, source) => ({
-      svg: `<svg data-source="${String(source).includes("gantt") ? "gantt" : "other"}"></svg>`
-    }))
-  };
   new Function(`${typesCode}\n${markdownEscapeCode}\n${excelIoCode}\n${msProjectXmlCode}\n${projectWorkbookSchemaCode}\n${projectXlsxCode}\n${projectWorkbookJsonCode}\n${wbsXlsxCode}\n${wbsMarkdownCode}\n${nativeSvgCode}\n${mainCode}`)();
   document.dispatchEvent(new Event("DOMContentLoaded"));
 }
@@ -292,7 +285,6 @@ async function flushAsyncWork() {
 describe("mikuproject main", () => {
   beforeEach(() => {
     document.body.innerHTML = "";
-    delete globalThis.mermaid;
     Object.defineProperty(URL, "createObjectURL", {
       value: vi.fn(() => "blob:mock"),
       configurable: true
@@ -371,9 +363,7 @@ describe("mikuproject main", () => {
     expect(document.getElementById("tabPanelOutput").hidden).toBe(true);
     expect(document.getElementById("summaryProjectName").textContent).toBe("mikuproject開発");
     expect(document.getElementById("mermaidOutput").value).toContain("gantt");
-    expect(globalThis.mermaid.initialize).toHaveBeenCalled();
-    expect(globalThis.mermaid.initialize.mock.calls.at(-1)?.[0]?.themeVariables?.milestoneBkgColor).toBe("#666666");
-    expect(globalThis.mermaid.initialize.mock.calls.at(-1)?.[0]?.themeVariables?.milestoneBorderColor).toBe("#444444");
+    expect(document.getElementById("nativeSvgPreview").innerHTML).toContain("<svg");
 
     document.querySelector('.md-top-tab[data-tab="output"]').click();
     expect(document.getElementById("tabPanelInput").hidden).toBe(true);
@@ -582,9 +572,9 @@ describe("mikuproject main", () => {
     expect(mermaidText).toContain("section 基盤整備");
     expect(mermaidText).toContain("section 架空検討フェーズ【架空】");
     expect(mermaidText).toContain("初期実装");
-    expect(document.getElementById("mermaidSvgPreview").innerHTML).toContain("<svg");
-    expect(document.getElementById("downloadMermaidSvgBtn").disabled).toBe(false);
-    expect(document.getElementById("statusMessage").textContent).toContain("SVG プレビューを更新しました");
+    expect(document.getElementById("nativeSvgPreview").innerHTML).toContain("<svg");
+    expect(document.getElementById("downloadSvgBtn").disabled).toBe(false);
+    expect(document.getElementById("statusMessage").textContent).toContain("Mermaid gantt");
   });
 
   it("keeps complex mermaid dependencies as comments", () => {
@@ -775,7 +765,7 @@ describe("mikuproject main", () => {
     expect(document.getElementById("assignmentPreview").textContent).toContain("Task=2 (Design)");
     expect(document.getElementById("assignmentPreview").textContent).toContain("Resource=1 (Miku)");
     expect(document.getElementById("mermaidOutput").value).toContain("gantt");
-    expect(document.getElementById("mermaidSvgPreview").innerHTML).toContain("<svg");
+    expect(document.getElementById("nativeSvgPreview").innerHTML).toContain("<svg");
     expect(document.getElementById("statusMessage").textContent).toContain("CSV + ParentID を内部モデルへ変換しました");
   });
 
@@ -813,7 +803,7 @@ describe("mikuproject main", () => {
     expect(document.getElementById("modelOutput").value).toContain("\"name\": \"Imported\"");
     expect(document.getElementById("modelOutput").value).toContain("\"name\": \"Standard\"");
     expect(document.getElementById("mermaidOutput").value).toContain("gantt");
-    expect(document.getElementById("mermaidSvgPreview").innerHTML).toContain("<svg");
+    expect(document.getElementById("nativeSvgPreview").innerHTML).toContain("<svg");
     expect(document.getElementById("statusMessage").textContent).toContain("XML ファイルを読み込んで解析しました");
   });
 
@@ -1425,7 +1415,7 @@ describe("mikuproject main", () => {
     xmlInput.dispatchEvent(new Event("input"));
     URL.createObjectURL.mockClear();
     HTMLAnchorElement.prototype.click.mockClear();
-    document.getElementById("downloadMermaidSvgBtn").click();
+    document.getElementById("downloadSvgBtn").click();
     await flushAsyncWork();
     await flushAsyncWork();
 

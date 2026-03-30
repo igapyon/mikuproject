@@ -13,6 +13,10 @@ const typesCode = readFileSync(
   path.resolve(__dirname, "../src/js/types.js"),
   "utf8"
 );
+const markdownEscapeCode = readFileSync(
+  path.resolve(__dirname, "../src/js/markdown-escape.js"),
+  "utf8"
+);
 const excelIoCode = readFileSync(
   path.resolve(__dirname, "../src/js/excel-io.js"),
   "utf8"
@@ -35,6 +39,14 @@ const projectWorkbookJsonCode = readFileSync(
 );
 const wbsXlsxCode = readFileSync(
   path.resolve(__dirname, "../src/js/wbs-xlsx.js"),
+  "utf8"
+);
+const wbsMarkdownCode = readFileSync(
+  path.resolve(__dirname, "../src/js/wbs-markdown.js"),
+  "utf8"
+);
+const nativeSvgCode = readFileSync(
+  path.resolve(__dirname, "../src/js/native-svg.js"),
   "utf8"
 );
 const mainCode = readFileSync(
@@ -66,6 +78,7 @@ function mountDom() {
     <button id="exportWorkbookJsonBtn" type="button">JSON</button>
     <button id="exportCsvBtn" type="button">CSV</button>
     <button id="exportWbsXlsxBtn" type="button">WBS XLSX</button>
+    <button id="exportWbsMdBtn" type="button">WBS Markdown</button>
     <button id="exportMermaidMdBtn" type="button">Mermaid</button>
     <button id="downloadMermaidSvgBtn" type="button" disabled>SVG</button>
     <button id="exportAiBundleBtn" type="button">project_overview + all phase_detail full</button>
@@ -239,7 +252,7 @@ function bootPage() {
       svg: `<svg data-source="${String(source).includes("gantt") ? "gantt" : "other"}"></svg>`
     }))
   };
-  new Function(`${typesCode}\n${excelIoCode}\n${msProjectXmlCode}\n${projectWorkbookSchemaCode}\n${projectXlsxCode}\n${projectWorkbookJsonCode}\n${wbsXlsxCode}\n${mainCode}`)();
+  new Function(`${typesCode}\n${markdownEscapeCode}\n${excelIoCode}\n${msProjectXmlCode}\n${projectWorkbookSchemaCode}\n${projectXlsxCode}\n${projectWorkbookJsonCode}\n${wbsXlsxCode}\n${wbsMarkdownCode}\n${nativeSvgCode}\n${mainCode}`)();
   document.dispatchEvent(new Event("DOMContentLoaded"));
 }
 
@@ -358,6 +371,9 @@ describe("mikuproject main", () => {
     expect(document.getElementById("tabPanelOutput").hidden).toBe(true);
     expect(document.getElementById("summaryProjectName").textContent).toBe("mikuproject開発");
     expect(document.getElementById("mermaidOutput").value).toContain("gantt");
+    expect(globalThis.mermaid.initialize).toHaveBeenCalled();
+    expect(globalThis.mermaid.initialize.mock.calls.at(-1)?.[0]?.themeVariables?.milestoneBkgColor).toBe("#666666");
+    expect(globalThis.mermaid.initialize.mock.calls.at(-1)?.[0]?.themeVariables?.milestoneBorderColor).toBe("#444444");
 
     document.querySelector('.md-top-tab[data-tab="output"]').click();
     expect(document.getElementById("tabPanelInput").hidden).toBe(true);
@@ -468,9 +484,11 @@ describe("mikuproject main", () => {
     expect(document.getElementById("summaryTaskCount").textContent).toBe("4");
     expect(document.getElementById("summaryCalendarCount").textContent).toBe("1");
     expect(document.getElementById("xmlInput").value).toContain("<Name>新規基幹刷新</Name>");
+    expect(document.getElementById("xmlInput").value).toContain("<Title>新規基幹刷新</Title>");
     expect(document.getElementById("xmlInput").value).toContain("<CalendarUID>1</CalendarUID>");
     expect(document.getElementById("xmlInput").value).toContain("<Name>Standard</Name>");
     expect(document.getElementById("xmlInput").value).toContain("<UID>3</UID>");
+    expect(document.getElementById("modelOutput").value).toContain("\"title\": \"新規基幹刷新\"");
     expect(document.getElementById("modelOutput").value).toContain("\"name\": \"ヒアリング\"");
     expect(document.getElementById("modelOutput").value).toContain("\"milestone\": false");
     expect(document.getElementById("modelOutput").value).toContain("\"percentComplete\": 100");
@@ -749,6 +767,7 @@ describe("mikuproject main", () => {
     expect(document.getElementById("summaryAssignmentCount").textContent).toBe("2");
     expect(document.getElementById("summaryCalendarCount").textContent).toBe("1");
     expect(document.getElementById("modelOutput").value).toContain("\"name\": \"CSV Imported Project\"");
+    expect(document.getElementById("modelOutput").value).toContain("\"title\": \"CSV Imported Project\"");
     expect(document.getElementById("modelOutput").value).toContain("\"name\": \"Standard\"");
     expect(document.getElementById("taskPreview").textContent).toContain("Implementation");
     expect(document.getElementById("taskPreview").textContent).toContain("Predecessors=2");
@@ -1396,7 +1415,7 @@ describe("mikuproject main", () => {
   });
 
 
-  it("downloads rendered mermaid svg", async () => {
+  it("downloads rendered native svg", async () => {
     bootPage();
 
     parseXmlViaHook();
@@ -1413,11 +1432,11 @@ describe("mikuproject main", () => {
     expect(URL.createObjectURL).toHaveBeenCalled();
     expect(HTMLAnchorElement.prototype.click).toHaveBeenCalled();
     const clickedAnchor = HTMLAnchorElement.prototype.click.mock.instances.at(-1);
-    expect(clickedAnchor.download).toBe("mikuproject-mermaid.svg");
+    expect(clickedAnchor.download).toBe("mikuproject-native.svg");
     expect(document.getElementById("xmlInput").value).not.toContain("<!-- edited -->");
     expect(document.getElementById("xmlSaveState").textContent).toContain("XML 保存状態: 保存済み (2026-03-16 23:12)");
     expect(document.getElementById("mermaidOutput").value).toContain("gantt");
-    expect(document.getElementById("statusMessage").textContent).toContain("Mermaid SVG を保存しました");
+    expect(document.getElementById("statusMessage").textContent).toContain("SVG を保存しました");
   });
 
   it("downloads mermaid markdown", () => {
@@ -1435,6 +1454,21 @@ describe("mikuproject main", () => {
     expect(markdownBlob.type).toBe("text/markdown;charset=utf-8");
     expect(document.getElementById("mermaidOutput").value).toContain("gantt");
     expect(document.getElementById("statusMessage").textContent).toContain("Mermaid Markdown を保存しました");
+  });
+
+  it("downloads wbs markdown", () => {
+    bootPage();
+
+    parseXmlViaHook();
+    document.getElementById("exportWbsMdBtn").click();
+    expect(URL.createObjectURL).toHaveBeenCalled();
+    expect(HTMLAnchorElement.prototype.click).toHaveBeenCalled();
+    const clickedAnchor = HTMLAnchorElement.prototype.click.mock.instances.at(-1);
+    expect(clickedAnchor.download).toBe("mikuproject-wbs-20260316.md");
+    const markdownBlob = URL.createObjectURL.mock.calls.at(-1)?.[0];
+    expect(markdownBlob).toBeTruthy();
+    expect(markdownBlob.type).toBe("text/markdown;charset=utf-8");
+    expect(document.getElementById("statusMessage").textContent).toContain("WBS Markdown を保存しました");
   });
 
   it("reports validation error when assignment references a missing resource", () => {
@@ -1506,6 +1540,22 @@ describe("mikuproject main", () => {
     expect(document.getElementById("validationIssues").textContent).toContain("Task Start が Finish より後");
   });
 
+  it("reports validation warning when task order does not match outline order", () => {
+    bootPage();
+
+    document.getElementById("xmlInput").value = dependencyXml.replace(
+      "<OutlineNumber>2</OutlineNumber>",
+      "<OutlineNumber>1</OutlineNumber>"
+    );
+    parseXmlViaHook();
+
+    expect(document.getElementById("validationIssues").textContent).toContain("Task の並び順");
+    expect(document.getElementById("validationIssues").textContent).toContain("UID=2");
+    expect(document.getElementById("validationIssues").textContent).toContain("Execute");
+    expect(document.getElementById("validationIssues").textContent).toContain("UID=1");
+    expect(document.getElementById("validationIssues").textContent).toContain("Prepare");
+  });
+
   it("reports validation error when predecessor references a missing task", () => {
     bootPage();
 
@@ -1531,6 +1581,7 @@ describe("mikuproject main", () => {
 
     expect(model.project.name).toBe("Minimal Project");
     expect(reparsedModel.project.name).toBe("Minimal Project");
+    expect(reparsedModel.project.title).toBeUndefined();
     expect(reparsedModel.tasks).toHaveLength(1);
     expect(reparsedModel.tasks[0].name).toBe("Single Task");
     expect(xmlTools.validateProjectModel(reparsedModel)).toHaveLength(0);
@@ -2150,6 +2201,7 @@ describe("mikuproject main", () => {
     const model = xmlTools.importCsvParentId(csv);
 
     expect(model.project.name).toBe("CSV Imported Project");
+    expect(model.project.title).toBe("CSV Imported Project");
     expect(model.project.calendarUID).toBe("1");
     expect(model.tasks).toHaveLength(4);
     expect(model.tasks[0].summary).toBe(true);

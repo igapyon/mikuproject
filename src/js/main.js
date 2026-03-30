@@ -23,9 +23,17 @@
     if (!mikuprojectWbsXlsx) {
         throw new Error("mikuproject WBS XLSX module is not loaded");
     }
+    const mikuprojectWbsMarkdown = globalThis.__mikuprojectWbsMarkdown;
+    if (!mikuprojectWbsMarkdown) {
+        throw new Error("mikuproject WBS Markdown module is not loaded");
+    }
+    const mikuprojectNativeSvg = globalThis.__mikuprojectNativeSvg;
+    if (!mikuprojectNativeSvg) {
+        throw new Error("mikuproject native SVG module is not loaded");
+    }
     const mermaidApi = globalThis.mermaid;
     let currentModel = null;
-    let currentMermaidSvg = "";
+    let currentNativeSvg = "";
     let mermaidRenderCount = 0;
     let lastSavedXmlText = "";
     let lastSavedXmlStamp = "";
@@ -265,6 +273,16 @@
     function updateMermaidSvgButton() {
         getElement("downloadMermaidSvgBtn").disabled = !currentModel;
     }
+    function buildCurrentWbsOptions(model) {
+        syncWbsHolidayDatesInput(model);
+        return {
+            holidayDates: parseWbsDefaultHolidayDates(),
+            displayDaysBeforeBaseDate: parseWbsDisplayDaysBeforeBaseDate(),
+            displayDaysAfterBaseDate: parseWbsDisplayDaysAfterBaseDate(),
+            useBusinessDaysForDisplayRange: useBusinessDaysForWbsDisplayRange(),
+            useBusinessDaysForProgressBand: useBusinessDaysForWbsProgressBand()
+        };
+    }
     function normalizeSvgForXml(svgText) {
         if (!svgText) {
             return "";
@@ -294,7 +312,7 @@
             ".task, .task0, .task1, .task2, .task3, .task4 { fill: #8f95e8 !important; stroke: #5d63cf !important; }",
             ".active, .active0, .active1, .active2, .active3, .active4 { fill: #7fc8a9 !important; stroke: #3f8f72 !important; }",
             ".done, .done0, .done1, .done2, .done3, .done4 { fill: #5ba98f !important; stroke: #2e6e5b !important; }",
-            ".milestone, .milestone0, .milestone1, .milestone2, .milestone3 { fill: #8f95e8 !important; stroke: #5d63cf !important; }",
+            ".milestone, .milestone0, .milestone1, .milestone2, .milestone3 { fill: #666666 !important; stroke: #444444 !important; }",
             ".grid .tick line, .tick line { stroke: #707b94 !important; }",
             ".today { stroke: #ff3b30 !important; }",
             ".taskText, .taskTextOutsideRight, .taskTextOutsideLeft, .sectionTitle, .titleText, text { fill: #1d2740; }",
@@ -333,38 +351,34 @@
                 activeTaskBorderColor: "#3f8f72",
                 doneTaskBkgColor: "#5ba98f",
                 doneTaskBorderColor: "#2e6e5b",
-                milestoneBkgColor: "#8f95e8",
-                milestoneBorderColor: "#5d63cf",
+                milestoneBkgColor: "#666666",
+                milestoneBorderColor: "#444444",
                 gridColor: "#707b94",
                 lineColor: "#707b94",
                 todayLineColor: "#ff3b30"
             }
         };
     }
-    async function renderMermaidPreview(source) {
-        if (!mermaidApi) {
-            currentMermaidSvg = "";
+    async function renderMermaidPreview(_source) {
+        if (!currentModel) {
+            currentNativeSvg = "";
             updateMermaidSvgButton();
-            setMermaidPreviewMarkup(`<div class="md-preview-empty">Mermaid ライブラリを読み込めなかったため、プレビューできません。</div>`);
-            setMermaidError("Mermaid ライブラリが利用できません。");
+            setMermaidPreviewMarkup(`<div class="md-preview-empty">SVG を生成すると、ここにプレビューを表示します。</div>`);
             return;
         }
         clearMermaidError();
-        const renderId = `mikuprojectMermaidRender${++mermaidRenderCount}`;
-        mermaidApi.initialize(getMermaidRenderConfig());
-        try {
-            const result = await mermaidApi.render(renderId, source);
-            currentMermaidSvg = applyMermaidSvgTheme(normalizeSvgForXml(result.svg));
-            setMermaidPreviewMarkup(currentMermaidSvg);
-            updateMermaidSvgButton();
-        }
-        catch (error) {
-            currentMermaidSvg = "";
-            updateMermaidSvgButton();
-            setMermaidPreviewMarkup(`<div class="md-preview-empty">Mermaid のプレビューを表示できませんでした。</div>`);
-            const message = error instanceof Error ? error.message : String(error);
-            setMermaidError(`SVG プレビュー生成に失敗しました: ${message}`);
-            throw error;
+        currentNativeSvg = mikuprojectNativeSvg.exportNativeSvg(currentModel, buildCurrentWbsOptions(currentModel));
+        setMermaidPreviewMarkup(currentNativeSvg);
+        updateMermaidSvgButton();
+        if (mermaidApi) {
+            const renderId = `mikuprojectMermaidRender${++mermaidRenderCount}`;
+            mermaidApi.initialize(getMermaidRenderConfig());
+            try {
+                await mermaidApi.render(renderId, _source);
+            }
+            catch (_error) {
+                // Mermaid text export remains useful even if native SVG preview is used.
+            }
         }
     }
     function setStatus(message) {
@@ -1189,12 +1203,12 @@ WorkWeek1=${formatCalendarWorkWeekSummary(calendar)}</div>
         const mermaidText = mikuprojectXml.exportMermaidGantt(model);
         getTextArea("mermaidOutput").value = mermaidText;
         await renderMermaidPreview(mermaidText);
-        if (!currentMermaidSvg) {
+        if (!currentNativeSvg) {
             setStatus("出力する SVG がありません");
             return;
         }
-        downloadBlob(new Blob([currentMermaidSvg], { type: "image/svg+xml;charset=utf-8" }), "mikuproject-mermaid.svg");
-        setStatus("Mermaid SVG を保存しました");
+        downloadBlob(new Blob([currentNativeSvg], { type: "image/svg+xml;charset=utf-8" }), "mikuproject-native.svg");
+        setStatus("SVG を保存しました");
         showToast("SVG を保存しました");
         setActiveTab("output");
     }
@@ -1213,6 +1227,33 @@ WorkWeek1=${formatCalendarWorkWeekSummary(calendar)}</div>
         downloadBlob(new Blob([markdownText], { type: "text/markdown;charset=utf-8" }), `mermaid-${stamp}.md`);
         setStatus("Mermaid Markdown を保存しました");
         showToast("Mermaid Markdown を保存しました");
+        setActiveTab("output");
+    }
+    function downloadCurrentWbsMarkdown() {
+        const model = ensureCurrentModel();
+        syncXmlTextFromModel(model);
+        const defaultHolidayDates = mikuprojectWbsXlsx.collectWbsHolidayDates(model);
+        syncWbsHolidayDatesInput(model);
+        const displayDaysBeforeBaseDate = parseOptionalNonNegativeInteger(getInput("wbsDisplayDaysBeforeInput").value);
+        const displayDaysAfterBaseDate = parseOptionalNonNegativeInteger(getInput("wbsDisplayDaysAfterInput").value);
+        const useBusinessDaysForDisplayRange = useBusinessDaysForWbsDisplayRange();
+        const useBusinessDaysForProgressBand = useBusinessDaysForWbsProgressBand();
+        const markdownText = mikuprojectWbsMarkdown.exportWbsMarkdown(model, {
+            holidayDates: defaultHolidayDates,
+            displayDaysBeforeBaseDate,
+            displayDaysAfterBaseDate,
+            useBusinessDaysForDisplayRange,
+            useBusinessDaysForProgressBand
+        });
+        const now = new Date();
+        const stamp = [
+            now.getFullYear(),
+            String(now.getMonth() + 1).padStart(2, "0"),
+            String(now.getDate()).padStart(2, "0")
+        ].join("");
+        downloadBlob(new Blob([markdownText], { type: "text/markdown;charset=utf-8" }), `mikuproject-wbs-${stamp}.md`);
+        setStatus("WBS Markdown を保存しました");
+        showToast("WBS Markdown を保存しました");
         setActiveTab("output");
     }
     function runRoundTripCheck() {
@@ -1343,6 +1384,14 @@ WorkWeek1=${formatCalendarWorkWeekSummary(calendar)}</div>
             }
             catch (error) {
                 setStatus(error instanceof Error ? error.message : "WBS XLSX エクスポートに失敗しました");
+            }
+        });
+        getElement("exportWbsMdBtn").addEventListener("click", () => {
+            try {
+                downloadCurrentWbsMarkdown();
+            }
+            catch (error) {
+                setStatus(error instanceof Error ? error.message : "WBS Markdown 保存に失敗しました");
             }
         });
         getElement("downloadXmlBtn").addEventListener("click", () => {

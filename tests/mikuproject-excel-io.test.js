@@ -644,12 +644,33 @@ describe("mikuproject excel io", () => {
     const stylesXml = decodeUtf8(codec.unpackEntries(bytes)["xl/styles.xml"]);
 
     expect(stylesXml).toContain("<b/>");
+    expect(stylesXml).toContain('patternType="gray125"');
     expect(stylesXml).toContain('patternType="solid"');
     expect(stylesXml).toContain("FFD9EAF7");
     expect(stylesXml).toContain("<left style=\"thin\"/>");
     expect(stylesXml).toContain("applyFill=\"1\"");
     expect(stylesXml).toContain("applyBorder=\"1\"");
     expect(stylesXml).toContain("applyFont=\"1\"");
+  });
+
+  it("writes required default fills before custom solid fills", () => {
+    const excelIo = bootExcelIoModule();
+    const codec = new excelIo.XlsxWorkbookCodec();
+    const bytes = codec.exportWorkbook({
+      sheets: [{
+        name: "Styled",
+        rows: [{
+          cells: [
+            { value: "Header", fillColor: "#D9EAF7", border: "thin" }
+          ]
+        }]
+      }]
+    });
+
+    const stylesXml = decodeUtf8(codec.unpackEntries(bytes)["xl/styles.xml"]);
+
+    expect(stylesXml).toContain('<fills count="3">');
+    expect(stylesXml).toContain('<fill><patternFill patternType="none"/></fill><fill><patternFill patternType="gray125"/></fill><fill><patternFill patternType="solid"><fgColor rgb="FFD9EAF7"');
   });
 
   it("writes font size definitions when font size is present", () => {

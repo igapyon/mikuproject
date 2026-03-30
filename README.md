@@ -2,6 +2,8 @@
 
 `mikuproject` は、`MS Project XML` を基軸に、変換・可視化・限定編集を行うローカル HTML ツールです。
 
+`mikuproject` の強みは、同じプロジェクト情報を 1 つの意味体系のまま、用途に応じて複数の形式へ出し分けられることです。`MS Project XML` を基軸に、`XLSX`、`Markdown`、`JSON`、`Mermaid`、生成AI向け表現、そして必要に応じて `MS Project` へも橋渡しできるため、資料共有・レビュー・変換・再利用のそれぞれの場面に合わせて、無理なく形を変えて届けられます。
+
 特に、次の 3 つを重視して設計しています。
 
 - `MS Project XML` を基軸にした変換・可視化・限定編集
@@ -79,6 +81,8 @@ npm run build:xlsx-sample
 npm test
 npm run build
 ```
+
+`local-data/` は確認用の再生成可能な生成物置き場として扱う。ここに出す sample や検証用出力は、Git 管理下の永続成果物ではなく、必要時に再生成できればよい前提とする。
 
 ## 関連ドキュメント
 

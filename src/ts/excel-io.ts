@@ -76,6 +76,7 @@
   };
 
   type FillDescriptor = {
+    patternType?: "none" | "gray125" | "solid";
     fillColor?: string;
   };
 
@@ -93,6 +94,8 @@
   const BORDER_STYLES: XlsxBorderStyle[] = ["thin"];
   const STYLE_KEY_DELIMITER = "::";
   const DEFAULT_STYLE: StyleDescriptor = { numberFormat: "general" };
+  const DEFAULT_FILL_NONE: FillDescriptor = { patternType: "none", fillColor: undefined };
+  const DEFAULT_FILL_GRAY125: FillDescriptor = { patternType: "gray125", fillColor: undefined };
 
   class XlsxWorkbookCodec {
     exportWorkbook(workbook: XlsxWorkbookModel): Uint8Array {
@@ -596,13 +599,13 @@
       fontKey,
       { bold: undefined, fontSize: undefined }
     );
-    const fills = dedupeDescriptors(styles.map((style) => ({ fillColor: style.fillColor } as FillDescriptor)), fillKey, { fillColor: undefined });
+    const fills = dedupeFillDescriptors(styles.map((style) => ({ patternType: style.fillColor ? "solid" : "none", fillColor: style.fillColor } as FillDescriptor)));
     const borders = dedupeDescriptors(styles.map((style) => ({ border: style.border } as BorderDescriptor)), borderKey, { border: undefined });
 
     const styleNodes = styles.map((style) => {
       const numFmtId = mapNumberFormatId(style.numberFormat);
       const fontId = fonts.indexByKey.get(fontKey({ bold: style.bold, fontSize: style.fontSize })) || 0;
-      const fillId = fills.indexByKey.get(fillKey({ fillColor: style.fillColor })) || 0;
+      const fillId = fills.indexByKey.get(fillKey({ patternType: style.fillColor ? "solid" : "none", fillColor: style.fillColor })) || 0;
       const borderId = borders.indexByKey.get(borderKey({ border: style.border })) || 0;
       const applyNumberFormat = numFmtId !== 0 ? ` applyNumberFormat="1"` : "";
       const applyAlignment = style.horizontalAlign || style.verticalAlign || style.wrapText ? ` applyAlignment="1"` : "";
@@ -665,7 +668,10 @@
   }
 
   function fillKey(fill: FillDescriptor): string {
-    return fill.fillColor || "";
+    return [
+      fill.patternType || "none",
+      fill.fillColor || ""
+    ].join(STYLE_KEY_DELIMITER);
   }
 
   function borderKey(border: BorderDescriptor): string {
@@ -681,10 +687,33 @@
   }
 
   function buildFillXml(fill: FillDescriptor): string {
-    if (!fill.fillColor) {
+    if (fill.patternType === "gray125") {
+      return `<fill><patternFill patternType="gray125"/></fill>`;
+    }
+    if (!fill.fillColor || fill.patternType === "none") {
       return `<fill><patternFill patternType="none"/></fill>`;
     }
     return `<fill><patternFill patternType="solid"><fgColor rgb="${fill.fillColor}"/><bgColor indexed="64"/></patternFill></fill>`;
+  }
+
+  function dedupeFillDescriptors(items: FillDescriptor[]): { items: FillDescriptor[]; indexByKey: Map<string, number> } {
+    const uniqueItems: FillDescriptor[] = [DEFAULT_FILL_NONE, DEFAULT_FILL_GRAY125];
+    const indexByKey = new Map<string, number>([
+      [fillKey(DEFAULT_FILL_NONE), 0],
+      [fillKey(DEFAULT_FILL_GRAY125), 1]
+    ]);
+    for (const item of items) {
+      const normalizedItem: FillDescriptor = {
+        patternType: item.fillColor ? "solid" : (item.patternType || "none"),
+        fillColor: item.fillColor
+      };
+      const key = fillKey(normalizedItem);
+      if (!indexByKey.has(key)) {
+        indexByKey.set(key, uniqueItems.length);
+        uniqueItems.push(normalizedItem);
+      }
+    }
+    return { items: uniqueItems, indexByKey };
   }
 
   function buildBorderXml(border: BorderDescriptor): string {
@@ -1015,8 +1044,10 @@
       "fill"
     )).map((fillElement) => {
       const patternFill = findDirectChild(fillElement, "patternFill");
+      const patternType = patternFill?.getAttribute("patternType") as FillDescriptor["patternType"] | null;
       const fgColor = patternFill ? findDirectChild(patternFill, "fgColor") : null;
       return {
+        patternType: patternType || undefined,
         fillColor: fgColor?.getAttribute("rgb") || undefined
       };
     });

@@ -1374,6 +1374,56 @@
     return `UID=${task.uid}${task.name ? ` (${task.name})` : ""}`;
   }
 
+  function isComparableOutlineNumber(value: string | undefined): boolean {
+    if (!value) {
+      return false;
+    }
+    return value.split(".").every((part) => /^\d+$/.test(part));
+  }
+
+  function compareOutlineNumbers(left: string | undefined, right: string | undefined): number {
+    if (!left || !right) {
+      return 0;
+    }
+    const leftParts = left.split(".").map((part) => Number(part));
+    const rightParts = right.split(".").map((part) => Number(part));
+    const maxLength = Math.max(leftParts.length, rightParts.length);
+    for (let index = 0; index < maxLength; index += 1) {
+      const leftPart = leftParts[index];
+      const rightPart = rightParts[index];
+      if (leftPart === undefined) {
+        return -1;
+      }
+      if (rightPart === undefined) {
+        return 1;
+      }
+      if (leftPart !== rightPart) {
+        return leftPart - rightPart;
+      }
+    }
+    return 0;
+  }
+
+  function detectTaskOrderIssue(tasks: TaskModel[]): { previous: TaskModel; current: TaskModel } | null {
+    let previousComparableTask: TaskModel | null = null;
+    for (const task of tasks) {
+      if (isPlaceholderUid(task.uid)) {
+        continue;
+      }
+      if (!isComparableOutlineNumber(task.outlineNumber)) {
+        continue;
+      }
+      if (previousComparableTask && compareOutlineNumbers(previousComparableTask.outlineNumber, task.outlineNumber) >= 0) {
+        return {
+          previous: previousComparableTask,
+          current: task
+        };
+      }
+      previousComparableTask = task;
+    }
+    return null;
+  }
+
   function describeResource(resource: ResourceModel): string {
     return `UID=${resource.uid || "(なし)"}${resource.name ? ` (${resource.name})` : ""}`;
   }
@@ -1802,9 +1852,10 @@
     }
     walk(null, []);
     const taskFinishes = orderedTasks.map((task) => task.finish).filter(Boolean).sort();
-    return ensureDefaultProjectCalendar({
+    return normalizeProjectModel(ensureDefaultProjectCalendar({
       project: {
         name: data.project.name.trim(),
+        title: data.project.name.trim(),
         startDate: projectStart,
         finishDate: data.project.planned_finish || taskFinishes.at(-1) || projectStart,
         scheduleFromStart: true,
@@ -1816,7 +1867,7 @@
       resources: [],
       assignments: [],
       calendars: []
-    });
+    }));
   }
 
   function exportProjectOverviewView(model: ProjectModel) {
@@ -2423,9 +2474,10 @@
 
     const taskStarts = tasks.map((task) => task.start).filter(Boolean).sort();
     const taskFinishes = tasks.map((task) => task.finish).filter(Boolean).sort();
-    return ensureDefaultProjectCalendar({
+    return normalizeProjectModel(ensureDefaultProjectCalendar({
       project: {
         name: "CSV Imported Project",
+        title: "CSV Imported Project",
         startDate: taskStarts[0] || "",
         finishDate: taskFinishes.at(-1) || "",
         scheduleFromStart: true,
@@ -2437,7 +2489,7 @@
       resources,
       assignments,
       calendars: []
-    });
+    }));
   }
 
   function importMsProjectXml(xmlText: string): ProjectModel {
@@ -2448,7 +2500,7 @@
     const resources = Array.from(projectElement.getElementsByTagName("Resources")[0]?.getElementsByTagName("Resource") || []);
     const assignments = Array.from(projectElement.getElementsByTagName("Assignments")[0]?.getElementsByTagName("Assignment") || []);
 
-    return ensureDefaultProjectCalendar({
+    return normalizeProjectModel(ensureDefaultProjectCalendar({
       project: {
         name: textContent(projectElement, "Name"),
         title: textContent(projectElement, "Title") || undefined,
@@ -2685,7 +2737,7 @@
           value: textContent(timephasedData, "Value") || undefined
         }))
       }))
-    });
+    }));
   }
 
   function appendTextElement(doc: XMLDocument, parent: Element, name: string, value: string | number | boolean | undefined): void {
@@ -3382,6 +3434,14 @@
       if (task.remainingCost !== undefined && task.remainingCost < 0) {
         issues.push({ level: "warning", scope: "tasks", message: `Task RemainingCost が負値です: ${describeTask(task)}` });
       }
+    }
+    const taskOrderIssue = detectTaskOrderIssue(model.tasks);
+    if (taskOrderIssue) {
+      issues.push({
+        level: "warning",
+        scope: "tasks",
+        message: `Task の並び順が OutlineNumber 順と一致していない可能性があります: ${describeTask(taskOrderIssue.current)} (直前: ${describeTask(taskOrderIssue.previous)})`
+      });
     }
 
     for (const resource of model.resources) {

@@ -2790,6 +2790,7 @@ md-outlined-select.md-outlined-field:focus-within::part(container) {
           </div>
           <div class="md-panel-actions">
             <button id="exportWbsXlsxBtn" type="button" class="md-button md-button--tonal">WBS XLSX</button>
+            <button id="exportWbsMdBtn" type="button" class="md-button md-button--tonal">WBS Markdown</button>
             <button id="exportMermaidMdBtn" type="button" class="md-button md-button--tonal">Mermaid</button>
             <button id="downloadMermaidSvgBtn" type="button" class="md-button md-button--surface" disabled>SVG</button>
           </div>
@@ -2892,6 +2893,9 @@ md-outlined-select.md-outlined-field:focus-within::part(container) {
     <lht-toast id="toast"></lht-toast>
   </div>
   </main>
+  
+  
+  
   
   
   
@@ -5043,6 +5047,109 @@ if (!customElements.get("lht-page-menu")) {
  * SPDX-License-Identifier: Apache-2.0
  */
 (() => {
+    function escapeMarkdownLineStart(text) {
+        return String(text || "")
+            .replace(/^(\s*)([#>])/u, "$1\\$2")
+            .replace(/^(\s*)([-+*])(\s+)/u, "$1\\$2$3")
+            .replace(/^(\s*)(\d+)\.(\s+)/u, "$1$2\\.$3");
+    }
+    function escapeMarkdownLiteralParts(text) {
+        const source = String(text || "");
+        const parts = [];
+        let buffer = "";
+        function pushTextBuffer() {
+            if (!buffer) {
+                return;
+            }
+            parts.push({ kind: "text", text: buffer, rawText: buffer });
+            buffer = "";
+        }
+        function pushEscaped(textValue, rawText) {
+            pushTextBuffer();
+            if (!textValue) {
+                return;
+            }
+            parts.push({ kind: "escaped", text: textValue, rawText });
+        }
+        for (let index = 0; index < source.length; index += 1) {
+            const ch = source[index];
+            const atLineStart = index === 0;
+            const next = source[index + 1] || "";
+            if (ch === "\\") {
+                pushEscaped("\\\\", ch);
+                continue;
+            }
+            if (ch === "&") {
+                pushEscaped("&amp;", ch);
+                continue;
+            }
+            if (ch === "<") {
+                pushEscaped("&lt;", ch);
+                continue;
+            }
+            if (ch === ">") {
+                pushEscaped("&gt;", ch);
+                continue;
+            }
+            if (/[`*_{}\[\]()!|~]/.test(ch)) {
+                pushEscaped(`\\${ch}`, ch);
+                continue;
+            }
+            if (atLineStart && /[#]/.test(ch)) {
+                pushEscaped(`\\${ch}`, ch);
+                continue;
+            }
+            if (atLineStart && /[-+*]/.test(ch) && /\s/u.test(next)) {
+                pushEscaped(`\\${ch}`, ch);
+                continue;
+            }
+            if (atLineStart && /\d/u.test(ch)) {
+                let digitRun = ch;
+                let cursor = index + 1;
+                while (cursor < source.length && /\d/u.test(source[cursor])) {
+                    digitRun += source[cursor];
+                    cursor += 1;
+                }
+                if (source[cursor] === "." && /\s/u.test(source[cursor + 1] || "")) {
+                    pushTextBuffer();
+                    parts.push({ kind: "text", text: digitRun, rawText: digitRun });
+                    parts.push({ kind: "escaped", text: "\\.", rawText: "." });
+                    index = cursor;
+                    continue;
+                }
+            }
+            buffer += ch;
+        }
+        pushTextBuffer();
+        return parts;
+    }
+    function escapeMarkdownLiteralText(text) {
+        return String(text || "")
+            .replace(/\r\n?/g, "\n")
+            .split("\n")
+            .map((line) => escapeMarkdownLiteralParts(line).map((part) => part.text).join(""))
+            .join("\n");
+    }
+    // Table cells need the normal literal escaping plus pipe escaping and
+    // line-break conversion because Markdown tables do not preserve raw newlines.
+    function escapeMarkdownTableCell(text) {
+        return escapeMarkdownLiteralText(text).replaceAll("|", "\\|").replaceAll("\n", "<br>");
+    }
+    globalThis.__mikuprojectMarkdownEscape = {
+        escapeMarkdownLineStart,
+        escapeMarkdownLiteralParts,
+        escapeMarkdownLiteralText,
+        escapeMarkdownTableCell
+    };
+})();
+  </script>
+
+  <script>
+/*
+ * Copyright 2026 Toshiki Iga
+ * SPDX-License-Identifier: Apache-2.0
+ */
+(() => {
     const TEXT_ENCODER = new TextEncoder();
     const TEXT_DECODER = new TextDecoder();
     const INVALID_SHEET_NAME_PATTERN = /[:\\/?*\[\]]/;
@@ -5053,6 +5160,8 @@ if (!customElements.get("lht-page-menu")) {
     const BORDER_STYLES = ["thin"];
     const STYLE_KEY_DELIMITER = "::";
     const DEFAULT_STYLE = { numberFormat: "general" };
+    const DEFAULT_FILL_NONE = { patternType: "none", fillColor: undefined };
+    const DEFAULT_FILL_GRAY125 = { patternType: "gray125", fillColor: undefined };
     class XlsxWorkbookCodec {
         exportWorkbook(workbook) {
             const normalizedWorkbook = normalizeWorkbook(workbook);
@@ -5488,12 +5597,12 @@ if (!customElements.get("lht-page-menu")) {
     }
     function buildStylesXml(styles) {
         const fonts = dedupeDescriptors(styles.map((style) => ({ bold: style.bold, fontSize: style.fontSize })), fontKey, { bold: undefined, fontSize: undefined });
-        const fills = dedupeDescriptors(styles.map((style) => ({ fillColor: style.fillColor })), fillKey, { fillColor: undefined });
+        const fills = dedupeFillDescriptors(styles.map((style) => ({ patternType: style.fillColor ? "solid" : "none", fillColor: style.fillColor })));
         const borders = dedupeDescriptors(styles.map((style) => ({ border: style.border })), borderKey, { border: undefined });
         const styleNodes = styles.map((style) => {
             const numFmtId = mapNumberFormatId(style.numberFormat);
             const fontId = fonts.indexByKey.get(fontKey({ bold: style.bold, fontSize: style.fontSize })) || 0;
-            const fillId = fills.indexByKey.get(fillKey({ fillColor: style.fillColor })) || 0;
+            const fillId = fills.indexByKey.get(fillKey({ patternType: style.fillColor ? "solid" : "none", fillColor: style.fillColor })) || 0;
             const borderId = borders.indexByKey.get(borderKey({ border: style.border })) || 0;
             const applyNumberFormat = numFmtId !== 0 ? ` applyNumberFormat="1"` : "";
             const applyAlignment = style.horizontalAlign || style.verticalAlign || style.wrapText ? ` applyAlignment="1"` : "";
@@ -5552,7 +5661,10 @@ if (!customElements.get("lht-page-menu")) {
         ].join(STYLE_KEY_DELIMITER);
     }
     function fillKey(fill) {
-        return fill.fillColor || "";
+        return [
+            fill.patternType || "none",
+            fill.fillColor || ""
+        ].join(STYLE_KEY_DELIMITER);
     }
     function borderKey(border) {
         return border.border || "";
@@ -5565,10 +5677,32 @@ if (!customElements.get("lht-page-menu")) {
         return parts ? `<font>${parts}</font>` : `<font/>`;
     }
     function buildFillXml(fill) {
-        if (!fill.fillColor) {
+        if (fill.patternType === "gray125") {
+            return `<fill><patternFill patternType="gray125"/></fill>`;
+        }
+        if (!fill.fillColor || fill.patternType === "none") {
             return `<fill><patternFill patternType="none"/></fill>`;
         }
         return `<fill><patternFill patternType="solid"><fgColor rgb="${fill.fillColor}"/><bgColor indexed="64"/></patternFill></fill>`;
+    }
+    function dedupeFillDescriptors(items) {
+        const uniqueItems = [DEFAULT_FILL_NONE, DEFAULT_FILL_GRAY125];
+        const indexByKey = new Map([
+            [fillKey(DEFAULT_FILL_NONE), 0],
+            [fillKey(DEFAULT_FILL_GRAY125), 1]
+        ]);
+        for (const item of items) {
+            const normalizedItem = {
+                patternType: item.fillColor ? "solid" : (item.patternType || "none"),
+                fillColor: item.fillColor
+            };
+            const key = fillKey(normalizedItem);
+            if (!indexByKey.has(key)) {
+                indexByKey.set(key, uniqueItems.length);
+                uniqueItems.push(normalizedItem);
+            }
+        }
+        return { items: uniqueItems, indexByKey };
     }
     function buildBorderXml(border) {
         if (!border.border) {
@@ -5830,8 +5964,10 @@ if (!customElements.get("lht-page-menu")) {
     function parseFills(document) {
         return Array.from(document.getElementsByTagNameNS("http://schemas.openxmlformats.org/spreadsheetml/2006/main", "fill")).map((fillElement) => {
             const patternFill = findDirectChild(fillElement, "patternFill");
+            const patternType = patternFill === null || patternFill === void 0 ? void 0 : patternFill.getAttribute("patternType");
             const fgColor = patternFill ? findDirectChild(patternFill, "fgColor") : null;
             return {
+                patternType: patternType || undefined,
                 fillColor: (fgColor === null || fgColor === void 0 ? void 0 : fgColor.getAttribute("rgb")) || undefined
             };
         });
@@ -7515,6 +7651,53 @@ if (!customElements.get("lht-page-menu")) {
     function describeTask(task) {
         return `UID=${task.uid}${task.name ? ` (${task.name})` : ""}`;
     }
+    function isComparableOutlineNumber(value) {
+        if (!value) {
+            return false;
+        }
+        return value.split(".").every((part) => /^\d+$/.test(part));
+    }
+    function compareOutlineNumbers(left, right) {
+        if (!left || !right) {
+            return 0;
+        }
+        const leftParts = left.split(".").map((part) => Number(part));
+        const rightParts = right.split(".").map((part) => Number(part));
+        const maxLength = Math.max(leftParts.length, rightParts.length);
+        for (let index = 0; index < maxLength; index += 1) {
+            const leftPart = leftParts[index];
+            const rightPart = rightParts[index];
+            if (leftPart === undefined) {
+                return -1;
+            }
+            if (rightPart === undefined) {
+                return 1;
+            }
+            if (leftPart !== rightPart) {
+                return leftPart - rightPart;
+            }
+        }
+        return 0;
+    }
+    function detectTaskOrderIssue(tasks) {
+        let previousComparableTask = null;
+        for (const task of tasks) {
+            if (isPlaceholderUid(task.uid)) {
+                continue;
+            }
+            if (!isComparableOutlineNumber(task.outlineNumber)) {
+                continue;
+            }
+            if (previousComparableTask && compareOutlineNumbers(previousComparableTask.outlineNumber, task.outlineNumber) >= 0) {
+                return {
+                    previous: previousComparableTask,
+                    current: task
+                };
+            }
+            previousComparableTask = task;
+        }
+        return null;
+    }
     function describeResource(resource) {
         return `UID=${resource.uid || "(なし)"}${resource.name ? ` (${resource.name})` : ""}`;
     }
@@ -7884,9 +8067,10 @@ if (!customElements.get("lht-page-menu")) {
         }
         walk(null, []);
         const taskFinishes = orderedTasks.map((task) => task.finish).filter(Boolean).sort();
-        return ensureDefaultProjectCalendar({
+        return normalizeProjectModel(ensureDefaultProjectCalendar({
             project: {
                 name: data.project.name.trim(),
+                title: data.project.name.trim(),
                 startDate: projectStart,
                 finishDate: data.project.planned_finish || taskFinishes.at(-1) || projectStart,
                 scheduleFromStart: true,
@@ -7898,7 +8082,7 @@ if (!customElements.get("lht-page-menu")) {
             resources: [],
             assignments: [],
             calendars: []
-        });
+        }));
     }
     function exportProjectOverviewView(model) {
         const parentMap = buildTaskParentMap(model.tasks);
@@ -8465,9 +8649,10 @@ if (!customElements.get("lht-page-menu")) {
         });
         const taskStarts = tasks.map((task) => task.start).filter(Boolean).sort();
         const taskFinishes = tasks.map((task) => task.finish).filter(Boolean).sort();
-        return ensureDefaultProjectCalendar({
+        return normalizeProjectModel(ensureDefaultProjectCalendar({
             project: {
                 name: "CSV Imported Project",
+                title: "CSV Imported Project",
                 startDate: taskStarts[0] || "",
                 finishDate: taskFinishes.at(-1) || "",
                 scheduleFromStart: true,
@@ -8479,7 +8664,7 @@ if (!customElements.get("lht-page-menu")) {
             resources,
             assignments,
             calendars: []
-        });
+        }));
     }
     function importMsProjectXml(xmlText) {
         var _a, _b, _c, _d, _e, _f, _g;
@@ -8489,7 +8674,7 @@ if (!customElements.get("lht-page-menu")) {
         const tasks = Array.from(((_b = projectElement.getElementsByTagName("Tasks")[0]) === null || _b === void 0 ? void 0 : _b.getElementsByTagName("Task")) || []);
         const resources = Array.from(((_c = projectElement.getElementsByTagName("Resources")[0]) === null || _c === void 0 ? void 0 : _c.getElementsByTagName("Resource")) || []);
         const assignments = Array.from(((_d = projectElement.getElementsByTagName("Assignments")[0]) === null || _d === void 0 ? void 0 : _d.getElementsByTagName("Assignment")) || []);
-        return ensureDefaultProjectCalendar({
+        return normalizeProjectModel(ensureDefaultProjectCalendar({
             project: {
                 name: textContent(projectElement, "Name"),
                 title: textContent(projectElement, "Title") || undefined,
@@ -8729,7 +8914,7 @@ if (!customElements.get("lht-page-menu")) {
                     value: textContent(timephasedData, "Value") || undefined
                 }))
             }))
-        });
+        }));
     }
     function appendTextElement(doc, parent, name, value) {
         if (value === undefined || value === "") {
@@ -9404,6 +9589,14 @@ if (!customElements.get("lht-page-menu")) {
             if (task.remainingCost !== undefined && task.remainingCost < 0) {
                 issues.push({ level: "warning", scope: "tasks", message: `Task RemainingCost が負値です: ${describeTask(task)}` });
             }
+        }
+        const taskOrderIssue = detectTaskOrderIssue(model.tasks);
+        if (taskOrderIssue) {
+            issues.push({
+                level: "warning",
+                scope: "tasks",
+                message: `Task の並び順が OutlineNumber 順と一致していない可能性があります: ${describeTask(taskOrderIssue.current)} (直前: ${describeTask(taskOrderIssue.previous)})`
+            });
         }
         for (const resource of model.resources) {
             if (!resource.uid) {
@@ -11998,6 +12191,779 @@ if (!customElements.get("lht-page-menu")) {
         collectWbsHolidayDates,
         exportWbsWorkbook,
         layout: WBS_LAYOUT
+    };
+})();
+  </script>
+
+  <script>
+/*
+ * Copyright 2026 Toshiki Iga
+ * SPDX-License-Identifier: Apache-2.0
+ */
+(() => {
+    const markdownEscape = globalThis.__mikuprojectMarkdownEscape;
+    if (!markdownEscape) {
+        throw new Error("mikuproject markdown escape module is not loaded");
+    }
+    function exportWbsMarkdown(model, options = {}) {
+        const nonWorkingDayTypes = collectProjectNonWorkingDayTypes(model);
+        const holidaySet = new Set([
+            ...collectWbsHolidayDates(model),
+            ...(options.holidayDates || []).map((day) => String(day || "").slice(0, 10)).filter(Boolean)
+        ]);
+        const dateBand = buildDisplayDateBand(model.project.startDate, model.project.finishDate, model.project.currentDate, options.displayDaysBeforeBaseDate, options.displayDaysAfterBaseDate, holidaySet, nonWorkingDayTypes, options.useBusinessDaysForDisplayRange);
+        const calendarNameByUid = new Map(model.calendars.map((calendar) => [calendar.uid, calendar.name]));
+        const resourceNameByUid = new Map(model.resources.map((resource) => [resource.uid, resource.name]));
+        const predecessorNameByUid = new Map(model.tasks.map((task) => [task.uid, task.name]));
+        const resourceNamesByTaskUid = new Map();
+        for (const assignment of model.assignments) {
+            const resourceName = resourceNameByUid.get(assignment.resourceUid);
+            if (!resourceName) {
+                continue;
+            }
+            const resourceNames = resourceNamesByTaskUid.get(assignment.taskUid) || [];
+            if (!resourceNames.includes(resourceName)) {
+                resourceNames.push(resourceName);
+            }
+            resourceNamesByTaskUid.set(assignment.taskUid, resourceNames);
+        }
+        const sections = [
+            "# プロジェクト情報",
+            "",
+            ...buildKeyValueTable([
+                ["プロジェクト名", model.project.name || "-"],
+                ["カレンダ", formatCalendarLabel(model.project.calendarUID, calendarNameByUid)],
+                ["開始日", formatWbsDate(model.project.startDate)],
+                ["終了日", formatWbsDate(model.project.finishDate)],
+                ["現在日", formatWbsDate(model.project.currentDate)],
+                ["祝日", String(holidaySet.size)]
+            ]),
+            "",
+            "# WBS ツリー",
+            "",
+            ...wrapFenceBlock(buildTreeLines(model.tasks, holidaySet, nonWorkingDayTypes, options.useBusinessDaysForProgressBand), "text"),
+            "",
+            "---",
+            "",
+            "# WBS テーブル",
+            "",
+            ...buildWbsTable(model.tasks, holidaySet, nonWorkingDayTypes, resourceNamesByTaskUid, predecessorNameByUid, options.useBusinessDaysForProgressBand),
+            "",
+            "---",
+            "",
+            "# サマリ",
+            "",
+            ...buildKeyValueTable([
+                ["表示日", String(dateBand.length)],
+                ["表示週", String(dateBand.length > 0 ? Math.ceil(dateBand.length / 7) : 0)],
+                ["営業日", String(countBusinessDays(dateBand, holidaySet, nonWorkingDayTypes))],
+                ["前日数", formatOptionalCount(options.displayDaysBeforeBaseDate)],
+                ["後日数", formatOptionalCount(options.displayDaysAfterBaseDate)],
+                ["表示", options.useBusinessDaysForDisplayRange ? "営業日" : "暦日"],
+                ["進捗", options.useBusinessDaysForProgressBand ? "営業日" : "暦日"],
+                ["基準日", formatWbsDate(model.project.currentDate)],
+                ["タスク", String(model.tasks.length)],
+                ["リソース", String(model.resources.length)],
+                ["割当", String(model.assignments.length)],
+                ["カレンダ", String(model.calendars.length)]
+            ]),
+            ""
+        ];
+        return sections.join("\n");
+    }
+    function buildKeyValueTable(rows) {
+        return [
+            "| 項目 | 値 |",
+            "| --- | --- |",
+            ...rows.map(([label, value]) => `| ${escapeMarkdownCell(label)} | ${escapeMarkdownCell(value)} |`)
+        ];
+    }
+    function buildWbsTable(tasks, holidaySet, nonWorkingDayTypes, resourceNamesByTaskUid, predecessorNameByUid, useBusinessDaysForProgressBand) {
+        const header = [
+            "WBS",
+            "種別",
+            "階層",
+            "名称",
+            "開始",
+            "終了",
+            "期間",
+            "タスク詳細",
+            "進捗",
+            "担当",
+            "リソース",
+            "先行"
+        ];
+        const lines = [
+            `| ${header.join(" | ")} |`,
+            `| ${header.map(() => "---").join(" | ")} |`
+        ];
+        for (const task of tasks) {
+            const resourceNames = resourceNamesByTaskUid.get(task.uid) || [];
+            lines.push([
+                task.wbs || task.outlineNumber || "-",
+                classifyTaskKind(task),
+                String(task.outlineLevel || "-"),
+                formatTableTaskLabel(task),
+                formatWbsDate(task.start),
+                formatWbsDate(task.finish),
+                formatDurationLabel(task, holidaySet, nonWorkingDayTypes, useBusinessDaysForProgressBand),
+                formatNoteCell(task.notes),
+                formatPercentCell(task.percentComplete),
+                firstResourceName(resourceNames) || "-",
+                resourceNames.join(", ") || "-",
+                task.predecessors.map((item) => predecessorNameByUid.get(item.predecessorUid) || item.predecessorUid).join(", ") || "-"
+            ].map((value) => escapeMarkdownCell(value)).join(" | ").replace(/^/, "| ").concat(" |"));
+        }
+        return lines;
+    }
+    function buildTreeLines(tasks, holidaySet, nonWorkingDayTypes, useBusinessDaysForProgressBand) {
+        const lines = [];
+        for (const task of tasks) {
+            const indent = task.outlineLevel > 1 ? `${"　".repeat(Math.max(0, task.outlineLevel - 2))}┗　` : "";
+            const taskLine = `${indent}${formatTreeInlineText(task.wbs || task.outlineNumber || "-")} ${formatTreeInlineText(task.name || "-")} (${formatTreeInlineText(formatTreeDateRange(task.start, task.finish))}): ${formatTreeInlineText(formatPercentCell(task.percentComplete))}`;
+            lines.push(taskLine);
+            if (task.notes && task.notes.trim()) {
+                const noteIndent = `${"　".repeat(Math.max(0, task.outlineLevel - 1))}　`;
+                const noteLines = normalizeFenceText(task.notes)
+                    .split("\n")
+                    .filter(Boolean);
+                if (noteLines.length > 0) {
+                    lines.push(`${noteIndent}詳細: ${noteLines[0]}`);
+                    for (const line of noteLines.slice(1)) {
+                        lines.push(`${noteIndent}      ${line}`);
+                    }
+                }
+            }
+        }
+        return lines.length > 0 ? lines : ["(task なし)"];
+    }
+    function classifyTaskKind(task) {
+        if (task.summary) {
+            return "フェーズ";
+        }
+        if (task.milestone) {
+            return "マイル";
+        }
+        return "タスク";
+    }
+    function formatTableTaskLabel(task) {
+        return task.name || "-";
+    }
+    function formatNoteCell(value) {
+        const normalized = normalizeTextBlock(value);
+        return normalized ? normalized : "-";
+    }
+    function formatPercentCell(value) {
+        if (value === undefined || value === null || !Number.isFinite(value)) {
+            return "-";
+        }
+        return `${Math.max(0, Math.min(100, Math.round(value)))}%`;
+    }
+    function formatFlagCell(flag, label) {
+        return flag ? label : "-";
+    }
+    function formatOptionalCount(value) {
+        if (value === undefined || value === null || !Number.isFinite(value)) {
+            return "-";
+        }
+        return String(Math.max(0, Math.floor(value)));
+    }
+    function escapeMarkdownCell(value) {
+        return markdownEscape.escapeMarkdownTableCell(String(value || ""));
+    }
+    function formatTreeInlineText(value) {
+        return normalizeFenceText(value).replace(/\n+/g, " / ");
+    }
+    // normalizeTextBlock only performs text normalization for export:
+    // newline normalization, control-character removal, tab expansion,
+    // trailing-space trimming, and blank-line compaction. It does not apply
+    // Markdown-specific escaping.
+    function normalizeTextBlock(value) {
+        return String(value || "").trim()
+            .replace(/\r\n?/g, "\n")
+            .replace(/[\u0000-\u0008\u000B\u000C\u000E-\u001F\u007F]/g, "")
+            .replace(/\t/g, "  ")
+            .split("\n")
+            .map((line) => line.trimEnd())
+            .filter((line, index, lines) => !(line === "" && lines[index - 1] === ""))
+            .join("\n");
+    }
+    // Code-fence text does not need normal Markdown escaping, but it does need
+    // normalized content so fence selection and indentation stay predictable.
+    function normalizeFenceText(value) {
+        return normalizeTextBlock(value);
+    }
+    function wrapFenceBlock(lines, infoString) {
+        const content = lines.join("\n");
+        const backtickRun = longestFenceRun(content, "`");
+        const tildeRun = longestFenceRun(content, "~");
+        const fenceChar = tildeRun <= backtickRun ? "~" : "`";
+        const fenceLength = Math.max(3, (fenceChar === "~" ? tildeRun : backtickRun) + 1);
+        const fence = fenceChar.repeat(fenceLength);
+        return [`${fence}${infoString}`, ...lines, fence];
+    }
+    function longestFenceRun(text, char) {
+        let maxRun = 0;
+        let currentRun = 0;
+        for (const currentChar of text) {
+            if (currentChar === char) {
+                currentRun += 1;
+                if (currentRun > maxRun) {
+                    maxRun = currentRun;
+                }
+            }
+            else {
+                currentRun = 0;
+            }
+        }
+        return maxRun;
+    }
+    function collectWbsHolidayDates(model) {
+        const holidaySet = new Set();
+        for (const calendar of model.calendars) {
+            for (const exception of calendar.exceptions || []) {
+                if (exception.dayWorking !== false && (exception.workingTimes || []).length > 0) {
+                    continue;
+                }
+                for (const day of expandExceptionDays(exception)) {
+                    holidaySet.add(day);
+                }
+            }
+        }
+        return Array.from(holidaySet).sort();
+    }
+    function expandExceptionDays(exception) {
+        const singleDay = exception.fromDate ? formatDateOnly(parseDateOnly(exception.fromDate)) : "";
+        if (!exception.fromDate || !exception.toDate) {
+            return singleDay ? [singleDay] : [];
+        }
+        return buildDateBand(exception.fromDate, exception.toDate);
+    }
+    function resolveProjectCalendar(model) {
+        if (model.project.calendarUID) {
+            const projectCalendar = model.calendars.find((calendar) => calendar.uid === model.project.calendarUID);
+            if (projectCalendar) {
+                return projectCalendar;
+            }
+        }
+        return model.calendars.find((calendar) => calendar.isBaseCalendar) || model.calendars[0];
+    }
+    function resolveCalendarDayWorking(calendarByUid, calendar, dayType, visiting = new Set()) {
+        if (!calendar) {
+            return undefined;
+        }
+        if (visiting.has(calendar.uid)) {
+            return undefined;
+        }
+        visiting.add(calendar.uid);
+        const weekDay = calendar.weekDays.find((item) => item.dayType === dayType);
+        if (weekDay) {
+            return weekDay.dayWorking;
+        }
+        if (calendar.baseCalendarUID) {
+            return resolveCalendarDayWorking(calendarByUid, calendarByUid.get(calendar.baseCalendarUID), dayType, visiting);
+        }
+        return undefined;
+    }
+    function collectProjectNonWorkingDayTypes(model) {
+        const calendarByUid = new Map(model.calendars.map((calendar) => [calendar.uid, calendar]));
+        const projectCalendar = resolveProjectCalendar(model);
+        const nonWorkingDayTypes = new Set();
+        for (let dayType = 1; dayType <= 7; dayType += 1) {
+            const dayWorking = resolveCalendarDayWorking(calendarByUid, projectCalendar, dayType);
+            if (dayWorking === false) {
+                nonWorkingDayTypes.add(dayType);
+                continue;
+            }
+            if (dayWorking === undefined && (dayType === 1 || dayType === 7)) {
+                nonWorkingDayTypes.add(dayType);
+            }
+        }
+        return nonWorkingDayTypes;
+    }
+    function buildDateBand(startDate, finishDate) {
+        const start = parseDateOnly(startDate);
+        const finish = parseDateOnly(finishDate);
+        if (!start || !finish || start.getTime() > finish.getTime()) {
+            return [];
+        }
+        const days = [];
+        const cursor = new Date(start.getTime());
+        while (cursor.getTime() <= finish.getTime()) {
+            days.push(formatDateOnly(cursor));
+            cursor.setDate(cursor.getDate() + 1);
+        }
+        return days;
+    }
+    function buildDisplayDateBand(startDate, finishDate, baseDate, displayDaysBeforeBaseDate, displayDaysAfterBaseDate, holidaySet, nonWorkingDayTypes, useBusinessDaysForDisplayRange) {
+        const fullBand = buildDateBand(startDate, finishDate);
+        const before = normalizeDisplayDayCount(displayDaysBeforeBaseDate);
+        const after = normalizeDisplayDayCount(displayDaysAfterBaseDate);
+        if (before === null && after === null) {
+            return fullBand;
+        }
+        const base = parseDateOnly(baseDate);
+        if (!base || fullBand.length === 0) {
+            return fullBand;
+        }
+        const projectStart = parseDateOnly(startDate);
+        const projectFinish = parseDateOnly(finishDate);
+        if (!projectStart || !projectFinish) {
+            return fullBand;
+        }
+        const from = useBusinessDaysForDisplayRange
+            ? shiftBusinessDays(base, -(before || 0), holidaySet, nonWorkingDayTypes)
+            : shiftCalendarDays(base, -(before || 0));
+        const to = useBusinessDaysForDisplayRange
+            ? shiftBusinessDays(base, after || 0, holidaySet, nonWorkingDayTypes)
+            : shiftCalendarDays(base, after || 0);
+        const clampedStart = from.getTime() < projectStart.getTime() ? projectStart : from;
+        const clampedFinish = to.getTime() > projectFinish.getTime() ? projectFinish : to;
+        if (clampedStart.getTime() > clampedFinish.getTime()) {
+            return fullBand;
+        }
+        return buildDateBand(formatDateOnly(clampedStart), formatDateOnly(clampedFinish));
+    }
+    function normalizeDisplayDayCount(value) {
+        if (value === undefined || value === null || !Number.isFinite(value)) {
+            return null;
+        }
+        return Math.max(0, Math.floor(value));
+    }
+    function shiftCalendarDays(base, offset) {
+        const result = new Date(base.getTime());
+        result.setDate(result.getDate() + offset);
+        return result;
+    }
+    function shiftBusinessDays(base, offset, holidaySet, nonWorkingDayTypes) {
+        const result = new Date(base.getTime());
+        const direction = offset < 0 ? -1 : 1;
+        let remaining = Math.abs(offset);
+        while (remaining > 0) {
+            result.setDate(result.getDate() + direction);
+            const day = formatDateOnly(result);
+            if (isWeeklyNonWorkingDay(day, nonWorkingDayTypes) || holidaySet.has(day)) {
+                continue;
+            }
+            remaining -= 1;
+        }
+        return result;
+    }
+    function countBusinessDays(dateBand, holidaySet, nonWorkingDayTypes) {
+        return dateBand.filter((day) => !isWeeklyNonWorkingDay(day, nonWorkingDayTypes) && !holidaySet.has(day)).length;
+    }
+    function enumerateBusinessDays(startDate, finishDate, holidaySet, nonWorkingDayTypes) {
+        return buildDateBand(startDate, finishDate).filter((day) => !isWeeklyNonWorkingDay(day, nonWorkingDayTypes) && !holidaySet.has(day));
+    }
+    function formatDurationLabel(task, holidaySet, nonWorkingDayTypes, useBusinessDaysForProgressBand) {
+        if (useBusinessDaysForProgressBand) {
+            const businessDays = enumerateBusinessDays(task.start, task.finish, holidaySet, nonWorkingDayTypes).length;
+            return businessDays > 0 ? `${businessDays}営業日` : "-";
+        }
+        const calendarDays = buildDateBand(task.start, task.finish).length;
+        return calendarDays > 0 ? `${calendarDays}日` : "-";
+    }
+    function formatWbsDate(value) {
+        return value ? value.slice(0, 10) : "-";
+    }
+    function formatTreeDate(value) {
+        if (!value) {
+            return "-";
+        }
+        const match = String(value).match(/^(\d{4})-(\d{2})-(\d{2})/);
+        if (!match) {
+            return String(value).slice(0, 10) || "-";
+        }
+        const [, _year, month, day] = match;
+        return `${Number(month)}/${Number(day)}`;
+    }
+    function formatTreeDateRange(start, finish) {
+        const startLabel = formatTreeDate(start);
+        const finishLabel = formatTreeDate(finish);
+        if (startLabel === finishLabel) {
+            return startLabel;
+        }
+        return `${startLabel} - ${finishLabel}`;
+    }
+    function parseDateOnly(value) {
+        if (!value) {
+            return null;
+        }
+        const match = String(value).match(/^(\d{4})-(\d{2})-(\d{2})/);
+        if (!match) {
+            return null;
+        }
+        const [, year, month, day] = match;
+        return new Date(Number(year), Number(month) - 1, Number(day));
+    }
+    function formatDateOnly(value) {
+        if (!value) {
+            return "";
+        }
+        const year = value.getFullYear();
+        const month = String(value.getMonth() + 1).padStart(2, "0");
+        const day = String(value.getDate()).padStart(2, "0");
+        return `${year}-${month}-${day}`;
+    }
+    function isWeeklyNonWorkingDay(day, nonWorkingDayTypes) {
+        const target = parseDateOnly(day);
+        if (!target) {
+            return false;
+        }
+        const dayType = target.getDay() === 0 ? 1 : target.getDay() + 1;
+        return nonWorkingDayTypes.has(dayType);
+    }
+    function firstResourceName(resourceNames) {
+        if (!resourceNames || resourceNames.length === 0) {
+            return "";
+        }
+        return resourceNames[0];
+    }
+    function formatCalendarLabel(calendarUID, calendarNameByUid) {
+        if (!calendarUID) {
+            return "-";
+        }
+        const calendarName = calendarNameByUid.get(calendarUID);
+        return calendarName ? `${calendarUID} ${calendarName}` : calendarUID;
+    }
+    globalThis.__mikuprojectWbsMarkdown = {
+        exportWbsMarkdown
+    };
+})();
+  </script>
+
+  <script>
+/*
+ * Copyright 2026 Toshiki Iga
+ * SPDX-License-Identifier: Apache-2.0
+ */
+(() => {
+    const DAY_WIDTH = 56;
+    const LIST_LABEL_WIDTH = 360;
+    const NEAR_LEFT_LABEL_WIDTH = 220;
+    const NEAR_RIGHT_LABEL_WIDTH = 300;
+    const HEADER_HEIGHT = 82;
+    const ROW_HEIGHT = 38;
+    const LEFT_PADDING = 20;
+    const TOP_PADDING = 22;
+    const RIGHT_PADDING = 24;
+    const BOTTOM_PADDING = 28;
+    function exportNativeSvg(model, options = {}) {
+        const labelMode = options.labelMode || "near";
+        const holidaySet = new Set([
+            ...collectWbsHolidayDates(model),
+            ...(options.holidayDates || []).map((day) => String(day || "").slice(0, 10)).filter(Boolean)
+        ]);
+        const nonWorkingDayTypes = collectProjectNonWorkingDayTypes(model);
+        const dateBand = buildDisplayDateBand(model.project.startDate, model.project.finishDate, model.project.currentDate, options.displayDaysBeforeBaseDate, options.displayDaysAfterBaseDate, holidaySet, nonWorkingDayTypes, options.useBusinessDaysForDisplayRange);
+        const rows = buildTaskRows(model.tasks, dateBand);
+        const chartWidth = dateBand.length * DAY_WIDTH;
+        const leftLabelWidth = labelMode === "list" ? LIST_LABEL_WIDTH : NEAR_LEFT_LABEL_WIDTH;
+        const rightLabelWidth = labelMode === "list" ? 0 : NEAR_RIGHT_LABEL_WIDTH;
+        const svgWidth = LEFT_PADDING + leftLabelWidth + chartWidth + rightLabelWidth + RIGHT_PADDING;
+        const svgHeight = TOP_PADDING + HEADER_HEIGHT + (rows.length * ROW_HEIGHT) + BOTTOM_PADDING;
+        const todayIndex = indexOfDate(dateBand, model.project.currentDate);
+        const parts = [
+            `<svg xmlns="http://www.w3.org/2000/svg" width="${svgWidth}" height="${svgHeight}" viewBox="0 0 ${svgWidth} ${svgHeight}" role="img" aria-label="${escapeXml(model.project.name || "Project")}">`,
+            "<style>",
+            "text { font-family: 'Hiragino Sans', 'Yu Gothic', sans-serif; fill: #1d2740; }",
+            ".title { font-size: 18px; font-weight: 700; }",
+            ".axis { font-size: 12px; fill: #5b6370; }",
+            ".label { font-size: 13px; }",
+            ".phaseLabel { font-size: 13px; font-weight: 700; }",
+            ".grid { stroke: #c9d3e1; stroke-width: 1; }",
+            ".today { stroke: #ff6b5a; stroke-width: 2; }",
+            "</style>",
+            `<rect x="0" y="0" width="${svgWidth}" height="${svgHeight}" fill="#ffffff"/>`,
+            `<text class="title" x="${LEFT_PADDING + leftLabelWidth + (chartWidth / 2)}" y="${TOP_PADDING + 18}" text-anchor="middle">${escapeXml(model.project.name || "-")}</text>`
+        ];
+        const chartOriginX = LEFT_PADDING + leftLabelWidth;
+        const chartOriginY = TOP_PADDING + HEADER_HEIGHT;
+        for (let index = 0; index < dateBand.length; index += 1) {
+            const day = dateBand[index];
+            const x = chartOriginX + (index * DAY_WIDTH);
+            const isHoliday = holidaySet.has(day);
+            const isWeekend = isWeeklyNonWorkingDay(day, nonWorkingDayTypes);
+            const fill = isHoliday ? "#fce4ec" : (isWeekend ? "#eef3f8" : "#ffffff");
+            parts.push(`<rect x="${x}" y="${TOP_PADDING + 30}" width="${DAY_WIDTH}" height="${svgHeight - TOP_PADDING - BOTTOM_PADDING - 8}" fill="${fill}"/>`);
+            parts.push(`<line class="grid" x1="${x}" y1="${TOP_PADDING + 26}" x2="${x}" y2="${svgHeight - BOTTOM_PADDING}" />`);
+            parts.push(`<text class="axis" x="${x + (DAY_WIDTH / 2)}" y="${TOP_PADDING + 54}" text-anchor="middle">${escapeXml(formatSvgAxisDate(day))}</text>`);
+        }
+        parts.push(`<line class="grid" x1="${chartOriginX + chartWidth}" y1="${TOP_PADDING + 26}" x2="${chartOriginX + chartWidth}" y2="${svgHeight - BOTTOM_PADDING}" />`);
+        if (todayIndex >= 0) {
+            const todayX = chartOriginX + (todayIndex * DAY_WIDTH) + (DAY_WIDTH / 2);
+            parts.push(`<line class="today" x1="${todayX}" y1="${TOP_PADDING + 26}" x2="${todayX}" y2="${svgHeight - BOTTOM_PADDING}" />`);
+        }
+        for (const row of rows) {
+            const rowY = chartOriginY + row.y;
+            if (row.startIndex !== null && row.endIndex !== null) {
+                const barX = chartOriginX + (row.startIndex * DAY_WIDTH) + 6;
+                const barWidth = Math.max(12, ((row.endIndex - row.startIndex + 1) * DAY_WIDTH) - 12);
+                const barY = rowY + 8;
+                if (row.kind === "milestone") {
+                    const centerX = chartOriginX + (row.startIndex * DAY_WIDTH) + (DAY_WIDTH / 2);
+                    const centerY = rowY + (ROW_HEIGHT / 2);
+                    const isCompleted = (row.task.percentComplete || 0) >= 100;
+                    const fill = isCompleted ? "#d9efff" : "#ffffff";
+                    parts.push(`<polygon points="${centerX},${centerY - 13} ${centerX + 13},${centerY} ${centerX},${centerY + 13} ${centerX - 13},${centerY}" fill="${fill}" stroke="#4f95d6" stroke-width="3"/>`);
+                }
+                else if (row.kind === "phase") {
+                    const lineY = rowY + (ROW_HEIGHT / 2);
+                    const startX = barX;
+                    const endX = barX + barWidth;
+                    const trackStroke = "#8eb9ea";
+                    const progressStroke = "#2f79d0";
+                    const phaseStrokeWidth = 3;
+                    const progressEndX = startX + Math.max(0, Math.min(barWidth, Math.round(barWidth * (Math.max(0, Math.min(100, row.task.percentComplete || 0)) / 100))));
+                    parts.push(`<line x1="${startX}" y1="${lineY}" x2="${endX}" y2="${lineY}" stroke="${trackStroke}" stroke-width="${phaseStrokeWidth}" stroke-linecap="round"/>`);
+                    if (progressEndX > startX) {
+                        parts.push(`<line x1="${startX}" y1="${lineY}" x2="${progressEndX}" y2="${lineY}" stroke="${progressStroke}" stroke-width="${phaseStrokeWidth}" stroke-linecap="round"/>`);
+                    }
+                }
+                else {
+                    const trackFill = "#d9efff";
+                    const trackStroke = "#4f95d6";
+                    const progressFill = "#3f86d8";
+                    parts.push(`<rect x="${barX}" y="${barY}" width="${barWidth}" height="22" rx="4" fill="${trackFill}" stroke="${trackStroke}" stroke-width="3"/>`);
+                    const progressWidth = Math.max(0, Math.min(barWidth, Math.round(barWidth * (Math.max(0, Math.min(100, row.task.percentComplete || 0)) / 100))));
+                    if (progressWidth > 0) {
+                        parts.push(`<rect x="${barX}" y="${barY}" width="${progressWidth}" height="22" rx="4" fill="${progressFill}" stroke="none"/>`);
+                    }
+                }
+            }
+            const labelPlacement = resolveLabelPlacement(row, chartOriginX, chartWidth, svgWidth, labelMode);
+            parts.push(`<text class="${row.kind === "phase" ? "phaseLabel" : "label"}" x="${labelPlacement.x}" y="${rowY + 24}" text-anchor="${labelPlacement.anchor}">${escapeXml(formatTaskLabel(row.task, labelMode))}</text>`);
+        }
+        parts.push("</svg>");
+        return parts.join("");
+    }
+    function buildTaskRows(tasks, dateBand) {
+        return tasks.map((task, index) => ({
+            task,
+            label: task.name || "-",
+            kind: task.summary ? "phase" : (task.milestone ? "milestone" : "task"),
+            startIndex: indexOfDate(dateBand, task.start),
+            endIndex: indexOfDate(dateBand, task.finish),
+            y: index * ROW_HEIGHT
+        }));
+    }
+    function formatTaskLabel(task, labelMode) {
+        if (labelMode === "list") {
+            return `${"　".repeat(Math.max(0, task.outlineLevel - 1))}${task.name || "-"}`;
+        }
+        return task.name || "-";
+    }
+    function resolveLabelPlacement(row, chartOriginX, chartWidth, svgWidth, labelMode) {
+        if (labelMode === "list" || row.startIndex === null || row.endIndex === null) {
+            return { x: LEFT_PADDING + 10, anchor: "start" };
+        }
+        const textWidth = estimateLabelWidth(row.label, row.kind === "phase");
+        const gap = 12;
+        const chartEndX = chartOriginX + chartWidth;
+        const shapeStartX = row.kind === "milestone"
+            ? chartOriginX + (row.startIndex * DAY_WIDTH) + (DAY_WIDTH / 2) - 13
+            : chartOriginX + (row.startIndex * DAY_WIDTH) + 6;
+        const shapeEndX = row.kind === "milestone"
+            ? chartOriginX + (row.startIndex * DAY_WIDTH) + (DAY_WIDTH / 2) + 13
+            : chartOriginX + (row.endIndex * DAY_WIDTH) + DAY_WIDTH - 6;
+        const preferredRightX = shapeEndX + gap;
+        if ((preferredRightX + textWidth) <= (svgWidth - RIGHT_PADDING)) {
+            return { x: preferredRightX, anchor: "start" };
+        }
+        const preferredLeftX = shapeStartX - gap;
+        if ((preferredLeftX - textWidth) >= LEFT_PADDING) {
+            return { x: preferredLeftX, anchor: "end" };
+        }
+        const fallbackX = Math.max(LEFT_PADDING + 10, chartOriginX - gap);
+        if ((fallbackX + textWidth) <= chartEndX) {
+            return { x: fallbackX, anchor: "start" };
+        }
+        return { x: preferredLeftX, anchor: "end" };
+    }
+    function estimateLabelWidth(label, isPhase) {
+        const basePerChar = isPhase ? 14 : 13;
+        return Math.max(48, Math.ceil(String(label || "").length * basePerChar));
+    }
+    function formatSvgAxisDate(day) {
+        const match = day.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+        if (!match) {
+            return day;
+        }
+        return `${Number(match[2])}/${Number(match[3])}`;
+    }
+    function indexOfDate(dateBand, value) {
+        const key = String(value || "").slice(0, 10);
+        if (!key) {
+            return null;
+        }
+        const index = dateBand.indexOf(key);
+        return index >= 0 ? index : null;
+    }
+    function collectWbsHolidayDates(model) {
+        const holidaySet = new Set();
+        for (const calendar of model.calendars) {
+            for (const exception of calendar.exceptions || []) {
+                if (exception.dayWorking !== false && (exception.workingTimes || []).length > 0) {
+                    continue;
+                }
+                for (const day of expandExceptionDays(exception)) {
+                    holidaySet.add(day);
+                }
+            }
+        }
+        return Array.from(holidaySet).sort();
+    }
+    function expandExceptionDays(exception) {
+        const singleDay = exception.fromDate ? formatDateOnly(parseDateOnly(exception.fromDate)) : "";
+        if (!exception.fromDate || !exception.toDate) {
+            return singleDay ? [singleDay] : [];
+        }
+        return buildDateBand(exception.fromDate, exception.toDate);
+    }
+    function resolveProjectCalendar(model) {
+        if (model.project.calendarUID) {
+            const projectCalendar = model.calendars.find((calendar) => calendar.uid === model.project.calendarUID);
+            if (projectCalendar) {
+                return projectCalendar;
+            }
+        }
+        return model.calendars.find((calendar) => calendar.isBaseCalendar) || model.calendars[0];
+    }
+    function resolveCalendarDayWorking(calendarByUid, calendar, dayType, visiting = new Set()) {
+        if (!calendar) {
+            return undefined;
+        }
+        if (visiting.has(calendar.uid)) {
+            return undefined;
+        }
+        visiting.add(calendar.uid);
+        const weekDay = calendar.weekDays.find((item) => item.dayType === dayType);
+        if (weekDay) {
+            return weekDay.dayWorking;
+        }
+        if (calendar.baseCalendarUID) {
+            return resolveCalendarDayWorking(calendarByUid, calendarByUid.get(calendar.baseCalendarUID), dayType, visiting);
+        }
+        return undefined;
+    }
+    function collectProjectNonWorkingDayTypes(model) {
+        const calendarByUid = new Map(model.calendars.map((calendar) => [calendar.uid, calendar]));
+        const projectCalendar = resolveProjectCalendar(model);
+        const nonWorkingDayTypes = new Set();
+        for (let dayType = 1; dayType <= 7; dayType += 1) {
+            const dayWorking = resolveCalendarDayWorking(calendarByUid, projectCalendar, dayType);
+            if (dayWorking === false) {
+                nonWorkingDayTypes.add(dayType);
+                continue;
+            }
+            if (dayWorking === undefined && (dayType === 1 || dayType === 7)) {
+                nonWorkingDayTypes.add(dayType);
+            }
+        }
+        return nonWorkingDayTypes;
+    }
+    function buildDateBand(startDate, finishDate) {
+        const start = parseDateOnly(startDate);
+        const finish = parseDateOnly(finishDate);
+        if (!start || !finish || start.getTime() > finish.getTime()) {
+            return [];
+        }
+        const days = [];
+        const cursor = new Date(start.getTime());
+        while (cursor.getTime() <= finish.getTime()) {
+            days.push(formatDateOnly(cursor));
+            cursor.setDate(cursor.getDate() + 1);
+        }
+        return days;
+    }
+    function buildDisplayDateBand(startDate, finishDate, baseDate, displayDaysBeforeBaseDate, displayDaysAfterBaseDate, holidaySet, nonWorkingDayTypes, useBusinessDaysForDisplayRange) {
+        const fullBand = buildDateBand(startDate, finishDate);
+        const before = normalizeDisplayDayCount(displayDaysBeforeBaseDate);
+        const after = normalizeDisplayDayCount(displayDaysAfterBaseDate);
+        if (before === null && after === null) {
+            return fullBand;
+        }
+        const base = parseDateOnly(baseDate);
+        if (!base || fullBand.length === 0) {
+            return fullBand;
+        }
+        const projectStart = parseDateOnly(startDate);
+        const projectFinish = parseDateOnly(finishDate);
+        if (!projectStart || !projectFinish) {
+            return fullBand;
+        }
+        const from = useBusinessDaysForDisplayRange
+            ? shiftBusinessDays(base, -(before || 0), holidaySet, nonWorkingDayTypes)
+            : shiftCalendarDays(base, -(before || 0));
+        const to = useBusinessDaysForDisplayRange
+            ? shiftBusinessDays(base, after || 0, holidaySet, nonWorkingDayTypes)
+            : shiftCalendarDays(base, after || 0);
+        const clampedStart = from.getTime() < projectStart.getTime() ? projectStart : from;
+        const clampedFinish = to.getTime() > projectFinish.getTime() ? projectFinish : to;
+        if (clampedStart.getTime() > clampedFinish.getTime()) {
+            return fullBand;
+        }
+        return buildDateBand(formatDateOnly(clampedStart), formatDateOnly(clampedFinish));
+    }
+    function normalizeDisplayDayCount(value) {
+        if (value === undefined || value === null || !Number.isFinite(value)) {
+            return null;
+        }
+        return Math.max(0, Math.floor(value));
+    }
+    function shiftCalendarDays(base, offset) {
+        const result = new Date(base.getTime());
+        result.setDate(result.getDate() + offset);
+        return result;
+    }
+    function shiftBusinessDays(base, offset, holidaySet, nonWorkingDayTypes) {
+        const result = new Date(base.getTime());
+        const direction = offset < 0 ? -1 : 1;
+        let remaining = Math.abs(offset);
+        while (remaining > 0) {
+            result.setDate(result.getDate() + direction);
+            const day = formatDateOnly(result);
+            if (isWeeklyNonWorkingDay(day, nonWorkingDayTypes) || holidaySet.has(day)) {
+                continue;
+            }
+            remaining -= 1;
+        }
+        return result;
+    }
+    function isWeeklyNonWorkingDay(day, nonWorkingDayTypes) {
+        const date = parseDateOnly(day);
+        if (!date) {
+            return false;
+        }
+        const dayType = date.getDay() === 0 ? 1 : date.getDay() + 1;
+        return nonWorkingDayTypes.has(dayType);
+    }
+    function parseDateOnly(value) {
+        const text = String(value || "").trim().slice(0, 10);
+        if (!/^\d{4}-\d{2}-\d{2}$/.test(text)) {
+            return null;
+        }
+        const parsed = new Date(`${text}T00:00:00`);
+        return Number.isNaN(parsed.getTime()) ? null : parsed;
+    }
+    function formatDateOnly(value) {
+        if (!value) {
+            return "";
+        }
+        const year = value.getFullYear();
+        const month = String(value.getMonth() + 1).padStart(2, "0");
+        const day = String(value.getDate()).padStart(2, "0");
+        return `${year}-${month}-${day}`;
+    }
+    function escapeXml(value) {
+        return String(value || "")
+            .replaceAll("&", "&amp;")
+            .replaceAll("<", "&lt;")
+            .replaceAll(">", "&gt;")
+            .replaceAll("\"", "&quot;");
+    }
+    globalThis.__mikuprojectNativeSvg = {
+        exportNativeSvg
     };
 })();
   </script>
@@ -14842,9 +15808,17 @@ globalThis["mermaid"] = globalThis.__esbuild_esm_mermaid_nm["mermaid"].default;
     if (!mikuprojectWbsXlsx) {
         throw new Error("mikuproject WBS XLSX module is not loaded");
     }
+    const mikuprojectWbsMarkdown = globalThis.__mikuprojectWbsMarkdown;
+    if (!mikuprojectWbsMarkdown) {
+        throw new Error("mikuproject WBS Markdown module is not loaded");
+    }
+    const mikuprojectNativeSvg = globalThis.__mikuprojectNativeSvg;
+    if (!mikuprojectNativeSvg) {
+        throw new Error("mikuproject native SVG module is not loaded");
+    }
     const mermaidApi = globalThis.mermaid;
     let currentModel = null;
-    let currentMermaidSvg = "";
+    let currentNativeSvg = "";
     let mermaidRenderCount = 0;
     let lastSavedXmlText = "";
     let lastSavedXmlStamp = "";
@@ -15084,6 +16058,16 @@ globalThis["mermaid"] = globalThis.__esbuild_esm_mermaid_nm["mermaid"].default;
     function updateMermaidSvgButton() {
         getElement("downloadMermaidSvgBtn").disabled = !currentModel;
     }
+    function buildCurrentWbsOptions(model) {
+        syncWbsHolidayDatesInput(model);
+        return {
+            holidayDates: parseWbsDefaultHolidayDates(),
+            displayDaysBeforeBaseDate: parseWbsDisplayDaysBeforeBaseDate(),
+            displayDaysAfterBaseDate: parseWbsDisplayDaysAfterBaseDate(),
+            useBusinessDaysForDisplayRange: useBusinessDaysForWbsDisplayRange(),
+            useBusinessDaysForProgressBand: useBusinessDaysForWbsProgressBand()
+        };
+    }
     function normalizeSvgForXml(svgText) {
         if (!svgText) {
             return "";
@@ -15113,7 +16097,7 @@ globalThis["mermaid"] = globalThis.__esbuild_esm_mermaid_nm["mermaid"].default;
             ".task, .task0, .task1, .task2, .task3, .task4 { fill: #8f95e8 !important; stroke: #5d63cf !important; }",
             ".active, .active0, .active1, .active2, .active3, .active4 { fill: #7fc8a9 !important; stroke: #3f8f72 !important; }",
             ".done, .done0, .done1, .done2, .done3, .done4 { fill: #5ba98f !important; stroke: #2e6e5b !important; }",
-            ".milestone, .milestone0, .milestone1, .milestone2, .milestone3 { fill: #8f95e8 !important; stroke: #5d63cf !important; }",
+            ".milestone, .milestone0, .milestone1, .milestone2, .milestone3 { fill: #666666 !important; stroke: #444444 !important; }",
             ".grid .tick line, .tick line { stroke: #707b94 !important; }",
             ".today { stroke: #ff3b30 !important; }",
             ".taskText, .taskTextOutsideRight, .taskTextOutsideLeft, .sectionTitle, .titleText, text { fill: #1d2740; }",
@@ -15152,38 +16136,34 @@ globalThis["mermaid"] = globalThis.__esbuild_esm_mermaid_nm["mermaid"].default;
                 activeTaskBorderColor: "#3f8f72",
                 doneTaskBkgColor: "#5ba98f",
                 doneTaskBorderColor: "#2e6e5b",
-                milestoneBkgColor: "#8f95e8",
-                milestoneBorderColor: "#5d63cf",
+                milestoneBkgColor: "#666666",
+                milestoneBorderColor: "#444444",
                 gridColor: "#707b94",
                 lineColor: "#707b94",
                 todayLineColor: "#ff3b30"
             }
         };
     }
-    async function renderMermaidPreview(source) {
-        if (!mermaidApi) {
-            currentMermaidSvg = "";
+    async function renderMermaidPreview(_source) {
+        if (!currentModel) {
+            currentNativeSvg = "";
             updateMermaidSvgButton();
-            setMermaidPreviewMarkup(`<div class="md-preview-empty">Mermaid ライブラリを読み込めなかったため、プレビューできません。</div>`);
-            setMermaidError("Mermaid ライブラリが利用できません。");
+            setMermaidPreviewMarkup(`<div class="md-preview-empty">SVG を生成すると、ここにプレビューを表示します。</div>`);
             return;
         }
         clearMermaidError();
-        const renderId = `mikuprojectMermaidRender${++mermaidRenderCount}`;
-        mermaidApi.initialize(getMermaidRenderConfig());
-        try {
-            const result = await mermaidApi.render(renderId, source);
-            currentMermaidSvg = applyMermaidSvgTheme(normalizeSvgForXml(result.svg));
-            setMermaidPreviewMarkup(currentMermaidSvg);
-            updateMermaidSvgButton();
-        }
-        catch (error) {
-            currentMermaidSvg = "";
-            updateMermaidSvgButton();
-            setMermaidPreviewMarkup(`<div class="md-preview-empty">Mermaid のプレビューを表示できませんでした。</div>`);
-            const message = error instanceof Error ? error.message : String(error);
-            setMermaidError(`SVG プレビュー生成に失敗しました: ${message}`);
-            throw error;
+        currentNativeSvg = mikuprojectNativeSvg.exportNativeSvg(currentModel, buildCurrentWbsOptions(currentModel));
+        setMermaidPreviewMarkup(currentNativeSvg);
+        updateMermaidSvgButton();
+        if (mermaidApi) {
+            const renderId = `mikuprojectMermaidRender${++mermaidRenderCount}`;
+            mermaidApi.initialize(getMermaidRenderConfig());
+            try {
+                await mermaidApi.render(renderId, _source);
+            }
+            catch (_error) {
+                // Mermaid text export remains useful even if native SVG preview is used.
+            }
         }
     }
     function setStatus(message) {
@@ -16008,12 +16988,12 @@ WorkWeek1=${formatCalendarWorkWeekSummary(calendar)}</div>
         const mermaidText = mikuprojectXml.exportMermaidGantt(model);
         getTextArea("mermaidOutput").value = mermaidText;
         await renderMermaidPreview(mermaidText);
-        if (!currentMermaidSvg) {
+        if (!currentNativeSvg) {
             setStatus("出力する SVG がありません");
             return;
         }
-        downloadBlob(new Blob([currentMermaidSvg], { type: "image/svg+xml;charset=utf-8" }), "mikuproject-mermaid.svg");
-        setStatus("Mermaid SVG を保存しました");
+        downloadBlob(new Blob([currentNativeSvg], { type: "image/svg+xml;charset=utf-8" }), "mikuproject-native.svg");
+        setStatus("SVG を保存しました");
         showToast("SVG を保存しました");
         setActiveTab("output");
     }
@@ -16032,6 +17012,33 @@ WorkWeek1=${formatCalendarWorkWeekSummary(calendar)}</div>
         downloadBlob(new Blob([markdownText], { type: "text/markdown;charset=utf-8" }), `mermaid-${stamp}.md`);
         setStatus("Mermaid Markdown を保存しました");
         showToast("Mermaid Markdown を保存しました");
+        setActiveTab("output");
+    }
+    function downloadCurrentWbsMarkdown() {
+        const model = ensureCurrentModel();
+        syncXmlTextFromModel(model);
+        const defaultHolidayDates = mikuprojectWbsXlsx.collectWbsHolidayDates(model);
+        syncWbsHolidayDatesInput(model);
+        const displayDaysBeforeBaseDate = parseOptionalNonNegativeInteger(getInput("wbsDisplayDaysBeforeInput").value);
+        const displayDaysAfterBaseDate = parseOptionalNonNegativeInteger(getInput("wbsDisplayDaysAfterInput").value);
+        const useBusinessDaysForDisplayRange = useBusinessDaysForWbsDisplayRange();
+        const useBusinessDaysForProgressBand = useBusinessDaysForWbsProgressBand();
+        const markdownText = mikuprojectWbsMarkdown.exportWbsMarkdown(model, {
+            holidayDates: defaultHolidayDates,
+            displayDaysBeforeBaseDate,
+            displayDaysAfterBaseDate,
+            useBusinessDaysForDisplayRange,
+            useBusinessDaysForProgressBand
+        });
+        const now = new Date();
+        const stamp = [
+            now.getFullYear(),
+            String(now.getMonth() + 1).padStart(2, "0"),
+            String(now.getDate()).padStart(2, "0")
+        ].join("");
+        downloadBlob(new Blob([markdownText], { type: "text/markdown;charset=utf-8" }), `mikuproject-wbs-${stamp}.md`);
+        setStatus("WBS Markdown を保存しました");
+        showToast("WBS Markdown を保存しました");
         setActiveTab("output");
     }
     function runRoundTripCheck() {
@@ -16162,6 +17169,14 @@ WorkWeek1=${formatCalendarWorkWeekSummary(calendar)}</div>
             }
             catch (error) {
                 setStatus(error instanceof Error ? error.message : "WBS XLSX エクスポートに失敗しました");
+            }
+        });
+        getElement("exportWbsMdBtn").addEventListener("click", () => {
+            try {
+                downloadCurrentWbsMarkdown();
+            }
+            catch (error) {
+                setStatus(error instanceof Error ? error.message : "WBS Markdown 保存に失敗しました");
             }
         });
         getElement("downloadXmlBtn").addEventListener("click", () => {

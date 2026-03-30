@@ -152,7 +152,7 @@ npm run build
 
 - `npm run build:js`: `src/ts/` から `src/js/` を生成する
 - `npm run build:html`: `index-src.html` と `mikuproject-src.html` から `index.html` と `mikuproject.html` を生成する
-- `npm run build:xlsx-sample`: `local-data/` 配下へサンプル XLSX を生成する
+- `npm run build:xlsx-sample`: `local-data/` 配下へサンプル XLSX / Markdown を生成する
 - `npm run build:app`: `build:js`、`build:html`、`build:xlsx-sample` を順に実行する
 
 `scripts/build-project.mjs` は `--js-only` と `--html-only` を受け取り、JavaScript 生成と HTML 生成を切り替える。
@@ -174,6 +174,8 @@ npm run build
 - 外部ランタイムの同梱先は `src/vendor/`
 - `npm run build:js`、`npm run build:html`、`npm test` は通る
 - `local-data/` と `node_modules/` は Git 管理対象外
+- `local-data/` は確認用の再生成可能な生成物置き場として扱う
+- `local-data/` 配下の sample や検証用出力は、消えてもよく、必要時に再生成できればよい前提とする
 
 ## 制約
 

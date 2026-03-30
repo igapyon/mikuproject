@@ -46,6 +46,12 @@
 
 ![WBS Excel ブック](docs/screenshots/excel01.png)
 
+### WBS Markdown
+
+`WBS ツリー` と `WBS テーブル` を含む `Markdown` 出力の例。
+
+![WBS Markdown](docs/screenshots/markdown01.png)
+
 ## できること
 
 - `MS Project XML` の読込

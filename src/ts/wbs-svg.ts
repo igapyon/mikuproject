@@ -99,7 +99,13 @@
     const leftLabelWidth = labelMode === "list" ? LIST_LABEL_WIDTH : NEAR_LEFT_LABEL_WIDTH;
     const rightLabelWidth = labelMode === "list" ? 0 : NEAR_RIGHT_LABEL_WIDTH;
     const chartOriginXBase = LEFT_PADDING + leftLabelWidth;
-    const labelPlacements = rows.map((row) => resolveLabelPlacement(row, chartOriginXBase, chartWidth, labelMode));
+    const dailyOnBarFlags = rows.map((row) => shouldUseDailyOnBarLabel(row, chartOriginXBase, chartWidth, dateBand.length, labelMode));
+    const labelPlacements = rows.map((row, index) => {
+      if (dailyOnBarFlags[index]) {
+        return { x: chartOriginXBase, anchor: "start" as const, width: 0 };
+      }
+      return resolveLabelPlacement(row, chartOriginXBase, chartWidth, labelMode);
+    });
     const labelMinX = labelPlacements.reduce((min, placement) => {
       const placementMinX = placement.anchor === "start" ? placement.x : placement.x - placement.width;
       return Math.min(min, placementMinX);
@@ -149,9 +155,10 @@
       parts.push(`<line class="today" x1="${todayX}" y1="${TOP_PADDING + 26}" x2="${todayX}" y2="${svgHeight - BOTTOM_PADDING}" />`);
     }
 
-    for (const row of rows) {
+    for (let rowIndex = 0; rowIndex < rows.length; rowIndex += 1) {
+      const row = rows[rowIndex];
       const rowY = chartOriginY + row.y;
-      const useOnBarLabel = shouldUseDailyOnBarLabel(row, dateBand.length, labelMode);
+      const useOnBarLabel = dailyOnBarFlags[rowIndex];
       if (row.startIndex !== null && row.endIndex !== null) {
         const barX = chartOriginX + (row.startIndex * DAY_WIDTH) + 6;
         const barWidth = Math.max(12, ((row.endIndex - row.startIndex + 1) * DAY_WIDTH) - 12);
@@ -196,7 +203,7 @@
           continue;
         }
       }
-      const labelPlacement = labelPlacements[rows.indexOf(row)];
+      const labelPlacement = labelPlacements[rowIndex];
       parts.push(`<text class="${row.kind === "phase" ? "phaseLabel" : "label"}" x="${labelPlacement.x + shiftX}" y="${rowY + 24}" text-anchor="${labelPlacement.anchor}">${escapeXml(formatTaskLabel(row.task, labelMode))}</text>`);
     }
 
@@ -332,11 +339,11 @@
     const nonWorkingDayTypes = collectProjectNonWorkingDayTypes(model);
     const months = buildProjectMonthKeys(model.project.startDate, model.project.finishDate);
     const entries = months.map((monthKey) => ({
-      fileName: `mikuproject-monthly-wbs-calendar-${monthKey}.svg`,
+      fileName: `${monthKey}.svg`,
       svg: exportMonthlyWbsCalendarSvg(model, monthKey, holidaySet, nonWorkingDayTypes)
     }));
     const zipEntries: ZipEntry[] = entries.map((entry) => ({
-      name: entry.fileName,
+      name: `monthly-calendar/${entry.fileName}`,
       data: encodeUtf8(entry.svg)
     }));
     const zipBytes = packZip(zipEntries);
@@ -573,7 +580,7 @@
     if (shapeEndX <= chartMidX) {
       return { x: shapeEndX + gap, anchor: "start", width: textWidth };
     }
-    return { x: shapeStartX - gap, anchor: "end", width: textWidth };
+    return { x: Math.max(textWidth, shapeStartX - gap), anchor: "end", width: textWidth };
   }
 
   function estimateLabelWidth(label: string, isPhase: boolean): number {
@@ -583,6 +590,8 @@
 
   function shouldUseDailyOnBarLabel(
     row: NativeSvgTaskRow,
+    chartOriginX: number,
+    chartWidth: number,
     bandLength: number,
     labelMode: "near" | "list"
   ): boolean {
@@ -595,7 +604,20 @@
     if (row.startIndex === null || row.endIndex === null || bandLength <= 0) {
       return false;
     }
-    return row.startIndex === 0 && row.endIndex === bandLength - 1;
+    if (row.startIndex === 0 && row.endIndex === bandLength - 1) {
+      return true;
+    }
+    const textWidth = estimateLabelWidth(row.label, row.kind === "phase");
+    const gap = 12;
+    const shapeStartX = row.kind === "milestone"
+      ? chartOriginX + (row.startIndex * DAY_WIDTH) + (DAY_WIDTH / 2) - 13
+      : chartOriginX + (row.startIndex * DAY_WIDTH) + 6;
+    const shapeEndX = row.kind === "milestone"
+      ? chartOriginX + (row.startIndex * DAY_WIDTH) + (DAY_WIDTH / 2) + 13
+      : chartOriginX + (row.endIndex * DAY_WIDTH) + DAY_WIDTH - 6;
+    const leftRoom = Math.max(0, shapeStartX - gap - chartOriginX);
+    const rightRoom = Math.max(0, (chartOriginX + chartWidth) - (shapeEndX + gap));
+    return leftRoom < textWidth && rightRoom < textWidth;
   }
 
   function resolveWeeklyLabelPlacement(

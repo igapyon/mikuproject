@@ -17,17 +17,17 @@
     const IDENTIFIER_FILL = "#F7F9FC";
     const PLACEHOLDER_FILL = "#F5F7FA";
     const BAND_FILL = "#F4F7FB";
-    const ACTIVE_BAND_FILL = "#9FD5C9";
-    const PROGRESS_BAND_FILL = "#5BAE9C";
-    const WEEKEND_BAND_FILL = "#C9D3E1";
+    const ACTIVE_BAND_FILL = "#D9EFFF";
+    const PROGRESS_BAND_FILL = "#8EB9EA";
+    const WEEKEND_BAND_FILL = "#EEF3F8";
     const WEEK_START_BAND_FILL = "#E3EEF9";
     const MONTH_BOUNDARY_WEEK_FILL = "#D6E7F8";
     const MONTH_START_HEADER_FILL = "#DCEAF7";
-    const SATURDAY_HEADER_FILL = "#8EA9DB";
-    const SUNDAY_HEADER_FILL = "#E6B8AF";
+    const SATURDAY_HEADER_FILL = "#EEF3F8";
+    const SUNDAY_HEADER_FILL = "#EEF3F8";
     const TODAY_BAND_FILL = "#FFE6A7";
-    const TODAY_ACTIVE_BAND_FILL = "#F3C96B";
-    const TODAY_PROGRESS_BAND_FILL = "#D89A2B";
+    const TODAY_ACTIVE_BAND_FILL = "#C9DFF8";
+    const TODAY_PROGRESS_BAND_FILL = "#6F9FD8";
     const HOLIDAY_BAND_FILL = "#FCE4EC";
     const DIVIDER_FILL = "#D9E2EA";
     const BASEDATE_GUIDE_TAIL_FILL = "#FFF8E1";
@@ -846,7 +846,7 @@
                 ? (complete
                     ? (isToday ? TODAY_PROGRESS_BAND_FILL : PROGRESS_BAND_FILL)
                     : (isToday ? TODAY_ACTIVE_BAND_FILL : ACTIVE_BAND_FILL))
-                : (isToday ? TODAY_BAND_FILL : (isHoliday ? HOLIDAY_BAND_FILL : (isWeekendDay ? WEEKEND_BAND_FILL : (weekStart ? WEEK_START_BAND_FILL : BAND_FILL))))
+                : (isToday ? TODAY_BAND_FILL : (isHoliday ? HOLIDAY_BAND_FILL : (isWeekendDay ? WEEKEND_BAND_FILL : (weekStart ? WEEK_START_BAND_FILL : undefined))))
         };
     }
     function activeBandMarker(task, complete) {

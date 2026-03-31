@@ -1,5 +1,7 @@
 # mikuproject
 
+GitHub: https://github.com/igapyon/mikuproject
+
 `mikuproject` は、`MS Project XML` を基軸に、変換・可視化・限定編集を行うローカル HTML ツールです。
 
 `mikuproject` の強みは、同じプロジェクト情報を 1 つの意味体系のまま、用途に応じて複数の形式へ出し分けられることです。`MS Project XML` を基軸に、`XLSX`、`Markdown`、`JSON`、`Mermaid`、生成AI向け表現、そして必要に応じて `MS Project` へも橋渡しできるため、資料共有・レビュー・変換・再利用のそれぞれの場面に合わせて、無理なく形を変えて届けられます。
@@ -30,7 +32,7 @@
 
 ### Overview
 
-内部モデルの確認、validation、native SVG preview をここで行う。
+内部モデルの確認、validation、`Daily / Weekly / Monthly Calendar` preview をここで行う。
 
 ![Overview](docs/screenshots/screen02.png)
 
@@ -74,15 +76,25 @@
 - `Load from file` からの `MS Project XML / XLSX / workbook JSON (.json) / 生成AI向け編集用 JSON (.editjson) / CSV + ParentID` の読込
 - `project_draft_view` ベースで生成したサンプル XML の読込
 - 生成AIが返した `project_draft_view` の JSON 貼り付け取込
-- 内部モデル、validation、native SVG preview、各 preview の確認
-- `MS Project XML / XLSX / WBS XLSX / workbook JSON / CSV + ParentID / Mermaid / 生成AI向け .editjson` の保存
+- 内部モデル、validation、`Daily / Weekly / Monthly Calendar` preview の確認
+- `MS Project XML / XLSX / WBS XLSX / workbook JSON / CSV + ParentID / Daily SVG / Weekly SVG / Monthly Calendar SVG / Mermaid / 生成AI向け .editjson` の保存
+- 主要成果物をまとめた `ALL` ZIP の保存
 
-### Windows 11 での `Monthly SVG` / `SVG` 取扱いメモ
+主な保存名の例:
 
-- `Monthly SVG` は、月ごとの `SVG` をまとめた `ZIP` として保存される
+- `Daily SVG`: `mikuproject-wbs-daily-<YYYYMMDDHHmm>.svg`
+- `Weekly SVG`: `mikuproject-wbs-weekly-<YYYYMMDDHHmm>.svg`
+- `Monthly Calendar SVG`: `mikuproject-monthly-wbs-calendar-<YYYYMMDDHHmm>.zip`
+- `ALL`: `mikuproject-all-<YYYYMMDDHHmm>.zip`
+
+`Monthly Calendar SVG` の ZIP 内では、月別ファイルを `monthly-calendar/YYYY-MM.svg` の形で格納します。
+
+### Windows 11 での `Monthly Calendar SVG` / `Daily SVG` 取扱いメモ
+
+- `Monthly Calendar SVG` は、月ごとの `SVG` をまとめた `ZIP` として保存される
 - `Windows 11` では、ダウンロードした `ZIP` や、その中の `SVG` が「危険なファイル」として警告される場合がある
 - これは `mikuproject` 固有の独自拡張ではなく、`ZIP` や `SVG` を Windows 側が外部由来ファイルとして慎重に扱う場合があるため
-- 少なくとも `Monthly SVG` の `ZIP` は、アプリ内で生成した `SVG` 群をまとめたもの
+- 少なくとも `Monthly Calendar SVG` の `ZIP` は、アプリ内で生成した `SVG` 群をまとめたもの
 - 警告の有無や表示文言は、利用するブラウザや Windows の設定に依存する可能性がある
 
 ## 開発

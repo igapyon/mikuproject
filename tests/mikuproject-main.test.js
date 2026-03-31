@@ -46,7 +46,7 @@ const wbsMarkdownCode = readFileSync(
   "utf8"
 );
 const nativeSvgCode = readFileSync(
-  path.resolve(__dirname, "../src/js/native-svg.js"),
+  path.resolve(__dirname, "../src/js/wbs-svg.js"),
   "utf8"
 );
 const mainCode = readFileSync(
@@ -81,7 +81,7 @@ function mountDom() {
     <button id="exportWbsXlsxBtn" type="button">WBS XLSX</button>
     <button id="exportWbsMdBtn" type="button">WBS Markdown</button>
     <button id="downloadWeeklySvgBtn" type="button" disabled>Weekly SVG</button>
-    <button id="downloadMonthlyWbsSvgZipBtn" type="button" disabled>Monthly Calendar SVG</button>
+    <button id="downloadMonthlyCalendarSvgBtn" type="button" disabled>Monthly Calendar SVG</button>
     <button id="exportMermaidMdBtn" type="button">Mermaid</button>
     <button id="downloadSvgBtn" type="button" disabled>Daily SVG</button>
     <button id="previewDailySvgBtn" type="button">Daily SVG</button>
@@ -1440,20 +1440,36 @@ describe("mikuproject main", () => {
     const xmlInput = document.getElementById("xmlInput");
     xmlInput.value = `${xmlInput.value}\n<!-- edited -->`;
     xmlInput.dispatchEvent(new Event("input"));
+    const OriginalBlob = Blob;
+    class InspectableBlob extends OriginalBlob {
+      constructor(parts = [], options = {}) {
+        super(parts, options);
+        this._parts = parts;
+      }
+    }
+    globalThis.Blob = InspectableBlob;
     URL.createObjectURL.mockClear();
     HTMLAnchorElement.prototype.click.mockClear();
-    document.getElementById("downloadSvgBtn").click();
-    await flushAsyncWork();
-    await flushAsyncWork();
+    try {
+      document.getElementById("downloadSvgBtn").click();
+      await flushAsyncWork();
+      await flushAsyncWork();
 
-    expect(URL.createObjectURL).toHaveBeenCalled();
-    expect(HTMLAnchorElement.prototype.click).toHaveBeenCalled();
-    const clickedAnchor = HTMLAnchorElement.prototype.click.mock.instances.at(-1);
-    expect(clickedAnchor.download).toBe("mikuproject-wbs-daily-202603162312.svg");
-    expect(document.getElementById("xmlInput").value).not.toContain("<!-- edited -->");
-    expect(document.getElementById("xmlSaveState").textContent).toContain("XML 保存状態: 保存済み (2026-03-16 23:12)");
-    expect(document.getElementById("mermaidOutput").value).toContain("gantt");
-    expect(document.getElementById("statusMessage").textContent).toContain("Daily SVG を保存しました");
+      expect(URL.createObjectURL).toHaveBeenCalled();
+      expect(HTMLAnchorElement.prototype.click).toHaveBeenCalled();
+      const clickedAnchor = HTMLAnchorElement.prototype.click.mock.instances.at(-1);
+      expect(clickedAnchor.download).toBe("mikuproject-wbs-daily-202603162312.svg");
+      expect(document.getElementById("xmlInput").value).not.toContain("<!-- edited -->");
+      expect(document.getElementById("xmlSaveState").textContent).toContain("XML 保存状態: 保存済み (2026-03-16 23:12)");
+      expect(document.getElementById("mermaidOutput").value).toContain("gantt");
+      expect(document.getElementById("statusMessage").textContent).toContain("Daily SVG を保存しました");
+
+      const svgBlob = URL.createObjectURL.mock.calls.at(-1)?.[0];
+      const svgText = String(svgBlob._parts?.[0] || "");
+      expect(svgText).not.toContain("data-chart-origin-x");
+    } finally {
+      globalThis.Blob = OriginalBlob;
+    }
   });
 
   it("downloads monthly wbs calendar svg zip", async () => {
@@ -1471,7 +1487,7 @@ describe("mikuproject main", () => {
     URL.createObjectURL.mockClear();
     HTMLAnchorElement.prototype.click.mockClear();
     try {
-      document.getElementById("downloadMonthlyWbsSvgZipBtn").click();
+      document.getElementById("downloadMonthlyCalendarSvgBtn").click();
 
       expect(URL.createObjectURL).toHaveBeenCalled();
       expect(HTMLAnchorElement.prototype.click).toHaveBeenCalled();
@@ -1487,9 +1503,9 @@ describe("mikuproject main", () => {
       const codec = new globalThis.__mikuprojectExcelIo.XlsxWorkbookCodec();
       const entries = codec.unpackEntries(rawPart);
       const entryNames = Object.keys(entries).sort();
-      expect(entryNames).toContain("mikuproject-monthly-wbs-calendar-2026-03.svg");
+      expect(entryNames).toContain("monthly-calendar/2026-03.svg");
 
-      const marchSvg = new TextDecoder().decode(entries["mikuproject-monthly-wbs-calendar-2026-03.svg"]);
+      const marchSvg = new TextDecoder().decode(entries["monthly-calendar/2026-03.svg"]);
       expect(marchSvg).toContain("<svg");
       expect(marchSvg).toContain("mikuproject開発");
       expect(marchSvg).toContain("2026-03");
@@ -1529,24 +1545,44 @@ describe("mikuproject main", () => {
       expect(rawPart).toBeInstanceOf(Uint8Array);
       const codec = new globalThis.__mikuprojectExcelIo.XlsxWorkbookCodec();
       const entries = codec.unpackEntries(rawPart);
-      const entryNames = Object.keys(entries).sort();
-      expect(entryNames).toContain("mikuproject-export-202603162312.xml");
-      expect(entryNames).toContain("mikuproject-export-202603162312.xlsx");
-      expect(entryNames).toContain("mikuproject-workbook-202603162312.json");
-      expect(entryNames).toContain("mikuproject-export-202603162312.csv");
-      expect(entryNames).toContain("mikuproject-wbs-202603162312.xlsx");
-      expect(entryNames).toContain("mikuproject-wbs-20260316.md");
-      expect(entryNames).toContain("mikuproject-wbs-daily-202603162312.svg");
-      expect(entryNames).toContain("mikuproject-wbs-weekly-202603162312.svg");
-      expect(entryNames).toContain("monthly-calendar/2026-03.svg");
-      expect(entryNames).toContain("mikuproject-wbs-mermaid-202603162312.md");
-      expect(entryNames).toContain("mikuproject-project-overview-view.editjson");
-      expect(entryNames).toContain("mikuproject-full-bundle.editjson");
-      expect(entryNames).toContain("mikuproject-phase-detail-view-full.editjson");
+      const entryNames = Object.keys(entries);
+      const sortedEntryNames = [...entryNames].sort();
+      expect(entryNames[0]).toBe("README.txt");
+      expect(sortedEntryNames).toContain("README.txt");
+      expect(sortedEntryNames).toContain("mikuproject-export-202603162312.xml");
+      expect(sortedEntryNames).toContain("mikuproject-export-202603162312.xlsx");
+      expect(sortedEntryNames).toContain("mikuproject-workbook-202603162312.json");
+      expect(sortedEntryNames).toContain("mikuproject-export-202603162312.csv");
+      expect(sortedEntryNames).toContain("mikuproject-wbs-202603162312.xlsx");
+      expect(sortedEntryNames).toContain("mikuproject-wbs-20260316.md");
+      expect(sortedEntryNames).toContain("mikuproject-wbs-daily-202603162312.svg");
+      expect(sortedEntryNames).toContain("mikuproject-wbs-weekly-202603162312.svg");
+      expect(sortedEntryNames).toContain("monthly-calendar/2026-03.svg");
+      expect(sortedEntryNames).toContain("monthly-calendar/2026-04.svg");
+      expect(sortedEntryNames).toContain("mikuproject-wbs-mermaid-202603162312.md");
+      expect(sortedEntryNames).toContain("mikuproject-project-overview-view.editjson");
+      expect(sortedEntryNames).toContain("mikuproject-full-bundle.editjson");
+      expect(sortedEntryNames).toContain("mikuproject-phase-detail-view-full.editjson");
+      expect(entryNames.indexOf("mikuproject-wbs-mermaid-202603162312.md")).toBeLessThan(entryNames.indexOf("monthly-calendar/2026-03.svg"));
+      expect(entryNames.indexOf("monthly-calendar/2026-04.svg")).toBeLessThan(entryNames.indexOf("mikuproject-project-overview-view.editjson"));
 
       const monthlySvg = new TextDecoder().decode(entries["monthly-calendar/2026-03.svg"]);
       expect(monthlySvg).toContain("<svg");
       expect(monthlySvg).toContain("mikuproject開発");
+      const readmeText = new TextDecoder().decode(entries["README.txt"]);
+      expect(readmeText).toContain("mikuproject ALL ZIP");
+      expect(readmeText).toContain("https://github.com/igapyon/mikuproject");
+      expect(readmeText).toContain("converts MS Project XML");
+      expect(readmeText).toContain("mikuproject-export-*.xml");
+      expect(readmeText).toContain("mikuproject-wbs-daily-*.svg");
+      expect(readmeText).toContain("monthly-calendar/YYYY-MM.svg");
+      expect(readmeText).toContain("*.editjson");
+      const projectOverviewJson = new TextDecoder().decode(entries["mikuproject-project-overview-view.editjson"]);
+      const fullBundleJson = new TextDecoder().decode(entries["mikuproject-full-bundle.editjson"]);
+      const phaseDetailJson = new TextDecoder().decode(entries["mikuproject-phase-detail-view-full.editjson"]);
+      expect(projectOverviewJson).toContain("\"view_type\": \"project_overview_view\"");
+      expect(fullBundleJson).toContain("\"view_type\": \"ai_projection_bundle\"");
+      expect(phaseDetailJson).toContain("\"view_type\": \"phase_detail_view\"");
       expect(document.getElementById("statusMessage").textContent).toContain("All 出力を保存しました");
     } finally {
       globalThis.Blob = OriginalBlob;

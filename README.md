@@ -77,6 +77,14 @@
 - 内部モデル、validation、native SVG preview、各 preview の確認
 - `MS Project XML / XLSX / WBS XLSX / workbook JSON / CSV + ParentID / Mermaid / 生成AI向け .editjson` の保存
 
+### Windows 11 での `Monthly SVG` / `SVG` 取扱いメモ
+
+- `Monthly SVG` は、月ごとの `SVG` をまとめた `ZIP` として保存される
+- `Windows 11` では、ダウンロードした `ZIP` や、その中の `SVG` が「危険なファイル」として警告される場合がある
+- これは `mikuproject` 固有の独自拡張ではなく、`ZIP` や `SVG` を Windows 側が外部由来ファイルとして慎重に扱う場合があるため
+- 少なくとも `Monthly SVG` の `ZIP` は、アプリ内で生成した `SVG` 群をまとめたもの
+- 警告の有無や表示文言は、利用するブラウザや Windows の設定に依存する可能性がある
+
 ## 開発
 
 ```bash

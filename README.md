@@ -108,6 +108,8 @@ npm test
 npm run build
 ```
 
+`npm run build` は `build:app` と `test` を順に実行する。`build:app` は `build:web` と `build:xlsx-sample` を順に実行する。
+
 `local-data/` は確認用の再生成可能な生成物置き場として扱う。ここに出す sample や検証用出力は、Git 管理下の永続成果物ではなく、必要時に再生成できればよい前提とする。
 
 ## 関連ドキュメント

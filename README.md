@@ -1,5 +1,7 @@
 # mikuproject
 
+![mikuproject OGP](docs/screenshots/mikuproject-ogp.png)
+
 GitHub: https://github.com/igapyon/mikuproject
 
 `mikuproject` は、`MS Project XML` を基軸に、変換・可視化・限定編集を行うローカル HTML ツールです。

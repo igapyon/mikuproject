@@ -173,6 +173,7 @@
             <button id="previewWeeklySvgBtn" type="button" class="md-button md-button--tonal">Weekly</button>
             <button id="previewMonthlySvgBtn" type="button" class="md-button md-button--tonal">Monthly Calendar</button>
           </div>
+          <p class="md-note-card__text">`Daily` は日単位、`Weekly` は週単位、`Monthly Calendar` は月別カレンダーの俯瞰です。</p>
           <div id="nativeSvgPreview" class="md-svg-preview-stage">
             <div class="md-preview-empty">SVG を生成すると、ここにプレビューを表示します。</div>
           </div>
@@ -259,19 +260,26 @@
             <span class="md-flow-section__step">3</span>
             <span>Output</span>
             <lht-help-tooltip label="Output の説明" wide>
-              `MS Project XML`、`XLSX`、`JSON`、`CSV`、`WBS XLSX`、`Mermaid`、生成AI 向け `.editjson` を保存します。
+              `MS Project XML`、`XLSX`、`JSON`、`CSV`、`WBS Report`、生成AI 向け `.editjson` を保存します。`ALL` は XML / workbook / CSV / WBS Report / `.editjson` をまとめた `ZIP` を保存し、月別カレンダーは `monthly-calendar/` 配下へ展開して含めます。
             </lht-help-tooltip>
           </h2>
         </div>
 
         <div class="md-output-actions">
           <div class="md-panel-actions">
-            <button id="downloadAllOutputsBtn" type="button" class="md-button md-button--tonal">
-              <svg aria-hidden="true" viewBox="0 0 16 16" class="md-button__icon" fill="currentColor">
-                <use href="#md-icon-download" xlink:href="#md-icon-download"></use>
-              </svg>
-              <span>ALL</span>
-            </button>
+            <span class="md-button-with-help">
+              <button id="downloadAllOutputsBtn" type="button" class="md-button md-button--tonal">
+                <svg aria-hidden="true" viewBox="0 0 16 16" class="md-button__icon" fill="currentColor">
+                  <use href="#md-icon-download" xlink:href="#md-icon-download"></use>
+                </svg>
+                <span>ALL</span>
+              </button>
+              <span class="md-button-help-anchor">
+                <lht-help-tooltip label="ALL の説明" placement="right" wide>
+                  `ALL` は `MS Project XML`、workbook `XLSX / JSON`、`CSV`、`WBS XLSX / Markdown / Daily SVG / Weekly SVG / Monthly Calendar / Mermaid`、生成AI 向け `.editjson` をまとめた `ZIP` を保存します。`Monthly Calendar SVG` は入れ子の `ZIP` にせず、`monthly-calendar/` 配下へ月別 `SVG` を展開して含めます。
+                </lht-help-tooltip>
+              </span>
+            </span>
             <button id="downloadXmlBtn" type="button" class="md-button md-button--primary">
               <svg aria-hidden="true" viewBox="0 0 16 16" class="md-button__icon" fill="currentColor">
                 <use href="#md-icon-download" xlink:href="#md-icon-download"></use>
@@ -301,6 +309,7 @@
 
         <section class="md-note-card md-note-card--feature" aria-label="WBS report exports">
           <h3 class="md-note-card__title">WBS Report</h3>
+          <p class="md-note-card__text">`Daily` は日単位、`Weekly` は週単位、`Monthly Calendar` は月別カレンダーをまとめた出力です。</p>
           <div class="md-panel-actions">
             <button id="exportWbsXlsxBtn" type="button" class="md-button md-button--tonal">
               <svg aria-hidden="true" viewBox="0 0 16 16" class="md-button__icon" fill="currentColor">
@@ -326,7 +335,7 @@
               </svg>
               <span>Weekly SVG</span>
             </button>
-            <button id="downloadMonthlyWbsSvgZipBtn" type="button" class="md-button md-button--tonal" disabled>
+            <button id="downloadMonthlyCalendarSvgBtn" type="button" class="md-button md-button--tonal" disabled>
               <svg aria-hidden="true" viewBox="0 0 16 16" class="md-button__icon" fill="currentColor">
                 <use href="#md-icon-download" xlink:href="#md-icon-download"></use>
               </svg>
@@ -447,7 +456,7 @@
   <script src="src/js/project-workbook-json.js"></script>
   <script src="src/js/wbs-xlsx.js"></script>
   <script src="src/js/wbs-markdown.js"></script>
-  <script src="src/js/native-svg.js"></script>
+  <script src="src/js/wbs-svg.js"></script>
   <script src="src/js/main.js"></script>
 </body>
 </html>

@@ -312,7 +312,7 @@
     function updateSvgButton() {
         const nativeSvgButton = getElement("downloadSvgBtn");
         const weeklySvgButton = getElement("downloadWeeklySvgBtn");
-        const monthlyWbsButton = getElement("downloadMonthlyWbsSvgZipBtn");
+        const monthlyWbsButton = getElement("downloadMonthlyCalendarSvgBtn");
         const disabled = !currentModel;
         nativeSvgButton.disabled = disabled;
         weeklySvgButton.disabled = disabled;
@@ -495,7 +495,29 @@
             phase_detail_views_full: phaseDetailViewsFull
         };
         const phaseDetailFull = mikuprojectXml.exportPhaseDetailView(model, undefined, { mode: "full" });
+        const allReadmeText = [
+            "mikuproject ALL ZIP",
+            "",
+            "GitHub: https://github.com/igapyon/mikuproject",
+            "mikuproject is a local single-file web app that converts MS Project XML into XLSX, Markdown, SVG, Mermaid, and AI-facing JSON exports.",
+            "",
+            "This archive contains the main outputs generated from the current model.",
+            "",
+            "Files:",
+            "- mikuproject-export-*.xml: regenerated MS Project XML",
+            "- mikuproject-export-*.xlsx: workbook XLSX export",
+            "- mikuproject-workbook-*.json: workbook JSON export",
+            "- mikuproject-export-*.csv: CSV + ParentID export",
+            "- mikuproject-wbs-*.xlsx: WBS workbook export",
+            "- mikuproject-wbs-*.md: WBS Markdown export",
+            "- mikuproject-wbs-daily-*.svg: daily WBS SVG export",
+            "- mikuproject-wbs-weekly-*.svg: weekly WBS SVG export",
+            "- mikuproject-wbs-mermaid-*.md: Mermaid gantt export",
+            "- monthly-calendar/YYYY-MM.svg: month-by-month calendar SVG export",
+            "- *.editjson: AI-facing projection exports"
+        ].join("\n");
         const entries = [
+            { name: "README.txt", data: encodeUtf8(`${allReadmeText}\n`) },
             { name: `mikuproject-export-${stamp}.xml`, data: encodeUtf8(`${xmlText}\n`) },
             { name: `mikuproject-export-${stamp}.xlsx`, data: codec.exportWorkbook(workbook) },
             { name: `mikuproject-workbook-${stamp}.json`, data: encodeUtf8(`${workbookJsonText}\n`) },
@@ -504,18 +526,15 @@
             { name: `mikuproject-wbs-${dateOnlyStamp}.md`, data: encodeUtf8(`${wbsMarkdown}\n`) },
             { name: `mikuproject-wbs-daily-${stamp}.svg`, data: encodeUtf8(dailySvg) },
             { name: `mikuproject-wbs-weekly-${stamp}.svg`, data: encodeUtf8(weeklySvg) },
-            { name: `mikuproject-wbs-mermaid-${stamp}.md`, data: encodeUtf8(`\`\`\`mermaid\n${mermaidText}\n\`\`\`\n`) },
-            { name: "mikuproject-project-overview-view.editjson", data: encodeUtf8(`${JSON.stringify(projectOverview, null, 2)}\n`) },
-            { name: "mikuproject-full-bundle.editjson", data: encodeUtf8(`${JSON.stringify(aiBundle, null, 2)}\n`) },
-            { name: "mikuproject-phase-detail-view-full.editjson", data: encodeUtf8(`${JSON.stringify(phaseDetailFull, null, 2)}\n`) }
+            { name: `mikuproject-wbs-mermaid-${stamp}.md`, data: encodeUtf8(`\`\`\`mermaid\n${mermaidText}\n\`\`\`\n`) }
         ];
         for (const entry of monthlyArchive.entries) {
-            const shortFileName = entry.fileName.replace(/^mikuproject-monthly-wbs-calendar-/, "");
             entries.push({
-                name: `monthly-calendar/${shortFileName}`,
+                name: `monthly-calendar/${entry.fileName}`,
                 data: encodeUtf8(entry.svg)
             });
         }
+        entries.push({ name: "mikuproject-project-overview-view.editjson", data: encodeUtf8(`${JSON.stringify(projectOverview, null, 2)}\n`) }, { name: "mikuproject-full-bundle.editjson", data: encodeUtf8(`${JSON.stringify(aiBundle, null, 2)}\n`) }, { name: "mikuproject-phase-detail-view-full.editjson", data: encodeUtf8(`${JSON.stringify(phaseDetailFull, null, 2)}\n`) });
         return {
             fileName: `mikuproject-all-${stamp}.zip`,
             zipBytes: packZipEntries(entries),
@@ -1530,7 +1549,7 @@ WorkWeek1=${formatCalendarWorkWeekSummary(calendar)}</div>
                 setStatus(error instanceof Error ? error.message : "Weekly SVG 保存に失敗しました");
             }
         });
-        getElement("downloadMonthlyWbsSvgZipBtn").addEventListener("click", () => {
+        getElement("downloadMonthlyCalendarSvgBtn").addEventListener("click", () => {
             try {
                 downloadCurrentMonthlyWbsSvgZip();
             }

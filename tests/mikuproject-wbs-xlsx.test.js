@@ -295,7 +295,7 @@ describe("mikuproject wbs xlsx", () => {
     expect(secondTaskRow.cells[10].fillColor).toBe("#FFF4E0");
     expect(secondTaskRow.cells[11].value).toBe("");
     expect(secondTaskRow.cells[20].value).toBe("◆");
-    expect(secondTaskRow.cells[20].fillColor).toBe("#5BAE9C");
+    expect(secondTaskRow.cells[20].fillColor).toBe("#8EB9EA");
     expect(secondTaskRow.cells[21].value).toBe("");
     expect(thirdTaskRow.cells[5].value).toBe("  - 初期実装（MS Project XML 調査・基軸フォーマット選定・内部モデルの概要確定）");
     expect(thirdTaskRow.cells[9].value).toBe("-");
@@ -315,7 +315,7 @@ describe("mikuproject wbs xlsx", () => {
     expect(sheet.rows[legendHeaderIndex + 1].height).toBe(24);
     expect(sheet.rows[legendHeaderIndex + 1].cells[0].value).toBe("進捗済み");
     expect(sheet.rows[legendHeaderIndex + 1].cells[0].bold).toBe(true);
-    expect(sheet.rows[legendHeaderIndex + 1].cells[0].fillColor).toBe("#5BAE9C");
+    expect(sheet.rows[legendHeaderIndex + 1].cells[0].fillColor).toBe("#8EB9EA");
     expect(sheet.rows[legendHeaderIndex + 7].cells[0].value).toBe("━:フェーズ");
     expect(sheet.rows[legendHeaderIndex + 8].cells[0].value).toBe("■:進捗済みタスク");
     expect(sheet.rows[legendHeaderIndex + 9].cells[0].value).toBe("□:予定タスク");
@@ -394,9 +394,9 @@ describe("mikuproject wbs xlsx", () => {
       "Mon"
     ]);
     expect(sheet.rows[dateRowIndex].cells[21].fillColor).toBe("#FFE6A7");
-    expect(sheet.rows[dateRowIndex].cells[22].fillColor).toBe("#C9D3E1");
-    expect(sheet.rows[headerRowIndex].cells[21].fillColor).toBe("#8EA9DB");
-    expect(sheet.rows[headerRowIndex].cells[22].fillColor).toBe("#E6B8AF");
+    expect(sheet.rows[dateRowIndex].cells[22].fillColor).toBe("#EEF3F8");
+    expect(sheet.rows[headerRowIndex].cells[21].fillColor).toBe("#EEF3F8");
+    expect(sheet.rows[headerRowIndex].cells[22].fillColor).toBe("#EEF3F8");
   });
 
   it("uses project calendar weekdays instead of hardcoded weekends for non-working fill", () => {
@@ -435,9 +435,9 @@ describe("mikuproject wbs xlsx", () => {
     ]);
     expect(sheet.rows[dateRowIndex].cells[20].fillColor).toBe("#FFE6A7");
     expect(sheet.rows[dateRowIndex].cells[21].fillColor).toBe("#D9EAF7");
-    expect(sheet.rows[dateRowIndex].cells[22].fillColor).toBe("#C9D3E1");
+    expect(sheet.rows[dateRowIndex].cells[22].fillColor).toBe("#EEF3F8");
     expect(sheet.rows[headerRowIndex].cells[21].fillColor).toBe("#D9EAF7");
-    expect(sheet.rows[headerRowIndex].cells[22].fillColor).toBe("#E6B8AF");
+    expect(sheet.rows[headerRowIndex].cells[22].fillColor).toBe("#EEF3F8");
   });
 
   it("suppresses task bands on weekly non-working days and configured holidays", () => {
@@ -485,9 +485,9 @@ describe("mikuproject wbs xlsx", () => {
     expect(sheet.rows[taskRowIndex].cells[dateColumns.get("3/27")].value).toBe("");
     expect(sheet.rows[taskRowIndex].cells[dateColumns.get("3/28")].value).toBe("");
     expect(sheet.rows[taskRowIndex].cells[dateColumns.get("3/29")].value).toBe("□");
-    expect(sheet.rows[taskRowIndex].cells[dateColumns.get("3/27")].fillColor).toBe("#C9D3E1");
+    expect(sheet.rows[taskRowIndex].cells[dateColumns.get("3/27")].fillColor).toBe("#EEF3F8");
     expect(sheet.rows[taskRowIndex].cells[dateColumns.get("3/28")].fillColor).toBe("#FCE4EC");
-    expect(sheet.rows[taskRowIndex].cells[dateColumns.get("3/29")].fillColor).toBe("#9FD5C9");
+    expect(sheet.rows[taskRowIndex].cells[dateColumns.get("3/29")].fillColor).toBe("#D9EFFF");
   });
 
   it("marks week-start date-band cells with week-start fill", () => {
@@ -506,7 +506,7 @@ describe("mikuproject wbs xlsx", () => {
     expect(sheet.rows[dateRowIndex].cells[27].value).toBe("3/23");
     expect(sheet.rows[headerRowIndex].cells[27].value).toBe("Mon");
     expect(sheet.rows[dateRowIndex].cells[27].fillColor).toBe("#D9EAF7");
-    expect(sheet.rows[headerRowIndex + 1].cells[27].fillColor).toBe("#F4F7FB");
+    expect(sheet.rows[headerRowIndex + 1].cells[27].fillColor).toBeUndefined();
   });
 
   it("does not emit a dedicated week-label row even when a month boundary exists", () => {
@@ -668,12 +668,12 @@ describe("mikuproject wbs xlsx", () => {
 
     expect(sheet.rows[summaryHeaderIndex + 7].cells[1].value).toBe("営業日");
     expect(designRow.cells[8].value).toBe("4営業日");
-    expect(designRow.cells[20].fillColor).toBe("#5BAE9C");
-    expect(designRow.cells[21].fillColor).toBe("#5BAE9C");
-    expect(designRow.cells[22].fillColor).toBe("#9FD5C9");
+    expect(designRow.cells[20].fillColor).toBe("#8EB9EA");
+    expect(designRow.cells[21].fillColor).toBe("#8EB9EA");
+    expect(designRow.cells[22].fillColor).toBe("#D9EFFF");
     expect(designRow.cells[24].fillColor).toBe("#FCE4EC");
-    expect(designRow.cells[25].fillColor).toBe("#C9D3E1");
-    expect(designRow.cells[26].fillColor).toBe("#9FD5C9");
+    expect(designRow.cells[25].fillColor).toBe("#EEF3F8");
+    expect(designRow.cells[26].fillColor).toBe("#D9EFFF");
   });
 
   it("shows task band on non-working endpoints only", () => {

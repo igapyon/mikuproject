@@ -144,14 +144,9 @@
           </div>
         </details>
 
-        <details class="md-debug-accordion">
-          <summary class="md-debug-accordion__summary">デバッグ情報</summary>
-          <div class="md-debug-accordion__body">
-            <div class="md-form-grid">
-              <lht-text-field-help field-id="xmlInput" label="MS Project XML" rows="16" placeholder="ここに XML を入力" help-text="MS Project XML を読み込みます。"></lht-text-field-help>
-            </div>
-          </div>
-        </details>
+        <div hidden aria-hidden="true">
+          <textarea id="xmlInput"></textarea>
+        </div>
 
         <div id="xmlSaveState" class="md-save-state md-save-state--dirty" aria-live="polite">XML 保存状態: 未保存</div>
       </section>
@@ -219,10 +214,6 @@
               <lht-text-field-help field-id="modelOutput" label="内部モデル(JSON)" rows="16" readonly></lht-text-field-help>
             </div>
 
-            <div class="md-form-grid">
-              <lht-text-field-help field-id="mermaidOutput" label="Mermaid gantt" rows="12" readonly></lht-text-field-help>
-            </div>
-
             <div class="md-preview-grid">
               <section class="md-preview-card">
                 <h3 class="md-preview-card__title">Project</h3>
@@ -247,6 +238,10 @@
             </div>
           </div>
         </details>
+
+        <div hidden aria-hidden="true">
+          <textarea id="mermaidOutput"></textarea>
+        </div>
 
         <div class="md-feedback-stack md-hidden" aria-label="import feedback">
           <div class="md-feedback-stack__title">取込結果</div>
@@ -395,13 +390,14 @@
             <summary class="ms-settings-summary">設定</summary>
             <div class="ms-settings-body">
               <section class="ms-settings-block" aria-label="WBS xlsx export options">
-                <h3 class="ms-settings-subtitle">WBS XLSX 表示設定</h3>
-              <p class="md-note-card__text">
-                `WBS XLSX Export` では、`ProjectModel` から補完した既定祝日を WBS 日付帯へ反映します。
-              </p>
-              <p class="md-note-card__text">
-                既定祝日は、現在の `ProjectModel` に含まれる `Calendar.Exceptions` の非稼働日例外から内部で直接補完します。画面では `Calendars / Exceptions` を直接編集せず、必要な変更は `MS Project XML` または `XLSX Import` 側で扱います。表示期間を空欄にすると全期間、数値を入れると `BaseDate` 前後の営業日で切り出します。進捗帯も営業日基準で計算します。
-              </p>
+                <h3 class="ms-settings-subtitle">
+                  <span>WBS XLSX 表示設定</span>
+                  <lht-help-tooltip label="WBS XLSX 表示設定の説明" placement="right" wide>
+                    `WBS XLSX Export` では、`ProjectModel` から補完した既定祝日を WBS 日付帯へ反映します。
+
+                    既定祝日は、現在の `ProjectModel` に含まれる `Calendar.Exceptions` の非稼働日例外から内部で直接補完します。画面では `Calendars / Exceptions` を直接編集せず、必要な変更は `MS Project XML` または `XLSX Import` 側で扱います。表示期間を空欄にすると全期間、数値を入れると `BaseDate` 前後の営業日で切り出します。進捗帯も営業日基準で計算します。
+                  </lht-help-tooltip>
+                </h3>
               <div class="md-form-grid md-form-grid--two">
                 <lht-text-field-help
                   field-id="wbsDisplayDaysBeforeInput"
@@ -421,24 +417,15 @@
           </details>
         </section>
 
-        <details class="md-debug-accordion">
-          <summary class="md-debug-accordion__summary">デバッグ情報</summary>
-          <div class="md-debug-accordion__body">
-            <div class="md-form-grid">
-              <lht-text-field-help field-id="workbookJsonOutput" label="mikuproject_workbook_json" rows="16" readonly></lht-text-field-help>
-            </div>
-
-            <div class="md-form-grid">
-              <lht-text-field-help field-id="aiBundleOutput" label="ai_projection_bundle" rows="16" readonly></lht-text-field-help>
-            </div>
-            <div class="md-form-grid">
-              <lht-text-field-help field-id="projectOverviewOutput" label="project_overview_view" rows="14" readonly></lht-text-field-help>
-            </div>
-            <div class="md-form-grid">
-              <lht-text-field-help field-id="phaseDetailOutput" label="phase_detail_view" rows="16" readonly></lht-text-field-help>
-            </div>
-          </div>
-        </details>
+        <div hidden aria-hidden="true">
+          <textarea id="workbookJsonOutput"></textarea>
+          <textarea id="aiBundleOutput"></textarea>
+          <textarea id="projectOverviewOutput"></textarea>
+          <input id="phaseDetailUidInput" type="text" />
+          <input id="phaseDetailRootUidInput" type="text" />
+          <input id="phaseDetailMaxDepthInput" type="text" />
+          <textarea id="phaseDetailOutput"></textarea>
+        </div>
       </section>
     </section>
 

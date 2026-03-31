@@ -175,7 +175,7 @@
               <button id="previewMonthlySvgBtn" type="button" class="md-button md-button--tonal">Monthly Calendar</button>
               <span class="md-button-help-anchor">
                 <lht-help-tooltip label="Monthly Calendar preview の説明" placement="right" wide>
-                  `Daily` は日単位、`Weekly` は週単位、`Monthly Calendar` は月別カレンダーの俯瞰です。
+                  `Monthly Calendar` は月別カレンダーを縦に並べて俯瞰する preview です。`Daily` は日単位、`Weekly` は週単位、`Monthly Calendar` は月単位で見比べられます。
                 </lht-help-tooltip>
               </span>
             </span>
@@ -266,7 +266,7 @@
             <span class="md-flow-section__step">3</span>
             <span>Output</span>
             <lht-help-tooltip label="Output の説明" wide>
-              `MS Project XML`、`XLSX`、`JSON`、`CSV`、`WBS Report`、生成AI 向け `.editjson` を保存します。`ALL` は XML / workbook / CSV / WBS Report / `.editjson` をまとめた `ZIP` を保存し、月別カレンダーは `monthly-calendar/` 配下へ展開して含めます。
+              このページでは、内部モデルから各種成果物を保存します。`MS Project XML`、workbook、`CSV`、`WBS Report`、生成AI 向け `.editjson` をここから出力できます。
             </lht-help-tooltip>
           </h2>
         </div>
@@ -282,7 +282,7 @@
               </button>
               <span class="md-button-help-anchor">
                 <lht-help-tooltip label="ALL の説明" placement="right" wide>
-                  `ALL` は `MS Project XML`、workbook `XLSX / JSON`、`CSV`、`WBS XLSX / Markdown / Daily SVG / Weekly SVG / Monthly Calendar / Mermaid`、生成AI 向け `.editjson` をまとめた `ZIP` を保存します。`Monthly Calendar SVG` は入れ子の `ZIP` にせず、`monthly-calendar/` 配下へ月別 `SVG` を展開して含めます。
+                  `ALL` は主要成果物をまとめた `ZIP` を保存します。`Monthly Calendar SVG` は入れ子の `ZIP` にせず、`monthly-calendar/` 配下へ月別 `SVG` を展開して含めます。
                 </lht-help-tooltip>
               </span>
             </span>

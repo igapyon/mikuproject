@@ -590,6 +590,32 @@ describe("mikuproject wbs xlsx", () => {
     expect(sheet.rows[headerRowIndex + 1].cells[24].fillColor).toBe("#FCE4EC");
   });
 
+  it("uses different fills for holiday-derived and weekday-derived non-working days", () => {
+    const { xml, wbsXlsx } = bootModules();
+    const model = xml.importMsProjectXml(xml.SAMPLE_XML);
+
+    model.project.startDate = "2026-03-20T09:00:00";
+    model.project.finishDate = "2026-03-22T18:00:00";
+    model.project.currentDate = "2026-03-19T09:00:00";
+
+    const workbook = wbsXlsx.exportWbsWorkbook(model, {
+      holidayDates: ["2026-03-20"]
+    });
+    const sheet = workbook.sheets[0];
+    const headerRowIndex = findRowIndexByCellValue(sheet, "UID");
+    const dateRow = sheet.rows[headerRowIndex - 1];
+    const weekdayRow = sheet.rows[headerRowIndex];
+
+    expect(dateRow.cells[20].value).toBe("3/20");
+    expect(dateRow.cells[21].value).toBe("3/21");
+    expect(weekdayRow.cells[20].value).toBe("Fri");
+    expect(weekdayRow.cells[21].value).toBe("Sat");
+    expect(dateRow.cells[20].fillColor).toBe("#FCE4EC");
+    expect(dateRow.cells[21].fillColor).toBe("#EEF3F8");
+    expect(weekdayRow.cells[20].fillColor).toBe("#FCE4EC");
+    expect(weekdayRow.cells[21].fillColor).toBe("#EEF3F8");
+  });
+
   it("can limit the displayed date band around base date", () => {
     const { xml, wbsXlsx } = bootModules();
     const model = xml.importMsProjectXml(xml.SAMPLE_XML);

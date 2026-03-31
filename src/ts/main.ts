@@ -315,35 +315,6 @@
     setActiveTab(currentTabId);
   }
 
-  function parseHolidayDateList(raw: string): string[] {
-    if (!raw) {
-      return [];
-    }
-    const seen = new Set<string>();
-    const holidays: string[] = [];
-    for (const token of raw.split(/[\s,、;]+/)) {
-      const value = token.trim();
-      if (!value) {
-        continue;
-      }
-      const match = value.match(/^(\d{4}-\d{2}-\d{2})/);
-      if (!match) {
-        continue;
-      }
-      const dateText = match[1];
-      if (seen.has(dateText)) {
-        continue;
-      }
-      seen.add(dateText);
-      holidays.push(dateText);
-    }
-    return holidays;
-  }
-
-  function parseWbsDefaultHolidayDates(): string[] {
-    return parseHolidayDateList(getTextArea("wbsHolidayDatesInput").value.trim());
-  }
-
   function parseOptionalNonNegativeInteger(raw: string): number | undefined {
     const value = raw.trim();
     if (!value) {
@@ -370,38 +341,6 @@
 
   function useBusinessDaysForWbsProgressBand(): boolean {
     return true;
-  }
-
-  function updateWbsHolidaySummary(holidayDates: string[]): void {
-    const summary = getElement<HTMLElement>("wbsHolidaySummary");
-    if (holidayDates.length === 0) {
-      summary.textContent = "既定祝日: 0 件";
-      return;
-    }
-    summary.textContent = `既定祝日: ${holidayDates.length} 件 (${holidayDates.join(", ")})`;
-  }
-
-  function syncWbsHolidayDatesInput(model: ProjectModel | null): void {
-    const input = getTextArea("wbsHolidayDatesInput");
-    if (!model) {
-      input.value = "";
-      updateWbsHolidaySummary([]);
-      return;
-    }
-    const holidayDates = mikuprojectWbsXlsx.collectWbsHolidayDates(model);
-    const nextValue = holidayDates.join("\n");
-    const fieldHost = document.querySelector(`lht-text-field-help[field-id="wbsHolidayDatesInput"]`);
-    if (fieldHost) {
-      window.requestAnimationFrame(() => {
-        const latestInput = document.getElementById("wbsHolidayDatesInput") as HTMLTextAreaElement | null;
-        if (latestInput) {
-          latestInput.value = nextValue;
-        }
-      });
-    } else {
-      input.value = nextValue;
-    }
-    updateWbsHolidaySummary(holidayDates);
   }
 
   function showToast(message: string): void {
@@ -507,9 +446,8 @@
     useBusinessDaysForDisplayRange?: boolean;
     useBusinessDaysForProgressBand?: boolean;
   } {
-    syncWbsHolidayDatesInput(model);
     return {
-      holidayDates: parseWbsDefaultHolidayDates(),
+      holidayDates: mikuprojectWbsXlsx.collectWbsHolidayDates(model),
       displayDaysBeforeBaseDate: parseWbsDisplayDaysBeforeBaseDate(),
       displayDaysAfterBaseDate: parseWbsDisplayDaysAfterBaseDate(),
       useBusinessDaysForDisplayRange: useBusinessDaysForWbsDisplayRange(),
@@ -1128,7 +1066,6 @@
 
   function updateSummary(model: ProjectModel | null): void {
     updateSvgButton();
-    syncWbsHolidayDatesInput(model);
     getElement<HTMLElement>("summaryProjectName").textContent = model?.project.name || "-";
     getElement<HTMLElement>("summaryTaskCount").textContent = String(model?.tasks.length || 0);
     getElement<HTMLElement>("summaryResourceCount").textContent = String(model?.resources.length || 0);
@@ -1569,18 +1506,8 @@ WorkWeek1=${formatCalendarWorkWeekSummary(calendar)}</div>
   function exportCurrentWbsXlsx(): void {
     const model = ensureCurrentModel();
     syncXmlTextFromModel(model);
-    const defaultHolidayDates = parseWbsDefaultHolidayDates();
-    const displayDaysBeforeBaseDate = parseWbsDisplayDaysBeforeBaseDate();
-    const displayDaysAfterBaseDate = parseWbsDisplayDaysAfterBaseDate();
-    const useBusinessDaysForDisplayRange = useBusinessDaysForWbsDisplayRange();
-    const useBusinessDaysForProgressBand = useBusinessDaysForWbsProgressBand();
-    const workbook = mikuprojectWbsXlsx.exportWbsWorkbook(model, {
-      holidayDates: defaultHolidayDates,
-      displayDaysBeforeBaseDate,
-      displayDaysAfterBaseDate,
-      useBusinessDaysForDisplayRange,
-      useBusinessDaysForProgressBand
-    });
+    const options = buildCurrentWbsOptions(model);
+    const workbook = mikuprojectWbsXlsx.exportWbsWorkbook(model, options);
     const codec = new mikuprojectExcelIo.XlsxWorkbookCodec();
     const bytes = codec.exportWorkbook(workbook);
     const now = new Date();
@@ -1595,11 +1522,11 @@ WorkWeek1=${formatCalendarWorkWeekSummary(calendar)}</div>
       new Blob([bytes], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" }),
       `mikuproject-wbs-${stamp}.xlsx`
     );
-    const displayRangeText = displayDaysBeforeBaseDate !== undefined || displayDaysAfterBaseDate !== undefined
-      ? ` / 表示期間 営業日 基準日前 ${displayDaysBeforeBaseDate || 0} 日, 基準日後 ${displayDaysAfterBaseDate || 0} 日`
+    const displayRangeText = options.displayDaysBeforeBaseDate !== undefined || options.displayDaysAfterBaseDate !== undefined
+      ? ` / 表示期間 営業日 基準日前 ${options.displayDaysBeforeBaseDate || 0} 日, 基準日後 ${options.displayDaysAfterBaseDate || 0} 日`
       : "";
     const progressBandText = " / 進捗帯 営業日";
-    setStatus(`WBS XLSX ファイルをエクスポートしました${defaultHolidayDates.length > 0 ? ` (祝日 ${defaultHolidayDates.length} 件)` : ""}${displayRangeText}${progressBandText}`);
+    setStatus(`WBS XLSX ファイルをエクスポートしました${options.holidayDates.length > 0 ? ` (祝日 ${options.holidayDates.length} 件)` : ""}${displayRangeText}${progressBandText}`);
     showToast("WBS XLSX を保存しました");
     setActiveTab("output");
   }
@@ -1785,19 +1712,8 @@ WorkWeek1=${formatCalendarWorkWeekSummary(calendar)}</div>
   function downloadCurrentWbsMarkdown(): void {
     const model = ensureCurrentModel();
     syncXmlTextFromModel(model);
-    const defaultHolidayDates = mikuprojectWbsXlsx.collectWbsHolidayDates(model);
-    syncWbsHolidayDatesInput(model);
-    const displayDaysBeforeBaseDate = parseOptionalNonNegativeInteger(getInput("wbsDisplayDaysBeforeInput").value);
-    const displayDaysAfterBaseDate = parseOptionalNonNegativeInteger(getInput("wbsDisplayDaysAfterInput").value);
-    const useBusinessDaysForDisplayRange = useBusinessDaysForWbsDisplayRange();
-    const useBusinessDaysForProgressBand = useBusinessDaysForWbsProgressBand();
-    const markdownText = mikuprojectWbsMarkdown.exportWbsMarkdown(model, {
-      holidayDates: defaultHolidayDates,
-      displayDaysBeforeBaseDate,
-      displayDaysAfterBaseDate,
-      useBusinessDaysForDisplayRange,
-      useBusinessDaysForProgressBand
-    });
+    const options = buildCurrentWbsOptions(model);
+    const markdownText = mikuprojectWbsMarkdown.exportWbsMarkdown(model, options);
     const now = new Date();
     const stamp = [
       now.getFullYear(),

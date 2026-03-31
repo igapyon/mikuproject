@@ -2144,6 +2144,14 @@ md-outlined-select.md-outlined-field:focus-within::part(container) {
     <symbol id="md-icon-clipboard" viewBox="0 0 16 16">
       <path d="M6 2.5A1.5 1.5 0 0 1 7.5 1h1A1.5 1.5 0 0 1 10 2.5h1.25A1.75 1.75 0 0 1 13 4.25v8A1.75 1.75 0 0 1 11.25 14h-6.5A1.75 1.75 0 0 1 3 12.25v-8A1.75 1.75 0 0 1 4.75 2.5H6Zm1.5 0h1v-.25h-1v.25Zm-2.75 1.5a.25.25 0 0 0-.25.25v8c0 .138.112.25.25.25h6.5a.25.25 0 0 0 .25-.25v-8a.25.25 0 0 0-.25-.25H10v.25A1.25 1.25 0 0 1 8.75 5.5h-1.5A1.25 1.25 0 0 1 6 4.25V4H4.75Z"></path>
     </symbol>
+    <symbol id="md-icon-download" viewBox="0 0 16 16">
+      <path d="M8.75 2.5a.75.75 0 0 0-1.5 0v5.19L5.78 6.22a.75.75 0 1 0-1.06 1.06l2.75 2.75a.75.75 0 0 0 1.06 0l2.75-2.75a.75.75 0 0 0-1.06-1.06L8.75 7.69V2.5Z"></path>
+      <path d="M3 10.75A.75.75 0 0 1 3.75 10h8.5a.75.75 0 0 1 0 1.5h-8.5A.75.75 0 0 1 3 10.75Zm.25 2.25A1.25 1.25 0 0 0 2 14.25v.5A1.25 1.25 0 0 0 3.25 16h9.5A1.25 1.25 0 0 0 14 14.75v-.5A1.25 1.25 0 0 0 12.75 13h-9.5Z"></path>
+    </symbol>
+    <symbol id="md-icon-upload" viewBox="0 0 16 16">
+      <path d="M8.53 2.22a.75.75 0 0 0-1.06 0L4.72 4.97a.75.75 0 1 0 1.06 1.06l1.47-1.47v5.19a.75.75 0 0 0 1.5 0V4.56l1.47 1.47a.75.75 0 1 0 1.06-1.06L8.53 2.22Z"></path>
+      <path d="M3.75 10a.75.75 0 0 0 0 1.5h8.5a.75.75 0 0 0 0-1.5h-8.5Zm-1.5 3.25A1.25 1.25 0 0 1 3.5 12h9a1.25 1.25 0 0 1 1.25 1.25v.5A1.25 1.25 0 0 1 12.5 15h-9a1.25 1.25 0 0 1-1.25-1.25v-.5Z"></path>
+    </symbol>
   </svg>
   <div class="md-surface-card md-card">
     <header class="ms-hero">
@@ -2151,7 +2159,7 @@ md-outlined-select.md-outlined-field:focus-within::part(container) {
         <span class="ms-hero-icon" aria-hidden="true">📋</span>
         <span>mikuproject</span>
         <lht-help-tooltip label="mikuproject の説明" wide>
-          MS Project XML を読み込み、内部モデル・XLSX・生成AI向け JSON を行き来しながら、プロジェクト計画を確認・編集するためのアプリです。
+          `MS Project XML` を基軸に、変換・可視化・限定編集を行うローカル HTML ツールです。`XLSX`、`WBS Report`、`Daily / Weekly / Monthly Calendar` preview、生成AI向け `.editjson` を扱えます。
         </lht-help-tooltip>
         <a
           href="https://github.com/igapyon/mikuproject"
@@ -2199,7 +2207,12 @@ md-outlined-select.md-outlined-field:focus-within::part(container) {
 
         <div class="md-panel-actions">
           <span class="md-button-with-help">
-            <button id="importFileBtn" type="button" class="md-button md-button--primary">Load from file</button>
+            <button id="importFileBtn" type="button" class="md-button md-button--primary">
+              <svg aria-hidden="true" viewBox="0 0 16 16" class="md-button__icon" fill="currentColor">
+                <use href="#md-icon-upload" xlink:href="#md-icon-upload"></use>
+              </svg>
+              <span>Load from file</span>
+            </button>
             <span class="md-button-help-anchor">
               <lht-help-tooltip label="Load from file の説明" placement="right" wide>
                 <p class="md-note-card__text">
@@ -2654,14 +2667,9 @@ md-outlined-select.md-outlined-field:focus-within::part(container) {
           </div>
         </details>
 
-        <details class="md-debug-accordion">
-          <summary class="md-debug-accordion__summary">デバッグ情報</summary>
-          <div class="md-debug-accordion__body">
-            <div class="md-form-grid">
-              <lht-text-field-help field-id="xmlInput" label="MS Project XML" rows="16" placeholder="ここに XML を入力" help-text="MS Project XML を読み込みます。"></lht-text-field-help>
-            </div>
-          </div>
-        </details>
+        <div hidden aria-hidden="true">
+          <textarea id="xmlInput"></textarea>
+        </div>
 
         <div id="xmlSaveState" class="md-save-state md-save-state--dirty" aria-live="polite">XML 保存状態: 未保存</div>
       </section>
@@ -2672,12 +2680,24 @@ md-outlined-select.md-outlined-field:focus-within::part(container) {
             <span class="md-flow-section__step">2</span>
             <span>Overview</span>
             <lht-help-tooltip label="Overview の説明" wide>
-              内部モデル、検証結果、SVG preview を確認します。取込後の warning と差分要約もここに表示します。
+              このページでは主にガントを確認します。`Daily / Weekly / Monthly Calendar` を切り替えて見比べられます。あわせて、検証結果や取込後の warning / 差分要約も確認できます。
             </lht-help-tooltip>
           </h2>
         </div>
 
         <section class="md-note-card md-note-card--feature">
+          <div class="md-panel-actions">
+            <button id="previewDailySvgBtn" type="button" class="md-button md-button--tonal">Daily</button>
+            <button id="previewWeeklySvgBtn" type="button" class="md-button md-button--tonal">Weekly</button>
+            <span class="md-button-with-help">
+              <button id="previewMonthlySvgBtn" type="button" class="md-button md-button--tonal">Monthly Calendar</button>
+              <span class="md-button-help-anchor">
+                <lht-help-tooltip label="Monthly Calendar preview の説明" placement="right" wide>
+                  `Monthly Calendar` は月別カレンダーを縦に並べて俯瞰する preview です。`Daily` は日単位、`Weekly` は週単位、`Monthly Calendar` は月単位で見比べられます。
+                </lht-help-tooltip>
+              </span>
+            </span>
+          </div>
           <div id="nativeSvgPreview" class="md-svg-preview-stage">
             <div class="md-preview-empty">SVG を生成すると、ここにプレビューを表示します。</div>
           </div>
@@ -2717,10 +2737,6 @@ md-outlined-select.md-outlined-field:focus-within::part(container) {
               <lht-text-field-help field-id="modelOutput" label="内部モデル(JSON)" rows="16" readonly></lht-text-field-help>
             </div>
 
-            <div class="md-form-grid">
-              <lht-text-field-help field-id="mermaidOutput" label="Mermaid gantt" rows="12" readonly></lht-text-field-help>
-            </div>
-
             <div class="md-preview-grid">
               <section class="md-preview-card">
                 <h3 class="md-preview-card__title">Project</h3>
@@ -2746,6 +2762,10 @@ md-outlined-select.md-outlined-field:focus-within::part(container) {
           </div>
         </details>
 
+        <div hidden aria-hidden="true">
+          <textarea id="mermaidOutput"></textarea>
+        </div>
+
         <div class="md-feedback-stack md-hidden" aria-label="import feedback">
           <div class="md-feedback-stack__title">取込結果</div>
           <div class="md-feedback-stack__text">取込後は、ここで差分反映・warning・検証結果を確認します。</div>
@@ -2764,25 +2784,99 @@ md-outlined-select.md-outlined-field:focus-within::part(container) {
             <span class="md-flow-section__step">3</span>
             <span>Output</span>
             <lht-help-tooltip label="Output の説明" wide>
-              `MS Project XML`、`XLSX`、`JSON`、`CSV`、`WBS XLSX`、`Mermaid`、生成AI 向け `.editjson` を保存します。
+              このページでは、内部モデルから各種成果物を保存します。`MS Project XML`、workbook、`CSV`、`WBS Report`、生成AI 向け `.editjson` をここから出力できます。
             </lht-help-tooltip>
           </h2>
         </div>
 
         <div class="md-output-actions">
           <div class="md-panel-actions">
-            <button id="downloadXmlBtn" type="button" class="md-button md-button--primary">MS Project XML</button>
-            <button id="exportXlsxBtn" type="button" class="md-button md-button--tonal">XLSX</button>
-            <button id="exportWorkbookJsonBtn" type="button" class="md-button md-button--tonal">JSON</button>
-            <button id="exportCsvBtn" type="button" class="md-button md-button--tonal">CSV</button>
-          </div>
-          <div class="md-panel-actions">
-            <button id="exportWbsXlsxBtn" type="button" class="md-button md-button--tonal">WBS XLSX</button>
-            <button id="exportWbsMdBtn" type="button" class="md-button md-button--tonal">WBS Markdown</button>
-            <button id="exportMermaidMdBtn" type="button" class="md-button md-button--tonal">Mermaid</button>
-            <button id="downloadSvgBtn" type="button" class="md-button md-button--surface" disabled>SVG</button>
+            <span class="md-button-with-help">
+              <button id="downloadAllOutputsBtn" type="button" class="md-button md-button--tonal">
+                <svg aria-hidden="true" viewBox="0 0 16 16" class="md-button__icon" fill="currentColor">
+                  <use href="#md-icon-download" xlink:href="#md-icon-download"></use>
+                </svg>
+                <span>ALL</span>
+              </button>
+              <span class="md-button-help-anchor">
+                <lht-help-tooltip label="ALL の説明" placement="right" wide>
+                  `ALL` は主要成果物をまとめた `ZIP` を保存します。`Monthly Calendar SVG` は入れ子の `ZIP` にせず、`monthly-calendar/` 配下へ月別 `SVG` を展開して含めます。
+                </lht-help-tooltip>
+              </span>
+            </span>
+            <button id="downloadXmlBtn" type="button" class="md-button md-button--primary">
+              <svg aria-hidden="true" viewBox="0 0 16 16" class="md-button__icon" fill="currentColor">
+                <use href="#md-icon-download" xlink:href="#md-icon-download"></use>
+              </svg>
+              <span>MS Project XML</span>
+            </button>
+            <button id="exportXlsxBtn" type="button" class="md-button md-button--tonal">
+              <svg aria-hidden="true" viewBox="0 0 16 16" class="md-button__icon" fill="currentColor">
+                <use href="#md-icon-download" xlink:href="#md-icon-download"></use>
+              </svg>
+              <span>XLSX</span>
+            </button>
+            <button id="exportWorkbookJsonBtn" type="button" class="md-button md-button--tonal">
+              <svg aria-hidden="true" viewBox="0 0 16 16" class="md-button__icon" fill="currentColor">
+                <use href="#md-icon-download" xlink:href="#md-icon-download"></use>
+              </svg>
+              <span>JSON</span>
+            </button>
+            <button id="exportCsvBtn" type="button" class="md-button md-button--tonal">
+              <svg aria-hidden="true" viewBox="0 0 16 16" class="md-button__icon" fill="currentColor">
+                <use href="#md-icon-download" xlink:href="#md-icon-download"></use>
+              </svg>
+              <span>CSV</span>
+            </button>
           </div>
         </div>
+
+        <section class="md-note-card md-note-card--feature" aria-label="WBS report exports">
+          <h3 class="md-note-card__title">
+            <span>WBS Report</span>
+            <lht-help-tooltip label="WBS Report の説明" placement="right" wide>
+              `WBS Report` は、内部モデルを人が読みやすい帳票や図として出力するためのまとまりです。`XLSX`、`Markdown`、`Daily SVG`、`Weekly SVG`、`Monthly Calendar SVG`、`Mermaid` をここから保存できます。
+            </lht-help-tooltip>
+          </h3>
+          <div class="md-panel-actions">
+            <button id="exportWbsXlsxBtn" type="button" class="md-button md-button--tonal">
+              <svg aria-hidden="true" viewBox="0 0 16 16" class="md-button__icon" fill="currentColor">
+                <use href="#md-icon-download" xlink:href="#md-icon-download"></use>
+              </svg>
+              <span>XLSX</span>
+            </button>
+            <button id="exportWbsMdBtn" type="button" class="md-button md-button--tonal">
+              <svg aria-hidden="true" viewBox="0 0 16 16" class="md-button__icon" fill="currentColor">
+                <use href="#md-icon-download" xlink:href="#md-icon-download"></use>
+              </svg>
+              <span>Markdown</span>
+            </button>
+            <button id="downloadSvgBtn" type="button" class="md-button md-button--tonal" disabled>
+              <svg aria-hidden="true" viewBox="0 0 16 16" class="md-button__icon" fill="currentColor">
+                <use href="#md-icon-download" xlink:href="#md-icon-download"></use>
+              </svg>
+              <span>Daily SVG</span>
+            </button>
+            <button id="downloadWeeklySvgBtn" type="button" class="md-button md-button--tonal" disabled>
+              <svg aria-hidden="true" viewBox="0 0 16 16" class="md-button__icon" fill="currentColor">
+                <use href="#md-icon-download" xlink:href="#md-icon-download"></use>
+              </svg>
+              <span>Weekly SVG</span>
+            </button>
+            <button id="downloadMonthlyCalendarSvgBtn" type="button" class="md-button md-button--tonal" disabled>
+              <svg aria-hidden="true" viewBox="0 0 16 16" class="md-button__icon" fill="currentColor">
+                <use href="#md-icon-download" xlink:href="#md-icon-download"></use>
+              </svg>
+              <span>Monthly Calendar SVG</span>
+            </button>
+            <button id="exportMermaidMdBtn" type="button" class="md-button md-button--tonal">
+              <svg aria-hidden="true" viewBox="0 0 16 16" class="md-button__icon" fill="currentColor">
+                <use href="#md-icon-download" xlink:href="#md-icon-download"></use>
+              </svg>
+              <span>Mermaid</span>
+            </button>
+          </div>
+        </section>
 
         <details class="md-note-accordion" aria-label="AI integration exports">
           <summary class="md-note-accordion__summary">生成AI連携</summary>
@@ -2819,13 +2913,14 @@ md-outlined-select.md-outlined-field:focus-within::part(container) {
             <summary class="ms-settings-summary">設定</summary>
             <div class="ms-settings-body">
               <section class="ms-settings-block" aria-label="WBS xlsx export options">
-                <h3 class="ms-settings-subtitle">WBS XLSX の祝日指定</h3>
-              <p class="md-note-card__text">
-                `WBS XLSX Export` では、`ProjectModel` から補完した既定祝日を WBS 日付帯へ反映します。
-              </p>
-              <p class="md-note-card__text">
-                既定祝日は、現在の `ProjectModel` に含まれる `Calendar.Exceptions` の非稼働日例外から補完します。画面では `Calendars / Exceptions` を直接編集せず、必要な変更は `MS Project XML` または `XLSX Import` 側で扱います。表示期間を空欄にすると全期間、数値を入れると `BaseDate` 前後の営業日で切り出します。進捗帯も営業日基準で計算します。
-              </p>
+                <h3 class="ms-settings-subtitle">
+                  <span>WBS XLSX 表示設定</span>
+                  <lht-help-tooltip label="WBS XLSX 表示設定の説明" placement="right" wide>
+                    `WBS XLSX Export` では、`ProjectModel` から補完した既定祝日を WBS 日付帯へ反映します。
+
+                    既定祝日は、現在の `ProjectModel` に含まれる `Calendar.Exceptions` の非稼働日例外から内部で直接補完します。画面では `Calendars / Exceptions` を直接編集せず、必要な変更は `MS Project XML` または `XLSX Import` 側で扱います。表示期間を空欄にすると全期間、数値を入れると `BaseDate` 前後の営業日で切り出します。進捗帯も営業日基準で計算します。
+                  </lht-help-tooltip>
+                </h3>
               <div class="md-form-grid md-form-grid--two">
                 <lht-text-field-help
                   field-id="wbsDisplayDaysBeforeInput"
@@ -2840,41 +2935,20 @@ md-outlined-select.md-outlined-field:focus-within::part(container) {
                   placeholder="7"
                   help-text="空欄なら全期間表示のままです。"></lht-text-field-help>
               </div>
-              <div class="md-form-grid">
-                <div id="wbsHolidaySummary" class="md-status">既定祝日: 未読込</div>
-                <label class="md-label" for="wbsHolidayDatesInput">WBS 既定祝日</label>
-                <textarea
-                  id="wbsHolidayDatesInput"
-                  class="md-textarea"
-                  rows="3"
-                  placeholder="2026-03-20"
-                  readonly
-                ></textarea>
-                <div class="md-caption">現在の ProjectModel から自動補完します。画面上では直接編集しません。</div>
-              </div>
               </section>
             </div>
           </details>
         </section>
 
-        <details class="md-debug-accordion">
-          <summary class="md-debug-accordion__summary">デバッグ情報</summary>
-          <div class="md-debug-accordion__body">
-            <div class="md-form-grid">
-              <lht-text-field-help field-id="workbookJsonOutput" label="mikuproject_workbook_json" rows="16" readonly></lht-text-field-help>
-            </div>
-
-            <div class="md-form-grid">
-              <lht-text-field-help field-id="aiBundleOutput" label="ai_projection_bundle" rows="16" readonly></lht-text-field-help>
-            </div>
-            <div class="md-form-grid">
-              <lht-text-field-help field-id="projectOverviewOutput" label="project_overview_view" rows="14" readonly></lht-text-field-help>
-            </div>
-            <div class="md-form-grid">
-              <lht-text-field-help field-id="phaseDetailOutput" label="phase_detail_view" rows="16" readonly></lht-text-field-help>
-            </div>
-          </div>
-        </details>
+        <div hidden aria-hidden="true">
+          <textarea id="workbookJsonOutput"></textarea>
+          <textarea id="aiBundleOutput"></textarea>
+          <textarea id="projectOverviewOutput"></textarea>
+          <input id="phaseDetailUidInput" type="text" />
+          <input id="phaseDetailRootUidInput" type="text" />
+          <input id="phaseDetailMaxDepthInput" type="text" />
+          <textarea id="phaseDetailOutput"></textarea>
+        </div>
       </section>
     </section>
 
@@ -3361,6 +3435,45 @@ md-outlined-select.md-outlined-field:focus-within::part(container) {
  * Copyright 2026 Toshiki Iga
  * Licensed under the Apache License, Version 2.0
  */
+
+function patchElementAnimateForInvalidKeyframes() {
+  const animate = window.Element && window.Element.prototype && window.Element.prototype.animate;
+  if (typeof animate !== "function" || animate.__lhtInvalidKeyframesGuardApplied) {
+    return;
+  }
+
+  const hasInvalidTransform = (frame) => {
+    const transform = String(frame?.transform || "");
+    return transform.includes("NaN") || transform.includes("Infinity");
+  };
+
+  const shouldGuardKeyframes = (keyframes) => {
+    if (Array.isArray(keyframes)) {
+      return keyframes.some(hasInvalidTransform);
+    }
+    if (keyframes && typeof keyframes === "object") {
+      return hasInvalidTransform(keyframes);
+    }
+    return false;
+  };
+
+  const guardedAnimate = function guardedAnimate(keyframes, options) {
+    if (!shouldGuardKeyframes(keyframes)) {
+      return animate.call(this, keyframes, options);
+    }
+    console.info("[lht-cmn] skipped invalid Element.animate keyframes", {
+      tagName: this instanceof Element ? this.tagName.toLowerCase() : null,
+      elementId: this instanceof Element ? this.id || null : null,
+      keyframes
+    });
+    return animate.call(this, [], options);
+  };
+
+  guardedAnimate.__lhtInvalidKeyframesGuardApplied = true;
+  window.Element.prototype.animate = guardedAnimate;
+}
+
+patchElementAnimateForInvalidKeyframes();
 
 class LhtHelpTooltip extends HTMLElement {
   connectedCallback() {
@@ -11022,17 +11135,17 @@ if (!customElements.get("lht-page-menu")) {
     const IDENTIFIER_FILL = "#F7F9FC";
     const PLACEHOLDER_FILL = "#F5F7FA";
     const BAND_FILL = "#F4F7FB";
-    const ACTIVE_BAND_FILL = "#9FD5C9";
-    const PROGRESS_BAND_FILL = "#5BAE9C";
-    const WEEKEND_BAND_FILL = "#C9D3E1";
+    const ACTIVE_BAND_FILL = "#D9EFFF";
+    const PROGRESS_BAND_FILL = "#8EB9EA";
+    const WEEKEND_BAND_FILL = "#EEF3F8";
     const WEEK_START_BAND_FILL = "#E3EEF9";
     const MONTH_BOUNDARY_WEEK_FILL = "#D6E7F8";
     const MONTH_START_HEADER_FILL = "#DCEAF7";
-    const SATURDAY_HEADER_FILL = "#8EA9DB";
-    const SUNDAY_HEADER_FILL = "#E6B8AF";
+    const SATURDAY_HEADER_FILL = "#EEF3F8";
+    const SUNDAY_HEADER_FILL = "#EEF3F8";
     const TODAY_BAND_FILL = "#FFE6A7";
-    const TODAY_ACTIVE_BAND_FILL = "#F3C96B";
-    const TODAY_PROGRESS_BAND_FILL = "#D89A2B";
+    const TODAY_ACTIVE_BAND_FILL = "#C9DFF8";
+    const TODAY_PROGRESS_BAND_FILL = "#6F9FD8";
     const HOLIDAY_BAND_FILL = "#FCE4EC";
     const DIVIDER_FILL = "#D9E2EA";
     const BASEDATE_GUIDE_TAIL_FILL = "#FFF8E1";
@@ -11851,7 +11964,7 @@ if (!customElements.get("lht-page-menu")) {
                 ? (complete
                     ? (isToday ? TODAY_PROGRESS_BAND_FILL : PROGRESS_BAND_FILL)
                     : (isToday ? TODAY_ACTIVE_BAND_FILL : ACTIVE_BAND_FILL))
-                : (isToday ? TODAY_BAND_FILL : (isHoliday ? HOLIDAY_BAND_FILL : (isWeekendDay ? WEEKEND_BAND_FILL : (weekStart ? WEEK_START_BAND_FILL : BAND_FILL))))
+                : (isToday ? TODAY_BAND_FILL : (isHoliday ? HOLIDAY_BAND_FILL : (isWeekendDay ? WEEKEND_BAND_FILL : (weekStart ? WEEK_START_BAND_FILL : undefined))))
         };
     }
     function activeBandMarker(task, complete) {
@@ -12635,6 +12748,26 @@ if (!customElements.get("lht-page-menu")) {
     const TOP_PADDING = 22;
     const RIGHT_PADDING = 0;
     const BOTTOM_PADDING = 28;
+    const ZIP_TEXT_ENCODER = new TextEncoder();
+    const ZIP_CRC32_TABLE = buildCrc32Table();
+    const MONTHLY_CELL_WIDTH = 164;
+    const MONTHLY_CELL_HEIGHT = 126;
+    const MONTHLY_HEADER_HEIGHT = 108;
+    const MONTHLY_WEEKDAY_HEIGHT = 34;
+    const MONTHLY_LEFT_PADDING = 24;
+    const MONTHLY_TOP_PADDING = 24;
+    const MONTHLY_RIGHT_PADDING = 24;
+    const MONTHLY_BOTTOM_PADDING = 24;
+    const MONTHLY_MAX_ITEMS_PER_DAY = 3;
+    const MONTHLY_MAX_LABEL_CHARS = 15;
+    const ZIP_FIXED_MOD_TIME = 0;
+    const ZIP_FIXED_MOD_DATE = ((2025 - 1980) << 9) | (1 << 5) | 1;
+    const WEEK_WIDTH = 38;
+    const WEEKLY_HEADER_HEIGHT = 96;
+    const WEEKLY_TOP_PADDING = 22;
+    const WEEKLY_BOTTOM_PADDING = 28;
+    const WEEKLY_LEFT_PADDING = 0;
+    const WEEKLY_RIGHT_PADDING = 0;
     function exportNativeSvg(model, options = {}) {
         const labelMode = options.labelMode || "near";
         const holidaySet = new Set([
@@ -12648,7 +12781,13 @@ if (!customElements.get("lht-page-menu")) {
         const leftLabelWidth = labelMode === "list" ? LIST_LABEL_WIDTH : NEAR_LEFT_LABEL_WIDTH;
         const rightLabelWidth = labelMode === "list" ? 0 : NEAR_RIGHT_LABEL_WIDTH;
         const chartOriginXBase = LEFT_PADDING + leftLabelWidth;
-        const labelPlacements = rows.map((row) => resolveLabelPlacement(row, chartOriginXBase, chartWidth, labelMode));
+        const dailyOnBarFlags = rows.map((row) => shouldUseDailyOnBarLabel(row, chartOriginXBase, chartWidth, dateBand.length, labelMode));
+        const labelPlacements = rows.map((row, index) => {
+            if (dailyOnBarFlags[index]) {
+                return { x: chartOriginXBase, anchor: "start", width: 0 };
+            }
+            return resolveLabelPlacement(row, chartOriginXBase, chartWidth, labelMode);
+        });
         const labelMinX = labelPlacements.reduce((min, placement) => {
             const placementMinX = placement.anchor === "start" ? placement.x : placement.x - placement.width;
             return Math.min(min, placementMinX);
@@ -12670,6 +12809,7 @@ if (!customElements.get("lht-page-menu")) {
             ".axis { font-size: 12px; fill: #5b6370; }",
             ".label { font-size: 13px; }",
             ".phaseLabel { font-size: 13px; font-weight: 700; }",
+            ".onBarLabelBg { fill: rgba(255,255,255,0.9); }",
             ".grid { stroke: #c9d3e1; stroke-width: 1; }",
             ".today { stroke: #ff6b5a; stroke-width: 2; }",
             "</style>",
@@ -12692,8 +12832,10 @@ if (!customElements.get("lht-page-menu")) {
             const todayX = chartOriginX + (todayIndex * DAY_WIDTH) + (DAY_WIDTH / 2);
             parts.push(`<line class="today" x1="${todayX}" y1="${TOP_PADDING + 26}" x2="${todayX}" y2="${svgHeight - BOTTOM_PADDING}" />`);
         }
-        for (const row of rows) {
+        for (let rowIndex = 0; rowIndex < rows.length; rowIndex += 1) {
+            const row = rows[rowIndex];
             const rowY = chartOriginY + row.y;
+            const useOnBarLabel = dailyOnBarFlags[rowIndex];
             if (row.startIndex !== null && row.endIndex !== null) {
                 const barX = chartOriginX + (row.startIndex * DAY_WIDTH) + 6;
                 const barWidth = Math.max(12, ((row.endIndex - row.startIndex + 1) * DAY_WIDTH) - 12);
@@ -12728,12 +12870,302 @@ if (!customElements.get("lht-page-menu")) {
                         parts.push(`<rect x="${barX}" y="${barY}" width="${progressWidth}" height="22" rx="4" fill="${progressFill}" stroke="none"/>`);
                     }
                 }
+                if (useOnBarLabel) {
+                    const labelText = escapeXml(formatTaskLabel(row.task, labelMode));
+                    const labelWidth = estimateLabelWidth(row.label, row.kind === "phase");
+                    const labelCenterX = barX + (barWidth / 2);
+                    const labelX = labelCenterX - (labelWidth / 2) - 8;
+                    const labelY = row.kind === "phase" ? rowY + 15 : rowY + 10;
+                    const labelHeight = row.kind === "phase" ? 18 : 20;
+                    parts.push(`<rect class="onBarLabelBg" x="${labelX}" y="${labelY}" width="${labelWidth + 16}" height="${labelHeight}" rx="4"/>`);
+                    parts.push(`<text class="${row.kind === "phase" ? "phaseLabel" : "label"}" x="${labelCenterX}" y="${rowY + 24}" text-anchor="middle">${labelText}</text>`);
+                    continue;
+                }
             }
-            const labelPlacement = labelPlacements[rows.indexOf(row)];
+            const labelPlacement = labelPlacements[rowIndex];
             parts.push(`<text class="${row.kind === "phase" ? "phaseLabel" : "label"}" x="${labelPlacement.x + shiftX}" y="${rowY + 24}" text-anchor="${labelPlacement.anchor}">${escapeXml(formatTaskLabel(row.task, labelMode))}</text>`);
         }
         parts.push("</svg>");
         return parts.join("");
+    }
+    function exportWeeklyNativeSvg(model, options = {}) {
+        const holidaySet = new Set([
+            ...collectWbsHolidayDates(model),
+            ...(options.holidayDates || []).map((day) => String(day || "").slice(0, 10)).filter(Boolean)
+        ]);
+        const nonWorkingDayTypes = collectProjectNonWorkingDayTypes(model);
+        const dateBand = buildDisplayDateBand(model.project.startDate, model.project.finishDate, model.project.currentDate, options.displayDaysBeforeBaseDate, options.displayDaysAfterBaseDate, holidaySet, nonWorkingDayTypes, options.useBusinessDaysForDisplayRange);
+        if (dateBand.length === 0) {
+            return exportNativeSvg(model, { ...options, labelMode: "list" });
+        }
+        const weeklyBand = buildWeeklyBand(dateBand[0], dateBand[dateBand.length - 1]);
+        const rows = buildWeeklyTaskRows(model.tasks, weeklyBand);
+        const chartWidth = weeklyBand.length * WEEK_WIDTH;
+        const chartOriginXBase = WEEKLY_LEFT_PADDING;
+        const labelPlacements = rows.map((row) => resolveWeeklyLabelPlacement(row, chartOriginXBase, chartWidth));
+        const labelMaxX = labelPlacements.reduce((max, placement) => {
+            const placementMaxX = placement.anchor === "start" ? placement.x + placement.width : placement.x;
+            return Math.max(max, placementMaxX);
+        }, chartOriginXBase + chartWidth);
+        const chartOriginX = chartOriginXBase;
+        const svgWidth = labelMaxX + WEEKLY_RIGHT_PADDING;
+        const svgHeight = WEEKLY_TOP_PADDING + WEEKLY_HEADER_HEIGHT + (rows.length * ROW_HEIGHT) + WEEKLY_BOTTOM_PADDING;
+        const todayWeekIndex = indexOfWeekForDate(weeklyBand, model.project.currentDate);
+        const parts = [
+            `<svg xmlns="http://www.w3.org/2000/svg" width="${svgWidth}" height="${svgHeight}" viewBox="0 0 ${svgWidth} ${svgHeight}" role="img" aria-label="${escapeXml(model.project.name || "Project")} weekly overview">`,
+            "<style>",
+            "text { font-family: 'Hiragino Sans', 'Yu Gothic', sans-serif; fill: #1d2740; }",
+            ".title { font-size: 18px; font-weight: 700; }",
+            ".meta { font-size: 12px; fill: #5b6370; }",
+            ".monthAxis { font-size: 13px; font-weight: 700; fill: #475467; }",
+            ".weekAxis { font-size: 10px; fill: #667085; }",
+            ".label { font-size: 13px; }",
+            ".phaseLabel { font-size: 13px; font-weight: 700; }",
+            ".grid { stroke: #c9d3e1; stroke-width: 1; }",
+            ".today { stroke: #ff6b5a; stroke-width: 2; }",
+            ".monthBoundary { stroke: #98a2b3; stroke-width: 1.5; }",
+            "</style>",
+            `<rect x="0" y="0" width="${svgWidth}" height="${svgHeight}" fill="#ffffff"/>`,
+            `<text class="title" x="${chartOriginX + (chartWidth / 2)}" y="${WEEKLY_TOP_PADDING + 18}" text-anchor="middle">${escapeXml(model.project.name || "-")} weekly overview</text>`,
+            `<text class="meta" x="${chartOriginX + (chartWidth / 2)}" y="${WEEKLY_TOP_PADDING + 40}" text-anchor="middle">${escapeXml(`project range ${String(model.project.startDate || "").slice(0, 10)} - ${String(model.project.finishDate || "").slice(0, 10)}`)}</text>`
+        ];
+        const chartOriginY = WEEKLY_TOP_PADDING + WEEKLY_HEADER_HEIGHT;
+        const monthSpans = buildWeeklyMonthSpans(weeklyBand);
+        for (const span of monthSpans) {
+            const x = chartOriginX + (span.startIndex * WEEK_WIDTH);
+            const width = (span.endIndex - span.startIndex + 1) * WEEK_WIDTH;
+            parts.push(`<text class="monthAxis" x="${x + (width / 2)}" y="${WEEKLY_TOP_PADDING + 66}" text-anchor="middle">${escapeXml(span.monthKey)}</text>`);
+            parts.push(`<line class="monthBoundary" x1="${x}" y1="${WEEKLY_TOP_PADDING + 72}" x2="${x}" y2="${svgHeight - WEEKLY_BOTTOM_PADDING}" />`);
+        }
+        parts.push(`<line class="monthBoundary" x1="${chartOriginX + chartWidth}" y1="${WEEKLY_TOP_PADDING + 72}" x2="${chartOriginX + chartWidth}" y2="${svgHeight - WEEKLY_BOTTOM_PADDING}" />`);
+        for (let index = 0; index < weeklyBand.length; index += 1) {
+            const week = weeklyBand[index];
+            const x = chartOriginX + (index * WEEK_WIDTH);
+            parts.push(`<line class="grid" x1="${x}" y1="${WEEKLY_TOP_PADDING + 72}" x2="${x}" y2="${svgHeight - WEEKLY_BOTTOM_PADDING}" />`);
+            parts.push(`<text class="weekAxis" x="${x + (WEEK_WIDTH / 2)}" y="${WEEKLY_TOP_PADDING + 86}" text-anchor="middle">${escapeXml(formatWeeklyAxisLabel(week.startDay))}</text>`);
+        }
+        if (todayWeekIndex >= 0) {
+            const todayX = chartOriginX + (todayWeekIndex * WEEK_WIDTH) + (WEEK_WIDTH / 2);
+            parts.push(`<line class="today" x1="${todayX}" y1="${WEEKLY_TOP_PADDING + 72}" x2="${todayX}" y2="${svgHeight - WEEKLY_BOTTOM_PADDING}" />`);
+        }
+        for (let rowIndex = 0; rowIndex < rows.length; rowIndex += 1) {
+            const row = rows[rowIndex];
+            const rowY = chartOriginY + row.y;
+            if (row.startIndex === null || row.endIndex === null) {
+                const fallbackLabelPlacement = labelPlacements[rowIndex];
+                parts.push(`<text class="${row.kind === "phase" ? "phaseLabel" : "label"}" x="${fallbackLabelPlacement.x}" y="${rowY + 24}" text-anchor="${fallbackLabelPlacement.anchor}">${escapeXml(formatTaskLabel(row.task, "near"))}</text>`);
+                continue;
+            }
+            const barX = chartOriginX + (row.startIndex * WEEK_WIDTH) + 4;
+            const barWidth = Math.max(10, ((row.endIndex - row.startIndex + 1) * WEEK_WIDTH) - 8);
+            const barY = rowY + 8;
+            if (row.kind === "milestone") {
+                const centerX = chartOriginX + (row.startIndex * WEEK_WIDTH) + (WEEK_WIDTH / 2);
+                const centerY = rowY + (ROW_HEIGHT / 2);
+                const isCompleted = (row.task.percentComplete || 0) >= 100;
+                const fill = isCompleted ? "#d9efff" : "#ffffff";
+                parts.push(`<polygon points="${centerX},${centerY - 11} ${centerX + 11},${centerY} ${centerX},${centerY + 11} ${centerX - 11},${centerY}" fill="${fill}" stroke="#4f95d6" stroke-width="3"/>`);
+            }
+            else if (row.kind === "phase") {
+                const lineY = rowY + (ROW_HEIGHT / 2);
+                const startX = barX;
+                const endX = barX + barWidth;
+                const trackStroke = "#8eb9ea";
+                const progressStroke = "#2f79d0";
+                const phaseStrokeWidth = 3;
+                const progressEndX = startX + Math.max(0, Math.min(barWidth, Math.round(barWidth * (Math.max(0, Math.min(100, row.task.percentComplete || 0)) / 100))));
+                parts.push(`<line x1="${startX}" y1="${lineY}" x2="${endX}" y2="${lineY}" stroke="${trackStroke}" stroke-width="${phaseStrokeWidth}" stroke-linecap="round"/>`);
+                if (progressEndX > startX) {
+                    parts.push(`<line x1="${startX}" y1="${lineY}" x2="${progressEndX}" y2="${lineY}" stroke="${progressStroke}" stroke-width="${phaseStrokeWidth}" stroke-linecap="round"/>`);
+                }
+            }
+            else {
+                const trackFill = "#d9efff";
+                const trackStroke = "#4f95d6";
+                const progressFill = "#3f86d8";
+                parts.push(`<rect x="${barX}" y="${barY}" width="${barWidth}" height="22" rx="4" fill="${trackFill}" stroke="${trackStroke}" stroke-width="3"/>`);
+                const progressWidth = Math.max(0, Math.min(barWidth, Math.round(barWidth * (Math.max(0, Math.min(100, row.task.percentComplete || 0)) / 100))));
+                if (progressWidth > 0) {
+                    parts.push(`<rect x="${barX}" y="${barY}" width="${progressWidth}" height="22" rx="4" fill="${progressFill}" stroke="none"/>`);
+                }
+            }
+            const labelPlacement = labelPlacements[rowIndex];
+            parts.push(`<text class="${row.kind === "phase" ? "phaseLabel" : "label"}" x="${labelPlacement.x}" y="${rowY + 24}" text-anchor="${labelPlacement.anchor}">${escapeXml(formatTaskLabel(row.task, "near"))}</text>`);
+        }
+        parts.push("</svg>");
+        return parts.join("");
+    }
+    function exportMonthlyWbsCalendarSvgArchive(model) {
+        const holidaySet = new Set(collectWbsHolidayDates(model));
+        const nonWorkingDayTypes = collectProjectNonWorkingDayTypes(model);
+        const months = buildProjectMonthKeys(model.project.startDate, model.project.finishDate);
+        const entries = months.map((monthKey) => ({
+            fileName: `${monthKey}.svg`,
+            svg: exportMonthlyWbsCalendarSvg(model, monthKey, holidaySet, nonWorkingDayTypes)
+        }));
+        const zipEntries = entries.map((entry) => ({
+            name: `monthly-calendar/${entry.fileName}`,
+            data: encodeUtf8(entry.svg)
+        }));
+        const zipBytes = packZip(zipEntries);
+        return {
+            entries,
+            zipBytes
+        };
+    }
+    function exportMonthlyWbsCalendarSvg(model, monthKey, holidaySet, nonWorkingDayTypes) {
+        const monthStart = parseDateOnly(`${monthKey}-01`);
+        if (!monthStart) {
+            throw new Error(`Invalid month key: ${monthKey}`);
+        }
+        const monthEnd = new Date(monthStart.getFullYear(), monthStart.getMonth() + 1, 0);
+        const gridStart = startOfWeekSunday(monthStart);
+        const gridEnd = endOfWeekSaturday(monthEnd);
+        const calendarDays = buildDateBand(formatDateOnly(gridStart), formatDateOnly(gridEnd));
+        const weeks = [];
+        for (let index = 0; index < calendarDays.length; index += 7) {
+            weeks.push(calendarDays.slice(index, index + 7));
+        }
+        const dayItems = buildMonthlyDayItemMap(model.tasks, calendarDays, holidaySet, nonWorkingDayTypes);
+        const svgWidth = MONTHLY_LEFT_PADDING + (7 * MONTHLY_CELL_WIDTH) + MONTHLY_RIGHT_PADDING;
+        const svgHeight = MONTHLY_TOP_PADDING + MONTHLY_HEADER_HEIGHT + MONTHLY_WEEKDAY_HEIGHT + (weeks.length * MONTHLY_CELL_HEIGHT) + MONTHLY_BOTTOM_PADDING;
+        const title = `${model.project.name || "-"} ${formatMonthLabel(monthStart)}`;
+        const weekdayLabels = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+        const parts = [
+            `<svg xmlns="http://www.w3.org/2000/svg" width="${svgWidth}" height="${svgHeight}" viewBox="0 0 ${svgWidth} ${svgHeight}" role="img" aria-label="${escapeXml(title)}">`,
+            "<style>",
+            "text { font-family: 'Hiragino Sans', 'Yu Gothic', sans-serif; fill: #1d2740; }",
+            ".title { font-size: 28px; font-weight: 700; }",
+            ".meta { font-size: 13px; fill: #5b6370; }",
+            ".weekday { font-size: 13px; font-weight: 700; fill: #5b6370; }",
+            ".dayNumber { font-size: 16px; font-weight: 700; }",
+            ".dayNumberMuted { font-size: 16px; font-weight: 700; fill: #97a2b0; }",
+            ".itemText { font-size: 12px; }",
+            ".moreText { font-size: 11px; fill: #5b6370; }",
+            ".summaryText { font-size: 12px; font-weight: 700; }",
+            ".milestoneText { font-size: 12px; font-weight: 700; fill: #9a284d; }",
+            ".cellBorder { stroke: #d4dbe5; stroke-width: 1; }",
+            "</style>",
+            `<rect x="0" y="0" width="${svgWidth}" height="${svgHeight}" fill="#ffffff"/>`,
+            `<text class="title" x="${MONTHLY_LEFT_PADDING}" y="${MONTHLY_TOP_PADDING + 28}">${escapeXml(model.project.name || "-")}</text>`,
+            `<text class="meta" x="${MONTHLY_LEFT_PADDING}" y="${MONTHLY_TOP_PADDING + 56}">${escapeXml(formatMonthLabel(monthStart))}</text>`,
+            `<text class="meta" x="${MONTHLY_LEFT_PADDING}" y="${MONTHLY_TOP_PADDING + 78}">${escapeXml(`project range ${String(model.project.startDate || "").slice(0, 10)} - ${String(model.project.finishDate || "").slice(0, 10)}`)}</text>`
+        ];
+        const weekdayY = MONTHLY_TOP_PADDING + MONTHLY_HEADER_HEIGHT;
+        for (let dayIndex = 0; dayIndex < weekdayLabels.length; dayIndex += 1) {
+            const x = MONTHLY_LEFT_PADDING + (dayIndex * MONTHLY_CELL_WIDTH);
+            parts.push(`<text class="weekday" x="${x + 10}" y="${weekdayY}">${weekdayLabels[dayIndex]}</text>`);
+        }
+        const gridOriginY = MONTHLY_TOP_PADDING + MONTHLY_HEADER_HEIGHT + MONTHLY_WEEKDAY_HEIGHT;
+        for (let weekIndex = 0; weekIndex < weeks.length; weekIndex += 1) {
+            const week = weeks[weekIndex];
+            for (let dayIndex = 0; dayIndex < week.length; dayIndex += 1) {
+                const day = week[dayIndex];
+                const x = MONTHLY_LEFT_PADDING + (dayIndex * MONTHLY_CELL_WIDTH);
+                const y = gridOriginY + (weekIndex * MONTHLY_CELL_HEIGHT);
+                const date = parseDateOnly(day);
+                const inMonth = !!date && date.getMonth() === monthStart.getMonth() && date.getFullYear() === monthStart.getFullYear();
+                const isHoliday = holidaySet.has(day);
+                const isWeekend = isWeeklyNonWorkingDay(day, nonWorkingDayTypes);
+                const background = !inMonth
+                    ? "#f8fafc"
+                    : (isHoliday ? "#fce7ef" : (isWeekend ? "#eef4f8" : "#ffffff"));
+                parts.push(`<rect x="${x}" y="${y}" width="${MONTHLY_CELL_WIDTH}" height="${MONTHLY_CELL_HEIGHT}" fill="${background}" class="cellBorder"/>`);
+                parts.push(`<text class="${inMonth ? "dayNumber" : "dayNumberMuted"}" x="${x + 10}" y="${y + 22}">${escapeXml(String(date ? date.getDate() : ""))}</text>`);
+                const items = dayItems.get(day) || [];
+                const visibleItems = items.slice(0, MONTHLY_MAX_ITEMS_PER_DAY);
+                for (let itemIndex = 0; itemIndex < visibleItems.length; itemIndex += 1) {
+                    const item = visibleItems[itemIndex];
+                    const itemY = y + 42 + (itemIndex * 24);
+                    parts.push(`<text class="${item.className}" x="${x + 10}" y="${itemY}">${escapeXml(item.label)}</text>`);
+                }
+                if (items.length > MONTHLY_MAX_ITEMS_PER_DAY) {
+                    parts.push(`<text class="moreText" x="${x + 10}" y="${y + MONTHLY_CELL_HEIGHT - 10}">${escapeXml(`+${items.length - MONTHLY_MAX_ITEMS_PER_DAY} more`)}</text>`);
+                }
+            }
+        }
+        parts.push("</svg>");
+        return parts.join("");
+    }
+    function buildMonthlyDayItemMap(tasks, calendarDays, holidaySet, nonWorkingDayTypes) {
+        var _a, _b, _c;
+        const dayItems = new Map();
+        const calendarDaySet = new Set(calendarDays);
+        for (const day of calendarDays) {
+            dayItems.set(day, []);
+        }
+        for (const task of tasks) {
+            const startDay = String(task.start || "").slice(0, 10);
+            const finishDay = String(task.finish || "").slice(0, 10);
+            if (!startDay || !finishDay) {
+                continue;
+            }
+            if (task.milestone) {
+                if (calendarDaySet.has(startDay)) {
+                    (_a = dayItems.get(startDay)) === null || _a === void 0 ? void 0 : _a.push({ label: truncateLabel(task.name || "-"), className: "milestoneText" });
+                }
+                continue;
+            }
+            if (task.summary) {
+                for (const day of uniqueDayList([startDay, finishDay])) {
+                    if (calendarDaySet.has(day)) {
+                        (_b = dayItems.get(day)) === null || _b === void 0 ? void 0 : _b.push({ label: truncateLabel(task.name || "-"), className: "summaryText" });
+                    }
+                }
+                continue;
+            }
+            for (const day of buildDateBand(startDay, finishDay)) {
+                if (!calendarDaySet.has(day)) {
+                    continue;
+                }
+                const isBoundaryDay = day === startDay || day === finishDay;
+                const isHoliday = holidaySet.has(day);
+                const isWeekend = isWeeklyNonWorkingDay(day, nonWorkingDayTypes);
+                if ((isHoliday || isWeekend) && !isBoundaryDay) {
+                    continue;
+                }
+                (_c = dayItems.get(day)) === null || _c === void 0 ? void 0 : _c.push({ label: truncateLabel(task.name || "-"), className: "itemText" });
+            }
+        }
+        return dayItems;
+    }
+    function truncateLabel(value) {
+        const text = String(value || "").trim() || "-";
+        if (text.length <= MONTHLY_MAX_LABEL_CHARS) {
+            return text;
+        }
+        return `${text.slice(0, MONTHLY_MAX_LABEL_CHARS - 3)}...`;
+    }
+    function uniqueDayList(days) {
+        return Array.from(new Set(days.filter(Boolean)));
+    }
+    function buildProjectMonthKeys(startDate, finishDate) {
+        const start = parseDateOnly(startDate);
+        const finish = parseDateOnly(finishDate);
+        if (!start || !finish) {
+            return [];
+        }
+        const cursor = new Date(start.getFullYear(), start.getMonth(), 1);
+        const limit = new Date(finish.getFullYear(), finish.getMonth(), 1);
+        const months = [];
+        while (cursor.getTime() <= limit.getTime()) {
+            months.push(`${cursor.getFullYear()}-${String(cursor.getMonth() + 1).padStart(2, "0")}`);
+            cursor.setMonth(cursor.getMonth() + 1);
+        }
+        return months;
+    }
+    function startOfWeekSunday(date) {
+        const result = new Date(date.getTime());
+        result.setDate(result.getDate() - result.getDay());
+        return result;
+    }
+    function endOfWeekSaturday(date) {
+        const result = new Date(date.getTime());
+        result.setDate(result.getDate() + (6 - result.getDay()));
+        return result;
+    }
+    function formatMonthLabel(date) {
+        return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}`;
     }
     function buildTaskRows(tasks, dateBand) {
         return tasks.map((task, index) => ({
@@ -12742,6 +13174,16 @@ if (!customElements.get("lht-page-menu")) {
             kind: task.summary ? "phase" : (task.milestone ? "milestone" : "task"),
             startIndex: indexOfDate(dateBand, task.start),
             endIndex: indexOfDate(dateBand, task.finish),
+            y: index * ROW_HEIGHT
+        }));
+    }
+    function buildWeeklyTaskRows(tasks, weeklyBand) {
+        return tasks.map((task, index) => ({
+            task,
+            label: task.name || "-",
+            kind: task.summary ? "phase" : (task.milestone ? "milestone" : "task"),
+            startIndex: indexOfWeekForDate(weeklyBand, task.start),
+            endIndex: task.milestone ? indexOfWeekForDate(weeklyBand, task.start) : indexOfWeekForDate(weeklyBand, task.finish),
             y: index * ROW_HEIGHT
         }));
     }
@@ -12767,13 +13209,63 @@ if (!customElements.get("lht-page-menu")) {
         if (shapeEndX <= chartMidX) {
             return { x: shapeEndX + gap, anchor: "start", width: textWidth };
         }
-        return { x: shapeStartX - gap, anchor: "end", width: textWidth };
+        return { x: Math.max(textWidth, shapeStartX - gap), anchor: "end", width: textWidth };
     }
     function estimateLabelWidth(label, isPhase) {
         const basePerChar = isPhase ? 14 : 13;
         return Math.max(48, Math.ceil(String(label || "").length * basePerChar));
     }
+    function shouldUseDailyOnBarLabel(row, chartOriginX, chartWidth, bandLength, labelMode) {
+        if (labelMode !== "near") {
+            return false;
+        }
+        if (row.kind === "milestone") {
+            return false;
+        }
+        if (row.startIndex === null || row.endIndex === null || bandLength <= 0) {
+            return false;
+        }
+        if (row.startIndex === 0 && row.endIndex === bandLength - 1) {
+            return true;
+        }
+        const textWidth = estimateLabelWidth(row.label, row.kind === "phase");
+        const gap = 12;
+        const shapeStartX = row.kind === "milestone"
+            ? chartOriginX + (row.startIndex * DAY_WIDTH) + (DAY_WIDTH / 2) - 13
+            : chartOriginX + (row.startIndex * DAY_WIDTH) + 6;
+        const shapeEndX = row.kind === "milestone"
+            ? chartOriginX + (row.startIndex * DAY_WIDTH) + (DAY_WIDTH / 2) + 13
+            : chartOriginX + (row.endIndex * DAY_WIDTH) + DAY_WIDTH - 6;
+        const leftRoom = Math.max(0, shapeStartX - gap - chartOriginX);
+        const rightRoom = Math.max(0, (chartOriginX + chartWidth) - (shapeEndX + gap));
+        return leftRoom < textWidth && rightRoom < textWidth;
+    }
+    function resolveWeeklyLabelPlacement(row, chartOriginX, chartWidth) {
+        if (row.startIndex === null || row.endIndex === null) {
+            return { x: chartOriginX + 10, anchor: "start", width: estimateLabelWidth(row.label, row.kind === "phase") };
+        }
+        const textWidth = estimateLabelWidth(row.label, row.kind === "phase");
+        const gap = 10;
+        const shapeStartX = row.kind === "milestone"
+            ? chartOriginX + (row.startIndex * WEEK_WIDTH) + (WEEK_WIDTH / 2) - 11
+            : chartOriginX + (row.startIndex * WEEK_WIDTH) + 4;
+        const shapeEndX = row.kind === "milestone"
+            ? chartOriginX + (row.startIndex * WEEK_WIDTH) + (WEEK_WIDTH / 2) + 11
+            : chartOriginX + (row.endIndex * WEEK_WIDTH) + WEEK_WIDTH - 4;
+        const chartMidX = chartOriginX + (chartWidth / 2);
+        if (shapeEndX <= chartMidX) {
+            return { x: shapeEndX + gap, anchor: "start", width: textWidth };
+        }
+        return { x: Math.max(textWidth, shapeStartX - gap), anchor: "end", width: textWidth };
+    }
     function formatSvgAxisDate(day) {
+        const match = day.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+        if (!match) {
+            return day;
+        }
+        return `${Number(match[2])}/${Number(match[3])}`;
+    }
+    function formatWeeklyAxisLabel(day) {
         const match = day.match(/^(\d{4})-(\d{2})-(\d{2})$/);
         if (!match) {
             return day;
@@ -12787,6 +13279,19 @@ if (!customElements.get("lht-page-menu")) {
         }
         const index = dateBand.indexOf(key);
         return index >= 0 ? index : null;
+    }
+    function indexOfWeekForDate(weeklyBand, value) {
+        const key = String(value || "").slice(0, 10);
+        if (!key) {
+            return null;
+        }
+        for (let index = 0; index < weeklyBand.length; index += 1) {
+            const week = weeklyBand[index];
+            if (week.startDay <= key && key <= week.endDay) {
+                return index;
+            }
+        }
+        return null;
     }
     function collectWbsHolidayDates(model) {
         const holidaySet = new Set();
@@ -12864,6 +13369,46 @@ if (!customElements.get("lht-page-menu")) {
             cursor.setDate(cursor.getDate() + 1);
         }
         return days;
+    }
+    function buildWeeklyBand(startDate, finishDate) {
+        const start = parseDateOnly(startDate);
+        const finish = parseDateOnly(finishDate);
+        if (!start || !finish || start.getTime() > finish.getTime()) {
+            return [];
+        }
+        const cursor = startOfWeekSunday(start);
+        const limit = endOfWeekSaturday(finish);
+        const weeks = [];
+        while (cursor.getTime() <= limit.getTime()) {
+            const weekStart = new Date(cursor.getTime());
+            const weekEnd = new Date(cursor.getTime());
+            weekEnd.setDate(weekEnd.getDate() + 6);
+            weeks.push({
+                startDay: formatDateOnly(weekStart),
+                endDay: formatDateOnly(weekEnd),
+                monthKey: formatMonthLabel(new Date(weekStart.getFullYear(), weekStart.getMonth(), 1))
+            });
+            cursor.setDate(cursor.getDate() + 7);
+        }
+        return weeks;
+    }
+    function buildWeeklyMonthSpans(weeklyBand) {
+        const spans = [];
+        for (let index = 0; index < weeklyBand.length; index += 1) {
+            const current = weeklyBand[index];
+            const last = spans[spans.length - 1];
+            if (last && last.monthKey === current.monthKey) {
+                last.endIndex = index;
+            }
+            else {
+                spans.push({
+                    monthKey: current.monthKey,
+                    startIndex: index,
+                    endIndex: index
+                });
+            }
+        }
+        return spans;
     }
     function buildDisplayDateBand(startDate, finishDate, baseDate, displayDaysBeforeBaseDate, displayDaysAfterBaseDate, holidaySet, nonWorkingDayTypes, useBusinessDaysForDisplayRange) {
         const fullBand = buildDateBand(startDate, finishDate);
@@ -12951,8 +13496,100 @@ if (!customElements.get("lht-page-menu")) {
             .replaceAll(">", "&gt;")
             .replaceAll("\"", "&quot;");
     }
+    function encodeUtf8(value) {
+        return ZIP_TEXT_ENCODER.encode(value);
+    }
+    function packZip(entries) {
+        const localParts = [];
+        const centralParts = [];
+        let offset = 0;
+        for (const entry of entries) {
+            const nameBytes = encodeUtf8(entry.name);
+            const crc32 = computeCrc32(entry.data);
+            const localHeader = new Uint8Array(30 + nameBytes.length);
+            const localView = new DataView(localHeader.buffer);
+            localView.setUint32(0, 0x04034b50, true);
+            localView.setUint16(4, 20, true);
+            localView.setUint16(6, 0, true);
+            localView.setUint16(8, 0, true);
+            localView.setUint16(10, ZIP_FIXED_MOD_TIME, true);
+            localView.setUint16(12, ZIP_FIXED_MOD_DATE, true);
+            localView.setUint32(14, crc32, true);
+            localView.setUint32(18, entry.data.byteLength, true);
+            localView.setUint32(22, entry.data.byteLength, true);
+            localView.setUint16(26, nameBytes.length, true);
+            localView.setUint16(28, 0, true);
+            localHeader.set(nameBytes, 30);
+            const centralHeader = new Uint8Array(46 + nameBytes.length);
+            const centralView = new DataView(centralHeader.buffer);
+            centralView.setUint32(0, 0x02014b50, true);
+            centralView.setUint16(4, 20, true);
+            centralView.setUint16(6, 20, true);
+            centralView.setUint16(8, 0, true);
+            centralView.setUint16(10, 0, true);
+            centralView.setUint16(12, ZIP_FIXED_MOD_TIME, true);
+            centralView.setUint16(14, ZIP_FIXED_MOD_DATE, true);
+            centralView.setUint32(16, crc32, true);
+            centralView.setUint32(20, entry.data.byteLength, true);
+            centralView.setUint32(24, entry.data.byteLength, true);
+            centralView.setUint16(28, nameBytes.length, true);
+            centralView.setUint16(30, 0, true);
+            centralView.setUint16(32, 0, true);
+            centralView.setUint16(34, 0, true);
+            centralView.setUint16(36, 0, true);
+            centralView.setUint32(38, 0, true);
+            centralView.setUint32(42, offset, true);
+            centralHeader.set(nameBytes, 46);
+            localParts.push(localHeader, entry.data);
+            centralParts.push(centralHeader);
+            offset += localHeader.byteLength + entry.data.byteLength;
+        }
+        const centralDirectoryOffset = offset;
+        const centralDirectorySize = centralParts.reduce((sum, part) => sum + part.byteLength, 0);
+        const endOfCentralDirectory = new Uint8Array(22);
+        const endView = new DataView(endOfCentralDirectory.buffer);
+        endView.setUint32(0, 0x06054b50, true);
+        endView.setUint16(4, 0, true);
+        endView.setUint16(6, 0, true);
+        endView.setUint16(8, entries.length, true);
+        endView.setUint16(10, entries.length, true);
+        endView.setUint32(12, centralDirectorySize, true);
+        endView.setUint32(16, centralDirectoryOffset, true);
+        endView.setUint16(20, 0, true);
+        return concatUint8Arrays([...localParts, ...centralParts, endOfCentralDirectory]);
+    }
+    function concatUint8Arrays(parts) {
+        const totalLength = parts.reduce((sum, part) => sum + part.byteLength, 0);
+        const result = new Uint8Array(totalLength);
+        let offset = 0;
+        for (const part of parts) {
+            result.set(part, offset);
+            offset += part.byteLength;
+        }
+        return result;
+    }
+    function computeCrc32(bytes) {
+        let crc = 0xffffffff;
+        for (const byte of bytes) {
+            crc = (crc >>> 8) ^ ZIP_CRC32_TABLE[(crc ^ byte) & 0xff];
+        }
+        return (crc ^ 0xffffffff) >>> 0;
+    }
+    function buildCrc32Table() {
+        const table = new Uint32Array(256);
+        for (let index = 0; index < 256; index += 1) {
+            let value = index;
+            for (let bit = 0; bit < 8; bit += 1) {
+                value = (value & 1) !== 0 ? (0xedb88320 ^ (value >>> 1)) : (value >>> 1);
+            }
+            table[index] = value >>> 0;
+        }
+        return table;
+    }
     globalThis.__mikuprojectNativeSvg = {
-        exportNativeSvg
+        exportNativeSvg,
+        exportWeeklyNativeSvg,
+        exportMonthlyWbsCalendarSvgArchive
     };
 })();
   </script>
@@ -12993,11 +13630,16 @@ if (!customElements.get("lht-page-menu")) {
     }
     let currentModel = null;
     let currentNativeSvg = "";
+    let currentWeeklyPreviewSvg = "";
+    let currentMonthlyPreviewSvg = "";
     let lastSavedXmlText = "";
     let lastSavedXmlStamp = "";
     let currentTabId = "input";
+    let currentSvgPreviewMode = "daily";
     let isXmlSourceDirty = true;
     let isRefreshingTransformTab = false;
+    const ZIP_TEXT_ENCODER = new TextEncoder();
+    const ZIP_CRC32_TABLE = buildZipCrc32Table();
     function getElement(id) {
         const element = document.getElementById(id);
         if (!element) {
@@ -13106,33 +13748,6 @@ if (!customElements.get("lht-page-menu")) {
         }
         setActiveTab(currentTabId);
     }
-    function parseHolidayDateList(raw) {
-        if (!raw) {
-            return [];
-        }
-        const seen = new Set();
-        const holidays = [];
-        for (const token of raw.split(/[\s,、;]+/)) {
-            const value = token.trim();
-            if (!value) {
-                continue;
-            }
-            const match = value.match(/^(\d{4}-\d{2}-\d{2})/);
-            if (!match) {
-                continue;
-            }
-            const dateText = match[1];
-            if (seen.has(dateText)) {
-                continue;
-            }
-            seen.add(dateText);
-            holidays.push(dateText);
-        }
-        return holidays;
-    }
-    function parseWbsDefaultHolidayDates() {
-        return parseHolidayDateList(getTextArea("wbsHolidayDatesInput").value.trim());
-    }
     function parseOptionalNonNegativeInteger(raw) {
         const value = raw.trim();
         if (!value) {
@@ -13155,25 +13770,6 @@ if (!customElements.get("lht-page-menu")) {
     }
     function useBusinessDaysForWbsProgressBand() {
         return true;
-    }
-    function updateWbsHolidaySummary(holidayDates) {
-        const summary = getElement("wbsHolidaySummary");
-        if (holidayDates.length === 0) {
-            summary.textContent = "既定祝日: 0 件";
-            return;
-        }
-        summary.textContent = `既定祝日: ${holidayDates.length} 件 (${holidayDates.join(", ")})`;
-    }
-    function syncWbsHolidayDatesInput(model) {
-        const input = getTextArea("wbsHolidayDatesInput");
-        if (!model) {
-            input.value = "";
-            updateWbsHolidaySummary([]);
-            return;
-        }
-        const holidayDates = mikuprojectWbsXlsx.collectWbsHolidayDates(model);
-        input.value = holidayDates.join("\n");
-        updateWbsHolidaySummary(holidayDates);
     }
     function showToast(message) {
         const toast = document.getElementById("toast");
@@ -13218,13 +13814,52 @@ if (!customElements.get("lht-page-menu")) {
     function setSvgPreviewMarkup(markup) {
         getElement("nativeSvgPreview").innerHTML = markup;
     }
+    function updateSvgPreviewModeButtons() {
+        const dailyButton = getElement("previewDailySvgBtn");
+        const weeklyButton = getElement("previewWeeklySvgBtn");
+        const monthlyButton = getElement("previewMonthlySvgBtn");
+        dailyButton.classList.toggle("md-button--primary", currentSvgPreviewMode === "daily");
+        dailyButton.classList.toggle("md-button--tonal", currentSvgPreviewMode !== "daily");
+        weeklyButton.classList.toggle("md-button--primary", currentSvgPreviewMode === "weekly");
+        weeklyButton.classList.toggle("md-button--tonal", currentSvgPreviewMode !== "weekly");
+        monthlyButton.classList.toggle("md-button--primary", currentSvgPreviewMode === "monthly");
+        monthlyButton.classList.toggle("md-button--tonal", currentSvgPreviewMode !== "monthly");
+    }
+    function renderCurrentSvgPreviewMarkup() {
+        if (currentSvgPreviewMode === "weekly") {
+            if (currentWeeklyPreviewSvg) {
+                setSvgPreviewMarkup(currentWeeklyPreviewSvg);
+                return;
+            }
+            setSvgPreviewMarkup(`<div class="md-preview-empty">Weekly SVG を生成すると、ここにプレビューを表示します。</div>`);
+            return;
+        }
+        if (currentSvgPreviewMode === "monthly") {
+            if (currentMonthlyPreviewSvg) {
+                setSvgPreviewMarkup(currentMonthlyPreviewSvg);
+                return;
+            }
+            setSvgPreviewMarkup(`<div class="md-preview-empty">Monthly Calendar SVG を生成すると、ここにプレビューを表示します。</div>`);
+            return;
+        }
+        if (currentNativeSvg) {
+            setSvgPreviewMarkup(currentNativeSvg);
+            return;
+        }
+        setSvgPreviewMarkup(`<div class="md-preview-empty">Daily SVG を生成すると、ここにプレビューを表示します。</div>`);
+    }
     function updateSvgButton() {
-        getElement("downloadSvgBtn").disabled = !currentModel;
+        const nativeSvgButton = getElement("downloadSvgBtn");
+        const weeklySvgButton = getElement("downloadWeeklySvgBtn");
+        const monthlyWbsButton = getElement("downloadMonthlyCalendarSvgBtn");
+        const disabled = !currentModel;
+        nativeSvgButton.disabled = disabled;
+        weeklySvgButton.disabled = disabled;
+        monthlyWbsButton.disabled = disabled;
     }
     function buildCurrentWbsOptions(model) {
-        syncWbsHolidayDatesInput(model);
         return {
-            holidayDates: parseWbsDefaultHolidayDates(),
+            holidayDates: mikuprojectWbsXlsx.collectWbsHolidayDates(model),
             displayDaysBeforeBaseDate: parseWbsDisplayDaysBeforeBaseDate(),
             displayDaysAfterBaseDate: parseWbsDisplayDaysAfterBaseDate(),
             useBusinessDaysForDisplayRange: useBusinessDaysForWbsDisplayRange(),
@@ -13241,16 +13876,215 @@ if (!customElements.get("lht-page-menu")) {
         document.body.removeChild(link);
         window.setTimeout(() => URL.revokeObjectURL(objectUrl), 0);
     }
+    function formatTimestampCompact(date) {
+        return [
+            date.getFullYear(),
+            String(date.getMonth() + 1).padStart(2, "0"),
+            String(date.getDate()).padStart(2, "0"),
+            String(date.getHours()).padStart(2, "0"),
+            String(date.getMinutes()).padStart(2, "0")
+        ].join("");
+    }
+    function encodeUtf8(value) {
+        return ZIP_TEXT_ENCODER.encode(value);
+    }
+    function concatUint8Arrays(parts) {
+        const totalLength = parts.reduce((sum, part) => sum + part.byteLength, 0);
+        const result = new Uint8Array(totalLength);
+        let offset = 0;
+        for (const part of parts) {
+            result.set(part, offset);
+            offset += part.byteLength;
+        }
+        return result;
+    }
+    function computeZipCrc32(bytes) {
+        let crc = 0xffffffff;
+        for (const byte of bytes) {
+            crc = (crc >>> 8) ^ ZIP_CRC32_TABLE[(crc ^ byte) & 0xff];
+        }
+        return (crc ^ 0xffffffff) >>> 0;
+    }
+    function buildZipCrc32Table() {
+        const table = new Uint32Array(256);
+        for (let index = 0; index < 256; index += 1) {
+            let value = index;
+            for (let bit = 0; bit < 8; bit += 1) {
+                value = (value & 1) !== 0 ? (0xedb88320 ^ (value >>> 1)) : (value >>> 1);
+            }
+            table[index] = value >>> 0;
+        }
+        return table;
+    }
+    function packZipEntries(entries) {
+        const localParts = [];
+        const centralParts = [];
+        let offset = 0;
+        const zipFixedModTime = 0;
+        const zipFixedModDate = ((2025 - 1980) << 9) | (1 << 5) | 1;
+        for (const entry of entries) {
+            const nameBytes = encodeUtf8(entry.name);
+            const crc32 = computeZipCrc32(entry.data);
+            const localHeader = new Uint8Array(30 + nameBytes.length);
+            const localView = new DataView(localHeader.buffer);
+            localView.setUint32(0, 0x04034b50, true);
+            localView.setUint16(4, 20, true);
+            localView.setUint16(6, 0, true);
+            localView.setUint16(8, 0, true);
+            localView.setUint16(10, zipFixedModTime, true);
+            localView.setUint16(12, zipFixedModDate, true);
+            localView.setUint32(14, crc32, true);
+            localView.setUint32(18, entry.data.byteLength, true);
+            localView.setUint32(22, entry.data.byteLength, true);
+            localView.setUint16(26, nameBytes.length, true);
+            localView.setUint16(28, 0, true);
+            localHeader.set(nameBytes, 30);
+            const centralHeader = new Uint8Array(46 + nameBytes.length);
+            const centralView = new DataView(centralHeader.buffer);
+            centralView.setUint32(0, 0x02014b50, true);
+            centralView.setUint16(4, 20, true);
+            centralView.setUint16(6, 20, true);
+            centralView.setUint16(8, 0, true);
+            centralView.setUint16(10, 0, true);
+            centralView.setUint16(12, zipFixedModTime, true);
+            centralView.setUint16(14, zipFixedModDate, true);
+            centralView.setUint32(16, crc32, true);
+            centralView.setUint32(20, entry.data.byteLength, true);
+            centralView.setUint32(24, entry.data.byteLength, true);
+            centralView.setUint16(28, nameBytes.length, true);
+            centralView.setUint16(30, 0, true);
+            centralView.setUint16(32, 0, true);
+            centralView.setUint16(34, 0, true);
+            centralView.setUint16(36, 0, true);
+            centralView.setUint32(38, 0, true);
+            centralView.setUint32(42, offset, true);
+            centralHeader.set(nameBytes, 46);
+            localParts.push(localHeader, entry.data);
+            centralParts.push(centralHeader);
+            offset += localHeader.byteLength + entry.data.byteLength;
+        }
+        const centralDirectoryOffset = offset;
+        const centralDirectorySize = centralParts.reduce((sum, part) => sum + part.byteLength, 0);
+        const endOfCentralDirectory = new Uint8Array(22);
+        const endView = new DataView(endOfCentralDirectory.buffer);
+        endView.setUint32(0, 0x06054b50, true);
+        endView.setUint16(4, 0, true);
+        endView.setUint16(6, 0, true);
+        endView.setUint16(8, entries.length, true);
+        endView.setUint16(10, entries.length, true);
+        endView.setUint32(12, centralDirectorySize, true);
+        endView.setUint32(16, centralDirectoryOffset, true);
+        endView.setUint16(20, 0, true);
+        return concatUint8Arrays([...localParts, ...centralParts, endOfCentralDirectory]);
+    }
     async function renderSvgPreview() {
         if (!currentModel) {
             currentNativeSvg = "";
+            currentWeeklyPreviewSvg = "";
+            currentMonthlyPreviewSvg = "";
             updateSvgButton();
-            setSvgPreviewMarkup(`<div class="md-preview-empty">SVG を生成すると、ここにプレビューを表示します。</div>`);
+            renderCurrentSvgPreviewMarkup();
             return;
         }
-        currentNativeSvg = mikuprojectNativeSvg.exportNativeSvg(currentModel, buildCurrentWbsOptions(currentModel));
-        setSvgPreviewMarkup(currentNativeSvg);
+        const wbsOptions = buildCurrentWbsOptions(currentModel);
+        currentNativeSvg = mikuprojectNativeSvg.exportNativeSvg(currentModel, wbsOptions);
+        currentWeeklyPreviewSvg = mikuprojectNativeSvg.exportWeeklyNativeSvg(currentModel, wbsOptions);
+        const monthlyArchive = mikuprojectNativeSvg.exportMonthlyWbsCalendarSvgArchive(currentModel);
+        currentMonthlyPreviewSvg = monthlyArchive.entries.length > 0
+            ? monthlyArchive.entries.map((entry) => entry.svg).join("")
+            : "";
+        renderCurrentSvgPreviewMarkup();
         updateSvgButton();
+    }
+    function setSvgPreviewMode(mode) {
+        currentSvgPreviewMode = mode;
+        updateSvgPreviewModeButtons();
+        renderCurrentSvgPreviewMarkup();
+    }
+    function buildCurrentOutputArchive() {
+        const model = ensureCurrentModel();
+        const xmlText = syncXmlTextFromModel(model);
+        const now = new Date();
+        const stamp = formatTimestampCompact(now);
+        const dateOnlyStamp = [
+            now.getFullYear(),
+            String(now.getMonth() + 1).padStart(2, "0"),
+            String(now.getDate()).padStart(2, "0")
+        ].join("");
+        const codec = new mikuprojectExcelIo.XlsxWorkbookCodec();
+        const workbook = mikuprojectProjectXlsx.exportProjectWorkbook(model);
+        const workbookJsonText = JSON.stringify(mikuprojectProjectWorkbookJson.exportProjectWorkbookJson(model), null, 2);
+        const csvText = mikuprojectXml.exportCsvParentId(model);
+        const wbsOptions = buildCurrentWbsOptions(model);
+        const wbsWorkbook = mikuprojectWbsXlsx.exportWbsWorkbook(model, wbsOptions);
+        const wbsMarkdown = mikuprojectWbsMarkdown.exportWbsMarkdown(model, wbsOptions);
+        const dailySvg = mikuprojectNativeSvg.exportNativeSvg(model, wbsOptions);
+        const weeklySvg = mikuprojectNativeSvg.exportWeeklyNativeSvg(model, wbsOptions);
+        const monthlyArchive = mikuprojectNativeSvg.exportMonthlyWbsCalendarSvgArchive(model);
+        const mermaidText = mikuprojectXml.exportMermaidGantt(model);
+        const projectOverview = mikuprojectXml.exportProjectOverviewView(model);
+        const phaseDetailViewsFull = (projectOverview.phases || [])
+            .map((phase) => phase === null || phase === void 0 ? void 0 : phase.uid)
+            .filter((uid) => Boolean(uid))
+            .map((phaseUid) => mikuprojectXml.exportPhaseDetailView(model, phaseUid, { mode: "full" }));
+        const aiBundle = {
+            view_type: "ai_projection_bundle",
+            project_overview_view: projectOverview,
+            phase_detail_views_full: phaseDetailViewsFull
+        };
+        const phaseDetailFull = mikuprojectXml.exportPhaseDetailView(model, undefined, { mode: "full" });
+        const allReadmeText = [
+            "mikuproject ALL ZIP",
+            "",
+            "GitHub: https://github.com/igapyon/mikuproject",
+            "mikuproject is a local single-file web app that converts MS Project XML into XLSX, Markdown, SVG, Mermaid, and AI-facing JSON exports.",
+            "",
+            "This archive contains the main outputs generated from the current model.",
+            "",
+            "Files:",
+            "- mikuproject-export-*.xml: regenerated MS Project XML",
+            "- mikuproject-export-*.xlsx: workbook XLSX export",
+            "- mikuproject-workbook-*.json: workbook JSON export",
+            "- mikuproject-export-*.csv: CSV + ParentID export",
+            "- mikuproject-wbs-*.xlsx: WBS workbook export",
+            "- mikuproject-wbs-*.md: WBS Markdown export",
+            "- mikuproject-wbs-daily-*.svg: daily WBS SVG export",
+            "- mikuproject-wbs-weekly-*.svg: weekly WBS SVG export",
+            "- mikuproject-wbs-mermaid-*.md: Mermaid gantt export",
+            "- monthly-calendar/YYYY-MM.svg: month-by-month calendar SVG export",
+            "- *.editjson: AI-facing projection exports"
+        ].join("\n");
+        const entries = [
+            { name: "README.txt", data: encodeUtf8(`${allReadmeText}\n`) },
+            { name: `mikuproject-export-${stamp}.xml`, data: encodeUtf8(`${xmlText}\n`) },
+            { name: `mikuproject-export-${stamp}.xlsx`, data: codec.exportWorkbook(workbook) },
+            { name: `mikuproject-workbook-${stamp}.json`, data: encodeUtf8(`${workbookJsonText}\n`) },
+            { name: `mikuproject-export-${stamp}.csv`, data: encodeUtf8(`${csvText}\n`) },
+            { name: `mikuproject-wbs-${stamp}.xlsx`, data: codec.exportWorkbook(wbsWorkbook) },
+            { name: `mikuproject-wbs-${dateOnlyStamp}.md`, data: encodeUtf8(`${wbsMarkdown}\n`) },
+            { name: `mikuproject-wbs-daily-${stamp}.svg`, data: encodeUtf8(dailySvg) },
+            { name: `mikuproject-wbs-weekly-${stamp}.svg`, data: encodeUtf8(weeklySvg) },
+            { name: `mikuproject-wbs-mermaid-${stamp}.md`, data: encodeUtf8(`\`\`\`mermaid\n${mermaidText}\n\`\`\`\n`) }
+        ];
+        for (const entry of monthlyArchive.entries) {
+            entries.push({
+                name: `monthly-calendar/${entry.fileName}`,
+                data: encodeUtf8(entry.svg)
+            });
+        }
+        entries.push({ name: "mikuproject-project-overview-view.editjson", data: encodeUtf8(`${JSON.stringify(projectOverview, null, 2)}\n`) }, { name: "mikuproject-full-bundle.editjson", data: encodeUtf8(`${JSON.stringify(aiBundle, null, 2)}\n`) }, { name: "mikuproject-phase-detail-view-full.editjson", data: encodeUtf8(`${JSON.stringify(phaseDetailFull, null, 2)}\n`) });
+        return {
+            fileName: `mikuproject-all-${stamp}.zip`,
+            zipBytes: packZipEntries(entries),
+            entryCount: entries.length
+        };
+    }
+    function downloadAllOutputs() {
+        const archive = buildCurrentOutputArchive();
+        downloadBlob(new Blob([archive.zipBytes], { type: "application/zip" }), archive.fileName);
+        setStatus(`All 出力を保存しました (${archive.entryCount} 件, ZIP)`);
+        showToast("All を保存しました");
+        setActiveTab("output");
     }
     function setStatus(message) {
         getElement("statusMessage").textContent = message;
@@ -13570,7 +14404,6 @@ if (!customElements.get("lht-page-menu")) {
     }
     function updateSummary(model) {
         updateSvgButton();
-        syncWbsHolidayDatesInput(model);
         getElement("summaryProjectName").textContent = (model === null || model === void 0 ? void 0 : model.project.name) || "-";
         getElement("summaryTaskCount").textContent = String((model === null || model === void 0 ? void 0 : model.tasks.length) || 0);
         getElement("summaryResourceCount").textContent = String((model === null || model === void 0 ? void 0 : model.resources.length) || 0);
@@ -13644,10 +14477,16 @@ WorkWeek1=${formatCalendarWorkWeekSummary(calendar)}</div>
     `) : []);
     }
     function loadSample() {
-        currentModel = null;
-        getTextArea("xmlInput").value = mikuprojectXml.SAMPLE_XML;
+        const sampleXml = mikuprojectXml.SAMPLE_XML;
+        getTextArea("xmlInput").value = sampleXml;
+        currentModel = mikuprojectXml.importMsProjectXml(sampleXml);
         isXmlSourceDirty = true;
         markXmlDirty();
+        updateSummary(currentModel);
+        renderValidationIssues(mikuprojectXml.validateProjectModel(currentModel));
+        renderImportWarnings([]);
+        renderXlsxImportSummary([]);
+        updateSvgButton();
         setStatus("サンプル XML を読み込みました");
         setActiveTab("input");
     }
@@ -13961,18 +14800,8 @@ WorkWeek1=${formatCalendarWorkWeekSummary(calendar)}</div>
     function exportCurrentWbsXlsx() {
         const model = ensureCurrentModel();
         syncXmlTextFromModel(model);
-        const defaultHolidayDates = parseWbsDefaultHolidayDates();
-        const displayDaysBeforeBaseDate = parseWbsDisplayDaysBeforeBaseDate();
-        const displayDaysAfterBaseDate = parseWbsDisplayDaysAfterBaseDate();
-        const useBusinessDaysForDisplayRange = useBusinessDaysForWbsDisplayRange();
-        const useBusinessDaysForProgressBand = useBusinessDaysForWbsProgressBand();
-        const workbook = mikuprojectWbsXlsx.exportWbsWorkbook(model, {
-            holidayDates: defaultHolidayDates,
-            displayDaysBeforeBaseDate,
-            displayDaysAfterBaseDate,
-            useBusinessDaysForDisplayRange,
-            useBusinessDaysForProgressBand
-        });
+        const options = buildCurrentWbsOptions(model);
+        const workbook = mikuprojectWbsXlsx.exportWbsWorkbook(model, options);
         const codec = new mikuprojectExcelIo.XlsxWorkbookCodec();
         const bytes = codec.exportWorkbook(workbook);
         const now = new Date();
@@ -13984,11 +14813,11 @@ WorkWeek1=${formatCalendarWorkWeekSummary(calendar)}</div>
             String(now.getMinutes()).padStart(2, "0")
         ].join("");
         downloadBlob(new Blob([bytes], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" }), `mikuproject-wbs-${stamp}.xlsx`);
-        const displayRangeText = displayDaysBeforeBaseDate !== undefined || displayDaysAfterBaseDate !== undefined
-            ? ` / 表示期間 営業日 基準日前 ${displayDaysBeforeBaseDate || 0} 日, 基準日後 ${displayDaysAfterBaseDate || 0} 日`
+        const displayRangeText = options.displayDaysBeforeBaseDate !== undefined || options.displayDaysAfterBaseDate !== undefined
+            ? ` / 表示期間 営業日 基準日前 ${options.displayDaysBeforeBaseDate || 0} 日, 基準日後 ${options.displayDaysAfterBaseDate || 0} 日`
             : "";
         const progressBandText = " / 進捗帯 営業日";
-        setStatus(`WBS XLSX ファイルをエクスポートしました${defaultHolidayDates.length > 0 ? ` (祝日 ${defaultHolidayDates.length} 件)` : ""}${displayRangeText}${progressBandText}`);
+        setStatus(`WBS XLSX ファイルをエクスポートしました${options.holidayDates.length > 0 ? ` (祝日 ${options.holidayDates.length} 件)` : ""}${displayRangeText}${progressBandText}`);
         showToast("WBS XLSX を保存しました");
         setActiveTab("output");
     }
@@ -14078,9 +14907,58 @@ WorkWeek1=${formatCalendarWorkWeekSummary(calendar)}</div>
             setStatus("出力する SVG がありません");
             return;
         }
-        downloadBlob(new Blob([currentNativeSvg], { type: "image/svg+xml;charset=utf-8" }), "mikuproject-native.svg");
-        setStatus("SVG を保存しました");
-        showToast("SVG を保存しました");
+        const now = new Date();
+        const stamp = [
+            now.getFullYear(),
+            String(now.getMonth() + 1).padStart(2, "0"),
+            String(now.getDate()).padStart(2, "0"),
+            String(now.getHours()).padStart(2, "0"),
+            String(now.getMinutes()).padStart(2, "0")
+        ].join("");
+        downloadBlob(new Blob([currentNativeSvg], { type: "image/svg+xml;charset=utf-8" }), `mikuproject-wbs-daily-${stamp}.svg`);
+        setStatus("Daily SVG を保存しました");
+        showToast("Daily SVG を保存しました");
+        setActiveTab("output");
+    }
+    function downloadCurrentWeeklySvg() {
+        const model = ensureCurrentModel();
+        syncXmlTextFromModel(model);
+        const weeklySvg = mikuprojectNativeSvg.exportWeeklyNativeSvg(model, buildCurrentWbsOptions(model));
+        if (!weeklySvg) {
+            setStatus("出力する Weekly SVG がありません");
+            return;
+        }
+        const now = new Date();
+        const stamp = [
+            now.getFullYear(),
+            String(now.getMonth() + 1).padStart(2, "0"),
+            String(now.getDate()).padStart(2, "0"),
+            String(now.getHours()).padStart(2, "0"),
+            String(now.getMinutes()).padStart(2, "0")
+        ].join("");
+        downloadBlob(new Blob([weeklySvg], { type: "image/svg+xml;charset=utf-8" }), `mikuproject-wbs-weekly-${stamp}.svg`);
+        setStatus("Weekly SVG を保存しました");
+        showToast("Weekly SVG を保存しました");
+        setActiveTab("output");
+    }
+    function downloadCurrentMonthlyWbsSvgZip() {
+        const model = ensureCurrentModel();
+        syncXmlTextFromModel(model);
+        const archive = mikuprojectNativeSvg.exportMonthlyWbsCalendarSvgArchive(model);
+        if (!archive.entries.length || archive.zipBytes.byteLength === 0) {
+            throw new Error("出力する月別 WBS カレンダー SVG がありません");
+        }
+        const now = new Date();
+        const stamp = [
+            now.getFullYear(),
+            String(now.getMonth() + 1).padStart(2, "0"),
+            String(now.getDate()).padStart(2, "0"),
+            String(now.getHours()).padStart(2, "0"),
+            String(now.getMinutes()).padStart(2, "0")
+        ].join("");
+        downloadBlob(new Blob([archive.zipBytes], { type: "application/zip" }), `mikuproject-monthly-wbs-calendar-${stamp}.zip`);
+        setStatus(`Monthly Calendar SVG を保存しました (${archive.entries.length} か月分, ZIP)`);
+        showToast("Monthly Calendar SVG を保存しました");
         setActiveTab("output");
     }
     function downloadCurrentMermaidMarkdown() {
@@ -14092,10 +14970,12 @@ WorkWeek1=${formatCalendarWorkWeekSummary(calendar)}</div>
         const stamp = [
             now.getFullYear(),
             String(now.getMonth() + 1).padStart(2, "0"),
-            String(now.getDate()).padStart(2, "0")
+            String(now.getDate()).padStart(2, "0"),
+            String(now.getHours()).padStart(2, "0"),
+            String(now.getMinutes()).padStart(2, "0")
         ].join("");
         const markdownText = `\`\`\`mermaid\n${mermaidText}\n\`\`\`\n`;
-        downloadBlob(new Blob([markdownText], { type: "text/markdown;charset=utf-8" }), `mermaid-${stamp}.md`);
+        downloadBlob(new Blob([markdownText], { type: "text/markdown;charset=utf-8" }), `mikuproject-wbs-mermaid-${stamp}.md`);
         setStatus("Mermaid Markdown を保存しました");
         showToast("Mermaid Markdown を保存しました");
         setActiveTab("output");
@@ -14103,19 +14983,8 @@ WorkWeek1=${formatCalendarWorkWeekSummary(calendar)}</div>
     function downloadCurrentWbsMarkdown() {
         const model = ensureCurrentModel();
         syncXmlTextFromModel(model);
-        const defaultHolidayDates = mikuprojectWbsXlsx.collectWbsHolidayDates(model);
-        syncWbsHolidayDatesInput(model);
-        const displayDaysBeforeBaseDate = parseOptionalNonNegativeInteger(getInput("wbsDisplayDaysBeforeInput").value);
-        const displayDaysAfterBaseDate = parseOptionalNonNegativeInteger(getInput("wbsDisplayDaysAfterInput").value);
-        const useBusinessDaysForDisplayRange = useBusinessDaysForWbsDisplayRange();
-        const useBusinessDaysForProgressBand = useBusinessDaysForWbsProgressBand();
-        const markdownText = mikuprojectWbsMarkdown.exportWbsMarkdown(model, {
-            holidayDates: defaultHolidayDates,
-            displayDaysBeforeBaseDate,
-            displayDaysAfterBaseDate,
-            useBusinessDaysForDisplayRange,
-            useBusinessDaysForProgressBand
-        });
+        const options = buildCurrentWbsOptions(model);
+        const markdownText = mikuprojectWbsMarkdown.exportWbsMarkdown(model, options);
         const now = new Date();
         const stamp = [
             now.getFullYear(),
@@ -14163,10 +15032,47 @@ WorkWeek1=${formatCalendarWorkWeekSummary(calendar)}</div>
             input.value = "";
             input.click();
         });
+        getElement("downloadAllOutputsBtn").addEventListener("click", () => {
+            try {
+                downloadAllOutputs();
+            }
+            catch (error) {
+                console.error("[mikuproject] all outputs download failed", error);
+                setStatus(error instanceof Error ? error.message : "All 出力保存に失敗しました");
+            }
+        });
+        getElement("previewDailySvgBtn").addEventListener("click", () => {
+            setSvgPreviewMode("daily");
+        });
+        getElement("previewWeeklySvgBtn").addEventListener("click", () => {
+            setSvgPreviewMode("weekly");
+        });
+        getElement("previewMonthlySvgBtn").addEventListener("click", () => {
+            setSvgPreviewMode("monthly");
+        });
         getElement("downloadSvgBtn").addEventListener("click", () => {
             void downloadCurrentSvg().catch((error) => {
+                console.error("[mikuproject] native SVG download failed", error);
                 setStatus(error instanceof Error ? error.message : "SVG 保存に失敗しました");
             });
+        });
+        getElement("downloadWeeklySvgBtn").addEventListener("click", () => {
+            try {
+                downloadCurrentWeeklySvg();
+            }
+            catch (error) {
+                console.error("[mikuproject] weekly SVG download failed", error);
+                setStatus(error instanceof Error ? error.message : "Weekly SVG 保存に失敗しました");
+            }
+        });
+        getElement("downloadMonthlyCalendarSvgBtn").addEventListener("click", () => {
+            try {
+                downloadCurrentMonthlyWbsSvgZip();
+            }
+            catch (error) {
+                console.error("[mikuproject] monthly WBS SVG download failed", error);
+                setStatus(error instanceof Error ? error.message : "月別 WBS カレンダー SVG 保存に失敗しました");
+            }
         });
         getElement("exportMermaidMdBtn").addEventListener("click", () => {
             try {
@@ -14312,6 +15218,7 @@ WorkWeek1=${formatCalendarWorkWeekSummary(calendar)}</div>
         renderValidationIssues([]);
         renderImportWarnings([]);
         renderXlsxImportSummary([]);
+        updateSvgPreviewModeButtons();
         updateSvgButton();
         loadSample();
     }

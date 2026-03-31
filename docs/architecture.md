@@ -72,7 +72,7 @@
 
 - 内部モデルの要約確認
 - validation メッセージの確認
-- native `SVG` プレビューの確認
+- `Daily / Weekly / Monthly Calendar` プレビューの確認
 - `Project / Tasks / Resources / Assignments / Calendars` の preview 確認
 
 ### Output
@@ -83,7 +83,7 @@
 - `XLSX` 相当 workbook JSON の保存
 - `CSV + ParentID` の保存
 - Mermaid fenced code block を含む `.md` の保存
-- native `SVG` の保存
+- `Daily SVG / Weekly SVG / Monthly Calendar SVG` の保存
 - 生成AI向け `project_overview_view` / `phase_detail_view` / `full bundle` の `.editjson` 保存
 
 ## 生成AI連携
@@ -137,14 +137,15 @@ npm test
 npm run build
 ```
 
-`npm run build` は `build:app` と `test` を順に実行する。
+`npm run build` は `build:app` と `test` を順に実行する。`build:app` は `build:web` と `build:xlsx-sample` を順に実行する。
 
 スクリプトの役割は次のとおり。
 
 - `npm run build:js`: `src/ts/` から `src/js/` を生成する
 - `npm run build:html`: `index-src.html` と `mikuproject-src.html` から `index.html` と `mikuproject.html` を生成する
+- `npm run build:web`: JavaScript 生成と HTML 生成をまとめて行う
 - `npm run build:xlsx-sample`: `local-data/` 配下へサンプル XLSX / Markdown を生成する
-- `npm run build:app`: `build:js`、`build:html`、`build:xlsx-sample` を順に実行する
+- `npm run build:app`: `build:web` と `build:xlsx-sample` を順に実行する
 
 `scripts/build-project.mjs` は `--js-only` と `--html-only` を受け取り、JavaScript 生成と HTML 生成を切り替える。
 

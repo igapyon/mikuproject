@@ -46,7 +46,7 @@ const wbsMarkdownCode = readFileSync(
   "utf8"
 );
 const nativeSvgCode = readFileSync(
-  path.resolve(__dirname, "../src/js/native-svg.js"),
+  path.resolve(__dirname, "../src/js/wbs-svg.js"),
   "utf8"
 );
 const mainCode = readFileSync(
@@ -74,13 +74,19 @@ function mountDom() {
   document.body.innerHTML = `
     <button id="importFileBtn" type="button">Load from file</button>
     <button id="loadSampleBtn" type="button">サンプル</button>
+    <button id="downloadAllOutputsBtn" type="button">All</button>
     <button id="exportXlsxBtn" type="button">XLSX</button>
     <button id="exportWorkbookJsonBtn" type="button">JSON</button>
     <button id="exportCsvBtn" type="button">CSV</button>
     <button id="exportWbsXlsxBtn" type="button">WBS XLSX</button>
     <button id="exportWbsMdBtn" type="button">WBS Markdown</button>
+    <button id="downloadWeeklySvgBtn" type="button" disabled>Weekly SVG</button>
+    <button id="downloadMonthlyCalendarSvgBtn" type="button" disabled>Monthly Calendar SVG</button>
     <button id="exportMermaidMdBtn" type="button">Mermaid</button>
-    <button id="downloadSvgBtn" type="button" disabled>SVG</button>
+    <button id="downloadSvgBtn" type="button" disabled>Daily SVG</button>
+    <button id="previewDailySvgBtn" type="button">Daily SVG</button>
+    <button id="previewWeeklySvgBtn" type="button">Weekly SVG</button>
+    <button id="previewMonthlySvgBtn" type="button">Monthly Calendar SVG</button>
     <button id="exportAiBundleBtn" type="button">project_overview + all phase_detail full</button>
     <button id="exportProjectOverviewBtn" type="button">project_overview_view</button>
     <button id="exportPhaseDetailFullBtn" type="button">phase_detail_view full</button>
@@ -125,12 +131,9 @@ function mountDom() {
           </lht-help-tooltip>
         </span>
       </span>
-      <details class="md-debug-accordion">
-        <summary class="md-debug-accordion__summary">デバッグ情報</summary>
-        <div class="md-debug-accordion__body">
+      <div hidden>
           <textarea id="xmlInput"></textarea>
-        </div>
-      </details>
+      </div>
       <details class="md-note-accordion">
         <summary class="md-note-accordion__summary">新規生成AI連携</summary>
         <div class="md-note-accordion__body">
@@ -175,7 +178,6 @@ function mountDom() {
         <div class="md-debug-accordion__body">
           <button id="roundTripBtn" type="button">再読込テスト</button>
           <textarea id="modelOutput"></textarea>
-          <textarea id="mermaidOutput"></textarea>
           <div id="projectPreview"></div>
           <div id="taskPreview"></div>
           <div id="resourcePreview"></div>
@@ -183,6 +185,9 @@ function mountDom() {
           <div id="calendarPreview"></div>
         </div>
       </details>
+      <div hidden>
+        <textarea id="mermaidOutput"></textarea>
+      </div>
       <div class="md-feedback-stack md-hidden">
         <div class="md-feedback-stack__title">取込結果</div>
         <div class="md-feedback-stack__text">取込後は、ここで差分反映・warning・検証結果を確認します。</div>
@@ -208,21 +213,21 @@ function mountDom() {
         <summary class="md-debug-accordion__summary">設定</summary>
         <div class="md-debug-accordion__body">
           <section class="md-note-card">
-            <h3 class="md-note-card__title">WBS XLSX の祝日指定</h3>
-            <p class="md-note-card__text">WBS XLSX Export では、ProjectModel から補完した既定祝日を WBS 日付帯へ反映します。</p>
-            <p class="md-note-card__text">既定祝日は、現在の ProjectModel に含まれる Calendar.Exceptions の非稼働日例外から補完します。画面では Calendars / Exceptions を直接編集せず、必要な変更は MS Project XML または XLSX Import 側で扱います。表示期間を空欄にすると全期間、数値を入れると BaseDate 前後の営業日で切り出します。進捗帯も営業日基準で計算します。</p>
+            <h3 class="md-note-card__title">
+              <span>WBS XLSX 表示設定</span>
+              <lht-help-tooltip label="WBS XLSX 表示設定の説明" placement="right" wide>
+                <p>WBS XLSX Export では、ProjectModel から補完した既定祝日を WBS 日付帯へ反映します。</p>
+                <p>既定祝日は、現在の ProjectModel に含まれる Calendar.Exceptions の非稼働日例外から内部で直接補完します。画面では Calendars / Exceptions を直接編集せず、必要な変更は MS Project XML または XLSX Import 側で扱います。表示期間を空欄にすると全期間、数値を入れると BaseDate 前後の営業日で切り出します。進捗帯も営業日基準で計算します。</p>
+              </lht-help-tooltip>
+            </h3>
           </section>
           <input id="wbsDisplayDaysBeforeInput" />
           <input id="wbsDisplayDaysAfterInput" />
           <input id="wbsBusinessDayRangeInput" type="checkbox" />
           <input id="wbsBusinessDayProgressInput" type="checkbox" />
-          <div id="wbsHolidaySummary"></div>
-          <textarea id="wbsHolidayDatesInput"></textarea>
         </div>
       </details>
-      <details class="md-debug-accordion">
-        <summary class="md-debug-accordion__summary">デバッグ情報</summary>
-        <div class="md-debug-accordion__body">
+      <div hidden>
           <textarea id="workbookJsonOutput"></textarea>
           <textarea id="aiBundleOutput"></textarea>
           <textarea id="projectOverviewOutput"></textarea>
@@ -230,8 +235,7 @@ function mountDom() {
           <input id="phaseDetailRootUidInput" />
           <input id="phaseDetailMaxDepthInput" />
           <textarea id="phaseDetailOutput"></textarea>
-        </div>
-      </details>
+      </div>
     </section>
     <div id="toast"></div>
   `;
@@ -329,20 +333,18 @@ describe("mikuproject main", () => {
     expect(document.body.textContent).not.toContain("内部モデル、要約、検証結果、プレビューをここで確認します。");
     expect(document.body.textContent).not.toContain("出力設定と生成結果の確認をここにまとめます。");
     expect(document.body.textContent).toContain("デバッグ情報");
+    expect(document.querySelectorAll(".md-debug-accordion")).toHaveLength(2);
     expect(document.querySelector(".md-debug-accordion")?.hasAttribute("open")).toBe(false);
-    expect(document.querySelectorAll(".md-debug-accordion")[1]?.hasAttribute("open")).toBe(false);
     expect(document.querySelector(".md-note-accordion")?.hasAttribute("open")).toBe(false);
-    expect(document.body.textContent).toContain("WBS XLSX の祝日指定");
+    expect(document.body.textContent).toContain("WBS XLSX 表示設定");
     expect(document.body.textContent).toContain("設定");
-    expect(document.querySelectorAll(".md-debug-accordion")[2]?.hasAttribute("open")).toBe(false);
-    expect(document.querySelectorAll(".md-debug-accordion")[3]?.hasAttribute("open")).toBe(false);
+    expect(document.querySelectorAll(".md-debug-accordion")[1]?.hasAttribute("open")).toBe(false);
+    expect(document.querySelector('lht-help-tooltip[label="WBS XLSX 表示設定の説明"]')).not.toBeNull();
     expect(document.body.textContent).toContain("ProjectModel から補完した既定祝日");
-    expect(document.body.textContent).toContain("非稼働日例外から補完");
+    expect(document.body.textContent).toContain("非稼働日例外から内部で直接補完");
     expect(document.body.textContent).toContain("必要な変更は MS Project XML または XLSX Import 側で扱います");
     expect(document.body.textContent).toContain("BaseDate 前後の営業日で切り出します");
     expect(document.body.textContent).toContain("進捗帯も営業日基準で計算します");
-    expect(document.getElementById("wbsHolidayDatesInput").value).toBe("");
-    expect(document.getElementById("wbsHolidaySummary").textContent).toBe("既定祝日: 0 件");
     expect(document.getElementById("wbsDisplayDaysBeforeInput").value).toBe("");
     expect(document.getElementById("wbsDisplayDaysAfterInput").value).toBe("");
     expect(document.querySelector(".md-feedback-stack")?.classList.contains("md-hidden")).toBe(true);
@@ -495,6 +497,56 @@ describe("mikuproject main", () => {
     expect(document.getElementById("modelOutput").value).toContain("\"name\": \"Standard\"");
   });
 
+  it("limits default calendar holiday exceptions to the project date range", () => {
+    const xmlTools = bootXmlModule();
+
+    const model = {
+      project: {
+        name: "祝日範囲確認",
+        title: "祝日範囲確認",
+        startDate: "2026-03-18T09:00:00",
+        finishDate: "2026-03-22T18:00:00",
+        scheduleFromStart: true,
+        currentDate: "2026-03-20T09:00:00",
+        calendarUID: undefined,
+        outlineCodes: [],
+        wbsMasks: [],
+        extendedAttributes: []
+      },
+      tasks: [
+        {
+          uid: "1",
+          id: "1",
+          name: "確認タスク",
+          outlineLevel: 1,
+          outlineNumber: "1",
+          start: "2026-03-18T09:00:00",
+          finish: "2026-03-22T18:00:00",
+          duration: "PT40H0M0S",
+          milestone: false,
+          summary: false,
+          percentComplete: 0,
+          extendedAttributes: [],
+          baselines: [],
+          timephasedData: [],
+          predecessors: []
+        }
+      ],
+      resources: [],
+      assignments: [],
+      calendars: []
+    };
+
+    const exportedXml = xmlTools.exportMsProjectXml(model);
+    const reparsedModel = xmlTools.importMsProjectXml(exportedXml);
+
+    expect(reparsedModel.calendars).toHaveLength(1);
+    const holidayDates = reparsedModel.calendars[0].exceptions.map((exception) => exception.fromDate?.slice(0, 10));
+    expect(holidayDates).toContain("2026-03-20");
+    expect(holidayDates).not.toContain("2026-02-11");
+    expect(holidayDates).not.toContain("2026-04-29");
+  });
+
   it("loads sample project_draft_view into the input area", () => {
     bootPage();
 
@@ -574,7 +626,28 @@ describe("mikuproject main", () => {
     expect(mermaidText).toContain("初期実装");
     expect(document.getElementById("nativeSvgPreview").innerHTML).toContain("<svg");
     expect(document.getElementById("downloadSvgBtn").disabled).toBe(false);
+    expect(document.getElementById("downloadWeeklySvgBtn").disabled).toBe(false);
     expect(document.getElementById("statusMessage").textContent).toContain("Mermaid gantt");
+  });
+
+  it("switches overview svg preview between daily, weekly, and monthly", async () => {
+    bootPage();
+
+    parseXmlViaHook();
+    await exportMermaidViaHook();
+    expect(document.getElementById("nativeSvgPreview").innerHTML).toContain("<svg");
+
+    document.getElementById("previewWeeklySvgBtn").click();
+    expect(document.getElementById("nativeSvgPreview").innerHTML).toContain("weekly overview");
+
+    document.getElementById("previewMonthlySvgBtn").click();
+    expect(document.getElementById("nativeSvgPreview").innerHTML).toContain("2026-03");
+    expect(document.getElementById("nativeSvgPreview").innerHTML).toContain("2026-04");
+
+    document.getElementById("previewDailySvgBtn").click();
+    expect(document.getElementById("nativeSvgPreview").innerHTML).toContain("<svg");
+    expect(document.getElementById("nativeSvgPreview").innerHTML).not.toContain("weekly overview");
+    expect(document.getElementById("nativeSvgPreview").innerHTML).not.toContain("project range 2026-03-16 - 2026-04-01");
   });
 
   it("keeps complex mermaid dependencies as comments", () => {
@@ -859,7 +932,6 @@ describe("mikuproject main", () => {
     expect(HTMLAnchorElement.prototype.click).toHaveBeenCalled();
     const clickedAnchor = HTMLAnchorElement.prototype.click.mock.instances.at(-1);
     expect(clickedAnchor.download).toBe("mikuproject-wbs-202603162312.xlsx");
-    expect(document.getElementById("wbsHolidayDatesInput").value.split("\n")).toEqual(defaultHolidayDates);
     expect(exportSpy.mock.calls.at(-1)?.[1]).toEqual({
       holidayDates: defaultHolidayDates,
       displayDaysBeforeBaseDate: undefined,
@@ -930,17 +1002,6 @@ describe("mikuproject main", () => {
       useBusinessDaysForProgressBand: true
     });
     expect(document.getElementById("statusMessage").textContent).toContain("進捗帯 営業日");
-  });
-
-  it("fills wbs holiday input from model defaults when xml is parsed", () => {
-    bootPage();
-
-    parseXmlViaHook();
-    const defaultHolidayDates = getDefaultSampleHolidayDates();
-
-    expect(document.getElementById("wbsHolidayDatesInput").value.split("\n")).toEqual(defaultHolidayDates);
-    expect(document.getElementById("wbsHolidaySummary").textContent).toContain(`既定祝日: ${SAMPLE_HOLIDAY_COUNT} 件`);
-    expect(document.getElementById("wbsHolidaySummary").textContent).toContain("2026-03-20");
   });
 
   it("imports xlsx edits back into the current model and xml", async () => {
@@ -1413,20 +1474,171 @@ describe("mikuproject main", () => {
     const xmlInput = document.getElementById("xmlInput");
     xmlInput.value = `${xmlInput.value}\n<!-- edited -->`;
     xmlInput.dispatchEvent(new Event("input"));
+    const OriginalBlob = Blob;
+    class InspectableBlob extends OriginalBlob {
+      constructor(parts = [], options = {}) {
+        super(parts, options);
+        this._parts = parts;
+      }
+    }
+    globalThis.Blob = InspectableBlob;
     URL.createObjectURL.mockClear();
     HTMLAnchorElement.prototype.click.mockClear();
-    document.getElementById("downloadSvgBtn").click();
-    await flushAsyncWork();
-    await flushAsyncWork();
+    try {
+      document.getElementById("downloadSvgBtn").click();
+      await flushAsyncWork();
+      await flushAsyncWork();
+
+      expect(URL.createObjectURL).toHaveBeenCalled();
+      expect(HTMLAnchorElement.prototype.click).toHaveBeenCalled();
+      const clickedAnchor = HTMLAnchorElement.prototype.click.mock.instances.at(-1);
+      expect(clickedAnchor.download).toBe("mikuproject-wbs-daily-202603162312.svg");
+      expect(document.getElementById("xmlInput").value).not.toContain("<!-- edited -->");
+      expect(document.getElementById("xmlSaveState").textContent).toContain("XML 保存状態: 保存済み (2026-03-16 23:12)");
+      expect(document.getElementById("mermaidOutput").value).toContain("gantt");
+      expect(document.getElementById("statusMessage").textContent).toContain("Daily SVG を保存しました");
+
+      const svgBlob = URL.createObjectURL.mock.calls.at(-1)?.[0];
+      const svgText = String(svgBlob._parts?.[0] || "");
+      expect(svgText).not.toContain("data-chart-origin-x");
+    } finally {
+      globalThis.Blob = OriginalBlob;
+    }
+  });
+
+  it("downloads monthly wbs calendar svg zip", async () => {
+    bootPage();
+
+    parseXmlViaHook();
+    const OriginalBlob = Blob;
+    class InspectableBlob extends OriginalBlob {
+      constructor(parts = [], options = {}) {
+        super(parts, options);
+        this._parts = parts;
+      }
+    }
+    globalThis.Blob = InspectableBlob;
+    URL.createObjectURL.mockClear();
+    HTMLAnchorElement.prototype.click.mockClear();
+    try {
+      document.getElementById("downloadMonthlyCalendarSvgBtn").click();
+
+      expect(URL.createObjectURL).toHaveBeenCalled();
+      expect(HTMLAnchorElement.prototype.click).toHaveBeenCalled();
+      const clickedAnchor = HTMLAnchorElement.prototype.click.mock.instances.at(-1);
+      expect(clickedAnchor.download).toBe("mikuproject-monthly-wbs-calendar-202603162312.zip");
+
+      const zipBlob = URL.createObjectURL.mock.calls.at(-1)?.[0];
+      expect(zipBlob).toBeTruthy();
+      expect(zipBlob.type).toBe("application/zip");
+
+      const rawPart = zipBlob._parts?.[0];
+      expect(rawPart).toBeInstanceOf(Uint8Array);
+      const codec = new globalThis.__mikuprojectExcelIo.XlsxWorkbookCodec();
+      const entries = codec.unpackEntries(rawPart);
+      const entryNames = Object.keys(entries).sort();
+      expect(entryNames).toContain("monthly-calendar/2026-03.svg");
+
+      const marchSvg = new TextDecoder().decode(entries["monthly-calendar/2026-03.svg"]);
+      expect(marchSvg).toContain("<svg");
+      expect(marchSvg).toContain("mikuproject開発");
+      expect(marchSvg).toContain("2026-03");
+      expect(document.getElementById("statusMessage").textContent).toContain("Monthly Calendar SVG を保存しました");
+    } finally {
+      globalThis.Blob = OriginalBlob;
+    }
+  });
+
+  it("downloads all outputs as zip", () => {
+    bootPage();
+
+    parseXmlViaHook();
+    const OriginalBlob = Blob;
+    class InspectableBlob extends OriginalBlob {
+      constructor(parts = [], options = {}) {
+        super(parts, options);
+        this._parts = parts;
+      }
+    }
+    globalThis.Blob = InspectableBlob;
+    URL.createObjectURL.mockClear();
+    HTMLAnchorElement.prototype.click.mockClear();
+    try {
+      document.getElementById("downloadAllOutputsBtn").click();
+
+      expect(URL.createObjectURL).toHaveBeenCalled();
+      expect(HTMLAnchorElement.prototype.click).toHaveBeenCalled();
+      const clickedAnchor = HTMLAnchorElement.prototype.click.mock.instances.at(-1);
+      expect(clickedAnchor.download).toBe("mikuproject-all-202603162312.zip");
+
+      const zipBlob = URL.createObjectURL.mock.calls.at(-1)?.[0];
+      expect(zipBlob).toBeTruthy();
+      expect(zipBlob.type).toBe("application/zip");
+
+      const rawPart = zipBlob._parts?.[0];
+      expect(rawPart).toBeInstanceOf(Uint8Array);
+      const codec = new globalThis.__mikuprojectExcelIo.XlsxWorkbookCodec();
+      const entries = codec.unpackEntries(rawPart);
+      const entryNames = Object.keys(entries);
+      const sortedEntryNames = [...entryNames].sort();
+      expect(entryNames[0]).toBe("README.txt");
+      expect(sortedEntryNames).toContain("README.txt");
+      expect(sortedEntryNames).toContain("mikuproject-export-202603162312.xml");
+      expect(sortedEntryNames).toContain("mikuproject-export-202603162312.xlsx");
+      expect(sortedEntryNames).toContain("mikuproject-workbook-202603162312.json");
+      expect(sortedEntryNames).toContain("mikuproject-export-202603162312.csv");
+      expect(sortedEntryNames).toContain("mikuproject-wbs-202603162312.xlsx");
+      expect(sortedEntryNames).toContain("mikuproject-wbs-20260316.md");
+      expect(sortedEntryNames).toContain("mikuproject-wbs-daily-202603162312.svg");
+      expect(sortedEntryNames).toContain("mikuproject-wbs-weekly-202603162312.svg");
+      expect(sortedEntryNames).toContain("monthly-calendar/2026-03.svg");
+      expect(sortedEntryNames).toContain("monthly-calendar/2026-04.svg");
+      expect(sortedEntryNames).toContain("mikuproject-wbs-mermaid-202603162312.md");
+      expect(sortedEntryNames).toContain("mikuproject-project-overview-view.editjson");
+      expect(sortedEntryNames).toContain("mikuproject-full-bundle.editjson");
+      expect(sortedEntryNames).toContain("mikuproject-phase-detail-view-full.editjson");
+      expect(entryNames.indexOf("mikuproject-wbs-mermaid-202603162312.md")).toBeLessThan(entryNames.indexOf("monthly-calendar/2026-03.svg"));
+      expect(entryNames.indexOf("monthly-calendar/2026-04.svg")).toBeLessThan(entryNames.indexOf("mikuproject-project-overview-view.editjson"));
+
+      const monthlySvg = new TextDecoder().decode(entries["monthly-calendar/2026-03.svg"]);
+      expect(monthlySvg).toContain("<svg");
+      expect(monthlySvg).toContain("mikuproject開発");
+      const readmeText = new TextDecoder().decode(entries["README.txt"]);
+      expect(readmeText).toContain("mikuproject ALL ZIP");
+      expect(readmeText).toContain("https://github.com/igapyon/mikuproject");
+      expect(readmeText).toContain("converts MS Project XML");
+      expect(readmeText).toContain("mikuproject-export-*.xml");
+      expect(readmeText).toContain("mikuproject-wbs-daily-*.svg");
+      expect(readmeText).toContain("monthly-calendar/YYYY-MM.svg");
+      expect(readmeText).toContain("*.editjson");
+      const projectOverviewJson = new TextDecoder().decode(entries["mikuproject-project-overview-view.editjson"]);
+      const fullBundleJson = new TextDecoder().decode(entries["mikuproject-full-bundle.editjson"]);
+      const phaseDetailJson = new TextDecoder().decode(entries["mikuproject-phase-detail-view-full.editjson"]);
+      expect(projectOverviewJson).toContain("\"view_type\": \"project_overview_view\"");
+      expect(fullBundleJson).toContain("\"view_type\": \"ai_projection_bundle\"");
+      expect(phaseDetailJson).toContain("\"view_type\": \"phase_detail_view\"");
+      expect(document.getElementById("statusMessage").textContent).toContain("All 出力を保存しました");
+    } finally {
+      globalThis.Blob = OriginalBlob;
+    }
+  });
+
+  it("downloads weekly svg", () => {
+    bootPage();
+
+    parseXmlViaHook();
+    URL.createObjectURL.mockClear();
+    HTMLAnchorElement.prototype.click.mockClear();
+    document.getElementById("downloadWeeklySvgBtn").click();
 
     expect(URL.createObjectURL).toHaveBeenCalled();
     expect(HTMLAnchorElement.prototype.click).toHaveBeenCalled();
     const clickedAnchor = HTMLAnchorElement.prototype.click.mock.instances.at(-1);
-    expect(clickedAnchor.download).toBe("mikuproject-native.svg");
-    expect(document.getElementById("xmlInput").value).not.toContain("<!-- edited -->");
-    expect(document.getElementById("xmlSaveState").textContent).toContain("XML 保存状態: 保存済み (2026-03-16 23:12)");
-    expect(document.getElementById("mermaidOutput").value).toContain("gantt");
-    expect(document.getElementById("statusMessage").textContent).toContain("SVG を保存しました");
+    expect(clickedAnchor.download).toBe("mikuproject-wbs-weekly-202603162312.svg");
+    const svgBlob = URL.createObjectURL.mock.calls.at(-1)?.[0];
+    expect(svgBlob).toBeTruthy();
+    expect(svgBlob.type).toBe("image/svg+xml;charset=utf-8");
+    expect(document.getElementById("statusMessage").textContent).toContain("Weekly SVG を保存しました");
   });
 
   it("downloads mermaid markdown", () => {
@@ -1438,7 +1650,7 @@ describe("mikuproject main", () => {
     expect(URL.createObjectURL).toHaveBeenCalled();
     expect(HTMLAnchorElement.prototype.click).toHaveBeenCalled();
     const clickedAnchor = HTMLAnchorElement.prototype.click.mock.instances.at(-1);
-    expect(clickedAnchor.download).toBe("mermaid-20260316.md");
+    expect(clickedAnchor.download).toBe("mikuproject-wbs-mermaid-202603162312.md");
     const markdownBlob = URL.createObjectURL.mock.calls.at(-1)?.[0];
     expect(markdownBlob).toBeTruthy();
     expect(markdownBlob.type).toBe("text/markdown;charset=utf-8");

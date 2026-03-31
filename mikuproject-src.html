@@ -18,6 +18,14 @@
     <symbol id="md-icon-clipboard" viewBox="0 0 16 16">
       <path d="M6 2.5A1.5 1.5 0 0 1 7.5 1h1A1.5 1.5 0 0 1 10 2.5h1.25A1.75 1.75 0 0 1 13 4.25v8A1.75 1.75 0 0 1 11.25 14h-6.5A1.75 1.75 0 0 1 3 12.25v-8A1.75 1.75 0 0 1 4.75 2.5H6Zm1.5 0h1v-.25h-1v.25Zm-2.75 1.5a.25.25 0 0 0-.25.25v8c0 .138.112.25.25.25h6.5a.25.25 0 0 0 .25-.25v-8a.25.25 0 0 0-.25-.25H10v.25A1.25 1.25 0 0 1 8.75 5.5h-1.5A1.25 1.25 0 0 1 6 4.25V4H4.75Z"></path>
     </symbol>
+    <symbol id="md-icon-download" viewBox="0 0 16 16">
+      <path d="M8.75 2.5a.75.75 0 0 0-1.5 0v5.19L5.78 6.22a.75.75 0 1 0-1.06 1.06l2.75 2.75a.75.75 0 0 0 1.06 0l2.75-2.75a.75.75 0 0 0-1.06-1.06L8.75 7.69V2.5Z"></path>
+      <path d="M3 10.75A.75.75 0 0 1 3.75 10h8.5a.75.75 0 0 1 0 1.5h-8.5A.75.75 0 0 1 3 10.75Zm.25 2.25A1.25 1.25 0 0 0 2 14.25v.5A1.25 1.25 0 0 0 3.25 16h9.5A1.25 1.25 0 0 0 14 14.75v-.5A1.25 1.25 0 0 0 12.75 13h-9.5Z"></path>
+    </symbol>
+    <symbol id="md-icon-upload" viewBox="0 0 16 16">
+      <path d="M8.53 2.22a.75.75 0 0 0-1.06 0L4.72 4.97a.75.75 0 1 0 1.06 1.06l1.47-1.47v5.19a.75.75 0 0 0 1.5 0V4.56l1.47 1.47a.75.75 0 1 0 1.06-1.06L8.53 2.22Z"></path>
+      <path d="M3.75 10a.75.75 0 0 0 0 1.5h8.5a.75.75 0 0 0 0-1.5h-8.5Zm-1.5 3.25A1.25 1.25 0 0 1 3.5 12h9a1.25 1.25 0 0 1 1.25 1.25v.5A1.25 1.25 0 0 1 12.5 15h-9a1.25 1.25 0 0 1-1.25-1.25v-.5Z"></path>
+    </symbol>
   </svg>
   <div class="md-surface-card md-card">
     <header class="ms-hero">
@@ -25,7 +33,7 @@
         <span class="ms-hero-icon" aria-hidden="true">📋</span>
         <span>mikuproject</span>
         <lht-help-tooltip label="mikuproject の説明" wide>
-          MS Project XML を読み込み、内部モデル・XLSX・生成AI向け JSON を行き来しながら、プロジェクト計画を確認・編集するためのアプリです。
+          `MS Project XML` を基軸に、変換・可視化・限定編集を行うローカル HTML ツールです。`XLSX`、`WBS Report`、`Daily / Weekly / Monthly Calendar` preview、生成AI向け `.editjson` を扱えます。
         </lht-help-tooltip>
         <a
           href="https://github.com/igapyon/mikuproject"
@@ -73,7 +81,12 @@
 
         <div class="md-panel-actions">
           <span class="md-button-with-help">
-            <button id="importFileBtn" type="button" class="md-button md-button--primary">Load from file</button>
+            <button id="importFileBtn" type="button" class="md-button md-button--primary">
+              <svg aria-hidden="true" viewBox="0 0 16 16" class="md-button__icon" fill="currentColor">
+                <use href="#md-icon-upload" xlink:href="#md-icon-upload"></use>
+              </svg>
+              <span>Load from file</span>
+            </button>
             <span class="md-button-help-anchor">
               <lht-help-tooltip label="Load from file の説明" placement="right" wide>
                 <p class="md-note-card__text">
@@ -131,14 +144,9 @@
           </div>
         </details>
 
-        <details class="md-debug-accordion">
-          <summary class="md-debug-accordion__summary">デバッグ情報</summary>
-          <div class="md-debug-accordion__body">
-            <div class="md-form-grid">
-              <lht-text-field-help field-id="xmlInput" label="MS Project XML" rows="16" placeholder="ここに XML を入力" help-text="MS Project XML を読み込みます。"></lht-text-field-help>
-            </div>
-          </div>
-        </details>
+        <div hidden aria-hidden="true">
+          <textarea id="xmlInput"></textarea>
+        </div>
 
         <div id="xmlSaveState" class="md-save-state md-save-state--dirty" aria-live="polite">XML 保存状態: 未保存</div>
       </section>
@@ -149,12 +157,24 @@
             <span class="md-flow-section__step">2</span>
             <span>Overview</span>
             <lht-help-tooltip label="Overview の説明" wide>
-              内部モデル、検証結果、SVG preview を確認します。取込後の warning と差分要約もここに表示します。
+              このページでは主にガントを確認します。`Daily / Weekly / Monthly Calendar` を切り替えて見比べられます。あわせて、検証結果や取込後の warning / 差分要約も確認できます。
             </lht-help-tooltip>
           </h2>
         </div>
 
         <section class="md-note-card md-note-card--feature">
+          <div class="md-panel-actions">
+            <button id="previewDailySvgBtn" type="button" class="md-button md-button--tonal">Daily</button>
+            <button id="previewWeeklySvgBtn" type="button" class="md-button md-button--tonal">Weekly</button>
+            <span class="md-button-with-help">
+              <button id="previewMonthlySvgBtn" type="button" class="md-button md-button--tonal">Monthly Calendar</button>
+              <span class="md-button-help-anchor">
+                <lht-help-tooltip label="Monthly Calendar preview の説明" placement="right" wide>
+                  `Monthly Calendar` は月別カレンダーを縦に並べて俯瞰する preview です。`Daily` は日単位、`Weekly` は週単位、`Monthly Calendar` は月単位で見比べられます。
+                </lht-help-tooltip>
+              </span>
+            </span>
+          </div>
           <div id="nativeSvgPreview" class="md-svg-preview-stage">
             <div class="md-preview-empty">SVG を生成すると、ここにプレビューを表示します。</div>
           </div>
@@ -194,10 +214,6 @@
               <lht-text-field-help field-id="modelOutput" label="内部モデル(JSON)" rows="16" readonly></lht-text-field-help>
             </div>
 
-            <div class="md-form-grid">
-              <lht-text-field-help field-id="mermaidOutput" label="Mermaid gantt" rows="12" readonly></lht-text-field-help>
-            </div>
-
             <div class="md-preview-grid">
               <section class="md-preview-card">
                 <h3 class="md-preview-card__title">Project</h3>
@@ -223,6 +239,10 @@
           </div>
         </details>
 
+        <div hidden aria-hidden="true">
+          <textarea id="mermaidOutput"></textarea>
+        </div>
+
         <div class="md-feedback-stack md-hidden" aria-label="import feedback">
           <div class="md-feedback-stack__title">取込結果</div>
           <div class="md-feedback-stack__text">取込後は、ここで差分反映・warning・検証結果を確認します。</div>
@@ -241,25 +261,99 @@
             <span class="md-flow-section__step">3</span>
             <span>Output</span>
             <lht-help-tooltip label="Output の説明" wide>
-              `MS Project XML`、`XLSX`、`JSON`、`CSV`、`WBS XLSX`、`Mermaid`、生成AI 向け `.editjson` を保存します。
+              このページでは、内部モデルから各種成果物を保存します。`MS Project XML`、workbook、`CSV`、`WBS Report`、生成AI 向け `.editjson` をここから出力できます。
             </lht-help-tooltip>
           </h2>
         </div>
 
         <div class="md-output-actions">
           <div class="md-panel-actions">
-            <button id="downloadXmlBtn" type="button" class="md-button md-button--primary">MS Project XML</button>
-            <button id="exportXlsxBtn" type="button" class="md-button md-button--tonal">XLSX</button>
-            <button id="exportWorkbookJsonBtn" type="button" class="md-button md-button--tonal">JSON</button>
-            <button id="exportCsvBtn" type="button" class="md-button md-button--tonal">CSV</button>
-          </div>
-          <div class="md-panel-actions">
-            <button id="exportWbsXlsxBtn" type="button" class="md-button md-button--tonal">WBS XLSX</button>
-            <button id="exportWbsMdBtn" type="button" class="md-button md-button--tonal">WBS Markdown</button>
-            <button id="exportMermaidMdBtn" type="button" class="md-button md-button--tonal">Mermaid</button>
-            <button id="downloadSvgBtn" type="button" class="md-button md-button--surface" disabled>SVG</button>
+            <span class="md-button-with-help">
+              <button id="downloadAllOutputsBtn" type="button" class="md-button md-button--tonal">
+                <svg aria-hidden="true" viewBox="0 0 16 16" class="md-button__icon" fill="currentColor">
+                  <use href="#md-icon-download" xlink:href="#md-icon-download"></use>
+                </svg>
+                <span>ALL</span>
+              </button>
+              <span class="md-button-help-anchor">
+                <lht-help-tooltip label="ALL の説明" placement="right" wide>
+                  `ALL` は主要成果物をまとめた `ZIP` を保存します。`Monthly Calendar SVG` は入れ子の `ZIP` にせず、`monthly-calendar/` 配下へ月別 `SVG` を展開して含めます。
+                </lht-help-tooltip>
+              </span>
+            </span>
+            <button id="downloadXmlBtn" type="button" class="md-button md-button--primary">
+              <svg aria-hidden="true" viewBox="0 0 16 16" class="md-button__icon" fill="currentColor">
+                <use href="#md-icon-download" xlink:href="#md-icon-download"></use>
+              </svg>
+              <span>MS Project XML</span>
+            </button>
+            <button id="exportXlsxBtn" type="button" class="md-button md-button--tonal">
+              <svg aria-hidden="true" viewBox="0 0 16 16" class="md-button__icon" fill="currentColor">
+                <use href="#md-icon-download" xlink:href="#md-icon-download"></use>
+              </svg>
+              <span>XLSX</span>
+            </button>
+            <button id="exportWorkbookJsonBtn" type="button" class="md-button md-button--tonal">
+              <svg aria-hidden="true" viewBox="0 0 16 16" class="md-button__icon" fill="currentColor">
+                <use href="#md-icon-download" xlink:href="#md-icon-download"></use>
+              </svg>
+              <span>JSON</span>
+            </button>
+            <button id="exportCsvBtn" type="button" class="md-button md-button--tonal">
+              <svg aria-hidden="true" viewBox="0 0 16 16" class="md-button__icon" fill="currentColor">
+                <use href="#md-icon-download" xlink:href="#md-icon-download"></use>
+              </svg>
+              <span>CSV</span>
+            </button>
           </div>
         </div>
+
+        <section class="md-note-card md-note-card--feature" aria-label="WBS report exports">
+          <h3 class="md-note-card__title">
+            <span>WBS Report</span>
+            <lht-help-tooltip label="WBS Report の説明" placement="right" wide>
+              `WBS Report` は、内部モデルを人が読みやすい帳票や図として出力するためのまとまりです。`XLSX`、`Markdown`、`Daily SVG`、`Weekly SVG`、`Monthly Calendar SVG`、`Mermaid` をここから保存できます。
+            </lht-help-tooltip>
+          </h3>
+          <div class="md-panel-actions">
+            <button id="exportWbsXlsxBtn" type="button" class="md-button md-button--tonal">
+              <svg aria-hidden="true" viewBox="0 0 16 16" class="md-button__icon" fill="currentColor">
+                <use href="#md-icon-download" xlink:href="#md-icon-download"></use>
+              </svg>
+              <span>XLSX</span>
+            </button>
+            <button id="exportWbsMdBtn" type="button" class="md-button md-button--tonal">
+              <svg aria-hidden="true" viewBox="0 0 16 16" class="md-button__icon" fill="currentColor">
+                <use href="#md-icon-download" xlink:href="#md-icon-download"></use>
+              </svg>
+              <span>Markdown</span>
+            </button>
+            <button id="downloadSvgBtn" type="button" class="md-button md-button--tonal" disabled>
+              <svg aria-hidden="true" viewBox="0 0 16 16" class="md-button__icon" fill="currentColor">
+                <use href="#md-icon-download" xlink:href="#md-icon-download"></use>
+              </svg>
+              <span>Daily SVG</span>
+            </button>
+            <button id="downloadWeeklySvgBtn" type="button" class="md-button md-button--tonal" disabled>
+              <svg aria-hidden="true" viewBox="0 0 16 16" class="md-button__icon" fill="currentColor">
+                <use href="#md-icon-download" xlink:href="#md-icon-download"></use>
+              </svg>
+              <span>Weekly SVG</span>
+            </button>
+            <button id="downloadMonthlyCalendarSvgBtn" type="button" class="md-button md-button--tonal" disabled>
+              <svg aria-hidden="true" viewBox="0 0 16 16" class="md-button__icon" fill="currentColor">
+                <use href="#md-icon-download" xlink:href="#md-icon-download"></use>
+              </svg>
+              <span>Monthly Calendar SVG</span>
+            </button>
+            <button id="exportMermaidMdBtn" type="button" class="md-button md-button--tonal">
+              <svg aria-hidden="true" viewBox="0 0 16 16" class="md-button__icon" fill="currentColor">
+                <use href="#md-icon-download" xlink:href="#md-icon-download"></use>
+              </svg>
+              <span>Mermaid</span>
+            </button>
+          </div>
+        </section>
 
         <details class="md-note-accordion" aria-label="AI integration exports">
           <summary class="md-note-accordion__summary">生成AI連携</summary>
@@ -296,13 +390,14 @@
             <summary class="ms-settings-summary">設定</summary>
             <div class="ms-settings-body">
               <section class="ms-settings-block" aria-label="WBS xlsx export options">
-                <h3 class="ms-settings-subtitle">WBS XLSX の祝日指定</h3>
-              <p class="md-note-card__text">
-                `WBS XLSX Export` では、`ProjectModel` から補完した既定祝日を WBS 日付帯へ反映します。
-              </p>
-              <p class="md-note-card__text">
-                既定祝日は、現在の `ProjectModel` に含まれる `Calendar.Exceptions` の非稼働日例外から補完します。画面では `Calendars / Exceptions` を直接編集せず、必要な変更は `MS Project XML` または `XLSX Import` 側で扱います。表示期間を空欄にすると全期間、数値を入れると `BaseDate` 前後の営業日で切り出します。進捗帯も営業日基準で計算します。
-              </p>
+                <h3 class="ms-settings-subtitle">
+                  <span>WBS XLSX 表示設定</span>
+                  <lht-help-tooltip label="WBS XLSX 表示設定の説明" placement="right" wide>
+                    `WBS XLSX Export` では、`ProjectModel` から補完した既定祝日を WBS 日付帯へ反映します。
+
+                    既定祝日は、現在の `ProjectModel` に含まれる `Calendar.Exceptions` の非稼働日例外から内部で直接補完します。画面では `Calendars / Exceptions` を直接編集せず、必要な変更は `MS Project XML` または `XLSX Import` 側で扱います。表示期間を空欄にすると全期間、数値を入れると `BaseDate` 前後の営業日で切り出します。進捗帯も営業日基準で計算します。
+                  </lht-help-tooltip>
+                </h3>
               <div class="md-form-grid md-form-grid--two">
                 <lht-text-field-help
                   field-id="wbsDisplayDaysBeforeInput"
@@ -317,41 +412,20 @@
                   placeholder="7"
                   help-text="空欄なら全期間表示のままです。"></lht-text-field-help>
               </div>
-              <div class="md-form-grid">
-                <div id="wbsHolidaySummary" class="md-status">既定祝日: 未読込</div>
-                <label class="md-label" for="wbsHolidayDatesInput">WBS 既定祝日</label>
-                <textarea
-                  id="wbsHolidayDatesInput"
-                  class="md-textarea"
-                  rows="3"
-                  placeholder="2026-03-20"
-                  readonly
-                ></textarea>
-                <div class="md-caption">現在の ProjectModel から自動補完します。画面上では直接編集しません。</div>
-              </div>
               </section>
             </div>
           </details>
         </section>
 
-        <details class="md-debug-accordion">
-          <summary class="md-debug-accordion__summary">デバッグ情報</summary>
-          <div class="md-debug-accordion__body">
-            <div class="md-form-grid">
-              <lht-text-field-help field-id="workbookJsonOutput" label="mikuproject_workbook_json" rows="16" readonly></lht-text-field-help>
-            </div>
-
-            <div class="md-form-grid">
-              <lht-text-field-help field-id="aiBundleOutput" label="ai_projection_bundle" rows="16" readonly></lht-text-field-help>
-            </div>
-            <div class="md-form-grid">
-              <lht-text-field-help field-id="projectOverviewOutput" label="project_overview_view" rows="14" readonly></lht-text-field-help>
-            </div>
-            <div class="md-form-grid">
-              <lht-text-field-help field-id="phaseDetailOutput" label="phase_detail_view" rows="16" readonly></lht-text-field-help>
-            </div>
-          </div>
-        </details>
+        <div hidden aria-hidden="true">
+          <textarea id="workbookJsonOutput"></textarea>
+          <textarea id="aiBundleOutput"></textarea>
+          <textarea id="projectOverviewOutput"></textarea>
+          <input id="phaseDetailUidInput" type="text" />
+          <input id="phaseDetailRootUidInput" type="text" />
+          <input id="phaseDetailMaxDepthInput" type="text" />
+          <textarea id="phaseDetailOutput"></textarea>
+        </div>
       </section>
     </section>
 
@@ -367,7 +441,7 @@
   <script src="src/js/project-workbook-json.js"></script>
   <script src="src/js/wbs-xlsx.js"></script>
   <script src="src/js/wbs-markdown.js"></script>
-  <script src="src/js/native-svg.js"></script>
+  <script src="src/js/wbs-svg.js"></script>
   <script src="src/js/main.js"></script>
 </body>
 </html>

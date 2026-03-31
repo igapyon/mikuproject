@@ -82,7 +82,7 @@ slide: false
 - workbook `JSON Export / Import`
 - `WBS XLSX Export`
 - `WBS Markdown Export`
-- native `SVG` の preview / 保存
+- `Daily / Weekly / Monthly Calendar` preview と `WBS SVG` の保存
 - `Mermaid` テキスト出力
 - `CSV + ParentID` の読込 / 保存
 - 生成AI向け `project_overview_view` / `phase_detail_view` / `full bundle` の出力

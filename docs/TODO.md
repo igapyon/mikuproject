@@ -7,8 +7,8 @@
 - 最優先: サンプルデータを更新し、利用者の好みに合う題材・構造・見た目へ見直す
 - `excel-io` の workbook スタイルにフォントサイズ指定を追加し、XLSX 出力で大きい見出し文字を使えるようにする
 - WBS workbook と `mikuproject-sample.xlsx` のタイトル行で、フォントサイズ指定をどこまで使うか整理する
-- `Mermaid` 出力は Markdown / 設計資料向けに残しつつ、見た目を制御しやすい native SVG 描画を別系統で追加するか検討する
-- native `SVG` について、今の既定である `近接ラベル` 表示だけを残し、左側にテキストを描画する `一覧ラベル` モードは将来的に廃止したい
+- `Mermaid` 出力は Markdown / 設計資料向けに残しつつ、見た目を制御しやすい `WBS SVG` 描画を別系統で追加するか検討する
+- `WBS SVG` について、今の既定である `近接ラベル` 表示だけを残し、左側にテキストを描画する `一覧ラベル` モードは将来的に廃止したい
 - `mikuproject` の主要入出力を CLI からも扱えるようにするか検討する
 - 作成するテキストファイルについて、BOM 付き / なしを切り替えるスイッチを追加する
 - `local-data/` 配下のファイルを、参照用・検証用・生成物で整理する
@@ -35,8 +35,6 @@
 - UI の微調整として、`Input / Overview / Output` の各カードの余白・見出し・ボタン階層を見直し、`miku` 系テーマの統一感をさらに整える
 - `Overview` タブの summary / validation / preview の情報密度を見直し、どこを見る画面なのかをより直感的に伝わる構成へ調整する
 - `Output` タブの生成AI連携と各種 export ボタンの優先度表現を見直し、主操作と補助操作の区別をより明確にする
-- calendar 未設定時に自動補完する既定 calendar の祝日 `Exceptions` を、project 期間内だけに限定する
-- WBS 上で土日と祝日を別色表示する場合も、`MS Project XML` 正本へ独自の非稼働日種別を追加せず、`WeekDays / Exceptions` の由来で描き分ける
 - `build:xlsx-sample` の所要時間を個別計測し、sample workbook 生成処理の支配要因を確認する
 - `main.test.js` の初期化 DOM をケース別に最小化できるか見直す
 - CI 向けに `test:fast` と `test:full` のような実行導線を分けるか検討する
@@ -64,7 +62,6 @@
 - WBS Markdown の `プロジェクト情報` / `サマリ` / `WBS ツリー` / `WBS テーブル` をどう出すか sample ベースで固める
 - `project summary markdown` のような、WBS 以外の Markdown 出力拡張を検討する
 - `phase summary markdown` のような scoped Markdown 出力を追加するか検討する
-- 高優先: `WBS記述書 Markdown` の最小版に着手したいが、現時点では実施できないため保留にする
 - `WBS記述書 Markdown` 出力を追加し、task ごとの説明を別 Markdown として保存できるようにする
 - `WBS記述書` 用 `Task.ExtendedAttribute` の最小項目として `TaskPurpose / TaskDeliverable / TaskOutOfScope / TaskDoneDefinition / TaskOwner` を扱う
 - `WBS記述書 Markdown` では、長文補足を `Task.Notes` から出す

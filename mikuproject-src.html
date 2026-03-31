@@ -33,7 +33,7 @@
         <span class="ms-hero-icon" aria-hidden="true">📋</span>
         <span>mikuproject</span>
         <lht-help-tooltip label="mikuproject の説明" wide>
-          MS Project XML を読み込み、内部モデル・XLSX・生成AI向け JSON を行き来しながら、プロジェクト計画を確認・編集するためのアプリです。
+          `MS Project XML` を基軸に、変換・可視化・限定編集を行うローカル HTML ツールです。`XLSX`、`WBS Report`、`Daily / Weekly / Monthly Calendar` preview、生成AI向け `.editjson` を扱えます。
         </lht-help-tooltip>
         <a
           href="https://github.com/igapyon/mikuproject"
@@ -162,7 +162,7 @@
             <span class="md-flow-section__step">2</span>
             <span>Overview</span>
             <lht-help-tooltip label="Overview の説明" wide>
-              内部モデル、検証結果、SVG preview を確認します。取込後の warning と差分要約もここに表示します。
+              このページでは主にガントを確認します。`Daily / Weekly / Monthly Calendar` を切り替えて見比べられます。あわせて、検証結果や取込後の warning / 差分要約も確認できます。
             </lht-help-tooltip>
           </h2>
         </div>
@@ -171,9 +171,15 @@
           <div class="md-panel-actions">
             <button id="previewDailySvgBtn" type="button" class="md-button md-button--tonal">Daily</button>
             <button id="previewWeeklySvgBtn" type="button" class="md-button md-button--tonal">Weekly</button>
-            <button id="previewMonthlySvgBtn" type="button" class="md-button md-button--tonal">Monthly Calendar</button>
+            <span class="md-button-with-help">
+              <button id="previewMonthlySvgBtn" type="button" class="md-button md-button--tonal">Monthly Calendar</button>
+              <span class="md-button-help-anchor">
+                <lht-help-tooltip label="Monthly Calendar preview の説明" placement="right" wide>
+                  `Daily` は日単位、`Weekly` は週単位、`Monthly Calendar` は月別カレンダーの俯瞰です。
+                </lht-help-tooltip>
+              </span>
+            </span>
           </div>
-          <p class="md-note-card__text">`Daily` は日単位、`Weekly` は週単位、`Monthly Calendar` は月別カレンダーの俯瞰です。</p>
           <div id="nativeSvgPreview" class="md-svg-preview-stage">
             <div class="md-preview-empty">SVG を生成すると、ここにプレビューを表示します。</div>
           </div>
@@ -308,8 +314,12 @@
         </div>
 
         <section class="md-note-card md-note-card--feature" aria-label="WBS report exports">
-          <h3 class="md-note-card__title">WBS Report</h3>
-          <p class="md-note-card__text">`Daily` は日単位、`Weekly` は週単位、`Monthly Calendar` は月別カレンダーをまとめた出力です。</p>
+          <h3 class="md-note-card__title">
+            <span>WBS Report</span>
+            <lht-help-tooltip label="WBS Report の説明" placement="right" wide>
+              `WBS Report` は、内部モデルを人が読みやすい帳票や図として出力するためのまとまりです。`XLSX`、`Markdown`、`Daily SVG`、`Weekly SVG`、`Monthly Calendar SVG`、`Mermaid` をここから保存できます。
+            </lht-help-tooltip>
+          </h3>
           <div class="md-panel-actions">
             <button id="exportWbsXlsxBtn" type="button" class="md-button md-button--tonal">
               <svg aria-hidden="true" viewBox="0 0 16 16" class="md-button__icon" fill="currentColor">

@@ -168,6 +168,11 @@
         </div>
 
         <section class="md-note-card md-note-card--feature">
+          <div class="md-panel-actions">
+            <button id="previewDailySvgBtn" type="button" class="md-button md-button--tonal">Daily</button>
+            <button id="previewWeeklySvgBtn" type="button" class="md-button md-button--tonal">Weekly</button>
+            <button id="previewMonthlySvgBtn" type="button" class="md-button md-button--tonal">Monthly Calendar</button>
+          </div>
           <div id="nativeSvgPreview" class="md-svg-preview-stage">
             <div class="md-preview-empty">SVG を生成すると、ここにプレビューを表示します。</div>
           </div>
@@ -261,6 +266,12 @@
 
         <div class="md-output-actions">
           <div class="md-panel-actions">
+            <button id="downloadAllOutputsBtn" type="button" class="md-button md-button--tonal">
+              <svg aria-hidden="true" viewBox="0 0 16 16" class="md-button__icon" fill="currentColor">
+                <use href="#md-icon-download" xlink:href="#md-icon-download"></use>
+              </svg>
+              <span>ALL</span>
+            </button>
             <button id="downloadXmlBtn" type="button" class="md-button md-button--primary">
               <svg aria-hidden="true" viewBox="0 0 16 16" class="md-button__icon" fill="currentColor">
                 <use href="#md-icon-download" xlink:href="#md-icon-download"></use>
@@ -307,13 +318,19 @@
               <svg aria-hidden="true" viewBox="0 0 16 16" class="md-button__icon" fill="currentColor">
                 <use href="#md-icon-download" xlink:href="#md-icon-download"></use>
               </svg>
-              <span>SVG</span>
+              <span>Daily SVG</span>
+            </button>
+            <button id="downloadWeeklySvgBtn" type="button" class="md-button md-button--tonal" disabled>
+              <svg aria-hidden="true" viewBox="0 0 16 16" class="md-button__icon" fill="currentColor">
+                <use href="#md-icon-download" xlink:href="#md-icon-download"></use>
+              </svg>
+              <span>Weekly SVG</span>
             </button>
             <button id="downloadMonthlyWbsSvgZipBtn" type="button" class="md-button md-button--tonal" disabled>
               <svg aria-hidden="true" viewBox="0 0 16 16" class="md-button__icon" fill="currentColor">
                 <use href="#md-icon-download" xlink:href="#md-icon-download"></use>
               </svg>
-              <span>Monthly SVG</span>
+              <span>Monthly Calendar SVG</span>
             </button>
             <button id="exportMermaidMdBtn" type="button" class="md-button md-button--tonal">
               <svg aria-hidden="true" viewBox="0 0 16 16" class="md-button__icon" fill="currentColor">

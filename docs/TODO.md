@@ -35,6 +35,7 @@
 - UI の微調整として、`Input / Overview / Output` の各カードの余白・見出し・ボタン階層を見直し、`miku` 系テーマの統一感をさらに整える
 - `Overview` タブの summary / validation / preview の情報密度を見直し、どこを見る画面なのかをより直感的に伝わる構成へ調整する
 - `Output` タブの生成AI連携と各種 export ボタンの優先度表現を見直し、主操作と補助操作の区別をより明確にする
+- `Output` の主要出力をまとめて取得できる、一括 ZIP ダウンロードボタンを追加する
 - calendar 未設定時に自動補完する既定 calendar の祝日 `Exceptions` を、project 期間内だけに限定する
 - WBS 上で土日と祝日を別色表示する場合も、`MS Project XML` 正本へ独自の非稼働日種別を追加せず、`WeekDays / Exceptions` の由来で描き分ける
 - `build:xlsx-sample` の所要時間を個別計測し、sample workbook 生成処理の支配要因を確認する

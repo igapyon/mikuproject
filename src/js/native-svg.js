@@ -27,6 +27,12 @@
     const MONTHLY_MAX_LABEL_CHARS = 15;
     const ZIP_FIXED_MOD_TIME = 0;
     const ZIP_FIXED_MOD_DATE = ((2025 - 1980) << 9) | (1 << 5) | 1;
+    const WEEK_WIDTH = 38;
+    const WEEKLY_HEADER_HEIGHT = 96;
+    const WEEKLY_TOP_PADDING = 22;
+    const WEEKLY_BOTTOM_PADDING = 28;
+    const WEEKLY_LEFT_PADDING = 0;
+    const WEEKLY_RIGHT_PADDING = 0;
     function exportNativeSvg(model, options = {}) {
         const labelMode = options.labelMode || "near";
         const holidaySet = new Set([
@@ -62,6 +68,7 @@
             ".axis { font-size: 12px; fill: #5b6370; }",
             ".label { font-size: 13px; }",
             ".phaseLabel { font-size: 13px; font-weight: 700; }",
+            ".onBarLabelBg { fill: rgba(255,255,255,0.9); }",
             ".grid { stroke: #c9d3e1; stroke-width: 1; }",
             ".today { stroke: #ff6b5a; stroke-width: 2; }",
             "</style>",
@@ -86,6 +93,7 @@
         }
         for (const row of rows) {
             const rowY = chartOriginY + row.y;
+            const useOnBarLabel = shouldUseDailyOnBarLabel(row, dateBand.length, labelMode);
             if (row.startIndex !== null && row.endIndex !== null) {
                 const barX = chartOriginX + (row.startIndex * DAY_WIDTH) + 6;
                 const barWidth = Math.max(12, ((row.endIndex - row.startIndex + 1) * DAY_WIDTH) - 12);
@@ -120,9 +128,127 @@
                         parts.push(`<rect x="${barX}" y="${barY}" width="${progressWidth}" height="22" rx="4" fill="${progressFill}" stroke="none"/>`);
                     }
                 }
+                if (useOnBarLabel) {
+                    const labelText = escapeXml(formatTaskLabel(row.task, labelMode));
+                    const labelWidth = estimateLabelWidth(row.label, row.kind === "phase");
+                    const labelCenterX = barX + (barWidth / 2);
+                    const labelX = labelCenterX - (labelWidth / 2) - 8;
+                    const labelY = row.kind === "phase" ? rowY + 15 : rowY + 10;
+                    const labelHeight = row.kind === "phase" ? 18 : 20;
+                    parts.push(`<rect class="onBarLabelBg" x="${labelX}" y="${labelY}" width="${labelWidth + 16}" height="${labelHeight}" rx="4"/>`);
+                    parts.push(`<text class="${row.kind === "phase" ? "phaseLabel" : "label"}" x="${labelCenterX}" y="${rowY + 24}" text-anchor="middle">${labelText}</text>`);
+                    continue;
+                }
             }
             const labelPlacement = labelPlacements[rows.indexOf(row)];
             parts.push(`<text class="${row.kind === "phase" ? "phaseLabel" : "label"}" x="${labelPlacement.x + shiftX}" y="${rowY + 24}" text-anchor="${labelPlacement.anchor}">${escapeXml(formatTaskLabel(row.task, labelMode))}</text>`);
+        }
+        parts.push("</svg>");
+        return parts.join("");
+    }
+    function exportWeeklyNativeSvg(model, options = {}) {
+        const holidaySet = new Set([
+            ...collectWbsHolidayDates(model),
+            ...(options.holidayDates || []).map((day) => String(day || "").slice(0, 10)).filter(Boolean)
+        ]);
+        const nonWorkingDayTypes = collectProjectNonWorkingDayTypes(model);
+        const dateBand = buildDisplayDateBand(model.project.startDate, model.project.finishDate, model.project.currentDate, options.displayDaysBeforeBaseDate, options.displayDaysAfterBaseDate, holidaySet, nonWorkingDayTypes, options.useBusinessDaysForDisplayRange);
+        if (dateBand.length === 0) {
+            return exportNativeSvg(model, { ...options, labelMode: "list" });
+        }
+        const weeklyBand = buildWeeklyBand(dateBand[0], dateBand[dateBand.length - 1]);
+        const rows = buildWeeklyTaskRows(model.tasks, weeklyBand);
+        const chartWidth = weeklyBand.length * WEEK_WIDTH;
+        const chartOriginXBase = WEEKLY_LEFT_PADDING;
+        const labelPlacements = rows.map((row) => resolveWeeklyLabelPlacement(row, chartOriginXBase, chartWidth));
+        const labelMaxX = labelPlacements.reduce((max, placement) => {
+            const placementMaxX = placement.anchor === "start" ? placement.x + placement.width : placement.x;
+            return Math.max(max, placementMaxX);
+        }, chartOriginXBase + chartWidth);
+        const chartOriginX = chartOriginXBase;
+        const svgWidth = labelMaxX + WEEKLY_RIGHT_PADDING;
+        const svgHeight = WEEKLY_TOP_PADDING + WEEKLY_HEADER_HEIGHT + (rows.length * ROW_HEIGHT) + WEEKLY_BOTTOM_PADDING;
+        const todayWeekIndex = indexOfWeekForDate(weeklyBand, model.project.currentDate);
+        const parts = [
+            `<svg xmlns="http://www.w3.org/2000/svg" width="${svgWidth}" height="${svgHeight}" viewBox="0 0 ${svgWidth} ${svgHeight}" role="img" aria-label="${escapeXml(model.project.name || "Project")} weekly overview">`,
+            "<style>",
+            "text { font-family: 'Hiragino Sans', 'Yu Gothic', sans-serif; fill: #1d2740; }",
+            ".title { font-size: 18px; font-weight: 700; }",
+            ".meta { font-size: 12px; fill: #5b6370; }",
+            ".monthAxis { font-size: 13px; font-weight: 700; fill: #475467; }",
+            ".weekAxis { font-size: 10px; fill: #667085; }",
+            ".label { font-size: 13px; }",
+            ".phaseLabel { font-size: 13px; font-weight: 700; }",
+            ".grid { stroke: #c9d3e1; stroke-width: 1; }",
+            ".today { stroke: #ff6b5a; stroke-width: 2; }",
+            ".monthBoundary { stroke: #98a2b3; stroke-width: 1.5; }",
+            "</style>",
+            `<rect x="0" y="0" width="${svgWidth}" height="${svgHeight}" fill="#ffffff"/>`,
+            `<text class="title" x="${chartOriginX + (chartWidth / 2)}" y="${WEEKLY_TOP_PADDING + 18}" text-anchor="middle">${escapeXml(model.project.name || "-")} weekly overview</text>`,
+            `<text class="meta" x="${chartOriginX + (chartWidth / 2)}" y="${WEEKLY_TOP_PADDING + 40}" text-anchor="middle">${escapeXml(`project range ${String(model.project.startDate || "").slice(0, 10)} - ${String(model.project.finishDate || "").slice(0, 10)}`)}</text>`
+        ];
+        const chartOriginY = WEEKLY_TOP_PADDING + WEEKLY_HEADER_HEIGHT;
+        const monthSpans = buildWeeklyMonthSpans(weeklyBand);
+        for (const span of monthSpans) {
+            const x = chartOriginX + (span.startIndex * WEEK_WIDTH);
+            const width = (span.endIndex - span.startIndex + 1) * WEEK_WIDTH;
+            parts.push(`<text class="monthAxis" x="${x + (width / 2)}" y="${WEEKLY_TOP_PADDING + 66}" text-anchor="middle">${escapeXml(span.monthKey)}</text>`);
+            parts.push(`<line class="monthBoundary" x1="${x}" y1="${WEEKLY_TOP_PADDING + 72}" x2="${x}" y2="${svgHeight - WEEKLY_BOTTOM_PADDING}" />`);
+        }
+        parts.push(`<line class="monthBoundary" x1="${chartOriginX + chartWidth}" y1="${WEEKLY_TOP_PADDING + 72}" x2="${chartOriginX + chartWidth}" y2="${svgHeight - WEEKLY_BOTTOM_PADDING}" />`);
+        for (let index = 0; index < weeklyBand.length; index += 1) {
+            const week = weeklyBand[index];
+            const x = chartOriginX + (index * WEEK_WIDTH);
+            parts.push(`<line class="grid" x1="${x}" y1="${WEEKLY_TOP_PADDING + 72}" x2="${x}" y2="${svgHeight - WEEKLY_BOTTOM_PADDING}" />`);
+            parts.push(`<text class="weekAxis" x="${x + (WEEK_WIDTH / 2)}" y="${WEEKLY_TOP_PADDING + 86}" text-anchor="middle">${escapeXml(formatWeeklyAxisLabel(week.startDay))}</text>`);
+        }
+        if (todayWeekIndex >= 0) {
+            const todayX = chartOriginX + (todayWeekIndex * WEEK_WIDTH) + (WEEK_WIDTH / 2);
+            parts.push(`<line class="today" x1="${todayX}" y1="${WEEKLY_TOP_PADDING + 72}" x2="${todayX}" y2="${svgHeight - WEEKLY_BOTTOM_PADDING}" />`);
+        }
+        for (let rowIndex = 0; rowIndex < rows.length; rowIndex += 1) {
+            const row = rows[rowIndex];
+            const rowY = chartOriginY + row.y;
+            if (row.startIndex === null || row.endIndex === null) {
+                const fallbackLabelPlacement = labelPlacements[rowIndex];
+                parts.push(`<text class="${row.kind === "phase" ? "phaseLabel" : "label"}" x="${fallbackLabelPlacement.x}" y="${rowY + 24}" text-anchor="${fallbackLabelPlacement.anchor}">${escapeXml(formatTaskLabel(row.task, "near"))}</text>`);
+                continue;
+            }
+            const barX = chartOriginX + (row.startIndex * WEEK_WIDTH) + 4;
+            const barWidth = Math.max(10, ((row.endIndex - row.startIndex + 1) * WEEK_WIDTH) - 8);
+            const barY = rowY + 8;
+            if (row.kind === "milestone") {
+                const centerX = chartOriginX + (row.startIndex * WEEK_WIDTH) + (WEEK_WIDTH / 2);
+                const centerY = rowY + (ROW_HEIGHT / 2);
+                const isCompleted = (row.task.percentComplete || 0) >= 100;
+                const fill = isCompleted ? "#d9efff" : "#ffffff";
+                parts.push(`<polygon points="${centerX},${centerY - 11} ${centerX + 11},${centerY} ${centerX},${centerY + 11} ${centerX - 11},${centerY}" fill="${fill}" stroke="#4f95d6" stroke-width="3"/>`);
+            }
+            else if (row.kind === "phase") {
+                const lineY = rowY + (ROW_HEIGHT / 2);
+                const startX = barX;
+                const endX = barX + barWidth;
+                const trackStroke = "#8eb9ea";
+                const progressStroke = "#2f79d0";
+                const phaseStrokeWidth = 3;
+                const progressEndX = startX + Math.max(0, Math.min(barWidth, Math.round(barWidth * (Math.max(0, Math.min(100, row.task.percentComplete || 0)) / 100))));
+                parts.push(`<line x1="${startX}" y1="${lineY}" x2="${endX}" y2="${lineY}" stroke="${trackStroke}" stroke-width="${phaseStrokeWidth}" stroke-linecap="round"/>`);
+                if (progressEndX > startX) {
+                    parts.push(`<line x1="${startX}" y1="${lineY}" x2="${progressEndX}" y2="${lineY}" stroke="${progressStroke}" stroke-width="${phaseStrokeWidth}" stroke-linecap="round"/>`);
+                }
+            }
+            else {
+                const trackFill = "#d9efff";
+                const trackStroke = "#4f95d6";
+                const progressFill = "#3f86d8";
+                parts.push(`<rect x="${barX}" y="${barY}" width="${barWidth}" height="22" rx="4" fill="${trackFill}" stroke="${trackStroke}" stroke-width="3"/>`);
+                const progressWidth = Math.max(0, Math.min(barWidth, Math.round(barWidth * (Math.max(0, Math.min(100, row.task.percentComplete || 0)) / 100))));
+                if (progressWidth > 0) {
+                    parts.push(`<rect x="${barX}" y="${barY}" width="${progressWidth}" height="22" rx="4" fill="${progressFill}" stroke="none"/>`);
+                }
+            }
+            const labelPlacement = labelPlacements[rowIndex];
+            parts.push(`<text class="${row.kind === "phase" ? "phaseLabel" : "label"}" x="${labelPlacement.x}" y="${rowY + 24}" text-anchor="${labelPlacement.anchor}">${escapeXml(formatTaskLabel(row.task, "near"))}</text>`);
         }
         parts.push("</svg>");
         return parts.join("");
@@ -309,6 +435,16 @@
             y: index * ROW_HEIGHT
         }));
     }
+    function buildWeeklyTaskRows(tasks, weeklyBand) {
+        return tasks.map((task, index) => ({
+            task,
+            label: task.name || "-",
+            kind: task.summary ? "phase" : (task.milestone ? "milestone" : "task"),
+            startIndex: indexOfWeekForDate(weeklyBand, task.start),
+            endIndex: task.milestone ? indexOfWeekForDate(weeklyBand, task.start) : indexOfWeekForDate(weeklyBand, task.finish),
+            y: index * ROW_HEIGHT
+        }));
+    }
     function formatTaskLabel(task, labelMode) {
         if (labelMode === "list") {
             return `${"　".repeat(Math.max(0, task.outlineLevel - 1))}${task.name || "-"}`;
@@ -337,7 +473,44 @@
         const basePerChar = isPhase ? 14 : 13;
         return Math.max(48, Math.ceil(String(label || "").length * basePerChar));
     }
+    function shouldUseDailyOnBarLabel(row, bandLength, labelMode) {
+        if (labelMode !== "near") {
+            return false;
+        }
+        if (row.kind === "milestone") {
+            return false;
+        }
+        if (row.startIndex === null || row.endIndex === null || bandLength <= 0) {
+            return false;
+        }
+        return row.startIndex === 0 && row.endIndex === bandLength - 1;
+    }
+    function resolveWeeklyLabelPlacement(row, chartOriginX, chartWidth) {
+        if (row.startIndex === null || row.endIndex === null) {
+            return { x: chartOriginX + 10, anchor: "start", width: estimateLabelWidth(row.label, row.kind === "phase") };
+        }
+        const textWidth = estimateLabelWidth(row.label, row.kind === "phase");
+        const gap = 10;
+        const shapeStartX = row.kind === "milestone"
+            ? chartOriginX + (row.startIndex * WEEK_WIDTH) + (WEEK_WIDTH / 2) - 11
+            : chartOriginX + (row.startIndex * WEEK_WIDTH) + 4;
+        const shapeEndX = row.kind === "milestone"
+            ? chartOriginX + (row.startIndex * WEEK_WIDTH) + (WEEK_WIDTH / 2) + 11
+            : chartOriginX + (row.endIndex * WEEK_WIDTH) + WEEK_WIDTH - 4;
+        const chartMidX = chartOriginX + (chartWidth / 2);
+        if (shapeEndX <= chartMidX) {
+            return { x: shapeEndX + gap, anchor: "start", width: textWidth };
+        }
+        return { x: Math.max(textWidth, shapeStartX - gap), anchor: "end", width: textWidth };
+    }
     function formatSvgAxisDate(day) {
+        const match = day.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+        if (!match) {
+            return day;
+        }
+        return `${Number(match[2])}/${Number(match[3])}`;
+    }
+    function formatWeeklyAxisLabel(day) {
         const match = day.match(/^(\d{4})-(\d{2})-(\d{2})$/);
         if (!match) {
             return day;
@@ -351,6 +524,19 @@
         }
         const index = dateBand.indexOf(key);
         return index >= 0 ? index : null;
+    }
+    function indexOfWeekForDate(weeklyBand, value) {
+        const key = String(value || "").slice(0, 10);
+        if (!key) {
+            return null;
+        }
+        for (let index = 0; index < weeklyBand.length; index += 1) {
+            const week = weeklyBand[index];
+            if (week.startDay <= key && key <= week.endDay) {
+                return index;
+            }
+        }
+        return null;
     }
     function collectWbsHolidayDates(model) {
         const holidaySet = new Set();
@@ -428,6 +614,46 @@
             cursor.setDate(cursor.getDate() + 1);
         }
         return days;
+    }
+    function buildWeeklyBand(startDate, finishDate) {
+        const start = parseDateOnly(startDate);
+        const finish = parseDateOnly(finishDate);
+        if (!start || !finish || start.getTime() > finish.getTime()) {
+            return [];
+        }
+        const cursor = startOfWeekSunday(start);
+        const limit = endOfWeekSaturday(finish);
+        const weeks = [];
+        while (cursor.getTime() <= limit.getTime()) {
+            const weekStart = new Date(cursor.getTime());
+            const weekEnd = new Date(cursor.getTime());
+            weekEnd.setDate(weekEnd.getDate() + 6);
+            weeks.push({
+                startDay: formatDateOnly(weekStart),
+                endDay: formatDateOnly(weekEnd),
+                monthKey: formatMonthLabel(new Date(weekStart.getFullYear(), weekStart.getMonth(), 1))
+            });
+            cursor.setDate(cursor.getDate() + 7);
+        }
+        return weeks;
+    }
+    function buildWeeklyMonthSpans(weeklyBand) {
+        const spans = [];
+        for (let index = 0; index < weeklyBand.length; index += 1) {
+            const current = weeklyBand[index];
+            const last = spans[spans.length - 1];
+            if (last && last.monthKey === current.monthKey) {
+                last.endIndex = index;
+            }
+            else {
+                spans.push({
+                    monthKey: current.monthKey,
+                    startIndex: index,
+                    endIndex: index
+                });
+            }
+        }
+        return spans;
     }
     function buildDisplayDateBand(startDate, finishDate, baseDate, displayDaysBeforeBaseDate, displayDaysAfterBaseDate, holidaySet, nonWorkingDayTypes, useBusinessDaysForDisplayRange) {
         const fullBand = buildDateBand(startDate, finishDate);
@@ -607,6 +833,7 @@
     }
     globalThis.__mikuprojectNativeSvg = {
         exportNativeSvg,
+        exportWeeklyNativeSvg,
         exportMonthlyWbsCalendarSvgArchive
     };
 })();

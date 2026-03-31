@@ -395,12 +395,12 @@
             <summary class="ms-settings-summary">設定</summary>
             <div class="ms-settings-body">
               <section class="ms-settings-block" aria-label="WBS xlsx export options">
-                <h3 class="ms-settings-subtitle">WBS XLSX の祝日指定</h3>
+                <h3 class="ms-settings-subtitle">WBS XLSX 表示設定</h3>
               <p class="md-note-card__text">
                 `WBS XLSX Export` では、`ProjectModel` から補完した既定祝日を WBS 日付帯へ反映します。
               </p>
               <p class="md-note-card__text">
-                既定祝日は、現在の `ProjectModel` に含まれる `Calendar.Exceptions` の非稼働日例外から補完します。画面では `Calendars / Exceptions` を直接編集せず、必要な変更は `MS Project XML` または `XLSX Import` 側で扱います。表示期間を空欄にすると全期間、数値を入れると `BaseDate` 前後の営業日で切り出します。進捗帯も営業日基準で計算します。
+                既定祝日は、現在の `ProjectModel` に含まれる `Calendar.Exceptions` の非稼働日例外から内部で直接補完します。画面では `Calendars / Exceptions` を直接編集せず、必要な変更は `MS Project XML` または `XLSX Import` 側で扱います。表示期間を空欄にすると全期間、数値を入れると `BaseDate` 前後の営業日で切り出します。進捗帯も営業日基準で計算します。
               </p>
               <div class="md-form-grid md-form-grid--two">
                 <lht-text-field-help
@@ -415,18 +415,6 @@
                   rows="1"
                   placeholder="7"
                   help-text="空欄なら全期間表示のままです。"></lht-text-field-help>
-              </div>
-              <div class="md-form-grid">
-                <div id="wbsHolidaySummary" class="md-status">既定祝日: 未読込</div>
-                <label class="md-label" for="wbsHolidayDatesInput">WBS 既定祝日</label>
-                <textarea
-                  id="wbsHolidayDatesInput"
-                  class="md-textarea"
-                  rows="3"
-                  placeholder="2026-03-20"
-                  readonly
-                ></textarea>
-                <div class="md-caption">現在の ProjectModel から自動補完します。画面上では直接編集しません。</div>
               </div>
               </section>
             </div>

@@ -131,12 +131,9 @@ function mountDom() {
           </lht-help-tooltip>
         </span>
       </span>
-      <details class="md-debug-accordion">
-        <summary class="md-debug-accordion__summary">デバッグ情報</summary>
-        <div class="md-debug-accordion__body">
+      <div hidden>
           <textarea id="xmlInput"></textarea>
-        </div>
-      </details>
+      </div>
       <details class="md-note-accordion">
         <summary class="md-note-accordion__summary">新規生成AI連携</summary>
         <div class="md-note-accordion__body">
@@ -181,7 +178,6 @@ function mountDom() {
         <div class="md-debug-accordion__body">
           <button id="roundTripBtn" type="button">再読込テスト</button>
           <textarea id="modelOutput"></textarea>
-          <textarea id="mermaidOutput"></textarea>
           <div id="projectPreview"></div>
           <div id="taskPreview"></div>
           <div id="resourcePreview"></div>
@@ -189,6 +185,9 @@ function mountDom() {
           <div id="calendarPreview"></div>
         </div>
       </details>
+      <div hidden>
+        <textarea id="mermaidOutput"></textarea>
+      </div>
       <div class="md-feedback-stack md-hidden">
         <div class="md-feedback-stack__title">取込結果</div>
         <div class="md-feedback-stack__text">取込後は、ここで差分反映・warning・検証結果を確認します。</div>
@@ -214,9 +213,13 @@ function mountDom() {
         <summary class="md-debug-accordion__summary">設定</summary>
         <div class="md-debug-accordion__body">
           <section class="md-note-card">
-            <h3 class="md-note-card__title">WBS XLSX 表示設定</h3>
-            <p class="md-note-card__text">WBS XLSX Export では、ProjectModel から補完した既定祝日を WBS 日付帯へ反映します。</p>
-            <p class="md-note-card__text">既定祝日は、現在の ProjectModel に含まれる Calendar.Exceptions の非稼働日例外から内部で直接補完します。画面では Calendars / Exceptions を直接編集せず、必要な変更は MS Project XML または XLSX Import 側で扱います。表示期間を空欄にすると全期間、数値を入れると BaseDate 前後の営業日で切り出します。進捗帯も営業日基準で計算します。</p>
+            <h3 class="md-note-card__title">
+              <span>WBS XLSX 表示設定</span>
+              <lht-help-tooltip label="WBS XLSX 表示設定の説明" placement="right" wide>
+                <p>WBS XLSX Export では、ProjectModel から補完した既定祝日を WBS 日付帯へ反映します。</p>
+                <p>既定祝日は、現在の ProjectModel に含まれる Calendar.Exceptions の非稼働日例外から内部で直接補完します。画面では Calendars / Exceptions を直接編集せず、必要な変更は MS Project XML または XLSX Import 側で扱います。表示期間を空欄にすると全期間、数値を入れると BaseDate 前後の営業日で切り出します。進捗帯も営業日基準で計算します。</p>
+              </lht-help-tooltip>
+            </h3>
           </section>
           <input id="wbsDisplayDaysBeforeInput" />
           <input id="wbsDisplayDaysAfterInput" />
@@ -224,9 +227,7 @@ function mountDom() {
           <input id="wbsBusinessDayProgressInput" type="checkbox" />
         </div>
       </details>
-      <details class="md-debug-accordion">
-        <summary class="md-debug-accordion__summary">デバッグ情報</summary>
-        <div class="md-debug-accordion__body">
+      <div hidden>
           <textarea id="workbookJsonOutput"></textarea>
           <textarea id="aiBundleOutput"></textarea>
           <textarea id="projectOverviewOutput"></textarea>
@@ -234,8 +235,7 @@ function mountDom() {
           <input id="phaseDetailRootUidInput" />
           <input id="phaseDetailMaxDepthInput" />
           <textarea id="phaseDetailOutput"></textarea>
-        </div>
-      </details>
+      </div>
     </section>
     <div id="toast"></div>
   `;
@@ -333,13 +333,13 @@ describe("mikuproject main", () => {
     expect(document.body.textContent).not.toContain("内部モデル、要約、検証結果、プレビューをここで確認します。");
     expect(document.body.textContent).not.toContain("出力設定と生成結果の確認をここにまとめます。");
     expect(document.body.textContent).toContain("デバッグ情報");
+    expect(document.querySelectorAll(".md-debug-accordion")).toHaveLength(2);
     expect(document.querySelector(".md-debug-accordion")?.hasAttribute("open")).toBe(false);
-    expect(document.querySelectorAll(".md-debug-accordion")[1]?.hasAttribute("open")).toBe(false);
     expect(document.querySelector(".md-note-accordion")?.hasAttribute("open")).toBe(false);
     expect(document.body.textContent).toContain("WBS XLSX 表示設定");
     expect(document.body.textContent).toContain("設定");
-    expect(document.querySelectorAll(".md-debug-accordion")[2]?.hasAttribute("open")).toBe(false);
-    expect(document.querySelectorAll(".md-debug-accordion")[3]?.hasAttribute("open")).toBe(false);
+    expect(document.querySelectorAll(".md-debug-accordion")[1]?.hasAttribute("open")).toBe(false);
+    expect(document.querySelector('lht-help-tooltip[label="WBS XLSX 表示設定の説明"]')).not.toBeNull();
     expect(document.body.textContent).toContain("ProjectModel から補完した既定祝日");
     expect(document.body.textContent).toContain("非稼働日例外から内部で直接補完");
     expect(document.body.textContent).toContain("必要な変更は MS Project XML または XLSX Import 側で扱います");

@@ -32,9 +32,15 @@ GitHub: https://github.com/igapyon/mikuproject
 
 ### Overview
 
-内部モデルの確認、validation、`Daily / Weekly / Monthly Calendar` preview をここで行う。
+`Daily / Weekly / Monthly Calendar` preview をここで行う。
 
 ![Overview](docs/screenshots/screen02.png)
+
+### Overview Monthly Calendar
+
+`Overview` では `Monthly Calendar` preview も確認できる。
+
+![Overview Monthly Calendar](docs/screenshots/screen02c.png)
 
 ### Output
 
@@ -89,12 +95,13 @@ GitHub: https://github.com/igapyon/mikuproject
 
 `Monthly Calendar SVG` の ZIP 内では、月別ファイルを `monthly-calendar/YYYY-MM.svg` の形で格納します。
 
-### Windows 11 での `Monthly Calendar SVG` / `Daily SVG` 取扱いメモ
+### Windows 11 での `SVG` / `ZIP` 取扱いメモ
 
 - `Monthly Calendar SVG` は、月ごとの `SVG` をまとめた `ZIP` として保存される
-- `Windows 11` では、ダウンロードした `ZIP` や、その中の `SVG` が「危険なファイル」として警告される場合がある
+- `ALL` も、複数の成果物をまとめた `ZIP` として保存される
+- `Windows 11` では、ダウンロードした `ZIP` や `SVG` が「危険なファイル」として警告される場合がある
 - これは `mikuproject` 固有の独自拡張ではなく、`ZIP` や `SVG` を Windows 側が外部由来ファイルとして慎重に扱う場合があるため
-- 少なくとも `Monthly Calendar SVG` の `ZIP` は、アプリ内で生成した `SVG` 群をまとめたもの
+- 少なくとも `Monthly Calendar SVG` と `ALL` の `ZIP` は、アプリ内で生成した成果物をまとめたもの
 - 警告の有無や表示文言は、利用するブラウザや Windows の設定に依存する可能性がある
 
 ## 開発

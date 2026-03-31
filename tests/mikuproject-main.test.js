@@ -79,6 +79,7 @@ function mountDom() {
     <button id="exportCsvBtn" type="button">CSV</button>
     <button id="exportWbsXlsxBtn" type="button">WBS XLSX</button>
     <button id="exportWbsMdBtn" type="button">WBS Markdown</button>
+    <button id="downloadMonthlyWbsSvgZipBtn" type="button" disabled>Monthly WBS SVG</button>
     <button id="exportMermaidMdBtn" type="button">Mermaid</button>
     <button id="downloadSvgBtn" type="button" disabled>SVG</button>
     <button id="exportAiBundleBtn" type="button">project_overview + all phase_detail full</button>
@@ -341,8 +342,8 @@ describe("mikuproject main", () => {
     expect(document.body.textContent).toContain("必要な変更は MS Project XML または XLSX Import 側で扱います");
     expect(document.body.textContent).toContain("BaseDate 前後の営業日で切り出します");
     expect(document.body.textContent).toContain("進捗帯も営業日基準で計算します");
-    expect(document.getElementById("wbsHolidayDatesInput").value).toBe("");
-    expect(document.getElementById("wbsHolidaySummary").textContent).toBe("既定祝日: 0 件");
+    expect(document.getElementById("wbsHolidayDatesInput").value).toBe("2026-03-20");
+    expect(document.getElementById("wbsHolidaySummary").textContent).toBe("既定祝日: 1 件 (2026-03-20)");
     expect(document.getElementById("wbsDisplayDaysBeforeInput").value).toBe("");
     expect(document.getElementById("wbsDisplayDaysAfterInput").value).toBe("");
     expect(document.querySelector(".md-feedback-stack")?.classList.contains("md-hidden")).toBe(true);
@@ -1422,11 +1423,54 @@ describe("mikuproject main", () => {
     expect(URL.createObjectURL).toHaveBeenCalled();
     expect(HTMLAnchorElement.prototype.click).toHaveBeenCalled();
     const clickedAnchor = HTMLAnchorElement.prototype.click.mock.instances.at(-1);
-    expect(clickedAnchor.download).toBe("mikuproject-native.svg");
+    expect(clickedAnchor.download).toBe("mikuproject-wbs-202603162312.svg");
     expect(document.getElementById("xmlInput").value).not.toContain("<!-- edited -->");
     expect(document.getElementById("xmlSaveState").textContent).toContain("XML 保存状態: 保存済み (2026-03-16 23:12)");
     expect(document.getElementById("mermaidOutput").value).toContain("gantt");
     expect(document.getElementById("statusMessage").textContent).toContain("SVG を保存しました");
+  });
+
+  it("downloads monthly wbs calendar svg zip", async () => {
+    bootPage();
+
+    parseXmlViaHook();
+    const OriginalBlob = Blob;
+    class InspectableBlob extends OriginalBlob {
+      constructor(parts = [], options = {}) {
+        super(parts, options);
+        this._parts = parts;
+      }
+    }
+    globalThis.Blob = InspectableBlob;
+    URL.createObjectURL.mockClear();
+    HTMLAnchorElement.prototype.click.mockClear();
+    try {
+      document.getElementById("downloadMonthlyWbsSvgZipBtn").click();
+
+      expect(URL.createObjectURL).toHaveBeenCalled();
+      expect(HTMLAnchorElement.prototype.click).toHaveBeenCalled();
+      const clickedAnchor = HTMLAnchorElement.prototype.click.mock.instances.at(-1);
+      expect(clickedAnchor.download).toBe("mikuproject-monthly-wbs-calendar-202603162312.zip");
+
+      const zipBlob = URL.createObjectURL.mock.calls.at(-1)?.[0];
+      expect(zipBlob).toBeTruthy();
+      expect(zipBlob.type).toBe("application/zip");
+
+      const rawPart = zipBlob._parts?.[0];
+      expect(rawPart).toBeInstanceOf(Uint8Array);
+      const codec = new globalThis.__mikuprojectExcelIo.XlsxWorkbookCodec();
+      const entries = codec.unpackEntries(rawPart);
+      const entryNames = Object.keys(entries).sort();
+      expect(entryNames).toContain("mikuproject-monthly-wbs-calendar-2026-03.svg");
+
+      const marchSvg = new TextDecoder().decode(entries["mikuproject-monthly-wbs-calendar-2026-03.svg"]);
+      expect(marchSvg).toContain("<svg");
+      expect(marchSvg).toContain("mikuproject開発");
+      expect(marchSvg).toContain("2026-03");
+      expect(document.getElementById("statusMessage").textContent).toContain("Monthly WBS SVG を保存しました");
+    } finally {
+      globalThis.Blob = OriginalBlob;
+    }
   });
 
   it("downloads mermaid markdown", () => {
@@ -1438,7 +1482,7 @@ describe("mikuproject main", () => {
     expect(URL.createObjectURL).toHaveBeenCalled();
     expect(HTMLAnchorElement.prototype.click).toHaveBeenCalled();
     const clickedAnchor = HTMLAnchorElement.prototype.click.mock.instances.at(-1);
-    expect(clickedAnchor.download).toBe("mermaid-20260316.md");
+    expect(clickedAnchor.download).toBe("mikuproject-wbs-mermaid-202603162312.md");
     const markdownBlob = URL.createObjectURL.mock.calls.at(-1)?.[0];
     expect(markdownBlob).toBeTruthy();
     expect(markdownBlob.type).toBe("text/markdown;charset=utf-8");

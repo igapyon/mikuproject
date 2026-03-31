@@ -5,6 +5,45 @@
  * Licensed under the Apache License, Version 2.0
  */
 
+function patchElementAnimateForInvalidKeyframes() {
+  const animate = window.Element && window.Element.prototype && window.Element.prototype.animate;
+  if (typeof animate !== "function" || animate.__lhtInvalidKeyframesGuardApplied) {
+    return;
+  }
+
+  const hasInvalidTransform = (frame) => {
+    const transform = String(frame?.transform || "");
+    return transform.includes("NaN") || transform.includes("Infinity");
+  };
+
+  const shouldGuardKeyframes = (keyframes) => {
+    if (Array.isArray(keyframes)) {
+      return keyframes.some(hasInvalidTransform);
+    }
+    if (keyframes && typeof keyframes === "object") {
+      return hasInvalidTransform(keyframes);
+    }
+    return false;
+  };
+
+  const guardedAnimate = function guardedAnimate(keyframes, options) {
+    if (!shouldGuardKeyframes(keyframes)) {
+      return animate.call(this, keyframes, options);
+    }
+    console.info("[lht-cmn] skipped invalid Element.animate keyframes", {
+      tagName: this instanceof Element ? this.tagName.toLowerCase() : null,
+      elementId: this instanceof Element ? this.id || null : null,
+      keyframes
+    });
+    return animate.call(this, [], options);
+  };
+
+  guardedAnimate.__lhtInvalidKeyframesGuardApplied = true;
+  window.Element.prototype.animate = guardedAnimate;
+}
+
+patchElementAnimateForInvalidKeyframes();
+
 class LhtHelpTooltip extends HTMLElement {
   connectedCallback() {
     if (this.dataset.initialized === "true") return;

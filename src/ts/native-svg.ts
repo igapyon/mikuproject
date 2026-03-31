@@ -27,6 +27,19 @@
     width: number;
   };
 
+  type ZipEntry = {
+    name: string;
+    data: Uint8Array;
+  };
+
+  type MonthlyCalendarSvgArchive = {
+    entries: Array<{
+      fileName: string;
+      svg: string;
+    }>;
+    zipBytes: Uint8Array;
+  };
+
   const DAY_WIDTH = 56;
   const LIST_LABEL_WIDTH = 360;
   const NEAR_LEFT_LABEL_WIDTH = 0;
@@ -37,6 +50,20 @@
   const TOP_PADDING = 22;
   const RIGHT_PADDING = 0;
   const BOTTOM_PADDING = 28;
+  const ZIP_TEXT_ENCODER = new TextEncoder();
+  const ZIP_CRC32_TABLE = buildCrc32Table();
+  const MONTHLY_CELL_WIDTH = 164;
+  const MONTHLY_CELL_HEIGHT = 126;
+  const MONTHLY_HEADER_HEIGHT = 108;
+  const MONTHLY_WEEKDAY_HEIGHT = 34;
+  const MONTHLY_LEFT_PADDING = 24;
+  const MONTHLY_TOP_PADDING = 24;
+  const MONTHLY_RIGHT_PADDING = 24;
+  const MONTHLY_BOTTOM_PADDING = 24;
+  const MONTHLY_MAX_ITEMS_PER_DAY = 3;
+  const MONTHLY_MAX_LABEL_CHARS = 15;
+  const ZIP_FIXED_MOD_TIME = 0;
+  const ZIP_FIXED_MOD_DATE = ((2025 - 1980) << 9) | (1 << 5) | 1;
 
   function exportNativeSvg(model: ProjectModel, options: NativeSvgExportOptions = {}): string {
     const labelMode = options.labelMode || "near";
@@ -150,6 +177,201 @@
 
     parts.push("</svg>");
     return parts.join("");
+  }
+
+  function exportMonthlyWbsCalendarSvgArchive(model: ProjectModel): MonthlyCalendarSvgArchive {
+    const holidaySet = new Set(collectWbsHolidayDates(model));
+    const nonWorkingDayTypes = collectProjectNonWorkingDayTypes(model);
+    const months = buildProjectMonthKeys(model.project.startDate, model.project.finishDate);
+    const entries = months.map((monthKey) => ({
+      fileName: `mikuproject-monthly-wbs-calendar-${monthKey}.svg`,
+      svg: exportMonthlyWbsCalendarSvg(model, monthKey, holidaySet, nonWorkingDayTypes)
+    }));
+    const zipEntries: ZipEntry[] = entries.map((entry) => ({
+      name: entry.fileName,
+      data: encodeUtf8(entry.svg)
+    }));
+    const zipBytes = packZip(zipEntries);
+    return {
+      entries,
+      zipBytes
+    };
+  }
+
+  function exportMonthlyWbsCalendarSvg(
+    model: ProjectModel,
+    monthKey: string,
+    holidaySet: Set<string>,
+    nonWorkingDayTypes: Set<number>
+  ): string {
+    const monthStart = parseDateOnly(`${monthKey}-01`);
+    if (!monthStart) {
+      throw new Error(`Invalid month key: ${monthKey}`);
+    }
+    const monthEnd = new Date(monthStart.getFullYear(), monthStart.getMonth() + 1, 0);
+    const gridStart = startOfWeekSunday(monthStart);
+    const gridEnd = endOfWeekSaturday(monthEnd);
+    const calendarDays = buildDateBand(formatDateOnly(gridStart), formatDateOnly(gridEnd));
+    const weeks: string[][] = [];
+    for (let index = 0; index < calendarDays.length; index += 7) {
+      weeks.push(calendarDays.slice(index, index + 7));
+    }
+    const dayItems = buildMonthlyDayItemMap(model.tasks, calendarDays, holidaySet, nonWorkingDayTypes);
+    const svgWidth = MONTHLY_LEFT_PADDING + (7 * MONTHLY_CELL_WIDTH) + MONTHLY_RIGHT_PADDING;
+    const svgHeight = MONTHLY_TOP_PADDING + MONTHLY_HEADER_HEIGHT + MONTHLY_WEEKDAY_HEIGHT + (weeks.length * MONTHLY_CELL_HEIGHT) + MONTHLY_BOTTOM_PADDING;
+    const title = `${model.project.name || "-"} ${formatMonthLabel(monthStart)}`;
+    const weekdayLabels = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+
+    const parts: string[] = [
+      `<svg xmlns="http://www.w3.org/2000/svg" width="${svgWidth}" height="${svgHeight}" viewBox="0 0 ${svgWidth} ${svgHeight}" role="img" aria-label="${escapeXml(title)}">`,
+      "<style>",
+      "text { font-family: 'Hiragino Sans', 'Yu Gothic', sans-serif; fill: #1d2740; }",
+      ".title { font-size: 28px; font-weight: 700; }",
+      ".meta { font-size: 13px; fill: #5b6370; }",
+      ".weekday { font-size: 13px; font-weight: 700; fill: #5b6370; }",
+      ".dayNumber { font-size: 16px; font-weight: 700; }",
+      ".dayNumberMuted { font-size: 16px; font-weight: 700; fill: #97a2b0; }",
+      ".itemText { font-size: 12px; }",
+      ".moreText { font-size: 11px; fill: #5b6370; }",
+      ".summaryText { font-size: 12px; font-weight: 700; }",
+      ".milestoneText { font-size: 12px; font-weight: 700; fill: #9a284d; }",
+      ".cellBorder { stroke: #d4dbe5; stroke-width: 1; }",
+      "</style>",
+      `<rect x="0" y="0" width="${svgWidth}" height="${svgHeight}" fill="#ffffff"/>`,
+      `<text class="title" x="${MONTHLY_LEFT_PADDING}" y="${MONTHLY_TOP_PADDING + 28}">${escapeXml(model.project.name || "-")}</text>`,
+      `<text class="meta" x="${MONTHLY_LEFT_PADDING}" y="${MONTHLY_TOP_PADDING + 56}">${escapeXml(formatMonthLabel(monthStart))}</text>`,
+      `<text class="meta" x="${MONTHLY_LEFT_PADDING}" y="${MONTHLY_TOP_PADDING + 78}">${escapeXml(`project range ${String(model.project.startDate || "").slice(0, 10)} - ${String(model.project.finishDate || "").slice(0, 10)}`)}</text>`
+    ];
+
+    const weekdayY = MONTHLY_TOP_PADDING + MONTHLY_HEADER_HEIGHT;
+    for (let dayIndex = 0; dayIndex < weekdayLabels.length; dayIndex += 1) {
+      const x = MONTHLY_LEFT_PADDING + (dayIndex * MONTHLY_CELL_WIDTH);
+      parts.push(`<text class="weekday" x="${x + 10}" y="${weekdayY}">${weekdayLabels[dayIndex]}</text>`);
+    }
+
+    const gridOriginY = MONTHLY_TOP_PADDING + MONTHLY_HEADER_HEIGHT + MONTHLY_WEEKDAY_HEIGHT;
+    for (let weekIndex = 0; weekIndex < weeks.length; weekIndex += 1) {
+      const week = weeks[weekIndex];
+      for (let dayIndex = 0; dayIndex < week.length; dayIndex += 1) {
+        const day = week[dayIndex];
+        const x = MONTHLY_LEFT_PADDING + (dayIndex * MONTHLY_CELL_WIDTH);
+        const y = gridOriginY + (weekIndex * MONTHLY_CELL_HEIGHT);
+        const date = parseDateOnly(day);
+        const inMonth = !!date && date.getMonth() === monthStart.getMonth() && date.getFullYear() === monthStart.getFullYear();
+        const isHoliday = holidaySet.has(day);
+        const isWeekend = isWeeklyNonWorkingDay(day, nonWorkingDayTypes);
+        const background = !inMonth
+          ? "#f8fafc"
+          : (isHoliday ? "#fce7ef" : (isWeekend ? "#eef4f8" : "#ffffff"));
+        parts.push(`<rect x="${x}" y="${y}" width="${MONTHLY_CELL_WIDTH}" height="${MONTHLY_CELL_HEIGHT}" fill="${background}" class="cellBorder"/>`);
+        parts.push(`<text class="${inMonth ? "dayNumber" : "dayNumberMuted"}" x="${x + 10}" y="${y + 22}">${escapeXml(String(date ? date.getDate() : ""))}</text>`);
+        const items = dayItems.get(day) || [];
+        const visibleItems = items.slice(0, MONTHLY_MAX_ITEMS_PER_DAY);
+        for (let itemIndex = 0; itemIndex < visibleItems.length; itemIndex += 1) {
+          const item = visibleItems[itemIndex];
+          const itemY = y + 42 + (itemIndex * 24);
+          parts.push(`<text class="${item.className}" x="${x + 10}" y="${itemY}">${escapeXml(item.label)}</text>`);
+        }
+        if (items.length > MONTHLY_MAX_ITEMS_PER_DAY) {
+          parts.push(`<text class="moreText" x="${x + 10}" y="${y + MONTHLY_CELL_HEIGHT - 10}">${escapeXml(`+${items.length - MONTHLY_MAX_ITEMS_PER_DAY} more`)}</text>`);
+        }
+      }
+    }
+
+    parts.push("</svg>");
+    return parts.join("");
+  }
+
+  function buildMonthlyDayItemMap(
+    tasks: TaskModel[],
+    calendarDays: string[],
+    holidaySet: Set<string>,
+    nonWorkingDayTypes: Set<number>
+  ): Map<string, Array<{ label: string; className: string }>> {
+    const dayItems = new Map<string, Array<{ label: string; className: string }>>();
+    const calendarDaySet = new Set(calendarDays);
+    for (const day of calendarDays) {
+      dayItems.set(day, []);
+    }
+
+    for (const task of tasks) {
+      const startDay = String(task.start || "").slice(0, 10);
+      const finishDay = String(task.finish || "").slice(0, 10);
+      if (!startDay || !finishDay) {
+        continue;
+      }
+      if (task.milestone) {
+        if (calendarDaySet.has(startDay)) {
+          dayItems.get(startDay)?.push({ label: truncateLabel(task.name || "-"), className: "milestoneText" });
+        }
+        continue;
+      }
+      if (task.summary) {
+        for (const day of uniqueDayList([startDay, finishDay])) {
+          if (calendarDaySet.has(day)) {
+            dayItems.get(day)?.push({ label: truncateLabel(task.name || "-"), className: "summaryText" });
+          }
+        }
+        continue;
+      }
+      for (const day of buildDateBand(startDay, finishDay)) {
+        if (!calendarDaySet.has(day)) {
+          continue;
+        }
+        const isBoundaryDay = day === startDay || day === finishDay;
+        const isHoliday = holidaySet.has(day);
+        const isWeekend = isWeeklyNonWorkingDay(day, nonWorkingDayTypes);
+        if ((isHoliday || isWeekend) && !isBoundaryDay) {
+          continue;
+        }
+        dayItems.get(day)?.push({ label: truncateLabel(task.name || "-"), className: "itemText" });
+      }
+    }
+    return dayItems;
+  }
+
+  function truncateLabel(value: string): string {
+    const text = String(value || "").trim() || "-";
+    if (text.length <= MONTHLY_MAX_LABEL_CHARS) {
+      return text;
+    }
+    return `${text.slice(0, MONTHLY_MAX_LABEL_CHARS - 3)}...`;
+  }
+
+  function uniqueDayList(days: string[]): string[] {
+    return Array.from(new Set(days.filter(Boolean)));
+  }
+
+  function buildProjectMonthKeys(startDate: string | undefined, finishDate: string | undefined): string[] {
+    const start = parseDateOnly(startDate);
+    const finish = parseDateOnly(finishDate);
+    if (!start || !finish) {
+      return [];
+    }
+    const cursor = new Date(start.getFullYear(), start.getMonth(), 1);
+    const limit = new Date(finish.getFullYear(), finish.getMonth(), 1);
+    const months: string[] = [];
+    while (cursor.getTime() <= limit.getTime()) {
+      months.push(`${cursor.getFullYear()}-${String(cursor.getMonth() + 1).padStart(2, "0")}`);
+      cursor.setMonth(cursor.getMonth() + 1);
+    }
+    return months;
+  }
+
+  function startOfWeekSunday(date: Date): Date {
+    const result = new Date(date.getTime());
+    result.setDate(result.getDate() - result.getDay());
+    return result;
+  }
+
+  function endOfWeekSaturday(date: Date): Date {
+    const result = new Date(date.getTime());
+    result.setDate(result.getDate() + (6 - result.getDay()));
+    return result;
+  }
+
+  function formatMonthLabel(date: Date): string {
+    return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}`;
   }
 
   function buildTaskRows(tasks: TaskModel[], dateBand: string[]): NativeSvgTaskRow[] {
@@ -408,11 +630,113 @@
       .replaceAll("\"", "&quot;");
   }
 
+  function encodeUtf8(value: string): Uint8Array {
+    return ZIP_TEXT_ENCODER.encode(value);
+  }
+
+  function packZip(entries: ZipEntry[]): Uint8Array {
+    const localParts: Uint8Array[] = [];
+    const centralParts: Uint8Array[] = [];
+    let offset = 0;
+
+    for (const entry of entries) {
+      const nameBytes = encodeUtf8(entry.name);
+      const crc32 = computeCrc32(entry.data);
+      const localHeader = new Uint8Array(30 + nameBytes.length);
+      const localView = new DataView(localHeader.buffer);
+      localView.setUint32(0, 0x04034b50, true);
+      localView.setUint16(4, 20, true);
+      localView.setUint16(6, 0, true);
+      localView.setUint16(8, 0, true);
+      localView.setUint16(10, ZIP_FIXED_MOD_TIME, true);
+      localView.setUint16(12, ZIP_FIXED_MOD_DATE, true);
+      localView.setUint32(14, crc32, true);
+      localView.setUint32(18, entry.data.byteLength, true);
+      localView.setUint32(22, entry.data.byteLength, true);
+      localView.setUint16(26, nameBytes.length, true);
+      localView.setUint16(28, 0, true);
+      localHeader.set(nameBytes, 30);
+
+      const centralHeader = new Uint8Array(46 + nameBytes.length);
+      const centralView = new DataView(centralHeader.buffer);
+      centralView.setUint32(0, 0x02014b50, true);
+      centralView.setUint16(4, 20, true);
+      centralView.setUint16(6, 20, true);
+      centralView.setUint16(8, 0, true);
+      centralView.setUint16(10, 0, true);
+      centralView.setUint16(12, ZIP_FIXED_MOD_TIME, true);
+      centralView.setUint16(14, ZIP_FIXED_MOD_DATE, true);
+      centralView.setUint32(16, crc32, true);
+      centralView.setUint32(20, entry.data.byteLength, true);
+      centralView.setUint32(24, entry.data.byteLength, true);
+      centralView.setUint16(28, nameBytes.length, true);
+      centralView.setUint16(30, 0, true);
+      centralView.setUint16(32, 0, true);
+      centralView.setUint16(34, 0, true);
+      centralView.setUint16(36, 0, true);
+      centralView.setUint32(38, 0, true);
+      centralView.setUint32(42, offset, true);
+      centralHeader.set(nameBytes, 46);
+
+      localParts.push(localHeader, entry.data);
+      centralParts.push(centralHeader);
+      offset += localHeader.byteLength + entry.data.byteLength;
+    }
+
+    const centralDirectoryOffset = offset;
+    const centralDirectorySize = centralParts.reduce((sum, part) => sum + part.byteLength, 0);
+    const endOfCentralDirectory = new Uint8Array(22);
+    const endView = new DataView(endOfCentralDirectory.buffer);
+    endView.setUint32(0, 0x06054b50, true);
+    endView.setUint16(4, 0, true);
+    endView.setUint16(6, 0, true);
+    endView.setUint16(8, entries.length, true);
+    endView.setUint16(10, entries.length, true);
+    endView.setUint32(12, centralDirectorySize, true);
+    endView.setUint32(16, centralDirectoryOffset, true);
+    endView.setUint16(20, 0, true);
+
+    return concatUint8Arrays([...localParts, ...centralParts, endOfCentralDirectory]);
+  }
+
+  function concatUint8Arrays(parts: Uint8Array[]): Uint8Array {
+    const totalLength = parts.reduce((sum, part) => sum + part.byteLength, 0);
+    const result = new Uint8Array(totalLength);
+    let offset = 0;
+    for (const part of parts) {
+      result.set(part, offset);
+      offset += part.byteLength;
+    }
+    return result;
+  }
+
+  function computeCrc32(bytes: Uint8Array): number {
+    let crc = 0xffffffff;
+    for (const byte of bytes) {
+      crc = (crc >>> 8) ^ ZIP_CRC32_TABLE[(crc ^ byte) & 0xff];
+    }
+    return (crc ^ 0xffffffff) >>> 0;
+  }
+
+  function buildCrc32Table(): Uint32Array {
+    const table = new Uint32Array(256);
+    for (let index = 0; index < 256; index += 1) {
+      let value = index;
+      for (let bit = 0; bit < 8; bit += 1) {
+        value = (value & 1) !== 0 ? (0xedb88320 ^ (value >>> 1)) : (value >>> 1);
+      }
+      table[index] = value >>> 0;
+    }
+    return table;
+  }
+
   (globalThis as typeof globalThis & {
     __mikuprojectNativeSvg?: {
       exportNativeSvg: typeof exportNativeSvg;
+      exportMonthlyWbsCalendarSvgArchive: typeof exportMonthlyWbsCalendarSvgArchive;
     };
   }).__mikuprojectNativeSvg = {
-    exportNativeSvg
+    exportNativeSvg,
+    exportMonthlyWbsCalendarSvgArchive
   };
 })();

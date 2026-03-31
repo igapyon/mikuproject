@@ -157,6 +157,15 @@
           useBusinessDaysForProgressBand?: boolean;
         }
       ) => string;
+      exportMonthlyWbsCalendarSvgArchive: (
+        model: ProjectModel
+      ) => {
+        entries: Array<{
+          fileName: string;
+          svg: string;
+        }>;
+        zipBytes: Uint8Array;
+      };
     };
   }).__mikuprojectNativeSvg;
 
@@ -365,7 +374,18 @@
       return;
     }
     const holidayDates = mikuprojectWbsXlsx.collectWbsHolidayDates(model);
-    input.value = holidayDates.join("\n");
+    const nextValue = holidayDates.join("\n");
+    const fieldHost = document.querySelector(`lht-text-field-help[field-id="wbsHolidayDatesInput"]`);
+    if (fieldHost) {
+      window.requestAnimationFrame(() => {
+        const latestInput = document.getElementById("wbsHolidayDatesInput") as HTMLTextAreaElement | null;
+        if (latestInput) {
+          latestInput.value = nextValue;
+        }
+      });
+    } else {
+      input.value = nextValue;
+    }
     updateWbsHolidaySummary(holidayDates);
   }
 
@@ -420,7 +440,11 @@
   }
 
   function updateSvgButton(): void {
-    getElement<HTMLButtonElement>("downloadSvgBtn").disabled = !currentModel;
+    const nativeSvgButton = getElement<HTMLButtonElement>("downloadSvgBtn");
+    const monthlyWbsButton = getElement<HTMLButtonElement>("downloadMonthlyWbsSvgZipBtn");
+    const disabled = !currentModel;
+    nativeSvgButton.disabled = disabled;
+    monthlyWbsButton.disabled = disabled;
   }
 
   function buildCurrentWbsOptions(model: ProjectModel): {
@@ -904,10 +928,16 @@ WorkWeek1=${formatCalendarWorkWeekSummary(calendar)}</div>
   }
 
   function loadSample(): void {
-    currentModel = null;
-    getTextArea("xmlInput").value = mikuprojectXml.SAMPLE_XML;
+    const sampleXml = mikuprojectXml.SAMPLE_XML;
+    getTextArea("xmlInput").value = sampleXml;
+    currentModel = mikuprojectXml.importMsProjectXml(sampleXml);
     isXmlSourceDirty = true;
     markXmlDirty();
+    updateSummary(currentModel);
+    renderValidationIssues(mikuprojectXml.validateProjectModel(currentModel));
+    renderImportWarnings([]);
+    renderXlsxImportSummary([]);
+    updateSvgButton();
     setStatus("サンプル XML を読み込みました");
     setActiveTab("input");
   }
@@ -1388,9 +1418,44 @@ WorkWeek1=${formatCalendarWorkWeekSummary(calendar)}</div>
       setStatus("出力する SVG がありません");
       return;
     }
-    downloadBlob(new Blob([currentNativeSvg], { type: "image/svg+xml;charset=utf-8" }), "mikuproject-native.svg");
+    const now = new Date();
+    const stamp = [
+      now.getFullYear(),
+      String(now.getMonth() + 1).padStart(2, "0"),
+      String(now.getDate()).padStart(2, "0"),
+      String(now.getHours()).padStart(2, "0"),
+      String(now.getMinutes()).padStart(2, "0")
+    ].join("");
+    downloadBlob(
+      new Blob([currentNativeSvg], { type: "image/svg+xml;charset=utf-8" }),
+      `mikuproject-wbs-${stamp}.svg`
+    );
     setStatus("SVG を保存しました");
     showToast("SVG を保存しました");
+    setActiveTab("output");
+  }
+
+  function downloadCurrentMonthlyWbsSvgZip(): void {
+    const model = ensureCurrentModel();
+    syncXmlTextFromModel(model);
+    const archive = mikuprojectNativeSvg.exportMonthlyWbsCalendarSvgArchive(model);
+    if (!archive.entries.length || archive.zipBytes.byteLength === 0) {
+      throw new Error("出力する月別 WBS カレンダー SVG がありません");
+    }
+    const now = new Date();
+    const stamp = [
+      now.getFullYear(),
+      String(now.getMonth() + 1).padStart(2, "0"),
+      String(now.getDate()).padStart(2, "0"),
+      String(now.getHours()).padStart(2, "0"),
+      String(now.getMinutes()).padStart(2, "0")
+    ].join("");
+    downloadBlob(
+      new Blob([archive.zipBytes], { type: "application/zip" }),
+      `mikuproject-monthly-wbs-calendar-${stamp}.zip`
+    );
+    setStatus(`Monthly WBS SVG を保存しました (${archive.entries.length} か月分, ZIP)`);
+    showToast("Monthly WBS SVG を保存しました");
     setActiveTab("output");
   }
 
@@ -1403,12 +1468,14 @@ WorkWeek1=${formatCalendarWorkWeekSummary(calendar)}</div>
     const stamp = [
       now.getFullYear(),
       String(now.getMonth() + 1).padStart(2, "0"),
-      String(now.getDate()).padStart(2, "0")
+      String(now.getDate()).padStart(2, "0"),
+      String(now.getHours()).padStart(2, "0"),
+      String(now.getMinutes()).padStart(2, "0")
     ].join("");
     const markdownText = `\`\`\`mermaid\n${mermaidText}\n\`\`\`\n`;
     downloadBlob(
       new Blob([markdownText], { type: "text/markdown;charset=utf-8" }),
-      `mermaid-${stamp}.md`
+      `mikuproject-wbs-mermaid-${stamp}.md`
     );
     setStatus("Mermaid Markdown を保存しました");
     showToast("Mermaid Markdown を保存しました");
@@ -1485,8 +1552,17 @@ WorkWeek1=${formatCalendarWorkWeekSummary(calendar)}</div>
     });
     getElement<HTMLButtonElement>("downloadSvgBtn").addEventListener("click", () => {
       void downloadCurrentSvg().catch((error) => {
+        console.error("[mikuproject] native SVG download failed", error);
         setStatus(error instanceof Error ? error.message : "SVG 保存に失敗しました");
       });
+    });
+    getElement<HTMLButtonElement>("downloadMonthlyWbsSvgZipBtn").addEventListener("click", () => {
+      try {
+        downloadCurrentMonthlyWbsSvgZip();
+      } catch (error) {
+        console.error("[mikuproject] monthly WBS SVG download failed", error);
+        setStatus(error instanceof Error ? error.message : "月別 WBS カレンダー SVG 保存に失敗しました");
+      }
     });
     getElement<HTMLButtonElement>("exportMermaidMdBtn").addEventListener("click", () => {
       try {

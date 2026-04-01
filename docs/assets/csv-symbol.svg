@@ -1,0 +1,70 @@
+<svg width="1200" height="1200" viewBox="0 0 1200 1200" fill="none" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="title desc">
+  <title id="title">CSV symbol</title>
+  <desc id="desc">A CSV symbol with delimited rows inspired by mikuproject CSV output.</desc>
+  <defs>
+    <linearGradient id="panel" x1="214" y1="194" x2="987" y2="1010" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#4F9A8A"/>
+      <stop offset="1" stop-color="#2F6C61"/>
+    </linearGradient>
+    <linearGradient id="sheet" x1="328" y1="324" x2="858" y2="892" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#F9FFFD"/>
+      <stop offset="1" stop-color="#DDEFEA"/>
+    </linearGradient>
+    <filter id="shadow" x="164" y="156" width="872" height="900" filterUnits="userSpaceOnUse" color-interpolation-filters="sRGB">
+      <feFlood flood-opacity="0" result="BackgroundImageFix"/>
+      <feColorMatrix in="SourceAlpha" type="matrix" values="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 127 0" result="hardAlpha"/>
+      <feOffset dy="20"/>
+      <feGaussianBlur stdDeviation="26"/>
+      <feComposite in2="hardAlpha" operator="out"/>
+      <feColorMatrix type="matrix" values="0 0 0 0 0.184314 0 0 0 0 0.423529 0 0 0 0 0.380392 0 0 0 0.2 0"/>
+      <feBlend mode="normal" in2="BackgroundImageFix" result="effect1_dropShadow_1_1"/>
+      <feBlend mode="normal" in="SourceGraphic" in2="effect1_dropShadow_1_1" result="shape"/>
+    </filter>
+  </defs>
+
+  <g filter="url(#shadow)">
+    <rect x="216" y="208" width="768" height="784" rx="154" fill="url(#panel)"/>
+    <rect x="318" y="300" width="564" height="600" rx="68" fill="url(#sheet)"/>
+
+    <rect x="318" y="300" width="564" height="130" rx="68" fill="#2F6C61"/>
+    <rect x="384" y="352" width="154" height="28" rx="14" fill="#E8F7F3"/>
+    <circle cx="790" cy="366" r="20" fill="#E8F7F3"/>
+    <circle cx="726" cy="366" r="20" fill="#BFE2D8"/>
+
+    <g stroke="#8FBEB1" stroke-width="10" stroke-linecap="round" opacity="0.8">
+      <path d="M474 474V836"/>
+      <path d="M632 474V836"/>
+      <path d="M790 474V836"/>
+      <path d="M374 588H826"/>
+      <path d="M374 702H826"/>
+    </g>
+
+    <g fill="#2F6C61">
+      <circle cx="424" cy="530" r="12"/>
+      <circle cx="582" cy="530" r="12"/>
+      <circle cx="740" cy="530" r="12"/>
+
+      <circle cx="424" cy="644" r="12"/>
+      <circle cx="582" cy="644" r="12"/>
+      <circle cx="740" cy="644" r="12"/>
+
+      <circle cx="424" cy="758" r="12"/>
+      <circle cx="582" cy="758" r="12"/>
+      <circle cx="740" cy="758" r="12"/>
+    </g>
+
+    <g fill="#67A596">
+      <rect x="438" y="512" width="86" height="36" rx="18"/>
+      <rect x="596" y="512" width="86" height="36" rx="18"/>
+      <rect x="754" y="512" width="44" height="36" rx="18"/>
+
+      <rect x="438" y="626" width="112" height="36" rx="18"/>
+      <rect x="596" y="626" width="60" height="36" rx="18"/>
+      <rect x="754" y="626" width="44" height="36" rx="18"/>
+
+      <rect x="438" y="740" width="70" height="36" rx="18"/>
+      <rect x="596" y="740" width="112" height="36" rx="18"/>
+      <rect x="754" y="740" width="44" height="36" rx="18"/>
+    </g>
+  </g>
+</svg>

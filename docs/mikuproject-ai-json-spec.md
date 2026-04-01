@@ -1,5 +1,9 @@
 # mikuproject AI JSON Prompt / Spec
 
+この文書は、`mikuproject AI JSON Prompt / Spec` の定義である。
+
+- Version: `v20260402`
+
 私たちは、これから取り組むプロジェクトの内容を理解し、WBS の観点から必要なマイルストーン / フェーズ / タスクを整理し、`mikuproject` に設定するための入力へ落とし込んでいきます。
 
 `mikuproject` は、`MS Project XML` を基軸に、変換・可視化・限定編集を行う single-file web app です。
@@ -19,15 +23,16 @@
 - 実装済み: `project_overview_view` の export
 - 実装済み: `phase_detail_view` の export
 - 実装済み: `project_draft_view` の import
+- 実装済み: Patch JSON の `update_task` first cut import / 適用
 - 未実装: `task_edit_view`
-- 未実装: Patch JSON の import / 適用
 - `project_draft_request` は補助的な構想・helper であり、現行 UI の主機能ではありません
 
 ## 前提
 
 - AI へ渡される入力は用途別 projection JSON です
 - AI は説明文を返してよいです
-- 既存編集向けの Patch JSON は将来案として設計中です
+- 既存編集向けの Patch JSON は `update_task` の first cut を実装済みです
+- ただし `move_task` / `link_tasks` / `unlink_tasks` / `add_task` / `delete_task` は未実装です
 - `MS Project XML` は保存と互換のための外部形式ですが、AI は直接扱いません
 - workbook JSON と AI 向け編集用 JSON を混同しないため、当面 `project_draft_view` などの編集用 JSON には `.editjson` 拡張子を推奨します
 
@@ -39,6 +44,9 @@
 - 与えられた projection と rules の範囲を超えて変更してはいけません
 - 業務意味が不明な場合、断定的な再設計は避けてください
 - 業務意味が不明な変更は候補案として扱ってください
+- 非稼働日ルールは原則として尊重します
+- ただし、人間が明示的に「この日は稼働日無視でよい」と指示した場合は、その指示を優先してよいです
+- 稼働日無視の例外を適用した場合は、その旨を説明文に明記してください
 
 ## Projection JSON の代表例
 
@@ -234,7 +242,9 @@
       "name": "要件定義",
       "parent_uid": null,
       "position": 0,
-      "is_summary": true
+      "is_summary": true,
+      "planned_start": "2026-04-01",
+      "planned_finish": "2026-04-10"
     }
   ],
   "assignments": [
@@ -260,6 +270,13 @@
 
 - `uid` は常に string です
 - `parent_uid`, `from_uid`, `to_uid`, `task_uid` も常に string です
+
+### calendar の前提
+
+- `calendar_uid = "1"` は、既定の `Standard` calendar を指します
+- 既定の `Standard` calendar では、土曜日と日曜日を非稼働日として扱います
+- task や resource に個別 `calendar_uid` がない場合は、project 既定 calendar を継承する前提で扱います
+- したがって、通常 task の日付を考えるときは、まず `calendar_uid = "1"` の土日非稼働を前提にしてよいです
 
 ### 日付・期間
 
@@ -328,12 +345,61 @@
 - 親子や順序の変更は `move_task` を使います
 - 依存関係の追加や解除は `link_tasks` / `unlink_tasks` を使います
 
+### Patch JSON の MVP 方針
+
+- 最初の import 実装では、既存 project 向け Patch JSON の最小対応として `update_task` から着手します
+- MVP では `operations` 配列を順に適用します
+- MVP では、少なくとも `uid` で対象 task を特定できることを前提にします
+- MVP で受ける `fields` は、まず次のような task の基本計画項目に絞る方針です
+  - `name`
+  - `planned_start`
+  - `planned_finish`
+  - `planned_duration`
+  - `planned_duration_hours`
+- MVP では、`move_task` / `link_tasks` / `unlink_tasks` は schema 上の設計候補として残してよいですが、import 実装の first cut では未対応でもよいです
+- MVP では、`add_task` / `delete_task` も first cut の import 実装対象には含めません
+- MVP では、既存 task の安全な部分更新を優先し、`update_task` のみに絞る方針を推奨します
+- `add_task` は早い段階で欲しくなる可能性がありますが、`uid` 採番、親子位置、summary 構造、依存関係などの整合を要するため、MVP からは外します
+- `delete_task` は子 task、assignment、dependency などを壊しやすいため、MVP では扱わない方針を推奨します
+- MVP では、未対応 `op` は静かに無視せず、少なくとも warning または error として扱う方針です
+- MVP では、存在しない `uid`、不正日付、不正 field 名は validation 対象とします
+- MVP では、未指定 field は変更なしとして扱います
+- MVP では、Patch JSON は既存 project への部分適用であり、新規 project 草案の全量置換には使いません
+- MVP では、Patch JSON による `planned_start` / `planned_finish` の更新は、原則として非稼働日を避ける前提です
+- ただし、人間が明示的に非稼働日での作業を指示した場合は、その指示を優先してよいです
+- 例外適用時は、説明文で「非稼働日ルールより人間指示を優先した」ことを明示してください
+
+### Patch JSON の MVP 例
+
+```json
+{
+  "operations": [
+    {
+      "op": "update_task",
+      "uid": "101",
+      "fields": {
+        "planned_start": "2026-04-03",
+        "planned_finish": "2026-04-06"
+      }
+    }
+  ]
+}
+```
+
 ### 新規生成モードの原則
 
 - `project_draft_request` に対する返答は `project_draft_view` です
 - このとき `Patch JSON` は返しません
 - draft は正本ではなく草案です
 - draft 内の `uid` は `"draft-1"` のような仮 UID でよいです
+- 新規生成モードでは、非稼働日を厳密に考慮しなくてもかまいません
+- 新規生成モードでは、まず phase / milestone / task の構造と大まかな順序を優先します
+- 新規生成モードでも、可能なら仮の `planned_start` / `planned_finish` を task に入れてください
+- この仮日付は通常 task だけでなく、summary task と milestone にも入れてよいです
+- summary task には、その配下 task を大まかに包む期間を仮で入れてください
+- milestone には、その節目の日付を仮で入れてください
+- 人間が「とりあえずえいやで日付を入れてよい」と指示している場合は、細かい整合よりもまず日付を埋めることを優先してよいです
+- 新規生成後の稼働日・祝日を考慮した再計画は、後続の Patch JSON で行う想定です
 - `percent_complete` を含めてよいです
 - task が通常 task で、`planned_start` / `planned_finish` が日付だけの場合、`mikuproject` 側では勤務時間帯を補完して扱うことがあります
 - 同日 task の date-only 指定は、通常 task なら `09:00:00` 開始 / `18:00:00` 終了へ補完されることがあります

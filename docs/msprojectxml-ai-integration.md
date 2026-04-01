@@ -9,8 +9,9 @@
 - 実装済み: `project_overview_view` export
 - 実装済み: `phase_detail_view` export
 - 実装済み: `project_draft_view` import
+- 実装済み: Patch JSON の `update_task` first cut import
 - 未実装: `task_edit_view`
-- 未実装: Patch JSON の受信・適用
+- 未実装: Patch JSON の `move_task` / `link_tasks` / `unlink_tasks` / `add_task` / `delete_task`
 
 この設計では、生成AIとの会話は `JSON` ベースで行う方針とする。
 
@@ -30,7 +31,7 @@
 - AIの編集結果を、安全かつ検証可能な形で受け取る
 - `MS Project XML` との互換性を維持する
 
-なお、現時点の UI で扱える生成AI連携は、既存 project に対する `project_overview_view` / `phase_detail_view` の保存と、新規草案として返ってきた `project_draft_view` の取込までである。
+なお、現時点の UI で扱える生成AI連携は、既存 project に対する `project_overview_view` / `phase_detail_view` の保存、Patch JSON の `update_task` first cut 取込、新規草案として返ってきた `project_draft_view` の取込までである。
 
 ## 最重要方針
 

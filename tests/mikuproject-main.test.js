@@ -37,6 +37,10 @@ const projectWorkbookJsonCode = readFileSync(
   path.resolve(__dirname, "../src/js/project-workbook-json.js"),
   "utf8"
 );
+const projectPatchJsonCode = readFileSync(
+  path.resolve(__dirname, "../src/js/project-patch-json.js"),
+  "utf8"
+);
 const wbsXlsxCode = readFileSync(
   path.resolve(__dirname, "../src/js/wbs-xlsx.js"),
   "utf8"
@@ -249,7 +253,7 @@ function mountDom() {
 
 function bootPage() {
   mountDom();
-  new Function(`${typesCode}\n${markdownEscapeCode}\n${excelIoCode}\n${msProjectXmlCode}\n${projectWorkbookSchemaCode}\n${projectXlsxCode}\n${projectWorkbookJsonCode}\n${wbsXlsxCode}\n${wbsMarkdownCode}\n${nativeSvgCode}\n${mainCode}`)();
+  new Function(`${typesCode}\n${markdownEscapeCode}\n${excelIoCode}\n${msProjectXmlCode}\n${projectWorkbookSchemaCode}\n${projectXlsxCode}\n${projectWorkbookJsonCode}\n${projectPatchJsonCode}\n${wbsXlsxCode}\n${wbsMarkdownCode}\n${nativeSvgCode}\n${mainCode}`)();
   document.dispatchEvent(new Event("DOMContentLoaded"));
 }
 
@@ -523,6 +527,73 @@ describe("mikuproject main", () => {
     expect(document.getElementById("modelOutput").value).toContain("\"initials\": \"M\"");
     expect(document.getElementById("modelOutput").value).toContain("\"taskUid\": \"2\"");
     expect(document.getElementById("modelOutput").value).toContain("\"resourceUid\": \"1\"");
+  });
+
+  it("imports patch json edits into the current model and xml", async () => {
+    bootPage();
+
+    document.getElementById("projectDraftImportInput").value = [
+      "説明文",
+      "```json",
+      JSON.stringify({
+        operations: [
+          {
+            op: "update_task",
+            uid: "10",
+            fields: {
+              planned_start: "2026-03-24",
+              planned_finish: "2026-03-26"
+            }
+          },
+          {
+            op: "update_task",
+            uid: "11",
+            fields: {
+              name: "XLSXレイアウト最終調整"
+            }
+          }
+        ]
+      }, null, 2),
+      "```"
+    ].join("\n");
+
+    document.getElementById("importProjectDraftBtn").click();
+    await flushAsyncWork();
+    await flushAsyncWork();
+
+    expect(document.getElementById("xmlInput").value).toContain("<Name>XLSXレイアウト最終調整</Name>");
+    expect(document.getElementById("xmlInput").value).toContain("<Start>2026-03-24T09:00:00</Start>");
+    expect(document.getElementById("xmlInput").value).toContain("<Finish>2026-03-26T18:00:00</Finish>");
+    expect(document.getElementById("modelOutput").value).toContain("\"name\": \"XLSXレイアウト最終調整\"");
+    expect(document.getElementById("modelOutput").value).toContain("\"start\": \"2026-03-24T09:00:00\"");
+    expect(document.getElementById("modelOutput").value).toContain("\"finish\": \"2026-03-26T18:00:00\"");
+    expect(document.getElementById("statusMessage").textContent).toContain("Patch JSON を読み込んで 3 件の変更を反映しました");
+    expect(document.getElementById("xlsxImportSummary").innerHTML).toContain("planned_start");
+    expect(document.getElementById("xlsxImportSummary").innerHTML).toContain("planned_finish");
+    expect(document.getElementById("xlsxImportSummary").innerHTML).toContain("name");
+  });
+
+  it("reports patch json warnings for unsupported operations", async () => {
+    bootPage();
+
+    document.getElementById("projectDraftImportInput").value = JSON.stringify({
+      operations: [
+        {
+          op: "link_tasks",
+          from_uid: "1",
+          to_uid: "3",
+          type: "FS"
+        }
+      ]
+    }, null, 2);
+
+    document.getElementById("importProjectDraftBtn").click();
+    await flushAsyncWork();
+    await flushAsyncWork();
+
+    expect(document.getElementById("statusMessage").textContent).toContain("Patch JSON に反映対象の変更はありませんでした");
+    expect(document.getElementById("statusMessage").textContent).toContain("warning を無視しました");
+    expect(document.getElementById("importWarnings").textContent).toContain("未対応の op は無視します");
   });
 
   it("limits default calendar holiday exceptions to the project date range", () => {

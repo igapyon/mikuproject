@@ -25,6 +25,7 @@ const TARGETS = [
       "src/ts/project-workbook-schema.ts",
       "src/ts/project-xlsx.ts",
       "src/ts/project-workbook-json.ts",
+      "src/ts/project-patch-json.ts",
       "src/ts/wbs-xlsx.ts",
       "src/ts/wbs-markdown.ts",
       "src/ts/wbs-svg.ts",

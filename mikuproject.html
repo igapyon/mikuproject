@@ -2223,7 +2223,7 @@ md-outlined-select.md-outlined-field:focus-within::part(container) {
                   `.xlsx` と `mikuproject_workbook_json (.json)` は `MS Project XML` の代替正本ではなく、確認と限定編集のための周辺表現として扱います。
                 </p>
                 <p class="md-note-card__text">
-                  `project_draft_view (.editjson)` は生成AI 向けの編集用 JSON として扱います。反映結果は、`Project / Tasks / Resources / Assignments / Calendars` ごとの件数と、`UID` 単位の差分要約として画面上に表示します。
+                  `project_draft_view (.editjson)` と Patch JSON は生成AI 向けの編集用 JSON として扱います。反映結果は、`Project / Tasks / Resources / Assignments / Calendars` ごとの件数と、`UID` 単位の差分要約として画面上に表示します。
                 </p>
                 <p class="md-note-card__text"><strong>反映対象</strong></p>
                 <ul class="md-note-list">
@@ -2265,6 +2265,10 @@ md-outlined-select.md-outlined-field:focus-within::part(container) {
               </div>
               <template id="aiPromptTemplate"># mikuproject AI JSON Prompt / Spec
 
+この文書は、`mikuproject AI JSON Prompt / Spec` の定義である。
+
+- Version: `v20260402`
+
 私たちは、これから取り組むプロジェクトの内容を理解し、WBS の観点から必要なマイルストーン / フェーズ / タスクを整理し、`mikuproject` に設定するための入力へ落とし込んでいきます。
 
 `mikuproject` は、`MS Project XML` を基軸に、変換・可視化・限定編集を行う single-file web app です。
@@ -2284,15 +2288,16 @@ md-outlined-select.md-outlined-field:focus-within::part(container) {
 - 実装済み: `project_overview_view` の export
 - 実装済み: `phase_detail_view` の export
 - 実装済み: `project_draft_view` の import
+- 実装済み: Patch JSON の `update_task` first cut import / 適用
 - 未実装: `task_edit_view`
-- 未実装: Patch JSON の import / 適用
 - `project_draft_request` は補助的な構想・helper であり、現行 UI の主機能ではありません
 
 ## 前提
 
 - AI へ渡される入力は用途別 projection JSON です
 - AI は説明文を返してよいです
-- 既存編集向けの Patch JSON は将来案として設計中です
+- 既存編集向けの Patch JSON は `update_task` の first cut を実装済みです
+- ただし `move_task` / `link_tasks` / `unlink_tasks` / `add_task` / `delete_task` は未実装です
 - `MS Project XML` は保存と互換のための外部形式ですが、AI は直接扱いません
 - workbook JSON と AI 向け編集用 JSON を混同しないため、当面 `project_draft_view` などの編集用 JSON には `.editjson` 拡張子を推奨します
 
@@ -2304,6 +2309,9 @@ md-outlined-select.md-outlined-field:focus-within::part(container) {
 - 与えられた projection と rules の範囲を超えて変更してはいけません
 - 業務意味が不明な場合、断定的な再設計は避けてください
 - 業務意味が不明な変更は候補案として扱ってください
+- 非稼働日ルールは原則として尊重します
+- ただし、人間が明示的に「この日は稼働日無視でよい」と指示した場合は、その指示を優先してよいです
+- 稼働日無視の例外を適用した場合は、その旨を説明文に明記してください
 
 ## Projection JSON の代表例
 
@@ -2499,7 +2507,9 @@ md-outlined-select.md-outlined-field:focus-within::part(container) {
       "name": "要件定義",
       "parent_uid": null,
       "position": 0,
-      "is_summary": true
+      "is_summary": true,
+      "planned_start": "2026-04-01",
+      "planned_finish": "2026-04-10"
     }
   ],
   "assignments": [
@@ -2525,6 +2535,13 @@ md-outlined-select.md-outlined-field:focus-within::part(container) {
 
 - `uid` は常に string です
 - `parent_uid`, `from_uid`, `to_uid`, `task_uid` も常に string です
+
+### calendar の前提
+
+- `calendar_uid = "1"` は、既定の `Standard` calendar を指します
+- 既定の `Standard` calendar では、土曜日と日曜日を非稼働日として扱います
+- task や resource に個別 `calendar_uid` がない場合は、project 既定 calendar を継承する前提で扱います
+- したがって、通常 task の日付を考えるときは、まず `calendar_uid = "1"` の土日非稼働を前提にしてよいです
 
 ### 日付・期間
 
@@ -2593,12 +2610,61 @@ md-outlined-select.md-outlined-field:focus-within::part(container) {
 - 親子や順序の変更は `move_task` を使います
 - 依存関係の追加や解除は `link_tasks` / `unlink_tasks` を使います
 
+### Patch JSON の MVP 方針
+
+- 最初の import 実装では、既存 project 向け Patch JSON の最小対応として `update_task` から着手します
+- MVP では `operations` 配列を順に適用します
+- MVP では、少なくとも `uid` で対象 task を特定できることを前提にします
+- MVP で受ける `fields` は、まず次のような task の基本計画項目に絞る方針です
+  - `name`
+  - `planned_start`
+  - `planned_finish`
+  - `planned_duration`
+  - `planned_duration_hours`
+- MVP では、`move_task` / `link_tasks` / `unlink_tasks` は schema 上の設計候補として残してよいですが、import 実装の first cut では未対応でもよいです
+- MVP では、`add_task` / `delete_task` も first cut の import 実装対象には含めません
+- MVP では、既存 task の安全な部分更新を優先し、`update_task` のみに絞る方針を推奨します
+- `add_task` は早い段階で欲しくなる可能性がありますが、`uid` 採番、親子位置、summary 構造、依存関係などの整合を要するため、MVP からは外します
+- `delete_task` は子 task、assignment、dependency などを壊しやすいため、MVP では扱わない方針を推奨します
+- MVP では、未対応 `op` は静かに無視せず、少なくとも warning または error として扱う方針です
+- MVP では、存在しない `uid`、不正日付、不正 field 名は validation 対象とします
+- MVP では、未指定 field は変更なしとして扱います
+- MVP では、Patch JSON は既存 project への部分適用であり、新規 project 草案の全量置換には使いません
+- MVP では、Patch JSON による `planned_start` / `planned_finish` の更新は、原則として非稼働日を避ける前提です
+- ただし、人間が明示的に非稼働日での作業を指示した場合は、その指示を優先してよいです
+- 例外適用時は、説明文で「非稼働日ルールより人間指示を優先した」ことを明示してください
+
+### Patch JSON の MVP 例
+
+```json
+{
+  "operations": [
+    {
+      "op": "update_task",
+      "uid": "101",
+      "fields": {
+        "planned_start": "2026-04-03",
+        "planned_finish": "2026-04-06"
+      }
+    }
+  ]
+}
+```
+
 ### 新規生成モードの原則
 
 - `project_draft_request` に対する返答は `project_draft_view` です
 - このとき `Patch JSON` は返しません
 - draft は正本ではなく草案です
 - draft 内の `uid` は `"draft-1"` のような仮 UID でよいです
+- 新規生成モードでは、非稼働日を厳密に考慮しなくてもかまいません
+- 新規生成モードでは、まず phase / milestone / task の構造と大まかな順序を優先します
+- 新規生成モードでも、可能なら仮の `planned_start` / `planned_finish` を task に入れてください
+- この仮日付は通常 task だけでなく、summary task と milestone にも入れてよいです
+- summary task には、その配下 task を大まかに包む期間を仮で入れてください
+- milestone には、その節目の日付を仮で入れてください
+- 人間が「とりあえずえいやで日付を入れてよい」と指示している場合は、細かい整合よりもまず日付を埋めることを優先してよいです
+- 新規生成後の稼働日・祝日を考慮した再計画は、後続の Patch JSON で行う想定です
 - `percent_complete` を含めてよいです
 - task が通常 task で、`planned_start` / `planned_finish` が日付だけの場合、`mikuproject` 側では勤務時間帯を補完して扱うことがあります
 - 同日 task の date-only 指定は、通常 task なら `09:00:00` 開始 / `18:00:00` 終了へ補完されることがあります
@@ -2681,7 +2747,7 @@ md-outlined-select.md-outlined-field:focus-within::part(container) {
 - phase 定義は当面 `top-level summary task` 固定ですが、将来的にはより柔軟な定義へ拡張する余地があります
 </template>
               <div class="md-form-grid">
-                <lht-text-field-help field-id="projectDraftImportInput" label="生成AIが返した JSON" rows="14" help-text="生成AIが返した `project_draft_view` の JSON テキストを貼り付けます。最後に json フェンスを持つ応答全体でもかまいません。"></lht-text-field-help>
+                <lht-text-field-help field-id="projectDraftImportInput" label="生成AIが返した JSON" rows="14" help-text="生成AIが返した `project_draft_view` または Patch JSON のテキストを貼り付けます。最後に json フェンスを持つ応答全体でもかまいません。"></lht-text-field-help>
               </div>
             </section>
           </div>
@@ -2975,6 +3041,7 @@ md-outlined-select.md-outlined-field:focus-within::part(container) {
     <lht-toast id="toast"></lht-toast>
   </div>
   </main>
+  
   
   
   
@@ -11428,6 +11495,235 @@ if (!customElements.get("lht-page-menu")) {
  * SPDX-License-Identifier: Apache-2.0
  */
 (() => {
+    const mikuprojectXml = globalThis.__mikuprojectXml;
+    if (!mikuprojectXml) {
+        throw new Error("mikuproject XML module is not loaded");
+    }
+    function importProjectPatchJson(documentLike, baseModel) {
+        const validation = validatePatchDocument(documentLike);
+        const nextModel = cloneProjectModel(baseModel);
+        const changes = [];
+        const warnings = [...validation.warnings];
+        const taskByUid = new Map(nextModel.tasks.map((task) => [task.uid, task]));
+        validation.document.operations.forEach((operation, index) => {
+            const op = String(operation.op || "").trim();
+            if (op !== "update_task") {
+                warnings.push({ message: `未対応の op は無視します: operations[${index}].op = ${op || "(empty)"}` });
+                return;
+            }
+            const uid = String(operation.uid || "").trim();
+            if (!uid) {
+                warnings.push({ message: `update_task の uid がありません: operations[${index}]` });
+                return;
+            }
+            const task = taskByUid.get(uid);
+            if (!task) {
+                warnings.push({ message: `update_task の uid が既存 task を指していません: ${uid}` });
+                return;
+            }
+            if (!operation.fields || typeof operation.fields !== "object" || Array.isArray(operation.fields)) {
+                warnings.push({ message: `update_task.fields がオブジェクトではありません: ${uid}` });
+                return;
+            }
+            applyUpdateTaskOperation(task, operation.fields, nextModel.project, changes, warnings, index);
+        });
+        return {
+            model: mikuprojectXml.normalizeProjectModel(nextModel),
+            changes,
+            warnings
+        };
+    }
+    function validatePatchDocument(documentLike) {
+        if (!documentLike || typeof documentLike !== "object" || Array.isArray(documentLike)) {
+            throw new Error("Patch JSON がオブジェクトではありません");
+        }
+        const document = documentLike;
+        if (!Array.isArray(document.operations)) {
+            throw new Error("Patch JSON には operations 配列が必要です");
+        }
+        const warnings = [];
+        document.operations.forEach((operation, index) => {
+            if (!operation || typeof operation !== "object" || Array.isArray(operation)) {
+                throw new Error(`operations[${index}] がオブジェクトではありません`);
+            }
+        });
+        return {
+            document: document,
+            warnings
+        };
+    }
+    function applyUpdateTaskOperation(task, rawFields, project, changes, warnings, operationIndex) {
+        const fields = { ...rawFields };
+        if (Object.keys(fields).length === 0) {
+            warnings.push({ message: `update_task に fields がありません: ${task.uid}` });
+            return;
+        }
+        if (fields.planned_duration !== undefined && fields.planned_duration_hours !== undefined) {
+            warnings.push({ message: `planned_duration と planned_duration_hours が同時指定されたため、planned_duration_hours は無視します: ${task.uid}` });
+            delete fields.planned_duration_hours;
+        }
+        const handledFields = new Set();
+        if (fields.name !== undefined) {
+            handledFields.add("name");
+            if (typeof fields.name !== "string" || fields.name.trim() === "") {
+                warnings.push({ message: `update_task.name は空でない文字列が必要です: ${task.uid}` });
+            }
+            else if (task.name !== fields.name.trim()) {
+                changes.push({
+                    scope: "tasks",
+                    uid: task.uid,
+                    label: task.name || task.uid,
+                    field: "name",
+                    before: task.name,
+                    after: fields.name.trim()
+                });
+                task.name = fields.name.trim();
+            }
+        }
+        if (fields.planned_start !== undefined) {
+            handledFields.add("planned_start");
+            const normalizedStart = normalizePatchedTaskDate(fields.planned_start, "start", task, project);
+            if (normalizedStart === undefined) {
+                warnings.push({ message: `update_task.planned_start の日付形式が解釈できません: ${task.uid}` });
+            }
+            else if (task.start !== normalizedStart) {
+                changes.push({
+                    scope: "tasks",
+                    uid: task.uid,
+                    label: task.name || task.uid,
+                    field: "planned_start",
+                    before: task.start,
+                    after: normalizedStart
+                });
+                task.start = normalizedStart;
+            }
+        }
+        if (fields.planned_finish !== undefined) {
+            handledFields.add("planned_finish");
+            const normalizedFinish = normalizePatchedTaskDate(fields.planned_finish, "finish", task, project);
+            if (normalizedFinish === undefined) {
+                warnings.push({ message: `update_task.planned_finish の日付形式が解釈できません: ${task.uid}` });
+            }
+            else if (task.finish !== normalizedFinish) {
+                changes.push({
+                    scope: "tasks",
+                    uid: task.uid,
+                    label: task.name || task.uid,
+                    field: "planned_finish",
+                    before: task.finish,
+                    after: normalizedFinish
+                });
+                task.finish = normalizedFinish;
+            }
+        }
+        if (fields.planned_duration !== undefined) {
+            handledFields.add("planned_duration");
+            if (typeof fields.planned_duration !== "string" || fields.planned_duration.trim() === "") {
+                warnings.push({ message: `update_task.planned_duration は空でない文字列が必要です: ${task.uid}` });
+            }
+            else if (task.duration !== fields.planned_duration.trim()) {
+                changes.push({
+                    scope: "tasks",
+                    uid: task.uid,
+                    label: task.name || task.uid,
+                    field: "planned_duration",
+                    before: task.duration,
+                    after: fields.planned_duration.trim()
+                });
+                task.duration = fields.planned_duration.trim();
+            }
+        }
+        if (fields.planned_duration_hours !== undefined) {
+            handledFields.add("planned_duration_hours");
+            if (typeof fields.planned_duration_hours !== "number" || !Number.isFinite(fields.planned_duration_hours) || fields.planned_duration_hours < 0) {
+                warnings.push({ message: `update_task.planned_duration_hours は 0 以上の数値が必要です: ${task.uid}` });
+            }
+            else {
+                const beforeHours = parseDurationHours(task.duration);
+                const nextDuration = formatDurationHours(fields.planned_duration_hours);
+                if (task.duration !== nextDuration) {
+                    changes.push({
+                        scope: "tasks",
+                        uid: task.uid,
+                        label: task.name || task.uid,
+                        field: "planned_duration_hours",
+                        before: beforeHours,
+                        after: fields.planned_duration_hours
+                    });
+                    task.duration = nextDuration;
+                }
+            }
+        }
+        Object.keys(fields).forEach((fieldName) => {
+            if (handledFields.has(fieldName)) {
+                return;
+            }
+            warnings.push({ message: `未対応の field は無視します: operations[${operationIndex}].fields.${fieldName}` });
+        });
+    }
+    function normalizePatchedTaskDate(value, kind, task, project) {
+        if (typeof value !== "string") {
+            return undefined;
+        }
+        const trimmed = value.trim();
+        if (!trimmed) {
+            return undefined;
+        }
+        if (!isDateText(trimmed)) {
+            return undefined;
+        }
+        if (isDateOnlyText(trimmed) && !task.milestone) {
+            const timeText = kind === "start"
+                ? (project.defaultStartTime || "09:00:00")
+                : (project.defaultFinishTime || "18:00:00");
+            return `${trimmed}T${timeText}`;
+        }
+        return trimmed;
+    }
+    function isDateOnlyText(value) {
+        return /^\d{4}-\d{2}-\d{2}$/.test(value);
+    }
+    function isDateText(value) {
+        if (isDateOnlyText(value)) {
+            return true;
+        }
+        return !Number.isNaN(new Date(value).getTime());
+    }
+    function formatDurationHours(hours) {
+        const totalSeconds = Math.round(hours * 60 * 60);
+        const normalizedSeconds = Math.max(0, totalSeconds);
+        const durationHours = Math.floor(normalizedSeconds / 3600);
+        const durationMinutes = Math.floor((normalizedSeconds % 3600) / 60);
+        const durationSeconds = normalizedSeconds % 60;
+        return `PT${durationHours}H${durationMinutes}M${durationSeconds}S`;
+    }
+    function parseDurationHours(duration) {
+        const text = String(duration || "").trim();
+        const match = text.match(/^PT(?:(\d+(?:\.\d+)?)H)?(?:(\d+(?:\.\d+)?)M)?(?:(\d+(?:\.\d+)?)S)?$/);
+        if (!match) {
+            return undefined;
+        }
+        const hours = Number(match[1] || 0);
+        const minutes = Number(match[2] || 0);
+        const seconds = Number(match[3] || 0);
+        return hours + (minutes / 60) + (seconds / 3600);
+    }
+    function cloneProjectModel(model) {
+        return JSON.parse(JSON.stringify(model));
+    }
+    globalThis.__mikuprojectProjectPatchJson = {
+        importProjectPatchJson,
+        validatePatchDocument
+    };
+})();
+  </script>
+
+  <script>
+/*
+ * Copyright 2026 Toshiki Iga
+ * SPDX-License-Identifier: Apache-2.0
+ */
+(() => {
     const HEADER_FILL = "#D9EAF7";
     const HEADER_ID_FILL = "#E1EDF8";
     const HEADER_STRUCTURE_FILL = "#E6F0DF";
@@ -14036,6 +14332,10 @@ if (!customElements.get("lht-page-menu")) {
     if (!mikuprojectProjectWorkbookJson) {
         throw new Error("mikuproject Project Workbook JSON module is not loaded");
     }
+    const mikuprojectProjectPatchJson = globalThis.__mikuprojectProjectPatchJson;
+    if (!mikuprojectProjectPatchJson) {
+        throw new Error("mikuproject Project Patch JSON module is not loaded");
+    }
     const mikuprojectWbsXlsx = globalThis.__mikuprojectWbsXlsx;
     if (!mikuprojectWbsXlsx) {
         throw new Error("mikuproject WBS XLSX module is not loaded");
@@ -15040,6 +15340,9 @@ WorkWeek1=${formatCalendarWorkWeekSummary(calendar)}</div>
         if (candidate.view_type === "project_draft_view") {
             return "project_draft_view";
         }
+        if (Array.isArray(candidate.operations)) {
+            return "patch_json";
+        }
         return undefined;
     }
     async function importProjectDraftFromText() {
@@ -15060,6 +15363,52 @@ WorkWeek1=${formatCalendarWorkWeekSummary(calendar)}</div>
         setStatus(issues.length > 0 ? `project_draft_view を取り込みました。検証で ${issues.length} 件の問題があります` : "project_draft_view を取り込みました");
         showToast("project_draft_view を取り込みました");
         setActiveTab("transform", { skipTransformRefresh: true });
+    }
+    async function importPatchJsonFromSourceText(sourceText) {
+        const trimmedSourceText = sourceText.trim();
+        if (!trimmedSourceText) {
+            throw new Error("Patch JSON を入力してください");
+        }
+        const documentLike = JSON.parse(extractLastJsonBlock(trimmedSourceText));
+        const baseModel = ensureCurrentModel();
+        const result = mikuprojectProjectPatchJson.importProjectPatchJson(documentLike, baseModel);
+        currentModel = result.model;
+        const issues = mikuprojectXml.validateProjectModel(currentModel);
+        updateSummary(currentModel);
+        renderValidationIssues(issues);
+        renderImportWarnings(result.warnings);
+        renderXlsxImportSummary(result.changes);
+        if (result.changes.length > 0) {
+            getTextArea("xmlInput").value = mikuprojectXml.exportMsProjectXml(currentModel);
+            markXmlDirty();
+        }
+        isXmlSourceDirty = false;
+        const summaryText = result.changes.length > 0
+            ? `Patch JSON を読み込んで ${result.changes.length} 件の変更を反映しました。XML は再生成済みで、必要なら XML Export で保存できます`
+            : "Patch JSON に反映対象の変更はありませんでした。XML は未変更です";
+        const warningText = result.warnings.length > 0 ? `。Patch JSON 取込で ${result.warnings.length} 件の warning を無視しました` : "";
+        setStatus(issues.length > 0 ? `${summaryText}${warningText}。検証で ${issues.length} 件の問題があります` : `${summaryText}${warningText}`);
+        showToast("Patch JSON を反映しました");
+        setActiveTab("transform", { skipTransformRefresh: true });
+        await exportCurrentMermaid({ silent: true });
+    }
+    async function importAiEditJsonFromText() {
+        const sourceText = getTextArea("projectDraftImportInput").value.trim();
+        if (!sourceText) {
+            throw new Error("project_draft_view または Patch JSON を入力してください");
+        }
+        const jsonText = extractLastJsonBlock(sourceText);
+        const documentLike = JSON.parse(jsonText);
+        const kind = detectJsonDocumentKind(documentLike);
+        if (kind === "project_draft_view") {
+            await importProjectDraftFromText();
+            return;
+        }
+        if (kind === "patch_json") {
+            await importPatchJsonFromSourceText(sourceText);
+            return;
+        }
+        throw new Error("project_draft_view または Patch JSON を入力してください");
     }
     function loadProjectDraftSample() {
         const sampleDraftText = JSON.stringify(mikuprojectXml.SAMPLE_PROJECT_DRAFT_VIEW, null, 2);
@@ -15128,7 +15477,9 @@ WorkWeek1=${formatCalendarWorkWeekSummary(calendar)}</div>
             return;
         }
         if (normalizedName.endsWith(".editjson")) {
-            await importProjectDraftFromFile(file);
+            const sourceText = await file.text();
+            getTextArea("projectDraftImportInput").value = sourceText;
+            await importAiEditJsonFromText();
             return;
         }
         if (normalizedName.endsWith(".json")) {
@@ -15144,7 +15495,12 @@ WorkWeek1=${formatCalendarWorkWeekSummary(calendar)}</div>
                 await importProjectDraftFromText();
                 return;
             }
-            throw new Error("JSON の format / view_type を判別できません。workbook JSON か project_draft_view を指定してください");
+            if (kind === "patch_json") {
+                getTextArea("projectDraftImportInput").value = sourceText;
+                await importPatchJsonFromSourceText(sourceText);
+                return;
+            }
+            throw new Error("JSON の format / view_type を判別できません。workbook JSON、project_draft_view、または Patch JSON を指定してください");
         }
         throw new Error("対応していないファイル形式です。.xml / .xlsx / .json / .editjson / .csv を指定してください");
     }
@@ -15537,10 +15893,10 @@ WorkWeek1=${formatCalendarWorkWeekSummary(calendar)}</div>
         });
         getElement("importProjectDraftBtn").addEventListener("click", async () => {
             try {
-                await importProjectDraftFromText();
+                await importAiEditJsonFromText();
             }
             catch (error) {
-                setStatus(error instanceof Error ? error.message : "project_draft_view 取り込みに失敗しました");
+                setStatus(error instanceof Error ? error.message : "編集用 JSON 取り込みに失敗しました");
             }
         });
         getElement("exportPhaseDetailBtn").addEventListener("click", () => {

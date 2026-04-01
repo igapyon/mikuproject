@@ -35,7 +35,12 @@
 - `task_edit_view` の projection を実装する
 - `.editjson` の import で現状 `project_draft_view` だけを受けている制約を見直し、将来の `task_edit_view` / Patch JSON など他の `view_type` も扱えるようにする
 - 既存 project 向け Patch JSON の schema を具体化する
+- 既存 project 向け Patch JSON について、少なくとも `update_task` を含む最小 operation set の設計メモを `md` で固める
+- 既存 project 向け Patch JSON を生成AIへ返させるための prompt / rules / 出力例を `md` で整備する
+- 既存 project 向け Patch JSON で、`predecessors` を `update_task.fields` に含めるか、`link_tasks / unlink_tasks` に分離するかを明確化する
 - Patch JSON を内部モデルへ適用する処理を実装する
+- Patch JSON の読込導線と、`project_draft_view` との判別 UI / status message / 差分要約表示を整備する
+- Patch JSON の正常系・異常系・validation・round-trip 観点のテストを追加する
 - Patch JSON import 後の validation と差分要約 UI を実装する
 - import 前後で、どの `task / calendar / assignment` がどう変わったかを見やすく確認できる差分可視化を追加する
 - 差分適用を前提として、生成AI や外部編集結果を全件置換ではなく部分適用できる運用を強化する

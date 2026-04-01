@@ -75,8 +75,8 @@
 
   const IMPORTABLE_FIELDS = {
     Project: PROJECT_EDITABLE_FIELDS,
-    Tasks: ["Name", "Start", "Finish", "PercentComplete", "PercentWorkComplete", "Notes"] as const,
-    Resources: ["Name", "Group", "MaxUnits"] as const,
+    Tasks: ["Name", "Start", "Finish", "Duration", "PercentComplete", "PercentWorkComplete", "Milestone", "Summary", "Critical", "CalendarUID", "Predecessors", "Notes"] as const,
+    Resources: ["Name", "Group", "MaxUnits", "CalendarUID"] as const,
     Assignments: ["Units", "Work", "PercentWorkComplete"] as const,
     Calendars: ["Name", "IsBaseCalendar", "BaseCalendarUID"] as const,
     NonWorkingDays: ["Name", "Date", "FromDate", "ToDate", "DayWorking"] as const

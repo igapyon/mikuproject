@@ -167,9 +167,9 @@ describe("mikuproject wbs xlsx", () => {
     expect(sheet.rows[summaryHeaderIndex + 9].cells[0].value).toBe("タスク");
     expect(sheet.rows[summaryHeaderIndex + 9].cells[1].value).toBe("13");
     expect(sheet.rows[summaryHeaderIndex + 10].cells[0].value).toBe("リソース");
-    expect(sheet.rows[summaryHeaderIndex + 10].cells[1].value).toBe("0");
+    expect(sheet.rows[summaryHeaderIndex + 10].cells[1].value).toBe("1");
     expect(sheet.rows[summaryHeaderIndex + 11].cells[0].value).toBe("割当");
-    expect(sheet.rows[summaryHeaderIndex + 11].cells[1].value).toBe("0");
+    expect(sheet.rows[summaryHeaderIndex + 11].cells[1].value).toBe("2");
     expect(sheet.rows[summaryHeaderIndex + 12].cells[0].value).toBe("カレンダ");
     expect(sheet.rows[summaryHeaderIndex + 12].cells[1].value).toBe("1");
     const headerRowIndex = findRowIndexByCellValue(sheet, "UID");
@@ -740,9 +740,9 @@ describe("mikuproject wbs xlsx", () => {
 
     expect(sheet.rows[projectInfoHeaderIndex + 1].cells[0].value).toBe("プロジェクト名");
     expect(sheet.rows[projectInfoHeaderIndex + 1].cells[2].value).toBe("Sample Project ...");
-    expect(secondTaskRow.cells[15].value).toBe("-");
+    expect(secondTaskRow.cells[15].value).toBe("Mikuku");
     expect(secondTaskRow.cells[16].value).toBe("1 Standa...");
-    expect(secondTaskRow.cells[17].value).toBe("-");
+    expect(secondTaskRow.cells[17].value).toBe("Mikuku");
     expect(thirdTaskRow.cells[18].value).toBe("-");
   });
 

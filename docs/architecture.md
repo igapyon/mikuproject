@@ -183,3 +183,27 @@ npm run build
 - `docs/architecture.md`: 全体構成、配布形態、ビルド、運用ルール
 - `docs/spec.md`: 仕様と設計判断の置き場
 - `docs/TODO.md`: 未完了作業の管理
+
+## 実装 FAQ
+
+### workbook JSON と `project_draft_view` は同じですか
+
+違う。
+
+- workbook JSON は、通常 workbook (`XLSX`) のテキスト版である
+- `Project / Tasks / Resources / Assignments / Calendars / NonWorkingDays` を持つ
+- import 時も、基本的には `XLSX Import` と同じ限定列の部分更新として扱う
+
+一方で `project_draft_view` は、生成AI などが返す「新規 project 草案」である。
+
+- 主に `project` と `tasks` を持つ草案用 JSON である
+- 既存 project の限定更新ではなく、新しい `ProjectModel` を組み立てる入口である
+- `Resources / Assignments / Calendars / NonWorkingDays` を workbook JSON と同じ形では持たない
+
+つまり、`workbook JSON` は「既存 project を workbook 相当で扱うための JSON」、`project_draft_view` は「新規草案を取り込むための JSON」として分離している。
+
+### 画面の `サンプル` は XML を読んでいますか、それとも JSON を読んでいますか
+
+画面の通常 `サンプル` は `SAMPLE_XML` を読み込む。
+
+ただし、その `SAMPLE_XML` 自体は内部では `SAMPLE_PROJECT_DRAFT_VIEW` から生成している。つまり、画面上の導線は XML 読込だが、サンプルの元データは `project_draft_view` 系である。

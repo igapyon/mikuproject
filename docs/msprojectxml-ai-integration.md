@@ -321,6 +321,16 @@ AI 入力は 1 種類の簡約 JSON で統一するより、用途別 projection
     "name": "新規基幹刷新",
     "planned_start": "2026-04-01"
   },
+  "resources": [
+    {
+      "uid": "res-1",
+      "name": "Mikuku",
+      "initials": "M",
+      "group": "PMO",
+      "max_units": 1,
+      "calendar_uid": "1"
+    }
+  ],
   "tasks": [
     {
       "uid": "draft-1",
@@ -328,6 +338,15 @@ AI 入力は 1 種類の簡約 JSON で統一するより、用途別 projection
       "parent_uid": null,
       "position": 0,
       "is_summary": true
+    }
+  ],
+  "assignments": [
+    {
+      "uid": "asg-1",
+      "task_uid": "draft-1",
+      "resource_uid": "res-1",
+      "units": 1,
+      "work": "PT8H0M0S"
     }
   ]
 }

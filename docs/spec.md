@@ -327,8 +327,8 @@ import 時の扱いも `XLSX Import` と完全に揃える。
 現時点で `XLSX Import` の反映対象としている列は次のとおり。
 
 - `Project`: `Name / Title / Author / Company / StartDate / FinishDate / CurrentDate / StatusDate / CalendarUID / MinutesPerDay / MinutesPerWeek / DaysPerMonth / ScheduleFromStart`
-- `Tasks`: `Name / Start / Finish / PercentComplete / PercentWorkComplete / Notes`
-- `Resources`: `Name / Group / MaxUnits`
+- `Tasks`: `Name / Start / Finish / Duration / PercentComplete / PercentWorkComplete / Milestone / Summary / Critical / CalendarUID / Predecessors / Notes`
+- `Resources`: `Name / Group / MaxUnits / CalendarUID`
 - `Assignments`: `Units / Work / PercentWorkComplete`
 - `Calendars`: `Name / IsBaseCalendar / BaseCalendarUID`
 - `NonWorkingDays`: `Name / Date / FromDate / ToDate / DayWorking`
@@ -338,8 +338,8 @@ import 時の扱いも `XLSX Import` と完全に揃える。
 | Sheet | Editable Columns | Notes |
 | --- | --- | --- |
 | `Project` | `Name / Title / Author / Company / StartDate / FinishDate / CurrentDate / StatusDate / CalendarUID / MinutesPerDay / MinutesPerWeek / DaysPerMonth / ScheduleFromStart` | project 単位の部分更新として扱う |
-| `Tasks` | `Name / Start / Finish / PercentComplete / PercentWorkComplete / Notes` | `UID` をキーに部分更新する |
-| `Resources` | `Name / Group / MaxUnits` | `UID` をキーに部分更新する |
+| `Tasks` | `Name / Start / Finish / Duration / PercentComplete / PercentWorkComplete / Milestone / Summary / Critical / CalendarUID / Predecessors / Notes` | `UID` をキーに部分更新する |
+| `Resources` | `Name / Group / MaxUnits / CalendarUID` | `UID` をキーに部分更新する |
 | `Assignments` | `Units / Work / PercentWorkComplete` | `UID` をキーに部分更新する |
 | `Calendars` | `Name / IsBaseCalendar / BaseCalendarUID` | `UID` をキーに部分更新する |
 | `NonWorkingDays` | `Name / Date / FromDate / ToDate / DayWorking` | `CalendarUID + Index` をキーに部分更新する |
@@ -358,15 +358,17 @@ import 時の扱いも `XLSX Import` と完全に揃える。
 | `WBS` | 表示のみ |
 | `Start` | import 可 |
 | `Finish` | import 可 |
-| `Duration` | 表示のみ |
+| `Duration` | import 可 |
 | `PercentComplete` | import 可 |
 | `PercentWorkComplete` | import 可 |
-| `Milestone` | 表示のみ |
-| `Summary` | 表示のみ |
-| `Critical` | 表示のみ |
-| `CalendarUID` | 表示のみ |
-| `Predecessors` | 表示のみ |
+| `Milestone` | import 可 |
+| `Summary` | import 可 |
+| `Critical` | import 可 |
+| `CalendarUID` | import 可 |
+| `Predecessors` | import 可 |
 | `Notes` | import 可 |
+
+`Predecessors` の workbook import は、現時点では `predecessorUid` の `,` 区切り一覧を読む最小対応とする。`type / linkLag` などの詳細な依存表現は将来拡張とする。
 
 `Resources` と `Assignments` が 0 件の workbook では、どの列が import 対象か分かるように、editable 列だけ着色されたダミー行を 1 行出してよい。これは表示補助であり、`UID` 等のキーが空なので import 時には無視される。
 
@@ -981,11 +983,11 @@ STEP 1 では、次は非目標とする。
 - 通常 task で `planned_start` / `planned_finish` が date-only の場合、内部化時に勤務時間帯として `09:00:00` / `18:00:00` を補完して扱うことがある
 - `planned_finish` だけが与えられた通常 task は、まず同日の `planned_start` を補完し、その後に上記の勤務時間帯補完を適用する
 - `is_milestone=true` の task には、この勤務時間帯補完を適用しない
+- 必要に応じて、最小の `resources` と `assignments` を併記してよい
+- 現時点の `assignments` は `task_uid / resource_uid / start / finish / units / work / percent_work_complete` 程度の最小表現を想定する
 
 現時点で意図的に落とすもの:
 
-- `Resources`
-- `Assignments`
 - `Calendars`
 - `Baseline`
 - `TimephasedData`

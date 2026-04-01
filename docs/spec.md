@@ -457,7 +457,39 @@ preview / validation の現状メモ:
 
 - 既存 project 向けには `project_overview_view` / `phase_detail_view` / `full bundle` の export を持つ
 - 新規生成向けには `project_draft_view` の import を持つ
-- `task_edit_view` の export と Patch JSON の import / 適用は、現時点では未実装とする
+- 既存 project 向けには Patch JSON の `update_task` first cut import / 適用を持つ
+- `task_edit_view` の export は、現時点では未実装とする
+- Patch JSON のうち `move_task` / `link_tasks` / `unlink_tasks` / `add_task` / `delete_task` は、現時点では未実装とする
+
+Patch JSON の次段 MVP 方針:
+
+- 既存 project 向けの AI 返却形式として `Patch JSON` を将来追加する
+- first cut は `operations` 配列を持つ部分適用 JSON とする
+- first cut では、少なくとも `update_task` の import / 適用から着手する
+- first cut では、対象 task は `uid` で特定する
+- first cut では、task の基本計画項目
+  - `name`
+  - `planned_start`
+  - `planned_finish`
+  - `planned_duration`
+  - `planned_duration_hours`
+  を優先して扱う
+- first cut では、`update_task` に絞る方針を推奨する
+- `add_task` は将来候補として残すが、`uid` 採番、親子位置、summary 構造、依存関係の整合が必要なため、first cut からは外す
+- `delete_task` は破壊範囲が大きいため、first cut からは外す
+- `move_task` / `link_tasks` / `unlink_tasks` は設計上の候補として残すが、first cut の実装対象とは限らない
+- 未知 `op`、存在しない `uid`、不正 field、不正日付は validation または import warning/error の対象とする
+- `project_draft_view` は新規草案作成を優先するため、非稼働日を厳密に考慮しなくてもよい
+- `project_draft_view` では、粗い草案でもよいので task に仮の `planned_start` / `planned_finish` を入れてよい
+- この仮日付は通常 task だけでなく、summary task と milestone にも入れてよい
+- summary task には配下 task を大まかに包む期間、milestone には節目の日付を仮で入れる方針を許容する
+- 人間が「とりあえずえいやで日付を入れてよい」と指示している場合は、細かい整合よりも日付充足を優先してよい
+- `calendar_uid = "1"` は既定の `Standard` calendar を指し、土曜日と日曜日を非稼働日として扱う前提とする
+- task / resource に個別 `CalendarUID` がない場合は、project 既定 calendar を継承する前提で扱う
+- 稼働日・祝日を考慮した日付補正は、後続の Patch JSON による再計画で扱う
+- Patch JSON の `planned_start` / `planned_finish` 更新は、原則として非稼働日を避ける前提とする
+- ただし、人間が明示的に非稼働日での実施を指示した場合は、その指示を優先できる
+- 非稼働日ルールより人間指示を優先した場合は、AI 側の説明文でもその例外適用を明示する
 
 ここでいう `Overview` は、内部実装上の `transform` 相当タブを、ユーザー向けに読み替えた呼称である。
 

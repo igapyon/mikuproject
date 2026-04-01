@@ -19,6 +19,10 @@
     if (!mikuprojectProjectWorkbookJson) {
         throw new Error("mikuproject Project Workbook JSON module is not loaded");
     }
+    const mikuprojectProjectPatchJson = globalThis.__mikuprojectProjectPatchJson;
+    if (!mikuprojectProjectPatchJson) {
+        throw new Error("mikuproject Project Patch JSON module is not loaded");
+    }
     const mikuprojectWbsXlsx = globalThis.__mikuprojectWbsXlsx;
     if (!mikuprojectWbsXlsx) {
         throw new Error("mikuproject WBS XLSX module is not loaded");
@@ -1023,6 +1027,9 @@ WorkWeek1=${formatCalendarWorkWeekSummary(calendar)}</div>
         if (candidate.view_type === "project_draft_view") {
             return "project_draft_view";
         }
+        if (Array.isArray(candidate.operations)) {
+            return "patch_json";
+        }
         return undefined;
     }
     async function importProjectDraftFromText() {
@@ -1043,6 +1050,52 @@ WorkWeek1=${formatCalendarWorkWeekSummary(calendar)}</div>
         setStatus(issues.length > 0 ? `project_draft_view を取り込みました。検証で ${issues.length} 件の問題があります` : "project_draft_view を取り込みました");
         showToast("project_draft_view を取り込みました");
         setActiveTab("transform", { skipTransformRefresh: true });
+    }
+    async function importPatchJsonFromSourceText(sourceText) {
+        const trimmedSourceText = sourceText.trim();
+        if (!trimmedSourceText) {
+            throw new Error("Patch JSON を入力してください");
+        }
+        const documentLike = JSON.parse(extractLastJsonBlock(trimmedSourceText));
+        const baseModel = ensureCurrentModel();
+        const result = mikuprojectProjectPatchJson.importProjectPatchJson(documentLike, baseModel);
+        currentModel = result.model;
+        const issues = mikuprojectXml.validateProjectModel(currentModel);
+        updateSummary(currentModel);
+        renderValidationIssues(issues);
+        renderImportWarnings(result.warnings);
+        renderXlsxImportSummary(result.changes);
+        if (result.changes.length > 0) {
+            getTextArea("xmlInput").value = mikuprojectXml.exportMsProjectXml(currentModel);
+            markXmlDirty();
+        }
+        isXmlSourceDirty = false;
+        const summaryText = result.changes.length > 0
+            ? `Patch JSON を読み込んで ${result.changes.length} 件の変更を反映しました。XML は再生成済みで、必要なら XML Export で保存できます`
+            : "Patch JSON に反映対象の変更はありませんでした。XML は未変更です";
+        const warningText = result.warnings.length > 0 ? `。Patch JSON 取込で ${result.warnings.length} 件の warning を無視しました` : "";
+        setStatus(issues.length > 0 ? `${summaryText}${warningText}。検証で ${issues.length} 件の問題があります` : `${summaryText}${warningText}`);
+        showToast("Patch JSON を反映しました");
+        setActiveTab("transform", { skipTransformRefresh: true });
+        await exportCurrentMermaid({ silent: true });
+    }
+    async function importAiEditJsonFromText() {
+        const sourceText = getTextArea("projectDraftImportInput").value.trim();
+        if (!sourceText) {
+            throw new Error("project_draft_view または Patch JSON を入力してください");
+        }
+        const jsonText = extractLastJsonBlock(sourceText);
+        const documentLike = JSON.parse(jsonText);
+        const kind = detectJsonDocumentKind(documentLike);
+        if (kind === "project_draft_view") {
+            await importProjectDraftFromText();
+            return;
+        }
+        if (kind === "patch_json") {
+            await importPatchJsonFromSourceText(sourceText);
+            return;
+        }
+        throw new Error("project_draft_view または Patch JSON を入力してください");
     }
     function loadProjectDraftSample() {
         const sampleDraftText = JSON.stringify(mikuprojectXml.SAMPLE_PROJECT_DRAFT_VIEW, null, 2);
@@ -1111,7 +1164,9 @@ WorkWeek1=${formatCalendarWorkWeekSummary(calendar)}</div>
             return;
         }
         if (normalizedName.endsWith(".editjson")) {
-            await importProjectDraftFromFile(file);
+            const sourceText = await file.text();
+            getTextArea("projectDraftImportInput").value = sourceText;
+            await importAiEditJsonFromText();
             return;
         }
         if (normalizedName.endsWith(".json")) {
@@ -1127,7 +1182,12 @@ WorkWeek1=${formatCalendarWorkWeekSummary(calendar)}</div>
                 await importProjectDraftFromText();
                 return;
             }
-            throw new Error("JSON の format / view_type を判別できません。workbook JSON か project_draft_view を指定してください");
+            if (kind === "patch_json") {
+                getTextArea("projectDraftImportInput").value = sourceText;
+                await importPatchJsonFromSourceText(sourceText);
+                return;
+            }
+            throw new Error("JSON の format / view_type を判別できません。workbook JSON、project_draft_view、または Patch JSON を指定してください");
         }
         throw new Error("対応していないファイル形式です。.xml / .xlsx / .json / .editjson / .csv を指定してください");
     }
@@ -1520,10 +1580,10 @@ WorkWeek1=${formatCalendarWorkWeekSummary(calendar)}</div>
         });
         getElement("importProjectDraftBtn").addEventListener("click", async () => {
             try {
-                await importProjectDraftFromText();
+                await importAiEditJsonFromText();
             }
             catch (error) {
-                setStatus(error instanceof Error ? error.message : "project_draft_view 取り込みに失敗しました");
+                setStatus(error instanceof Error ? error.message : "編集用 JSON 取り込みに失敗しました");
             }
         });
         getElement("exportPhaseDetailBtn").addEventListener("click", () => {

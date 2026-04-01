@@ -1,0 +1,57 @@
+<svg width="1200" height="1200" viewBox="0 0 1200 1200" fill="none" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="title desc">
+  <title id="title">JSON symbol</title>
+  <desc id="desc">A JSON symbol with braces and nested data lines inspired by mikuproject JSON output.</desc>
+  <defs>
+    <linearGradient id="panel" x1="214" y1="194" x2="987" y2="1010" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#C98A2E"/>
+      <stop offset="1" stop-color="#8A5E1E"/>
+    </linearGradient>
+    <linearGradient id="sheet" x1="328" y1="324" x2="858" y2="892" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#FFFDF8"/>
+      <stop offset="1" stop-color="#F2E5CF"/>
+    </linearGradient>
+    <filter id="shadow" x="164" y="156" width="872" height="900" filterUnits="userSpaceOnUse" color-interpolation-filters="sRGB">
+      <feFlood flood-opacity="0" result="BackgroundImageFix"/>
+      <feColorMatrix in="SourceAlpha" type="matrix" values="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 127 0" result="hardAlpha"/>
+      <feOffset dy="20"/>
+      <feGaussianBlur stdDeviation="26"/>
+      <feComposite in2="hardAlpha" operator="out"/>
+      <feColorMatrix type="matrix" values="0 0 0 0 0.541176 0 0 0 0 0.368627 0 0 0 0 0.117647 0 0 0 0.2 0"/>
+      <feBlend mode="normal" in2="BackgroundImageFix" result="effect1_dropShadow_1_1"/>
+      <feBlend mode="normal" in="SourceGraphic" in2="effect1_dropShadow_1_1" result="shape"/>
+    </filter>
+  </defs>
+
+  <g filter="url(#shadow)">
+    <rect x="216" y="208" width="768" height="784" rx="154" fill="url(#panel)"/>
+    <rect x="318" y="300" width="564" height="600" rx="68" fill="url(#sheet)"/>
+
+    <rect x="318" y="300" width="564" height="130" rx="68" fill="#8A5E1E"/>
+    <rect x="384" y="352" width="136" height="28" rx="14" fill="#FFF4DE"/>
+    <circle cx="790" cy="366" r="20" fill="#FFF4DE"/>
+    <circle cx="726" cy="366" r="20" fill="#E8D2A8"/>
+
+    <g stroke="#8A5E1E" stroke-width="20" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M438 498C405 498 386 521 386 556V574C386 605 372 622 344 628C372 634 386 651 386 682V700C386 735 405 758 438 758"/>
+      <path d="M762 498C795 498 814 521 814 556V574C814 605 828 622 856 628C828 634 814 651 814 682V700C814 735 795 758 762 758"/>
+    </g>
+
+    <g fill="#B07B2C">
+      <rect x="462" y="510" width="124" height="28" rx="14"/>
+      <rect x="462" y="604" width="160" height="28" rx="14"/>
+      <rect x="462" y="698" width="118" height="28" rx="14"/>
+    </g>
+
+    <g fill="#D2B07A">
+      <rect x="610" y="510" width="128" height="28" rx="14"/>
+      <rect x="646" y="604" width="92" height="28" rx="14"/>
+      <rect x="604" y="698" width="134" height="28" rx="14"/>
+    </g>
+
+    <g fill="#8A5E1E">
+      <circle cx="432" cy="524" r="10"/>
+      <circle cx="432" cy="618" r="10"/>
+      <circle cx="432" cy="712" r="10"/>
+    </g>
+  </g>
+</svg>

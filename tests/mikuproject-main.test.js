@@ -317,6 +317,10 @@ describe("mikuproject main", () => {
     bootPage();
 
     expect(document.getElementById("xmlInput").value).toContain("<Project");
+    expect(document.getElementById("xmlInput").value).toContain("<ScheduleFromStart>1</ScheduleFromStart>");
+    expect(document.getElementById("xmlInput").value).toContain("<MinutesPerDay>480</MinutesPerDay>");
+    expect(document.getElementById("xmlInput").value).toContain("<MinutesPerWeek>2400</MinutesPerWeek>");
+    expect(document.getElementById("xmlInput").value).toContain("<DaysPerMonth>20</DaysPerMonth>");
     expect(document.getElementById("statusMessage").textContent).toContain("サンプル XML");
     expect(document.getElementById("xmlSaveState").textContent).toContain("XML 保存状態: 未保存");
     expect(document.querySelector('lht-help-tooltip[label="Load from file の説明"]')).not.toBeNull();
@@ -456,13 +460,23 @@ describe("mikuproject main", () => {
         view_type: "project_draft_view",
         project: {
           name: "新規基幹刷新",
-          planned_start: "2026-04-01"
+          planned_start: "2026-04-01",
+          schedule_from_start: true,
+          minutes_per_day: 480,
+          minutes_per_week: 2400,
+          days_per_month: 20
         },
         tasks: [
           { uid: "draft-1", name: "要件定義", parent_uid: null, position: 0, is_summary: true, percent_complete: 100 },
           { uid: "draft-2", name: "ヒアリング", parent_uid: "draft-1", position: 0, percent_complete: 50, planned_finish: "2026-04-01" },
           { uid: "draft-3", name: "整理期間", parent_uid: "draft-1", position: 1, planned_start: "2026-04-02", planned_finish: "2026-04-03" },
           { uid: "draft-4", name: "要件確定", parent_uid: "draft-1", position: 2, is_milestone: true, predecessors: ["draft-2"], planned_start: "2026-04-08T18:00:00", planned_finish: "2026-04-08T18:00:00" }
+        ],
+        resources: [
+          { uid: "res-1", name: "Mikuku", initials: "M", group: "PMO", max_units: 1, calendar_uid: "1" }
+        ],
+        assignments: [
+          { uid: "asg-1", task_uid: "draft-2", resource_uid: "res-1", start: "2026-04-01T09:00:00", finish: "2026-04-01T18:00:00", units: 1, work: "PT8H0M0S", percent_work_complete: 50 }
         ]
       }, null, 2),
       "```"
@@ -474,13 +488,23 @@ describe("mikuproject main", () => {
 
     expect(document.getElementById("summaryProjectName").textContent).toBe("新規基幹刷新");
     expect(document.getElementById("summaryTaskCount").textContent).toBe("4");
+    expect(document.getElementById("summaryResourceCount").textContent).toBe("1");
+    expect(document.getElementById("summaryAssignmentCount").textContent).toBe("1");
     expect(document.getElementById("summaryCalendarCount").textContent).toBe("1");
     expect(document.getElementById("xmlInput").value).toContain("<Name>新規基幹刷新</Name>");
     expect(document.getElementById("xmlInput").value).toContain("<Title>新規基幹刷新</Title>");
     expect(document.getElementById("xmlInput").value).toContain("<CalendarUID>1</CalendarUID>");
+    expect(document.getElementById("xmlInput").value).toContain("<ScheduleFromStart>1</ScheduleFromStart>");
+    expect(document.getElementById("xmlInput").value).toContain("<MinutesPerDay>480</MinutesPerDay>");
+    expect(document.getElementById("xmlInput").value).toContain("<MinutesPerWeek>2400</MinutesPerWeek>");
+    expect(document.getElementById("xmlInput").value).toContain("<DaysPerMonth>20</DaysPerMonth>");
     expect(document.getElementById("xmlInput").value).toContain("<Name>Standard</Name>");
     expect(document.getElementById("xmlInput").value).toContain("<UID>3</UID>");
     expect(document.getElementById("modelOutput").value).toContain("\"title\": \"新規基幹刷新\"");
+    expect(document.getElementById("modelOutput").value).toContain("\"scheduleFromStart\": true");
+    expect(document.getElementById("modelOutput").value).toContain("\"minutesPerDay\": 480");
+    expect(document.getElementById("modelOutput").value).toContain("\"minutesPerWeek\": 2400");
+    expect(document.getElementById("modelOutput").value).toContain("\"daysPerMonth\": 20");
     expect(document.getElementById("modelOutput").value).toContain("\"name\": \"ヒアリング\"");
     expect(document.getElementById("modelOutput").value).toContain("\"milestone\": false");
     expect(document.getElementById("modelOutput").value).toContain("\"percentComplete\": 100");
@@ -495,6 +519,10 @@ describe("mikuproject main", () => {
     expect(document.getElementById("modelOutput").value).toContain("\"uid\": \"4\"");
     expect(document.getElementById("modelOutput").value).not.toContain("\"uid\": \"draft-4\"");
     expect(document.getElementById("modelOutput").value).toContain("\"name\": \"Standard\"");
+    expect(document.getElementById("modelOutput").value).toContain("\"name\": \"Mikuku\"");
+    expect(document.getElementById("modelOutput").value).toContain("\"initials\": \"M\"");
+    expect(document.getElementById("modelOutput").value).toContain("\"taskUid\": \"2\"");
+    expect(document.getElementById("modelOutput").value).toContain("\"resourceUid\": \"1\"");
   });
 
   it("limits default calendar holiday exceptions to the project date range", () => {
@@ -556,6 +584,9 @@ describe("mikuproject main", () => {
     expect(draftText).toContain("\"view_type\": \"project_draft_view\"");
     expect(draftText).toContain("\"name\": \"mikuproject開発\"");
     expect(draftText).toContain("架空検討フェーズ【架空】");
+    expect(draftText).toContain("\"resources\"");
+    expect(draftText).toContain("\"Mikuku\"");
+    expect(draftText).toContain("\"initials\": \"M\"");
     expect(document.getElementById("statusMessage").textContent).toContain("サンプル project_draft_view");
   });
 
@@ -577,19 +608,24 @@ describe("mikuproject main", () => {
 
     expect(document.getElementById("summaryProjectName").textContent).toBe("mikuproject開発");
     expect(document.getElementById("summaryTaskCount").textContent).toBe("13");
-    expect(document.getElementById("summaryResourceCount").textContent).toBe("0");
-    expect(document.getElementById("summaryAssignmentCount").textContent).toBe("0");
+    expect(document.getElementById("summaryResourceCount").textContent).toBe("1");
+    expect(document.getElementById("summaryAssignmentCount").textContent).toBe("2");
     expect(document.getElementById("summaryCalendarCount").textContent).toBe("1");
     expect(document.getElementById("modelOutput").value).toContain("\"name\": \"mikuproject開発\"");
     expect(document.getElementById("modelOutput").value).toContain("\"name\": \"基盤整備\"");
     expect(document.getElementById("modelOutput").value).toContain("\"name\": \"架空検討フェーズ【架空】\"");
+    expect(document.getElementById("modelOutput").value).toContain("\"name\": \"Mikuku\"");
+    expect(document.getElementById("modelOutput").value).toContain("\"initials\": \"M\"");
     expect(document.getElementById("modelOutput").value).toContain("\"name\": \"Standard\"");
     expect(document.getElementById("projectPreview").textContent).toContain("mikuproject開発");
     expect(document.getElementById("projectPreview").textContent).toContain("Calendar=1 (Standard)");
     expect(document.getElementById("taskPreview").textContent).toContain("初期実装（MS Project XML 調査・基軸フォーマット選定・内部モデルの概要確定）");
-    expect(document.getElementById("resourcePreview").textContent).toContain("まだ表示できる項目がありません");
-    expect(document.getElementById("assignmentPreview").textContent).toContain("まだ表示できる項目がありません");
-    expect(document.getElementById("calendarPreview").textContent).toContain(`WeekDays=7 / Exceptions=${SAMPLE_HOLIDAY_COUNT} / WorkWeeks=0`);
+    expect(document.getElementById("resourcePreview").textContent).toContain("Mikuku");
+    expect(document.getElementById("resourcePreview").textContent).toContain("Initials=M");
+    expect(document.getElementById("assignmentPreview").textContent).toContain("Task=3");
+    expect(document.getElementById("assignmentPreview").textContent).toContain("Resource=1 (Mikuku)");
+    expect(document.getElementById("assignmentPreview").textContent).toContain("Task=4");
+  expect(document.getElementById("calendarPreview").textContent).toContain(`WeekDays=7 / Exceptions=${SAMPLE_HOLIDAY_COUNT} / WorkWeeks=0`);
   });
 
   it("exports xml from the current model", () => {
@@ -1016,7 +1052,10 @@ describe("mikuproject main", () => {
     );
     const tasksSheet = workbook.sheets.find((sheet) => sheet.name === "Tasks");
     tasksSheet.rows[5].cells[2].value = "初期実装 Imported From XLSX";
+    tasksSheet.rows[5].cells[8].value = "PT24H0M0S";
     tasksSheet.rows[5].cells[9].value = 77;
+    tasksSheet.rows[5].cells[14].value = "2";
+    tasksSheet.rows[5].cells[15].value = "2";
     const bytes = codec.exportWorkbook(workbook);
 
     const importInput = document.getElementById("importFileInput");
@@ -1037,9 +1076,13 @@ describe("mikuproject main", () => {
     await flushAsyncWork();
 
     expect(document.getElementById("modelOutput").value).toContain("\"name\": \"初期実装 Imported From XLSX\"");
+    expect(document.getElementById("modelOutput").value).toContain("\"duration\": \"PT24H0M0S\"");
     expect(document.getElementById("modelOutput").value).toContain("\"percentComplete\": 77");
+    expect(document.getElementById("modelOutput").value).toContain("\"calendarUID\": \"2\"");
+    expect(document.getElementById("modelOutput").value).toContain("\"predecessorUid\": \"2\"");
     expect(document.getElementById("xmlInput").value).toContain("<Name>初期実装 Imported From XLSX</Name>");
-    expect(document.getElementById("statusMessage").textContent).toContain("XLSX を読み込んで 2 件の変更を反映しました");
+    expect(document.getElementById("xmlInput").value).toContain("<PredecessorUID>2</PredecessorUID>");
+    expect(document.getElementById("statusMessage").textContent).toContain("XLSX を読み込んで 5 件の変更を反映しました");
     expect(document.getElementById("statusMessage").textContent).toContain("XML Export で保存できます");
     expect(document.getElementById("xmlSaveState").textContent).toContain("XML 保存状態: 未保存");
     expect(document.getElementById("xlsxImportSummary").textContent).toContain("Tasks");
@@ -1047,10 +1090,61 @@ describe("mikuproject main", () => {
     expect(document.getElementById("xlsxImportSummary").textContent).toContain("変更なし: Project, Resources, Assignments, Calendars");
     expect(document.getElementById("xlsxImportSummary").textContent).toContain("UID=3 初期実装（MS Project XML 調査・基軸フォーマット選定・内部モデルの概要確定）");
     expect(document.getElementById("xlsxImportSummary").textContent).toContain("Name: 初期実装（MS Project XML 調査・基軸フォーマット選定・内部モデルの概要確定） -> 初期実装 Imported From XLSX");
+    expect(document.getElementById("xlsxImportSummary").textContent).toContain("Duration: PT0H0M0S -> PT24H0M0S");
     expect(document.getElementById("xlsxImportSummary").textContent).toContain("PercentComplete: 100 -> 77");
+    expect(document.getElementById("xlsxImportSummary").textContent).toContain("CalendarUID: (empty) -> 2");
+    expect(document.getElementById("xlsxImportSummary").textContent).toContain("Predecessors: (empty) -> 2");
     expect(document.getElementById("xlsxImportSummary").textContent).toContain("反映後の XML は更新済みです");
     expect(document.querySelectorAll("#xlsxImportSummary .md-xlsx-summary__section")).toHaveLength(1);
     expect(document.querySelectorAll("#xlsxImportSummary .md-xlsx-summary__item")).toHaveLength(1);
+  });
+
+  it("imports resource sheet edits back into the current model and xml", async () => {
+    bootPage();
+    document.getElementById("xmlInput").value = dependencyXml;
+    parseXmlViaHook();
+
+    const codec = new globalThis.__mikuprojectExcelIo.XlsxWorkbookCodec();
+    const workbook = globalThis.__mikuprojectProjectXlsx.exportProjectWorkbook(
+      globalThis.__mikuprojectXml.importMsProjectXml(document.getElementById("xmlInput").value)
+    );
+    const resourcesSheet = workbook.sheets.find((sheet) => sheet.name === "Resources");
+    resourcesSheet.rows[3].cells[2].value = "Miku Updated";
+    resourcesSheet.rows[3].cells[5].value = "Dev";
+    resourcesSheet.rows[3].cells[6].value = 1;
+    resourcesSheet.rows[3].cells[7].value = "1";
+    const bytes = codec.exportWorkbook(workbook);
+
+    const importInput = document.getElementById("importFileInput");
+    const file = new File([bytes], "resource-sheet.xlsx", {
+      type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+    });
+    Object.defineProperty(file, "arrayBuffer", {
+      configurable: true,
+      value: () => Promise.resolve(bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength))
+    });
+    Object.defineProperty(importInput, "files", {
+      configurable: true,
+      value: [file]
+    });
+
+    importInput.dispatchEvent(new Event("change"));
+    await flushAsyncWork();
+    await flushAsyncWork();
+
+    expect(document.getElementById("modelOutput").value).toContain("\"name\": \"Miku Updated\"");
+    expect(document.getElementById("modelOutput").value).toContain("\"group\": \"Dev\"");
+    expect(document.getElementById("modelOutput").value).toContain("\"maxUnits\": 1");
+    expect(document.getElementById("modelOutput").value).toContain("\"calendarUID\": \"1\"");
+    expect(document.getElementById("xmlInput").value).toContain("<Name>Miku Updated</Name>");
+    expect(document.getElementById("statusMessage").textContent).toContain("XLSX を読み込んで 4 件の変更を反映しました");
+    expect(document.getElementById("xlsxImportSummary").textContent).toContain("Resources 1");
+    expect(document.getElementById("xlsxImportSummary").textContent).toContain("変更なし: Project, Tasks, Assignments, Calendars");
+    expect(document.getElementById("xlsxImportSummary").textContent).toContain("UID=1 Miku");
+    expect(document.getElementById("xlsxImportSummary").textContent).toContain("Name: Miku -> Miku Updated");
+    expect(document.getElementById("xlsxImportSummary").textContent).toContain("Group: (empty) -> Dev");
+    expect(document.getElementById("xlsxImportSummary").textContent).toContain("MaxUnits: (empty) -> 1");
+    expect(document.getElementById("xlsxImportSummary").textContent).toContain("CalendarUID: (empty) -> 1");
   });
 
   it("clears file input value before reselecting the same file", () => {
@@ -1201,7 +1295,7 @@ describe("mikuproject main", () => {
     expect(document.getElementById("xlsxImportSummary").textContent).toContain("変更なし: Tasks, Resources, Assignments, Calendars");
     expect(document.getElementById("xlsxImportSummary").textContent).toContain("UID=project mikuproject開発");
     expect(document.getElementById("xlsxImportSummary").textContent).toContain("Name: mikuproject開発 -> Project From XLSX");
-    expect(document.getElementById("xlsxImportSummary").textContent).toContain("MinutesPerDay: (empty) -> 420");
+    expect(document.getElementById("xlsxImportSummary").textContent).toContain("MinutesPerDay: 480 -> 420");
     expect(document.querySelectorAll("#xlsxImportSummary .md-xlsx-summary__section")).toHaveLength(1);
     expect(document.querySelectorAll("#xlsxImportSummary .md-xlsx-summary__item")).toHaveLength(1);
   });
@@ -1268,7 +1362,7 @@ describe("mikuproject main", () => {
     expect(document.getElementById("xlsxImportSummary").classList.contains("md-hidden")).toBe(true);
   });
 
-  it("ignores edits in unsupported xlsx columns and sheets", async () => {
+  it("imports duration edits and ignores unsupported xlsx columns and sheets", async () => {
     bootPage();
     parseXmlViaHook();
 
@@ -1301,13 +1395,13 @@ describe("mikuproject main", () => {
     await flushAsyncWork();
     await flushAsyncWork();
 
-    expect(document.getElementById("statusMessage").textContent).toContain("XLSX に反映対象の変更はありませんでした");
-    expect(document.getElementById("statusMessage").textContent).toContain("XML は未変更です");
-    expect(document.getElementById("modelOutput").value).not.toContain("\"duration\": \"PT99H0M0S\"");
+    expect(document.getElementById("statusMessage").textContent).toContain("XLSX を読み込んで 1 件の変更を反映しました");
+    expect(document.getElementById("statusMessage").textContent).toContain("XML Export で保存できます");
+    expect(document.getElementById("modelOutput").value).toContain("\"duration\": \"PT99H0M0S\"");
     expect(document.getElementById("modelOutput").value).not.toContain("\"weekDays\": 99");
-    expect(document.getElementById("xmlInput").value).toBe(originalXml);
-    expect(document.getElementById("xlsxImportSummary").textContent).toBe("");
-    expect(document.getElementById("xlsxImportSummary").classList.contains("md-hidden")).toBe(true);
+    expect(document.getElementById("xmlInput").value).not.toBe(originalXml);
+    expect(document.getElementById("xlsxImportSummary").textContent).toContain("Tasks 1");
+    expect(document.getElementById("xlsxImportSummary").textContent).toContain("Duration: PT0H0M0S -> PT99H0M0S");
   });
 
   it("ignores calendar WeekDays, Exceptions, and WorkWeeks edits in xlsx import", async () => {

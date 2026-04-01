@@ -46,6 +46,12 @@
       name: string;
       columns?: Array<{ width?: number }>;
       mergedRanges?: string[];
+      dataValidations?: Array<{
+        type: "list";
+        sqref: string;
+        formula1: string;
+        allowBlank?: boolean;
+      }>;
       rows: Array<{
         height?: number;
         cells: XlsxCellLike[];
@@ -75,6 +81,9 @@
   const NOTES_FILL = "#FFFBEA";
   const NAME_FILL = "#FAF6FF";
   const WORK_FILL = "#F1F8FD";
+  const BOOLEAN_TRUE_LABEL = "○";
+  const BOOLEAN_FALSE_LABEL = "ー";
+  const OPTIONS_SHEET_NAME = "Options";
   const SUMMARY_FILL = "#E6F2E0";
   const MILESTONE_FILL = "#FFF0CF";
   const CRITICAL_FILL = "#F8DDE6";
@@ -88,14 +97,21 @@
   } as const;
 
   function exportProjectWorkbook(model: ProjectModel): XlsxWorkbookLike {
+    const projectSheet = buildProjectSheet(model);
+    const tasksSheet = buildTasksSheet(model);
+    const resourcesSheet = buildResourcesSheet(model);
+    const assignmentsSheet = buildAssignmentsSheet(model);
+    const calendarsSheet = buildCalendarsSheet(model);
+    const nonWorkingDaysSheet = buildNonWorkingDaysSheet(model);
     return {
       sheets: [
-        buildProjectSheet(model),
-        buildTasksSheet(model),
-        buildResourcesSheet(model),
-        buildAssignmentsSheet(model),
-        buildCalendarsSheet(model),
-        buildNonWorkingDaysSheet(model)
+        projectSheet,
+        tasksSheet,
+        resourcesSheet,
+        assignmentsSheet,
+        calendarsSheet,
+        nonWorkingDaysSheet,
+        buildOptionsSheet()
       ]
     };
   }
@@ -162,10 +178,21 @@
       ...PROJECT_FIELD_ORDER.slice(8).map((field) => keyValueRow(field, readProjectFieldValue(project, field), SHEET_THEMES.project.label))
     ];
 
+    const rowNumberByField = new Map<string, number>();
+    rows.forEach((row, index) => {
+      const field = typeof row.cells[0]?.value === "string" ? row.cells[0].value : undefined;
+      if (field) {
+        rowNumberByField.set(field, index + 1);
+      }
+    });
+
     return {
       name: "Project",
       columns: [{ width: 26 }, { width: 42 }],
       mergedRanges: ["A11:B11"],
+      dataValidations: buildBooleanDataValidations([
+        buildSingleCellReference(1, rowNumberByField.get("ScheduleFromStart"))
+      ]),
       rows
     };
   }
@@ -181,6 +208,11 @@
         { width: 34 }
       ],
       mergedRanges: [],
+      dataValidations: buildBooleanDataValidations([
+        buildColumnRange(11, DATA_ROW_START_INDEX + 1, DATA_ROW_START_INDEX + model.tasks.length),
+        buildColumnRange(12, DATA_ROW_START_INDEX + 1, DATA_ROW_START_INDEX + model.tasks.length),
+        buildColumnRange(13, DATA_ROW_START_INDEX + 1, DATA_ROW_START_INDEX + model.tasks.length)
+      ]),
       rows: [
         sectionTitleRow("Tasks", 17, SHEET_THEMES.tasks.section),
         sectionTitleRow("Task List", 17, SHEET_THEMES.tasks.section),
@@ -195,14 +227,14 @@
             textCell(task.wbs, index),
             editableCell(dateTimeCell(task.start, index)),
             editableCell(dateTimeCell(task.finish, index)),
-            durationCell(task.duration, index),
+            editableCell(durationCell(task.duration, index)),
             editableCell(percentCell(task.percentComplete, index)),
             editableCell(percentCell(task.percentWorkComplete, index)),
             taskFlagCell(task.milestone, index, MILESTONE_FILL),
             taskFlagCell(task.summary, index, SUMMARY_FILL),
             taskFlagCell(task.critical, index, CRITICAL_FILL),
-            referenceCell(task.calendarUID, index),
-            predecessorCell(task.predecessors.map((item) => item.predecessorUid).join(", "), index),
+            editableCell(referenceCell(task.calendarUID, index)),
+            editableCell(predecessorCell(task.predecessors.map((item) => item.predecessorUid).join(", "), index)),
             editableCell(notesCell(task.notes, index))
           ]
         }))
@@ -221,7 +253,7 @@
           textCell(resource.initials, index),
           editableCell(textCell(resource.group, index)),
           editableCell(countCell(resource.maxUnits, index)),
-          referenceCell(resource.calendarUID, index),
+          editableCell(referenceCell(resource.calendarUID, index)),
           textCell(resource.standardRate, index),
           textCell(resource.overtimeRate, index),
           countCell(resource.costPerUse, index),
@@ -239,7 +271,7 @@
           textCell(undefined, 0),
           editableCell(textCell(undefined, 0)),
           editableCell(countCell(undefined, 0)),
-          referenceCell(undefined, 0),
+          editableCell(referenceCell(undefined, 0)),
           textCell(undefined, 0),
           textCell(undefined, 0),
           countCell(undefined, 0),
@@ -329,6 +361,9 @@
         { width: 10 }, { width: 12 }, { width: 10 }
       ],
       mergedRanges: [],
+      dataValidations: buildBooleanDataValidations([
+        buildColumnRange(2, DATA_ROW_START_INDEX + 1, DATA_ROW_START_INDEX + model.calendars.length)
+      ]),
       rows: [
         sectionTitleRow("Calendars", 7, SHEET_THEMES.calendars.section),
         sectionTitleRow("Calendar List", 7, SHEET_THEMES.calendars.section),
@@ -369,6 +404,9 @@
         { width: 14 }, { width: 22 }, { width: 22 }, { width: 12 }
       ],
       mergedRanges: [],
+      dataValidations: buildBooleanDataValidations([
+        buildColumnRange(7, DATA_ROW_START_INDEX + 1, DATA_ROW_START_INDEX + rows.length)
+      ]),
       rows: [
         sectionTitleRow("NonWorkingDays", 8, SHEET_THEMES.nonWorkingDays.section),
         sectionTitleRow("Calendar Exceptions", 8, SHEET_THEMES.nonWorkingDays.section),
@@ -452,6 +490,9 @@
   }
 
   function stringifyCellValue(value: string | number | boolean): string {
+    if (typeof value === "boolean") {
+      return value ? BOOLEAN_TRUE_LABEL : BOOLEAN_FALSE_LABEL;
+    }
     return typeof value === "string" ? value : String(value);
   }
 
@@ -515,11 +556,13 @@
   }
 
   function taskFlagCell(value: string | number | boolean | undefined, rowIndex: number, activeFillColor: string): XlsxCellLike {
-    const isActive = value === true || value === 1 || value === "1";
-    return styledCell(value, rowIndex, {
-      fillColor: isActive ? activeFillColor : COUNT_FILL,
+    const displayValue = value === undefined ? undefined : stringifyCellValue(value);
+    return {
+      value: displayValue,
+      border: "thin",
+      fillColor: EDITABLE_FILL,
       horizontalAlign: "center"
-    });
+    };
   }
 
   function referenceCell(value: string | number | boolean | undefined, rowIndex: number): XlsxCellLike {
@@ -698,8 +741,14 @@
       assignIfChanged(changes, "tasks", task.uid, taskLabel, task, "name", "Name", readStringCellAt(row.cells, columnIndexByLabel.get("Name")));
       assignIfChanged(changes, "tasks", task.uid, taskLabel, task, "start", "Start", normalizeDateTimeInput(readStringCellAt(row.cells, columnIndexByLabel.get("Start"))));
       assignIfChanged(changes, "tasks", task.uid, taskLabel, task, "finish", "Finish", normalizeDateTimeInput(readStringCellAt(row.cells, columnIndexByLabel.get("Finish"))));
+      assignIfChanged(changes, "tasks", task.uid, taskLabel, task, "duration", "Duration", readStringCellAt(row.cells, columnIndexByLabel.get("Duration")));
       assignIfChanged(changes, "tasks", task.uid, taskLabel, task, "percentComplete", "PercentComplete", readNumberCellAt(row.cells, columnIndexByLabel.get("PercentComplete")));
       assignIfChanged(changes, "tasks", task.uid, taskLabel, task, "percentWorkComplete", "PercentWorkComplete", readNumberCellAt(row.cells, columnIndexByLabel.get("PercentWorkComplete")));
+      assignIfChanged(changes, "tasks", task.uid, taskLabel, task, "milestone", "Milestone", readBooleanCellAt(row.cells, columnIndexByLabel.get("Milestone")));
+      assignIfChanged(changes, "tasks", task.uid, taskLabel, task, "summary", "Summary", readBooleanCellAt(row.cells, columnIndexByLabel.get("Summary")));
+      assignIfChanged(changes, "tasks", task.uid, taskLabel, task, "critical", "Critical", readBooleanCellAt(row.cells, columnIndexByLabel.get("Critical")));
+      assignIfChanged(changes, "tasks", task.uid, taskLabel, task, "calendarUID", "CalendarUID", readStringCellAt(row.cells, columnIndexByLabel.get("CalendarUID")));
+      assignPredecessorsIfChanged(changes, task.uid, taskLabel, task, parsePredecessorCell(readStringCellAt(row.cells, columnIndexByLabel.get("Predecessors"))));
       assignIfChanged(changes, "tasks", task.uid, taskLabel, task, "notes", "Notes", readStringCellAt(row.cells, columnIndexByLabel.get("Notes")));
     }
   }
@@ -728,6 +777,7 @@
       assignIfChanged(changes, "resources", resource.uid, resourceLabel, resource, "name", "Name", readStringCellAt(row.cells, columnIndexByLabel.get("Name")));
       assignIfChanged(changes, "resources", resource.uid, resourceLabel, resource, "group", "Group", readStringCellAt(row.cells, columnIndexByLabel.get("Group")));
       assignIfChanged(changes, "resources", resource.uid, resourceLabel, resource, "maxUnits", "MaxUnits", readNumberCellAt(row.cells, columnIndexByLabel.get("MaxUnits")));
+      assignIfChanged(changes, "resources", resource.uid, resourceLabel, resource, "calendarUID", "CalendarUID", readStringCellAt(row.cells, columnIndexByLabel.get("CalendarUID")));
     }
   }
 
@@ -940,14 +990,70 @@
       return cell.value !== 0;
     }
     if (typeof cell.value === "string") {
-      if (cell.value === "true" || cell.value === "TRUE" || cell.value === "1") {
+      if (cell.value === "true" || cell.value === "TRUE" || cell.value === "1" || cell.value === BOOLEAN_TRUE_LABEL || cell.value === "〇" || cell.value === "○") {
         return true;
       }
-      if (cell.value === "false" || cell.value === "FALSE" || cell.value === "0") {
+      if (cell.value === "false" || cell.value === "FALSE" || cell.value === "0" || cell.value === BOOLEAN_FALSE_LABEL || cell.value === "-" || cell.value === "－") {
         return false;
       }
     }
     return undefined;
+  }
+
+  function isTrueLike(value: string | number | boolean | undefined): boolean {
+    return value === true || value === 1 || value === "1" || value === BOOLEAN_TRUE_LABEL || value === "○" || value === "〇";
+  }
+
+  function buildOptionsSheet() {
+    return {
+      name: OPTIONS_SHEET_NAME,
+      columns: [{ width: 18 }, { width: 14 }],
+      mergedRanges: [],
+      rows: [
+        headerRow(["BooleanChoice", "Meaning"], HEADER_FILL),
+        { cells: [textCell(BOOLEAN_TRUE_LABEL, 0), textCell("true", 0)] },
+        { cells: [textCell(BOOLEAN_FALSE_LABEL, 1), textCell("false", 1)] }
+      ]
+    };
+  }
+
+  function buildBooleanDataValidations(ranges: Array<string | undefined>) {
+    const sqref = ranges.filter((value): value is string => Boolean(value)).join(" ");
+    if (!sqref) {
+      return undefined;
+    }
+    return [{
+      type: "list" as const,
+      sqref,
+      formula1: `${OPTIONS_SHEET_NAME}!$A$2:$A$3`,
+      allowBlank: true
+    }];
+  }
+
+  function buildColumnRange(columnIndex: number, startRow: number, endRow: number): string | undefined {
+    if (endRow < startRow) {
+      return undefined;
+    }
+    const columnName = encodeColumnName(columnIndex);
+    return `${columnName}${startRow}:${columnName}${endRow}`;
+  }
+
+  function buildSingleCellReference(columnIndex: number, rowNumber: number | undefined): string | undefined {
+    if (!rowNumber) {
+      return undefined;
+    }
+    return `${encodeColumnName(columnIndex)}${rowNumber}`;
+  }
+
+  function encodeColumnName(columnIndex: number): string {
+    let current = columnIndex + 1;
+    let name = "";
+    while (current > 0) {
+      const remainder = (current - 1) % 26;
+      name = String.fromCharCode(65 + remainder) + name;
+      current = Math.floor((current - 1) / 26);
+    }
+    return name;
   }
 
   function assignIfChanged<T extends object, K extends keyof T>(
@@ -975,6 +1081,47 @@
       field,
       before: before as string | number | boolean | undefined,
       after: value as string | number | boolean
+    });
+  }
+
+  function parsePredecessorCell(value: string | undefined): PredecessorModel[] | undefined {
+    if (value === undefined) {
+      return undefined;
+    }
+    const normalized = value
+      .split(",")
+      .map((item) => item.trim())
+      .filter(Boolean);
+    return normalized.map((predecessorUid) => ({ predecessorUid }));
+  }
+
+  function formatPredecessorList(predecessors: PredecessorModel[]): string {
+    return predecessors.map((item) => item.predecessorUid).join(", ");
+  }
+
+  function assignPredecessorsIfChanged(
+    changes: ImportChange[],
+    uid: string,
+    label: string,
+    task: TaskModel,
+    predecessors: PredecessorModel[] | undefined
+  ): void {
+    if (predecessors === undefined) {
+      return;
+    }
+    const beforeText = formatPredecessorList(task.predecessors);
+    const afterText = formatPredecessorList(predecessors);
+    if (beforeText === afterText) {
+      return;
+    }
+    task.predecessors = predecessors;
+    changes.push({
+      scope: "tasks",
+      uid,
+      label,
+      field: "Predecessors",
+      before: beforeText || undefined,
+      after: afterText
     });
   }
 

@@ -8,7 +8,11 @@
         project: {
             name: "mikuproject開発",
             planned_start: "2026-03-16",
-            planned_finish: "2026-04-01"
+            planned_finish: "2026-04-01",
+            schedule_from_start: true,
+            minutes_per_day: 480,
+            minutes_per_week: 2400,
+            days_per_month: 20
         },
         tasks: [
             {
@@ -127,6 +131,38 @@
                 is_milestone: true,
                 planned_start: "2026-03-29",
                 planned_finish: "2026-03-29"
+            }
+        ],
+        resources: [
+            {
+                uid: "res-1",
+                name: "Mikuku",
+                initials: "M",
+                group: "Development",
+                max_units: 1,
+                calendar_uid: "1"
+            }
+        ],
+        assignments: [
+            {
+                uid: "asg-1",
+                task_uid: "draft-120",
+                resource_uid: "res-1",
+                start: "2026-03-16T09:00:00",
+                finish: "2026-03-16T18:00:00",
+                units: 1,
+                work: "PT8H0M0S",
+                percent_work_complete: 100
+            },
+            {
+                uid: "asg-2",
+                task_uid: "draft-130",
+                resource_uid: "res-1",
+                start: "2026-03-17T09:00:00",
+                finish: "2026-03-17T18:00:00",
+                units: 1,
+                work: "PT8H0M0S",
+                percent_work_complete: 100
             }
         ]
     };
@@ -1658,6 +1694,8 @@
             throw new Error("project.name がありません");
         }
         const inputTasks = Array.isArray(data.tasks) ? data.tasks : [];
+        const inputResources = Array.isArray(data.resources) ? data.resources : [];
+        const inputAssignments = Array.isArray(data.assignments) ? data.assignments : [];
         const seenUids = new Set();
         for (const task of inputTasks) {
             const uid = String(task.uid || "").trim();
@@ -1678,10 +1716,42 @@
                 throw new Error(`draft task の parent_uid が既存 uid を指していません: ${String(task.uid || "")} -> ${parentUid}`);
             }
         }
+        const seenResourceUids = new Set();
+        for (const resource of inputResources) {
+            const uid = String(resource.uid || "").trim();
+            if (!uid) {
+                throw new Error("draft resource の uid がありません");
+            }
+            if (seenResourceUids.has(uid)) {
+                throw new Error(`draft resource の uid が重複しています: ${uid}`);
+            }
+            seenResourceUids.add(uid);
+            if (!String(resource.name || "").trim()) {
+                throw new Error(`draft resource の name がありません: ${uid}`);
+            }
+        }
+        for (const assignment of inputAssignments) {
+            const uid = String(assignment.uid || "").trim();
+            if (!uid) {
+                throw new Error("draft assignment の uid がありません");
+            }
+            const taskUid = String(assignment.task_uid || "").trim();
+            const resourceUid = String(assignment.resource_uid || "").trim();
+            if (!taskUid || !seenUids.has(taskUid)) {
+                throw new Error(`draft assignment の task_uid が既存 uid を指していません: ${uid} -> ${taskUid}`);
+            }
+            if (!resourceUid || !seenResourceUids.has(resourceUid)) {
+                throw new Error(`draft assignment の resource_uid が既存 uid を指していません: ${uid} -> ${resourceUid}`);
+            }
+        }
         const projectStart = data.project.planned_start || data.project.planned_finish || toIsoLocalString(new Date());
         const draftUidMap = new Map();
         inputTasks.forEach((task, index) => {
             draftUidMap.set(String(task.uid || "").trim(), String(index + 1));
+        });
+        const draftResourceUidMap = new Map();
+        inputResources.forEach((resource, index) => {
+            draftResourceUidMap.set(String(resource.uid || "").trim(), String(index + 1));
         });
         const normalizedTasks = inputTasks.map((task, index) => ({
             uid: draftUidMap.get(String(task.uid || "").trim()) || String(index + 1),
@@ -1762,20 +1832,56 @@
         }
         walk(null, []);
         const taskFinishes = orderedTasks.map((task) => task.finish).filter(Boolean).sort();
+        const orderedResources = inputResources.map((resource, index) => ({
+            uid: draftResourceUidMap.get(String(resource.uid || "").trim()) || String(index + 1),
+            id: draftResourceUidMap.get(String(resource.uid || "").trim()) || String(index + 1),
+            name: String(resource.name || "").trim(),
+            initials: String(resource.initials || "").trim() || undefined,
+            group: String(resource.group || "").trim() || undefined,
+            maxUnits: typeof resource.max_units === "number" && Number.isFinite(resource.max_units) ? resource.max_units : undefined,
+            calendarUID: String(resource.calendar_uid || "").trim() || undefined,
+            extendedAttributes: [],
+            baselines: [],
+            timephasedData: []
+        }));
+        const orderedAssignments = inputAssignments.map((assignment, index) => ({
+            uid: String(index + 1),
+            taskUid: draftUidMap.get(String(assignment.task_uid || "").trim()) || String(assignment.task_uid || "").trim(),
+            resourceUid: draftResourceUidMap.get(String(assignment.resource_uid || "").trim()) || String(assignment.resource_uid || "").trim(),
+            start: String(assignment.start || "").trim() || undefined,
+            finish: String(assignment.finish || "").trim() || undefined,
+            units: typeof assignment.units === "number" && Number.isFinite(assignment.units) ? assignment.units : undefined,
+            work: String(assignment.work || "").trim() || undefined,
+            percentWorkComplete: typeof assignment.percent_work_complete === "number" && Number.isFinite(assignment.percent_work_complete)
+                ? Math.max(0, Math.min(100, assignment.percent_work_complete))
+                : undefined,
+            extendedAttributes: [],
+            baselines: [],
+            timephasedData: []
+        }));
         return normalizeProjectModel(ensureDefaultProjectCalendar({
             project: {
                 name: data.project.name.trim(),
                 title: data.project.name.trim(),
                 startDate: projectStart,
                 finishDate: data.project.planned_finish || taskFinishes.at(-1) || projectStart,
-                scheduleFromStart: true,
+                scheduleFromStart: data.project.schedule_from_start !== undefined ? Boolean(data.project.schedule_from_start) : true,
+                minutesPerDay: typeof data.project.minutes_per_day === "number" && Number.isFinite(data.project.minutes_per_day)
+                    ? data.project.minutes_per_day
+                    : undefined,
+                minutesPerWeek: typeof data.project.minutes_per_week === "number" && Number.isFinite(data.project.minutes_per_week)
+                    ? data.project.minutes_per_week
+                    : undefined,
+                daysPerMonth: typeof data.project.days_per_month === "number" && Number.isFinite(data.project.days_per_month)
+                    ? data.project.days_per_month
+                    : undefined,
                 outlineCodes: [],
                 wbsMasks: [],
                 extendedAttributes: []
             },
             tasks: orderedTasks,
-            resources: [],
-            assignments: [],
+            resources: orderedResources,
+            assignments: orderedAssignments,
             calendars: []
         }));
     }

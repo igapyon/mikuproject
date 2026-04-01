@@ -102,6 +102,9 @@
                     columns: Array.isArray(sheet.columns) ? sheet.columns.map((column) => normalizeColumn(column)) : undefined,
                     freezePane: normalizeFreezePane(sheet.freezePane),
                     mergedRanges: Array.isArray(sheet.mergedRanges) ? sheet.mergedRanges.map((range) => normalizeMergedRange(range)) : undefined,
+                    dataValidations: Array.isArray(sheet.dataValidations)
+                        ? sheet.dataValidations.map((dataValidation) => normalizeDataValidation(dataValidation))
+                        : undefined,
                     rows: Array.isArray(sheet.rows)
                         ? sheet.rows.map((row) => ({
                             height: normalizeOptionalPositiveNumber(row === null || row === void 0 ? void 0 : row.height, "Row height"),
@@ -124,6 +127,24 @@
         return {
             width: normalizeOptionalPositiveNumber(column.width, "Column width"),
             hidden: column.hidden === true ? true : undefined
+        };
+    }
+    function normalizeDataValidation(dataValidation) {
+        if (!dataValidation) {
+            throw new Error("Data validation must be defined");
+        }
+        if (dataValidation.type !== "list") {
+            throw new Error(`Unsupported data validation type: ${String(dataValidation.type)}`);
+        }
+        const sqref = normalizeSqref(dataValidation.sqref);
+        if (!dataValidation.formula1 || typeof dataValidation.formula1 !== "string") {
+            throw new Error("Data validation formula1 must be a non-empty string");
+        }
+        return {
+            type: "list",
+            sqref,
+            formula1: dataValidation.formula1,
+            allowBlank: dataValidation.allowBlank === true ? true : undefined
         };
     }
     function normalizeFreezePane(freezePane) {
@@ -190,6 +211,31 @@
             throw new Error(`Invalid merged range: ${range}`);
         }
         return trimmed;
+    }
+    function normalizeSqref(sqref) {
+        if (typeof sqref !== "string") {
+            throw new Error("Data validation sqref must be a string");
+        }
+        const normalized = sqref
+            .trim()
+            .toUpperCase()
+            .split(/\s+/)
+            .filter(Boolean)
+            .map((part) => normalizeSqrefPart(part))
+            .join(" ");
+        if (!normalized) {
+            throw new Error("Data validation sqref must not be empty");
+        }
+        return normalized;
+    }
+    function normalizeSqrefPart(part) {
+        if (/^[A-Z]+\d+$/.test(part)) {
+            return part;
+        }
+        if (/^[A-Z]+\d+:[A-Z]+\d+$/.test(part)) {
+            return part;
+        }
+        throw new Error(`Invalid data validation sqref: ${part}`);
     }
     function normalizeOptionalPositiveNumber(value, label) {
         if (value === undefined) {
@@ -287,6 +333,7 @@
         const sheetViewsXml = buildSheetViewsXml(sheet.freezePane);
         const colsXml = buildColumnsXml(sheet.columns);
         const mergeCellsXml = buildMergeCellsXml(sheet.mergedRanges);
+        const dataValidationsXml = buildDataValidationsXml(sheet.dataValidations);
         const rows = sheet.rows.map((row, rowIndex) => buildWorksheetRowXml(row, rowIndex, styleBook)).filter(Boolean).join("");
         return `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">
@@ -294,6 +341,7 @@
   ${colsXml}
   <sheetData>${rows}</sheetData>
   ${mergeCellsXml}
+  ${dataValidationsXml}
 </worksheet>`;
     }
     function buildSheetViewsXml(freezePane) {
@@ -324,6 +372,13 @@
             .map((range) => `<mergeCell ref="${range}"/>`)
             .join("");
         return `<mergeCells count="${mergedRanges.length}">${mergeCells}</mergeCells>`;
+    }
+    function buildDataValidationsXml(dataValidations) {
+        if (!dataValidations || dataValidations.length === 0) {
+            return "";
+        }
+        const nodes = dataValidations.map((dataValidation) => (`<dataValidation type="${dataValidation.type}" allowBlank="${dataValidation.allowBlank === true ? "1" : "0"}" showErrorMessage="1" sqref="${escapeXml(dataValidation.sqref)}"><formula1>${escapeXml(dataValidation.formula1)}</formula1></dataValidation>`)).join("");
+        return `<dataValidations count="${dataValidations.length}">${nodes}</dataValidations>`;
     }
     function buildWorksheetRowXml(row, rowIndex, styleBook) {
         const cells = row.cells

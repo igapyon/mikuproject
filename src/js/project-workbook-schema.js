@@ -70,8 +70,8 @@
     };
     const IMPORTABLE_FIELDS = {
         Project: PROJECT_EDITABLE_FIELDS,
-        Tasks: ["Name", "Start", "Finish", "PercentComplete", "PercentWorkComplete", "Notes"],
-        Resources: ["Name", "Group", "MaxUnits"],
+        Tasks: ["Name", "Start", "Finish", "Duration", "PercentComplete", "PercentWorkComplete", "Milestone", "Summary", "Critical", "CalendarUID", "Predecessors", "Notes"],
+        Resources: ["Name", "Group", "MaxUnits", "CalendarUID"],
         Assignments: ["Units", "Work", "PercentWorkComplete"],
         Calendars: ["Name", "IsBaseCalendar", "BaseCalendarUID"],
         NonWorkingDays: ["Name", "Date", "FromDate", "ToDate", "DayWorking"]

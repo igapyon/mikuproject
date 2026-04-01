@@ -33,6 +33,10 @@ const projectWorkbookJsonCode = readFileSync(
   path.resolve(__dirname, "../src/js/project-workbook-json.js"),
   "utf8"
 );
+const dependencyXml = readFileSync(
+  path.resolve(__dirname, "../testdata/dependency.xml"),
+  "utf8"
+);
 
 function bootModules() {
   new Function(`${typesCode}\n${excelIoCode}\n${msProjectXmlCode}\n${projectWorkbookSchemaCode}\n${projectXlsxCode}\n${projectWorkbookJsonCode}`)();
@@ -62,24 +66,48 @@ describe("mikuproject project workbook json", () => {
     expect(documentLike.sheets.Project[0]).toEqual({ Field: "Name", Value: "mikuproject開発" });
     expect(documentLike.sheets.Tasks[0].UID).toBe("1");
     expect(documentLike.sheets.Tasks[0].Name).toBe("基盤整備");
+    expect(documentLike.sheets.Resources[0].Name).toBe("Mikuku");
+    expect(documentLike.sheets.Assignments[0].ResourceName).toBe("Mikuku");
   });
 
   it("imports limited editable fields through workbook json", () => {
     const { xml, projectWorkbookJson } = bootModules();
-    const baseModel = xml.importMsProjectXml(xml.SAMPLE_XML);
+    const baseModel = xml.importMsProjectXml(dependencyXml);
     const documentLike = projectWorkbookJson.exportProjectWorkbookJson(baseModel);
+    const executeTaskRow = documentLike.sheets.Tasks.find((row) => row.UID === "2");
+    const resourceRow = documentLike.sheets.Resources.find((row) => row.UID === "1");
 
     documentLike.sheets.Project.find((row) => row.Field === "Name").Value = "JSON import project";
-    documentLike.sheets.Tasks[2].Name = "JSON import task";
-    documentLike.sheets.Tasks[2].Start = "2026-03-16 10:00:00";
-    documentLike.sheets.Tasks[2].OutlineNumber = "999";
+    executeTaskRow.Name = "JSON import task";
+    executeTaskRow.Start = "2026-03-16 10:00:00";
+    executeTaskRow.Duration = "PT24H0M0S";
+    executeTaskRow.Milestone = "○";
+    executeTaskRow.Summary = "○";
+    executeTaskRow.Critical = "ー";
+    executeTaskRow.CalendarUID = "2";
+    executeTaskRow.Predecessors = "2";
+    executeTaskRow.OutlineNumber = "999";
+    resourceRow.Name = "Miku Updated";
+    resourceRow.Group = "Dev";
+    resourceRow.MaxUnits = 1;
+    resourceRow.CalendarUID = "1";
 
     const result = projectWorkbookJson.importProjectWorkbookJson(documentLike, baseModel);
 
     expect(result.model.project.name).toBe("JSON import project");
-    expect(result.model.tasks[2].name).toBe("JSON import task");
-    expect(result.model.tasks[2].start).toBe("2026-03-16T10:00:00");
-    expect(result.model.tasks[2].outlineNumber).toBe(baseModel.tasks[2].outlineNumber);
+    expect(result.model.tasks[1].name).toBe("JSON import task");
+    expect(result.model.tasks[1].start).toBe("2026-03-16T10:00:00");
+    expect(result.model.tasks[1].duration).toBe("PT24H0M0S");
+    expect(result.model.tasks[1].milestone).toBe(true);
+    expect(result.model.tasks[1].summary).toBe(true);
+    expect(result.model.tasks[1].critical).toBe(false);
+    expect(result.model.tasks[1].calendarUID).toBe("2");
+    expect(result.model.tasks[1].predecessors).toEqual([{ predecessorUid: "2" }]);
+    expect(result.model.resources[0].name).toBe("Miku Updated");
+    expect(result.model.resources[0].group).toBe("Dev");
+    expect(result.model.resources[0].maxUnits).toBe(1);
+    expect(result.model.resources[0].calendarUID).toBe("1");
+    expect(result.model.tasks[1].outlineNumber).toBe(baseModel.tasks[1].outlineNumber);
     expect(result.changes.some((change) => change.field === "Name")).toBe(true);
   });
 

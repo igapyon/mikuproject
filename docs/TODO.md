@@ -21,7 +21,16 @@
   - 同じファイル名で保存し直した `.xlsx` を連続 import できる
   - 空 editable セルを埋めた変更を import できる
   - `Name / Start / Finish / PercentComplete / PercentWorkComplete / Notes` など主要 editable 列が戻る
-  - `Milestone / Summary / Critical` など表示専用列は戻らない
+  - `Milestone / Summary / Critical` など現在の task 真偽値列が戻る
+- `Tasks.Predecessors` を workbook import 対象に広げ、別インスタンスへ `XLSX` を受け渡しても task 依存関係の最小 round-trip が成立するようにする
+  - まずは `predecessorUid` の最小表現を `,` 区切りで安全に読み戻す MVP を検討する
+  - `type / linkLag` など複雑な依存表現は後段に分けてよい
+- MVP の workbook import 対象候補として、少なくとも次の列を優先順位つきで整理する
+  - 最優先候補: `Tasks.Duration`
+  - 最優先候補: `Tasks.CalendarUID`
+  - 次点候補: `Resources.CalendarUID`
+  - 次点候補: `Resources.StandardRate / OvertimeRate / CostPerUse`
+  - 次点候補: `Assignments.Start / Finish`
 - `main.ts` の summary / validation / preview 描画を別モジュール化し、DOM テストをさらに軽くする
 - `phase_detail_view scoped` の `phase UID / root UID / max depth` 指定を、より選びやすい UI に改善する
 - `task_edit_view` の projection を実装する
@@ -56,9 +65,14 @@
 - `mikuproject-sample.xlsx` の `Resources / Assignments / NonWorkingDays` で、強調色が過剰にならない最終バランスを調整する
 - `WBS` の `プロジェクト情報` / `凡例` などと、`Project` シートの `Basic Info` に入っているドット編みかけ表現を除去する
 - WBS workbook の表示改善を継続する
+- `Daily` 表示の日ごとの横幅を、もう少し狭くできるか検討する
+  - まずは変更仕様の整理から始め、可読性、文字詰まり、祝日/週境界の見え方、`Weekly / Monthly` とのバランスを確認する
 - WBS workbook の見た目改善と、構造忠実 workbook との責務分離を保つ
 - WBS について、完了タスクの表示 / 非表示を切り替えるオプションを追加する
 - 将来検討: WBS workbook について、表示専用列と Excel 再利用向けの機械利用列（hidden 列）の分離が必要か整理する
+- 低優先度: 週別または日別の `24h` 表記タイムチャートを追加するか検討する
+  - イメージは `4直3交代` のシフト表に近い表示とする
+  - まずは仕様検討から始め、対象データ、表示粒度、稼働日/非稼働日との関係、`WBS` 系出力との責務分離を整理する
 - WBS Markdown の `プロジェクト情報` / `サマリ` / `WBS ツリー` / `WBS テーブル` をどう出すか sample ベースで固める
 - `project summary markdown` のような、WBS 以外の Markdown 出力拡張を検討する
 - `phase summary markdown` のような scoped Markdown 出力を追加するか検討する

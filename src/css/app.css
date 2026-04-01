@@ -1016,7 +1016,8 @@ md-outlined-select.md-outlined-field:focus-within::part(container) {
 
 .md-svg-preview-stage svg {
   display: block;
-  max-width: 100%;
+  width: 100%;
+  max-width: none;
   height: auto;
 }
 

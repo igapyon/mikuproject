@@ -686,6 +686,30 @@ describe("mikuproject main", () => {
     expect(document.getElementById("nativeSvgPreview").innerHTML).not.toContain("project range 2026-03-16 - 2026-04-01");
   });
 
+  it("keeps long daily task labels outside narrow on-bar labels", async () => {
+    bootPage();
+
+    parseXmlViaHook();
+    await exportMermaidViaHook();
+
+    const dailySvg = document.getElementById("nativeSvgPreview").innerHTML;
+
+    expect(dailySvg).not.toContain('text-anchor="middle">round-trip拡張（MS Project XML → 内部JSON形式 → MS Project XML の往復対応）</text>');
+    expect(dailySvg).not.toContain('text-anchor="middle">MS Project XML と XLSX の相互変換・round-trip実装</text>');
+  });
+
+  it("places daily labels on the left after they pass the chart midpoint", async () => {
+    bootPage();
+
+    parseXmlViaHook();
+    await exportMermaidViaHook();
+
+    const dailySvg = document.getElementById("nativeSvgPreview").innerHTML;
+
+    expect(dailySvg).toContain('text-anchor="start">架空検討フェーズ【架空】</text>');
+    expect(dailySvg).toContain('text-anchor="end">MS Project XML と XLSX の相互変換・round-trip実装</text>');
+  });
+
   it("keeps complex mermaid dependencies as comments", () => {
     const xmlTools = bootXmlModule();
     const model = {

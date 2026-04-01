@@ -27,6 +27,32 @@
     width: number;
   };
 
+  type NativeSvgLabelPlacementDecision = NativeSvgLabelPlacement & {
+    reason: string;
+    metrics: Record<string, number | string | boolean | null>;
+  };
+
+  type NativeSvgPlacementGeometry = {
+    chartOriginX: number;
+    shapeStartX: number;
+    shapeEndX: number;
+    shapeCenterX: number;
+    chartMidX: number;
+    chartEndX: number;
+    leftRoom: number;
+    rightRoom: number;
+  };
+
+  type NativeSvgPlacementConfig = {
+    cellWidth: number;
+    gap: number;
+    rangeInset: number;
+    milestoneHalfWidth: number;
+    preferredColumns: number;
+    missingRangeX: number;
+    missingRangeReason: string;
+  };
+
   type ZipEntry = {
     name: string;
     data: Uint8Array;
@@ -46,7 +72,8 @@
     monthKey: string;
   };
 
-  const DAY_WIDTH = 56;
+  const WEEK_WIDTH = 38;
+  const DAY_WIDTH = WEEK_WIDTH;
   const LIST_LABEL_WIDTH = 360;
   const NEAR_LEFT_LABEL_WIDTH = 0;
   const NEAR_RIGHT_LABEL_WIDTH = 0;
@@ -70,12 +97,12 @@
   const MONTHLY_MAX_LABEL_CHARS = 15;
   const ZIP_FIXED_MOD_TIME = 0;
   const ZIP_FIXED_MOD_DATE = ((2025 - 1980) << 9) | (1 << 5) | 1;
-  const WEEK_WIDTH = 38;
   const WEEKLY_HEADER_HEIGHT = 96;
   const WEEKLY_TOP_PADDING = 22;
   const WEEKLY_BOTTOM_PADDING = 28;
   const WEEKLY_LEFT_PADDING = 0;
   const WEEKLY_RIGHT_PADDING = 0;
+  const WEEKLY_TRIM_PADDING = 16;
 
   function exportNativeSvg(model: ProjectModel, options: NativeSvgExportOptions = {}): string {
     const labelMode = options.labelMode || "near";
@@ -128,7 +155,6 @@
       ".axis { font-size: 12px; fill: #5b6370; }",
       ".label { font-size: 13px; }",
       ".phaseLabel { font-size: 13px; font-weight: 700; }",
-      ".onBarLabelBg { fill: rgba(255,255,255,0.9); }",
       ".grid { stroke: #c9d3e1; stroke-width: 1; }",
       ".today { stroke: #ff6b5a; stroke-width: 2; }",
       "</style>",
@@ -193,12 +219,7 @@
         }
         if (useOnBarLabel) {
           const labelText = escapeXml(formatTaskLabel(row.task, labelMode));
-          const labelWidth = estimateLabelWidth(row.label, row.kind === "phase");
           const labelCenterX = barX + (barWidth / 2);
-          const labelX = labelCenterX - (labelWidth / 2) - 8;
-          const labelY = row.kind === "phase" ? rowY + 15 : rowY + 10;
-          const labelHeight = row.kind === "phase" ? 18 : 20;
-          parts.push(`<rect class="onBarLabelBg" x="${labelX}" y="${labelY}" width="${labelWidth + 16}" height="${labelHeight}" rx="4"/>`);
           parts.push(`<text class="${row.kind === "phase" ? "phaseLabel" : "label"}" x="${labelCenterX}" y="${rowY + 24}" text-anchor="middle">${labelText}</text>`);
           continue;
         }
@@ -236,12 +257,19 @@
     const chartWidth = weeklyBand.length * WEEK_WIDTH;
     const chartOriginXBase = WEEKLY_LEFT_PADDING;
     const labelPlacements = rows.map((row) => resolveWeeklyLabelPlacement(row, chartOriginXBase, chartWidth));
+    const labelMinX = labelPlacements.reduce((min, placement) => {
+      const placementMinX = placement.anchor === "start" ? placement.x : placement.x - placement.width;
+      return Math.min(min, placementMinX);
+    }, chartOriginXBase);
     const labelMaxX = labelPlacements.reduce((max, placement) => {
       const placementMaxX = placement.anchor === "start" ? placement.x + placement.width : placement.x;
       return Math.max(max, placementMaxX);
     }, chartOriginXBase + chartWidth);
-    const chartOriginX = chartOriginXBase;
-    const svgWidth = labelMaxX + WEEKLY_RIGHT_PADDING;
+    const contentMinX = Math.min(chartOriginXBase, labelMinX);
+    const contentMaxX = Math.max(chartOriginXBase + chartWidth, labelMaxX);
+    const shiftX = WEEKLY_TRIM_PADDING - contentMinX;
+    const chartOriginX = chartOriginXBase + shiftX;
+    const svgWidth = (contentMaxX - contentMinX) + (WEEKLY_TRIM_PADDING * 2) + WEEKLY_RIGHT_PADDING;
     const svgHeight = WEEKLY_TOP_PADDING + WEEKLY_HEADER_HEIGHT + (rows.length * ROW_HEIGHT) + WEEKLY_BOTTOM_PADDING;
     const todayWeekIndex = indexOfWeekForDate(weeklyBand, model.project.currentDate);
 
@@ -292,7 +320,7 @@
       const rowY = chartOriginY + row.y;
       if (row.startIndex === null || row.endIndex === null) {
         const fallbackLabelPlacement = labelPlacements[rowIndex];
-        parts.push(`<text class="${row.kind === "phase" ? "phaseLabel" : "label"}" x="${fallbackLabelPlacement.x}" y="${rowY + 24}" text-anchor="${fallbackLabelPlacement.anchor}">${escapeXml(formatTaskLabel(row.task, "near"))}</text>`);
+        parts.push(`<text class="${row.kind === "phase" ? "phaseLabel" : "label"}" x="${fallbackLabelPlacement.x + shiftX}" y="${rowY + 24}" text-anchor="${fallbackLabelPlacement.anchor}">${escapeXml(formatTaskLabel(row.task, "near"))}</text>`);
         continue;
       }
       const barX = chartOriginX + (row.startIndex * WEEK_WIDTH) + 4;
@@ -327,7 +355,7 @@
         }
       }
       const labelPlacement = labelPlacements[rowIndex];
-      parts.push(`<text class="${row.kind === "phase" ? "phaseLabel" : "label"}" x="${labelPlacement.x}" y="${rowY + 24}" text-anchor="${labelPlacement.anchor}">${escapeXml(formatTaskLabel(row.task, "near"))}</text>`);
+      parts.push(`<text class="${row.kind === "phase" ? "phaseLabel" : "label"}" x="${labelPlacement.x + shiftX}" y="${rowY + 24}" text-anchor="${labelPlacement.anchor}">${escapeXml(formatTaskLabel(row.task, "near"))}</text>`);
     }
 
     parts.push("</svg>");
@@ -564,28 +592,67 @@
     chartWidth: number,
     labelMode: "near" | "list"
   ): NativeSvgLabelPlacement {
-    if (labelMode === "list" || row.startIndex === null || row.endIndex === null) {
-      return { x: LEFT_PADDING + 10, anchor: "start", width: estimateLabelWidth(row.label, row.kind === "phase") };
-    }
+    const decision = resolveLabelPlacementDecision(row, chartOriginX, chartWidth, labelMode);
+    return { x: decision.x, anchor: decision.anchor, width: decision.width };
+  }
 
-    const textWidth = estimateLabelWidth(row.label, row.kind === "phase");
-    const gap = 12;
-    const shapeStartX = row.kind === "milestone"
-      ? chartOriginX + (row.startIndex * DAY_WIDTH) + (DAY_WIDTH / 2) - 13
-      : chartOriginX + (row.startIndex * DAY_WIDTH) + 6;
-    const shapeEndX = row.kind === "milestone"
-      ? chartOriginX + (row.startIndex * DAY_WIDTH) + (DAY_WIDTH / 2) + 13
-      : chartOriginX + (row.endIndex * DAY_WIDTH) + DAY_WIDTH - 6;
-    const chartMidX = chartOriginX + (chartWidth / 2);
-    if (shapeEndX <= chartMidX) {
-      return { x: shapeEndX + gap, anchor: "start", width: textWidth };
+  function resolveLabelPlacementDecision(
+    row: NativeSvgTaskRow,
+    chartOriginX: number,
+    chartWidth: number,
+    labelMode: "near" | "list"
+  ): NativeSvgLabelPlacementDecision {
+    if (labelMode === "list" || row.startIndex === null || row.endIndex === null) {
+      return {
+        x: LEFT_PADDING + 10,
+        anchor: "start",
+        width: estimateLabelWidth(row.label, row.kind === "phase"),
+        reason: "list-mode-or-missing-range",
+        metrics: {
+          labelMode,
+          startIndex: row.startIndex,
+          endIndex: row.endIndex
+        }
+      };
     }
-    return { x: Math.max(textWidth, shapeStartX - gap), anchor: "end", width: textWidth };
+    return resolveSideLabelPlacementDecision(row, chartOriginX, chartWidth, {
+      cellWidth: DAY_WIDTH,
+      gap: 18,
+      rangeInset: 6,
+      milestoneHalfWidth: 13,
+      preferredColumns: 4,
+      missingRangeX: LEFT_PADDING + 10,
+      missingRangeReason: "list-mode-or-missing-range"
+    });
   }
 
   function estimateLabelWidth(label: string, isPhase: boolean): number {
-    const basePerChar = isPhase ? 14 : 13;
-    return Math.max(48, Math.ceil(String(label || "").length * basePerChar));
+    const text = String(label || "").trim() || "-";
+    let width = 0;
+    for (const char of text) {
+      if (/\s/.test(char)) {
+        width += 4;
+        continue;
+      }
+      if (/[\u3040-\u30ff\u3400-\u4dbf\u4e00-\u9fff\uf900-\ufaff\uff01-\uff60\uffe0-\uffee]/.test(char)) {
+        width += isPhase ? 13 : 12;
+        continue;
+      }
+      if (/[A-Z]/.test(char)) {
+        width += 8;
+        continue;
+      }
+      if (/[a-z0-9]/.test(char)) {
+        width += 7;
+        continue;
+      }
+      if (/[\u0021-\u007e]/.test(char)) {
+        width += 6;
+        continue;
+      }
+      width += isPhase ? 12 : 11;
+    }
+    return Math.max(48, Math.ceil(width));
   }
 
   function shouldUseDailyOnBarLabel(
@@ -605,18 +672,24 @@
       return false;
     }
     if (row.startIndex === 0 && row.endIndex === bandLength - 1) {
-      return true;
+      const fullWidthTextWidth = estimateLabelWidth(row.label, row.kind === "phase");
+      const fullWidthBarWidth = Math.max(12, ((row.endIndex - row.startIndex + 1) * DAY_WIDTH) - 12);
+      return fullWidthBarWidth >= fullWidthTextWidth + 16;
     }
     const textWidth = estimateLabelWidth(row.label, row.kind === "phase");
-    const gap = 12;
+    const gap = 18;
     const shapeStartX = row.kind === "milestone"
       ? chartOriginX + (row.startIndex * DAY_WIDTH) + (DAY_WIDTH / 2) - 13
       : chartOriginX + (row.startIndex * DAY_WIDTH) + 6;
     const shapeEndX = row.kind === "milestone"
       ? chartOriginX + (row.startIndex * DAY_WIDTH) + (DAY_WIDTH / 2) + 13
       : chartOriginX + (row.endIndex * DAY_WIDTH) + DAY_WIDTH - 6;
+    const barWidth = Math.max(12, ((row.endIndex - row.startIndex + 1) * DAY_WIDTH) - 12);
     const leftRoom = Math.max(0, shapeStartX - gap - chartOriginX);
     const rightRoom = Math.max(0, (chartOriginX + chartWidth) - (shapeEndX + gap));
+    if (barWidth < textWidth + 16) {
+      return false;
+    }
     return leftRoom < textWidth && rightRoom < textWidth;
   }
 
@@ -625,23 +698,120 @@
     chartOriginX: number,
     chartWidth: number
   ): NativeSvgLabelPlacement {
+    const decision = resolveWeeklyLabelPlacementDecision(row, chartOriginX, chartWidth);
+    return { x: decision.x, anchor: decision.anchor, width: decision.width };
+  }
+
+  function resolveWeeklyLabelPlacementDecision(
+    row: NativeSvgTaskRow,
+    chartOriginX: number,
+    chartWidth: number
+  ): NativeSvgLabelPlacementDecision {
+    return resolveSideLabelPlacementDecision(row, chartOriginX, chartWidth, {
+      cellWidth: WEEK_WIDTH,
+      gap: 16,
+      rangeInset: 4,
+      milestoneHalfWidth: 11,
+      preferredColumns: 4,
+      missingRangeX: chartOriginX + 10,
+      missingRangeReason: "missing-range"
+    });
+  }
+
+  function resolveSideLabelPlacementDecision(
+    row: NativeSvgTaskRow,
+    chartOriginX: number,
+    chartWidth: number,
+    config: NativeSvgPlacementConfig
+  ): NativeSvgLabelPlacementDecision {
+    const textWidth = estimateLabelWidth(row.label, row.kind === "phase");
     if (row.startIndex === null || row.endIndex === null) {
-      return { x: chartOriginX + 10, anchor: "start", width: estimateLabelWidth(row.label, row.kind === "phase") };
+      return {
+        x: config.missingRangeX,
+        anchor: "start",
+        width: textWidth,
+        reason: config.missingRangeReason,
+        metrics: {
+          startIndex: row.startIndex,
+          endIndex: row.endIndex
+        }
+      };
     }
 
-    const textWidth = estimateLabelWidth(row.label, row.kind === "phase");
-    const gap = 10;
-    const shapeStartX = row.kind === "milestone"
-      ? chartOriginX + (row.startIndex * WEEK_WIDTH) + (WEEK_WIDTH / 2) - 11
-      : chartOriginX + (row.startIndex * WEEK_WIDTH) + 4;
-    const shapeEndX = row.kind === "milestone"
-      ? chartOriginX + (row.startIndex * WEEK_WIDTH) + (WEEK_WIDTH / 2) + 11
-      : chartOriginX + (row.endIndex * WEEK_WIDTH) + WEEK_WIDTH - 4;
-    const chartMidX = chartOriginX + (chartWidth / 2);
-    if (shapeEndX <= chartMidX) {
-      return { x: shapeEndX + gap, anchor: "start", width: textWidth };
+    const geometry = buildPlacementGeometry(row, chartOriginX, chartWidth, config);
+    const preferredRoom = Math.min(textWidth, config.cellWidth * config.preferredColumns);
+    if (geometry.shapeCenterX >= geometry.chartMidX) {
+      if (geometry.leftRoom < textWidth && geometry.rightRoom >= textWidth) {
+        return buildPlacementDecision("start", geometry.shapeEndX + config.gap, textWidth, "midpoint-right-but-left-overflows-fallback-right", geometry, config, { preferredRoom });
+      }
+      return buildPlacementDecision("end", geometry.shapeStartX - config.gap, textWidth, "midpoint-right-prefer-left", geometry, config, { preferredRoom });
     }
-    return { x: Math.max(textWidth, shapeStartX - gap), anchor: "end", width: textWidth };
+    if (geometry.rightRoom >= preferredRoom) {
+      return buildPlacementDecision("start", geometry.shapeEndX + config.gap, textWidth, "enough-right-room", geometry, config, { preferredRoom });
+    }
+    if (geometry.leftRoom >= preferredRoom) {
+      return buildPlacementDecision("end", geometry.shapeStartX - config.gap, textWidth, "enough-left-room", geometry, config, { preferredRoom });
+    }
+    if (geometry.rightRoom > geometry.leftRoom) {
+      return buildPlacementDecision("start", geometry.shapeEndX + config.gap, textWidth, "fallback-wider-right-room", geometry, config, { preferredRoom });
+    }
+    return buildPlacementDecision("end", geometry.shapeStartX - config.gap, textWidth, "fallback-wider-left-room", geometry, config, { preferredRoom });
+  }
+
+  function buildPlacementGeometry(
+    row: NativeSvgTaskRow,
+    chartOriginX: number,
+    chartWidth: number,
+    config: NativeSvgPlacementConfig
+  ): NativeSvgPlacementGeometry {
+    const shapeStartX = row.kind === "milestone"
+      ? chartOriginX + (row.startIndex! * config.cellWidth) + (config.cellWidth / 2) - config.milestoneHalfWidth
+      : chartOriginX + (row.startIndex! * config.cellWidth) + config.rangeInset;
+    const shapeEndX = row.kind === "milestone"
+      ? chartOriginX + (row.startIndex! * config.cellWidth) + (config.cellWidth / 2) + config.milestoneHalfWidth
+      : chartOriginX + (row.endIndex! * config.cellWidth) + config.cellWidth - config.rangeInset;
+    const chartMidX = chartOriginX + (chartWidth / 2);
+    const chartEndX = chartOriginX + chartWidth;
+    return {
+      chartOriginX,
+      shapeStartX,
+      shapeEndX,
+      shapeCenterX: (shapeStartX + shapeEndX) / 2,
+      chartMidX,
+      chartEndX,
+      leftRoom: Math.max(0, (shapeStartX - config.gap) - chartOriginX),
+      rightRoom: Math.max(0, chartEndX - (shapeEndX + config.gap))
+    };
+  }
+
+  function buildPlacementDecision(
+    anchor: "start" | "end",
+    x: number,
+    textWidth: number,
+    reason: string,
+    geometry: NativeSvgPlacementGeometry,
+    config: NativeSvgPlacementConfig,
+    extras: Record<string, number | string | boolean | null> = {}
+  ): NativeSvgLabelPlacementDecision {
+    return {
+      x,
+      anchor,
+      width: textWidth,
+      reason,
+      metrics: {
+        textWidth,
+        ...extras,
+        gap: config.gap,
+        shapeStartX: geometry.shapeStartX,
+        shapeEndX: geometry.shapeEndX,
+        shapeCenterX: geometry.shapeCenterX,
+        chartMidX: geometry.chartMidX,
+        leftRoom: geometry.leftRoom,
+        rightRoom: geometry.rightRoom,
+        chartOriginX: geometry.chartOriginX,
+        chartEndX: geometry.chartEndX
+      }
+    };
   }
 
   function formatSvgAxisDate(day: string): string {

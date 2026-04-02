@@ -269,7 +269,7 @@ describe("mikuproject main xlsx import", () => {
     expect(document.getElementById("modelOutput").value).toContain("\"predecessorUid\": \"2\"");
     expect(document.getElementById("xmlInput").value).toContain("<Name>初期実装 Imported From XLSX</Name>");
     expect(document.getElementById("xmlInput").value).toContain("<PredecessorUID>2</PredecessorUID>");
-    expect(document.getElementById("statusMessage").textContent).toContain("XLSX を読み込んで 5 件の変更を反映しました");
+    expect(document.getElementById("statusMessage").textContent).toContain("XLSX を読み込んで project 全体を置き換えました");
     expect(document.getElementById("statusMessage").textContent).toContain("XML Export で保存できます");
     expect(document.getElementById("xmlSaveState").textContent).toContain("XML 保存状態: 未保存");
     expect(document.getElementById("xlsxImportSummary").textContent).toContain("Tasks 1");
@@ -316,7 +316,7 @@ describe("mikuproject main xlsx import", () => {
     expect(document.getElementById("modelOutput").value).toContain("\"group\": \"Dev\"");
     expect(document.getElementById("modelOutput").value).toContain("\"maxUnits\": 1");
     expect(document.getElementById("modelOutput").value).toContain("\"calendarUID\": \"1\"");
-    expect(document.getElementById("statusMessage").textContent).toContain("XLSX を読み込んで 4 件の変更を反映しました");
+    expect(document.getElementById("statusMessage").textContent).toContain("XLSX を読み込んで project 全体を置き換えました");
     expect(document.getElementById("xlsxImportSummary").textContent).toContain("Resources 1");
   });
 
@@ -343,9 +343,9 @@ describe("mikuproject main xlsx import", () => {
     await flushAsyncWork();
 
     expect(document.getElementById("modelOutput").value).toContain("\"name\": \"初期実装 Imported From JSON\"");
-    expect(document.getElementById("statusMessage").textContent).toContain("JSON を読み込んで 2 件の変更を反映しました");
-    expect(document.getElementById("xlsxImportSummary").textContent).toContain("JSON Import 反映結果");
-    expect(document.getElementById("xlsxImportSummary").textContent).toContain("workbook JSON の取込結果です");
+    expect(document.getElementById("statusMessage").textContent).toContain("JSON を読み込んで project 全体を置き換えました");
+    expect(document.getElementById("xlsxImportSummary").textContent).toContain("JSON Replace 反映結果");
+    expect(document.getElementById("xlsxImportSummary").textContent).toContain("workbook JSON による全置換結果です");
     expect(document.getElementById("xlsxImportSummary").textContent).toContain("PercentComplete");
     expect(document.getElementById("xlsxImportSummary").textContent).toContain("100");
     expect(document.getElementById("xlsxImportSummary").textContent).toContain("66");
@@ -368,7 +368,7 @@ describe("mikuproject main xlsx import", () => {
     await flushAsyncWork();
 
     expect(document.getElementById("modelOutput").value).toContain("\"name\": \"初期実装 Imported From JSON File\"");
-    expect(document.getElementById("statusMessage").textContent).toContain("JSON を読み込んで 2 件の変更を反映しました");
+    expect(document.getElementById("statusMessage").textContent).toContain("JSON を読み込んで project 全体を置き換えました");
     expect(document.getElementById("xlsxImportSummary").textContent).toContain("PercentComplete");
     expect(document.getElementById("xlsxImportSummary").textContent).toContain("100");
     expect(document.getElementById("xlsxImportSummary").textContent).toContain("55");
@@ -428,9 +428,9 @@ describe("mikuproject main xlsx import", () => {
 
     expect(document.getElementById("modelOutput").value).toContain("\"name\": \"Project From XLSX\"");
     expect(document.getElementById("modelOutput").value).toContain("\"minutesPerDay\": 420");
-    expect(document.getElementById("statusMessage").textContent).toContain("XLSX を読み込んで 2 件の変更を反映しました");
-    expect(document.getElementById("xlsxImportSummary").textContent).toContain("XLSX Import 反映結果");
-    expect(document.getElementById("xlsxImportSummary").textContent).toContain("Excel 編集結果の取込内容です");
+    expect(document.getElementById("statusMessage").textContent).toContain("XLSX を読み込んで project 全体を置き換えました");
+    expect(document.getElementById("xlsxImportSummary").textContent).toContain("XLSX Replace 反映結果");
+    expect(document.getElementById("xlsxImportSummary").textContent).toContain("XLSX による全置換結果です");
     expect(document.getElementById("xlsxImportSummary").textContent).toContain("Project 1");
     expect(document.getElementById("xlsxImportSummary").textContent).toContain("MinutesPerDay");
     expect(document.getElementById("xlsxImportSummary").textContent).toContain("480");
@@ -460,9 +460,7 @@ describe("mikuproject main xlsx import", () => {
     await flushAsyncWork();
     await flushAsyncWork();
 
-    expect(document.getElementById("statusMessage").textContent).toContain("XLSX に反映対象の変更はありませんでした");
-    expect(document.getElementById("statusMessage").textContent).toContain("XML は未変更です");
-    expect(document.getElementById("xmlInput").value).toBe(originalXml);
+    expect(document.getElementById("statusMessage").textContent).toContain("XLSX を読み込んで project 全体を置き換えました");
     expect(document.getElementById("xlsxImportSummary").classList.contains("md-hidden")).toBe(true);
   });
 
@@ -494,7 +492,7 @@ describe("mikuproject main xlsx import", () => {
     await flushAsyncWork();
     await flushAsyncWork();
 
-    expect(document.getElementById("statusMessage").textContent).toContain("XLSX を読み込んで 1 件の変更を反映しました");
+    expect(document.getElementById("statusMessage").textContent).toContain("XLSX を読み込んで project 全体を置き換えました");
     expect(document.getElementById("modelOutput").value).toContain("\"duration\": \"PT99H0M0S\"");
     expect(document.getElementById("modelOutput").value).not.toContain("\"weekDays\": 99");
     expect(document.getElementById("xlsxImportSummary").textContent).toContain("Duration");
@@ -530,11 +528,10 @@ describe("mikuproject main xlsx import", () => {
     await flushAsyncWork();
     await flushAsyncWork();
 
-    expect(document.getElementById("statusMessage").textContent).toContain("XLSX に反映対象の変更はありませんでした");
+    expect(document.getElementById("statusMessage").textContent).toContain("XLSX を読み込んで project 全体を置き換えました");
     expect(document.getElementById("modelOutput").value).not.toContain("\"weekDays\": 77");
     expect(document.getElementById("modelOutput").value).not.toContain("\"exceptions\": 88");
     expect(document.getElementById("modelOutput").value).not.toContain("\"workWeeks\": 99");
-    expect(document.getElementById("xmlInput").value).toBe(originalXml);
     expect(document.getElementById("xlsxImportSummary").classList.contains("md-hidden")).toBe(true);
   });
 

@@ -46,6 +46,24 @@
             warnings: validation.warnings
         };
     }
+    function importProjectWorkbookJsonAsProjectModel(documentLike) {
+        const validation = validateWorkbookJsonDocument(documentLike);
+        const document = validation.document;
+        const workbook = {
+            sheets: [
+                buildProjectSheet(document.sheets.Project || []),
+                buildTabularSheet("Tasks", document.sheets.Tasks || [], SHEET_HEADERS.Tasks),
+                buildTabularSheet("Resources", document.sheets.Resources || [], SHEET_HEADERS.Resources),
+                buildTabularSheet("Assignments", document.sheets.Assignments || [], SHEET_HEADERS.Assignments),
+                buildTabularSheet("Calendars", document.sheets.Calendars || [], SHEET_HEADERS.Calendars),
+                buildTabularSheet("NonWorkingDays", document.sheets.NonWorkingDays || [], SHEET_HEADERS.NonWorkingDays)
+            ]
+        };
+        return {
+            model: projectXlsx.importProjectWorkbookAsProjectModel(workbook),
+            warnings: validation.warnings
+        };
+    }
     function validateWorkbookJsonDocument(documentLike) {
         if (!documentLike || typeof documentLike !== "object") {
             throw new Error("workbook JSON がオブジェクトではありません");
@@ -184,6 +202,7 @@
     }
     globalThis.__mikuprojectProjectWorkbookJson = {
         exportProjectWorkbookJson,
+        importProjectWorkbookJsonAsProjectModel,
         importProjectWorkbookJson,
         validateWorkbookJsonDocument
     };

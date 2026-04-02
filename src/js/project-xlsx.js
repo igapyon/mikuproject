@@ -57,6 +57,21 @@
     function importProjectWorkbook(workbook, baseModel) {
         return importProjectWorkbookDetailed(workbook, baseModel).model;
     }
+    function importProjectWorkbookAsProjectModel(workbook) {
+        const project = importProjectSheetAsProjectInfo(workbook);
+        const tasks = importTasksSheetAsTasks(workbook);
+        const resources = importResourcesSheetAsResources(workbook);
+        const assignments = importAssignmentsSheetAsAssignments(workbook);
+        const calendars = importCalendarsSheetAsCalendars(workbook, project);
+        importNonWorkingDaysSheetAsCalendarExceptions(workbook, calendars);
+        return {
+            project,
+            tasks,
+            resources,
+            assignments,
+            calendars
+        };
+    }
     function importProjectWorkbookDetailed(workbook, baseModel) {
         const nextModel = cloneProjectModel(baseModel);
         const changes = [];
@@ -98,6 +113,37 @@
         assignIfChanged(changes, "project", "project", projectLabel, model.project, "minutesPerWeek", "MinutesPerWeek", readNumberCell(valueByField.get("MinutesPerWeek")));
         assignIfChanged(changes, "project", "project", projectLabel, model.project, "daysPerMonth", "DaysPerMonth", readNumberCell(valueByField.get("DaysPerMonth")));
         assignIfChanged(changes, "project", "project", projectLabel, model.project, "scheduleFromStart", "ScheduleFromStart", readBooleanCell(valueByField.get("ScheduleFromStart")));
+    }
+    function importProjectSheetAsProjectInfo(workbook) {
+        var _a;
+        const projectSheet = workbook.sheets.find((sheet) => sheet.name === "Project");
+        const valueByField = new Map();
+        for (const row of (projectSheet === null || projectSheet === void 0 ? void 0 : projectSheet.rows.slice(DATA_ROW_START_INDEX)) || []) {
+            const field = readStringCell(row.cells[0]);
+            if (!field) {
+                continue;
+            }
+            valueByField.set(field, row.cells[1]);
+        }
+        const name = readStringCell(valueByField.get("Name")) || "Imported Project";
+        return {
+            name,
+            title: readStringCell(valueByField.get("Title")) || undefined,
+            author: readStringCell(valueByField.get("Author")) || undefined,
+            company: readStringCell(valueByField.get("Company")) || undefined,
+            startDate: normalizeDateTimeInput(readStringCell(valueByField.get("StartDate"))) || "",
+            finishDate: normalizeDateTimeInput(readStringCell(valueByField.get("FinishDate"))) || "",
+            currentDate: normalizeDateTimeInput(readStringCell(valueByField.get("CurrentDate"))) || undefined,
+            statusDate: normalizeDateTimeInput(readStringCell(valueByField.get("StatusDate"))) || undefined,
+            calendarUID: readStringCell(valueByField.get("CalendarUID")) || undefined,
+            minutesPerDay: readNumberCell(valueByField.get("MinutesPerDay")),
+            minutesPerWeek: readNumberCell(valueByField.get("MinutesPerWeek")),
+            daysPerMonth: readNumberCell(valueByField.get("DaysPerMonth")),
+            scheduleFromStart: (_a = readBooleanCell(valueByField.get("ScheduleFromStart"))) !== null && _a !== void 0 ? _a : true,
+            outlineCodes: [],
+            wbsMasks: [],
+            extendedAttributes: []
+        };
     }
     function buildProjectSheet(model) {
         const project = model.project;
@@ -641,6 +687,48 @@
             assignIfChanged(changes, "tasks", task.uid, taskLabel, task, "notes", "Notes", readStringCellAt(row.cells, columnIndexByLabel.get("Notes")));
         }
     }
+    function importTasksSheetAsTasks(workbook) {
+        var _a, _b, _c, _d;
+        const tasksSheet = workbook.sheets.find((sheet) => sheet.name === "Tasks");
+        if (!tasksSheet) {
+            return [];
+        }
+        const columnIndexByLabel = readHeaderMap(tasksSheet, HEADER_ROW_INDEX);
+        const uidColumnIndex = columnIndexByLabel.get("UID");
+        if (uidColumnIndex === undefined) {
+            return [];
+        }
+        const tasks = [];
+        for (const [rowIndex, row] of tasksSheet.rows.slice(DATA_ROW_START_INDEX).entries()) {
+            const uid = readStringCell(row.cells[uidColumnIndex]);
+            if (!uid) {
+                continue;
+            }
+            tasks.push({
+                uid,
+                id: readStringCellAt(row.cells, columnIndexByLabel.get("ID")) || String(rowIndex + 1),
+                name: readStringCellAt(row.cells, columnIndexByLabel.get("Name")) || uid,
+                outlineLevel: readNumberCellAt(row.cells, columnIndexByLabel.get("OutlineLevel")) || 1,
+                outlineNumber: readStringCellAt(row.cells, columnIndexByLabel.get("OutlineNumber")) || String(rowIndex + 1),
+                wbs: readStringCellAt(row.cells, columnIndexByLabel.get("WBS")) || undefined,
+                start: normalizeDateTimeInput(readStringCellAt(row.cells, columnIndexByLabel.get("Start"))) || "",
+                finish: normalizeDateTimeInput(readStringCellAt(row.cells, columnIndexByLabel.get("Finish"))) || "",
+                duration: readStringCellAt(row.cells, columnIndexByLabel.get("Duration")) || "",
+                milestone: (_a = readBooleanCellAt(row.cells, columnIndexByLabel.get("Milestone"))) !== null && _a !== void 0 ? _a : false,
+                summary: (_b = readBooleanCellAt(row.cells, columnIndexByLabel.get("Summary"))) !== null && _b !== void 0 ? _b : false,
+                critical: (_c = readBooleanCellAt(row.cells, columnIndexByLabel.get("Critical"))) !== null && _c !== void 0 ? _c : undefined,
+                percentComplete: readNumberCellAt(row.cells, columnIndexByLabel.get("PercentComplete")) || 0,
+                percentWorkComplete: (_d = readNumberCellAt(row.cells, columnIndexByLabel.get("PercentWorkComplete"))) !== null && _d !== void 0 ? _d : undefined,
+                calendarUID: readStringCellAt(row.cells, columnIndexByLabel.get("CalendarUID")) || undefined,
+                notes: readStringCellAt(row.cells, columnIndexByLabel.get("Notes")) || undefined,
+                predecessors: parsePredecessorCell(readStringCellAt(row.cells, columnIndexByLabel.get("Predecessors"))) || [],
+                extendedAttributes: [],
+                baselines: [],
+                timephasedData: []
+            });
+        }
+        return tasks;
+    }
     function importResourcesSheet(workbook, model, changes) {
         const resourcesSheet = workbook.sheets.find((sheet) => sheet.name === "Resources");
         if (!resourcesSheet) {
@@ -668,6 +756,45 @@
             assignIfChanged(changes, "resources", resource.uid, resourceLabel, resource, "calendarUID", "CalendarUID", readStringCellAt(row.cells, columnIndexByLabel.get("CalendarUID")));
         }
     }
+    function importResourcesSheetAsResources(workbook) {
+        var _a, _b, _c;
+        const resourcesSheet = workbook.sheets.find((sheet) => sheet.name === "Resources");
+        if (!resourcesSheet) {
+            return [];
+        }
+        const columnIndexByLabel = readHeaderMap(resourcesSheet, HEADER_ROW_INDEX);
+        const uidColumnIndex = columnIndexByLabel.get("UID");
+        if (uidColumnIndex === undefined) {
+            return [];
+        }
+        const resources = [];
+        for (const [rowIndex, row] of resourcesSheet.rows.slice(DATA_ROW_START_INDEX).entries()) {
+            const uid = readStringCell(row.cells[uidColumnIndex]);
+            if (!uid) {
+                continue;
+            }
+            resources.push({
+                uid,
+                id: readStringCellAt(row.cells, columnIndexByLabel.get("ID")) || String(rowIndex + 1),
+                name: readStringCellAt(row.cells, columnIndexByLabel.get("Name")) || uid,
+                type: (_a = readNumberCellAt(row.cells, columnIndexByLabel.get("Type"))) !== null && _a !== void 0 ? _a : undefined,
+                initials: readStringCellAt(row.cells, columnIndexByLabel.get("Initials")) || undefined,
+                group: readStringCellAt(row.cells, columnIndexByLabel.get("Group")) || undefined,
+                maxUnits: (_b = readNumberCellAt(row.cells, columnIndexByLabel.get("MaxUnits"))) !== null && _b !== void 0 ? _b : undefined,
+                calendarUID: readStringCellAt(row.cells, columnIndexByLabel.get("CalendarUID")) || undefined,
+                standardRate: readStringCellAt(row.cells, columnIndexByLabel.get("StandardRate")) || undefined,
+                overtimeRate: readStringCellAt(row.cells, columnIndexByLabel.get("OvertimeRate")) || undefined,
+                costPerUse: (_c = readNumberCellAt(row.cells, columnIndexByLabel.get("CostPerUse"))) !== null && _c !== void 0 ? _c : undefined,
+                work: readStringCellAt(row.cells, columnIndexByLabel.get("Work")) || undefined,
+                actualWork: readStringCellAt(row.cells, columnIndexByLabel.get("ActualWork")) || undefined,
+                remainingWork: readStringCellAt(row.cells, columnIndexByLabel.get("RemainingWork")) || undefined,
+                extendedAttributes: [],
+                baselines: [],
+                timephasedData: []
+            });
+        }
+        return resources;
+    }
     function importAssignmentsSheet(workbook, model, changes) {
         const assignmentsSheet = workbook.sheets.find((sheet) => sheet.name === "Assignments");
         if (!assignmentsSheet) {
@@ -694,6 +821,46 @@
             assignIfChanged(changes, "assignments", assignment.uid, assignmentLabel, assignment, "percentWorkComplete", "PercentWorkComplete", readNumberCellAt(row.cells, columnIndexByLabel.get("PercentWorkComplete")));
         }
     }
+    function importAssignmentsSheetAsAssignments(workbook) {
+        var _a, _b;
+        const assignmentsSheet = workbook.sheets.find((sheet) => sheet.name === "Assignments");
+        if (!assignmentsSheet) {
+            return [];
+        }
+        const columnIndexByLabel = readHeaderMap(assignmentsSheet, HEADER_ROW_INDEX);
+        const uidColumnIndex = columnIndexByLabel.get("UID");
+        if (uidColumnIndex === undefined) {
+            return [];
+        }
+        const assignments = [];
+        for (const row of assignmentsSheet.rows.slice(DATA_ROW_START_INDEX)) {
+            const uid = readStringCell(row.cells[uidColumnIndex]);
+            if (!uid) {
+                continue;
+            }
+            const taskUid = readStringCellAt(row.cells, columnIndexByLabel.get("TaskUID"));
+            const resourceUid = readStringCellAt(row.cells, columnIndexByLabel.get("ResourceUID"));
+            if (!taskUid || !resourceUid) {
+                continue;
+            }
+            assignments.push({
+                uid,
+                taskUid,
+                resourceUid,
+                start: normalizeDateTimeInput(readStringCellAt(row.cells, columnIndexByLabel.get("Start"))) || undefined,
+                finish: normalizeDateTimeInput(readStringCellAt(row.cells, columnIndexByLabel.get("Finish"))) || undefined,
+                units: (_a = readNumberCellAt(row.cells, columnIndexByLabel.get("Units"))) !== null && _a !== void 0 ? _a : undefined,
+                work: readStringCellAt(row.cells, columnIndexByLabel.get("Work")) || undefined,
+                actualWork: readStringCellAt(row.cells, columnIndexByLabel.get("ActualWork")) || undefined,
+                remainingWork: readStringCellAt(row.cells, columnIndexByLabel.get("RemainingWork")) || undefined,
+                percentWorkComplete: (_b = readNumberCellAt(row.cells, columnIndexByLabel.get("PercentWorkComplete"))) !== null && _b !== void 0 ? _b : undefined,
+                extendedAttributes: [],
+                baselines: [],
+                timephasedData: []
+            });
+        }
+        return assignments;
+    }
     function importCalendarsSheet(workbook, model, changes) {
         const calendarsSheet = workbook.sheets.find((sheet) => sheet.name === "Calendars");
         if (!calendarsSheet) {
@@ -719,6 +886,44 @@
             assignIfChanged(changes, "calendars", calendar.uid, calendarLabel, calendar, "isBaseCalendar", "IsBaseCalendar", readBooleanCellAt(row.cells, columnIndexByLabel.get("IsBaseCalendar")));
             assignIfChanged(changes, "calendars", calendar.uid, calendarLabel, calendar, "baseCalendarUID", "BaseCalendarUID", readStringCellAt(row.cells, columnIndexByLabel.get("BaseCalendarUID")));
         }
+    }
+    function importCalendarsSheetAsCalendars(workbook, project) {
+        var _a;
+        const calendarsSheet = workbook.sheets.find((sheet) => sheet.name === "Calendars");
+        const calendars = [];
+        const columnIndexByLabel = calendarsSheet ? readHeaderMap(calendarsSheet, HEADER_ROW_INDEX) : new Map();
+        const uidColumnIndex = columnIndexByLabel.get("UID");
+        if (calendarsSheet && uidColumnIndex !== undefined) {
+            for (const row of calendarsSheet.rows.slice(DATA_ROW_START_INDEX)) {
+                const uid = readStringCell(row.cells[uidColumnIndex]);
+                if (!uid) {
+                    continue;
+                }
+                calendars.push({
+                    uid,
+                    name: readStringCellAt(row.cells, columnIndexByLabel.get("Name")) || uid,
+                    isBaseCalendar: (_a = readBooleanCellAt(row.cells, columnIndexByLabel.get("IsBaseCalendar"))) !== null && _a !== void 0 ? _a : false,
+                    baseCalendarUID: readStringCellAt(row.cells, columnIndexByLabel.get("BaseCalendarUID")) || undefined,
+                    weekDays: [],
+                    exceptions: [],
+                    workWeeks: []
+                });
+            }
+        }
+        if (calendars.length === 0) {
+            calendars.push({
+                uid: project.calendarUID || "1",
+                name: "Standard",
+                isBaseCalendar: true,
+                weekDays: buildDefaultStandardWeekDays(project),
+                exceptions: [],
+                workWeeks: []
+            });
+            if (!project.calendarUID) {
+                project.calendarUID = calendars[0].uid;
+            }
+        }
+        return calendars;
     }
     function importNonWorkingDaysSheet(workbook, model, changes) {
         const nonWorkingDaysSheet = workbook.sheets.find((sheet) => sheet.name === "NonWorkingDays");
@@ -762,6 +967,80 @@
             }
             assignIfChanged(changes, "calendars", calendar.uid, calendar.name, exception, "dayWorking", `Exception${indexValue}.DayWorking`, readBooleanCellAt(row.cells, columnIndexByLabel.get("DayWorking")));
         }
+    }
+    function importNonWorkingDaysSheetAsCalendarExceptions(workbook, calendars) {
+        var _a;
+        const nonWorkingDaysSheet = workbook.sheets.find((sheet) => sheet.name === "NonWorkingDays");
+        if (!nonWorkingDaysSheet) {
+            return;
+        }
+        const columnIndexByLabel = readHeaderMap(nonWorkingDaysSheet, HEADER_ROW_INDEX);
+        const calendarUidColumnIndex = columnIndexByLabel.get("CalendarUID");
+        const indexColumnIndex = columnIndexByLabel.get("Index");
+        if (calendarUidColumnIndex === undefined || indexColumnIndex === undefined) {
+            return;
+        }
+        const calendarByUid = new Map(calendars.map((calendar) => [calendar.uid, calendar]));
+        for (const row of nonWorkingDaysSheet.rows.slice(DATA_ROW_START_INDEX)) {
+            const calendarUid = readStringCell(row.cells[calendarUidColumnIndex]);
+            const indexValue = readNumberCell(row.cells[indexColumnIndex]);
+            if (!calendarUid || !indexValue) {
+                continue;
+            }
+            const calendar = calendarByUid.get(calendarUid);
+            if (!calendar) {
+                continue;
+            }
+            const dateValue = readStringCellAt(row.cells, columnIndexByLabel.get("Date"));
+            const name = readStringCellAt(row.cells, columnIndexByLabel.get("Name")) || undefined;
+            const dayWorking = (_a = readBooleanCellAt(row.cells, columnIndexByLabel.get("DayWorking"))) !== null && _a !== void 0 ? _a : false;
+            let fromDate;
+            let toDate;
+            if (dateValue) {
+                const normalizedDate = normalizeDateOnly(dateValue);
+                if (normalizedDate) {
+                    fromDate = `${normalizedDate}T00:00:00`;
+                    toDate = `${normalizedDate}T23:59:59`;
+                }
+            }
+            else {
+                fromDate = normalizeExceptionBoundaryInput(readStringCellAt(row.cells, columnIndexByLabel.get("FromDate")), false) || undefined;
+                toDate = normalizeExceptionBoundaryInput(readStringCellAt(row.cells, columnIndexByLabel.get("ToDate")), true) || undefined;
+            }
+            calendar.exceptions[indexValue - 1] = {
+                name,
+                fromDate,
+                toDate,
+                dayWorking,
+                workingTimes: []
+            };
+        }
+        for (const calendar of calendars) {
+            calendar.exceptions = calendar.exceptions.filter(Boolean);
+        }
+    }
+    function buildDefaultWorkingTimes(project) {
+        const start = project.defaultStartTime || "09:00:00";
+        const finish = project.defaultFinishTime || "18:00:00";
+        if (start < "12:00:00" && finish > "13:00:00") {
+            return [
+                { fromTime: start, toTime: "12:00:00" },
+                { fromTime: "13:00:00", toTime: finish }
+            ];
+        }
+        return [{ fromTime: start, toTime: finish }];
+    }
+    function buildDefaultStandardWeekDays(project) {
+        const workingTimes = buildDefaultWorkingTimes(project);
+        return Array.from({ length: 7 }, (_, index) => {
+            const dayType = index + 1;
+            const dayWorking = dayType !== 1 && dayType !== 7;
+            return {
+                dayType,
+                dayWorking,
+                workingTimes: dayWorking ? workingTimes.map((item) => ({ ...item })) : []
+            };
+        });
     }
     function formatExceptionDate(exception) {
         var _a, _b;
@@ -976,6 +1255,7 @@
     globalThis.__mikuprojectProjectXlsx = {
         exportProjectWorkbook,
         importProjectWorkbook,
+        importProjectWorkbookAsProjectModel,
         importProjectWorkbookDetailed
     };
 })();

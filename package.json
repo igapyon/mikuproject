@@ -6,13 +6,19 @@
   "license": "Apache-2.0",
   "type": "module",
   "scripts": {
-    "build": "npm run build:app && npm test",
+    "build": "npm run build:web && npm run test:fast",
     "build:js": "node scripts/build-project.mjs --js-only",
     "build:html": "node scripts/build-project.mjs --html-only",
     "build:web": "node scripts/build-project.mjs",
     "build:app": "npm run build:web && npm run build:xlsx-sample",
+    "build:full": "npm run build:web && npm run test:full",
     "build:xlsx-sample": "node scripts/build-project-xlsx-sample.mjs",
-    "test": "vitest run"
+    "test": "node scripts/run-tests.mjs all",
+    "test:fast": "node scripts/run-tests.mjs fast",
+    "test:ui": "node scripts/run-tests.mjs ui",
+    "test:extended": "node scripts/run-tests.mjs extended",
+    "test:full": "node scripts/run-tests.mjs full",
+    "test:all": "node scripts/run-tests.mjs all"
   },
   "devDependencies": {
     "jsdom": "^26.1.0",

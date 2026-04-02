@@ -120,6 +120,22 @@
     return importProjectWorkbookDetailed(workbook, baseModel).model;
   }
 
+  function importProjectWorkbookAsProjectModel(workbook: XlsxWorkbookLike): ProjectModel {
+    const project = importProjectSheetAsProjectInfo(workbook);
+    const tasks = importTasksSheetAsTasks(workbook);
+    const resources = importResourcesSheetAsResources(workbook);
+    const assignments = importAssignmentsSheetAsAssignments(workbook);
+    const calendars = importCalendarsSheetAsCalendars(workbook, project);
+    importNonWorkingDaysSheetAsCalendarExceptions(workbook, calendars);
+    return {
+      project,
+      tasks,
+      resources,
+      assignments,
+      calendars
+    };
+  }
+
   function importProjectWorkbookDetailed(workbook: XlsxWorkbookLike, baseModel: ProjectModel): {
     model: ProjectModel;
     changes: ImportChange[];
@@ -165,6 +181,37 @@
     assignIfChanged(changes, "project", "project", projectLabel, model.project, "minutesPerWeek", "MinutesPerWeek", readNumberCell(valueByField.get("MinutesPerWeek")));
     assignIfChanged(changes, "project", "project", projectLabel, model.project, "daysPerMonth", "DaysPerMonth", readNumberCell(valueByField.get("DaysPerMonth")));
     assignIfChanged(changes, "project", "project", projectLabel, model.project, "scheduleFromStart", "ScheduleFromStart", readBooleanCell(valueByField.get("ScheduleFromStart")));
+  }
+
+  function importProjectSheetAsProjectInfo(workbook: XlsxWorkbookLike): ProjectInfo {
+    const projectSheet = workbook.sheets.find((sheet) => sheet.name === "Project");
+    const valueByField = new Map<string, XlsxCellLike | undefined>();
+    for (const row of projectSheet?.rows.slice(DATA_ROW_START_INDEX) || []) {
+      const field = readStringCell(row.cells[0]);
+      if (!field) {
+        continue;
+      }
+      valueByField.set(field, row.cells[1]);
+    }
+    const name = readStringCell(valueByField.get("Name")) || "Imported Project";
+    return {
+      name,
+      title: readStringCell(valueByField.get("Title")) || undefined,
+      author: readStringCell(valueByField.get("Author")) || undefined,
+      company: readStringCell(valueByField.get("Company")) || undefined,
+      startDate: normalizeDateTimeInput(readStringCell(valueByField.get("StartDate"))) || "",
+      finishDate: normalizeDateTimeInput(readStringCell(valueByField.get("FinishDate"))) || "",
+      currentDate: normalizeDateTimeInput(readStringCell(valueByField.get("CurrentDate"))) || undefined,
+      statusDate: normalizeDateTimeInput(readStringCell(valueByField.get("StatusDate"))) || undefined,
+      calendarUID: readStringCell(valueByField.get("CalendarUID")) || undefined,
+      minutesPerDay: readNumberCell(valueByField.get("MinutesPerDay")),
+      minutesPerWeek: readNumberCell(valueByField.get("MinutesPerWeek")),
+      daysPerMonth: readNumberCell(valueByField.get("DaysPerMonth")),
+      scheduleFromStart: readBooleanCell(valueByField.get("ScheduleFromStart")) ?? true,
+      outlineCodes: [],
+      wbsMasks: [],
+      extendedAttributes: []
+    };
   }
 
   function buildProjectSheet(model: ProjectModel) {
@@ -753,6 +800,48 @@
     }
   }
 
+  function importTasksSheetAsTasks(workbook: XlsxWorkbookLike): TaskModel[] {
+    const tasksSheet = workbook.sheets.find((sheet) => sheet.name === "Tasks");
+    if (!tasksSheet) {
+      return [];
+    }
+    const columnIndexByLabel = readHeaderMap(tasksSheet, HEADER_ROW_INDEX);
+    const uidColumnIndex = columnIndexByLabel.get("UID");
+    if (uidColumnIndex === undefined) {
+      return [];
+    }
+    const tasks: TaskModel[] = [];
+    for (const [rowIndex, row] of tasksSheet.rows.slice(DATA_ROW_START_INDEX).entries()) {
+      const uid = readStringCell(row.cells[uidColumnIndex]);
+      if (!uid) {
+        continue;
+      }
+      tasks.push({
+        uid,
+        id: readStringCellAt(row.cells, columnIndexByLabel.get("ID")) || String(rowIndex + 1),
+        name: readStringCellAt(row.cells, columnIndexByLabel.get("Name")) || uid,
+        outlineLevel: readNumberCellAt(row.cells, columnIndexByLabel.get("OutlineLevel")) || 1,
+        outlineNumber: readStringCellAt(row.cells, columnIndexByLabel.get("OutlineNumber")) || String(rowIndex + 1),
+        wbs: readStringCellAt(row.cells, columnIndexByLabel.get("WBS")) || undefined,
+        start: normalizeDateTimeInput(readStringCellAt(row.cells, columnIndexByLabel.get("Start"))) || "",
+        finish: normalizeDateTimeInput(readStringCellAt(row.cells, columnIndexByLabel.get("Finish"))) || "",
+        duration: readStringCellAt(row.cells, columnIndexByLabel.get("Duration")) || "",
+        milestone: readBooleanCellAt(row.cells, columnIndexByLabel.get("Milestone")) ?? false,
+        summary: readBooleanCellAt(row.cells, columnIndexByLabel.get("Summary")) ?? false,
+        critical: readBooleanCellAt(row.cells, columnIndexByLabel.get("Critical")) ?? undefined,
+        percentComplete: readNumberCellAt(row.cells, columnIndexByLabel.get("PercentComplete")) || 0,
+        percentWorkComplete: readNumberCellAt(row.cells, columnIndexByLabel.get("PercentWorkComplete")) ?? undefined,
+        calendarUID: readStringCellAt(row.cells, columnIndexByLabel.get("CalendarUID")) || undefined,
+        notes: readStringCellAt(row.cells, columnIndexByLabel.get("Notes")) || undefined,
+        predecessors: parsePredecessorCell(readStringCellAt(row.cells, columnIndexByLabel.get("Predecessors"))) || [],
+        extendedAttributes: [],
+        baselines: [],
+        timephasedData: []
+      });
+    }
+    return tasks;
+  }
+
   function importResourcesSheet(workbook: XlsxWorkbookLike, model: ProjectModel, changes: ImportChange[]): void {
     const resourcesSheet = workbook.sheets.find((sheet) => sheet.name === "Resources");
     if (!resourcesSheet) {
@@ -779,6 +868,45 @@
       assignIfChanged(changes, "resources", resource.uid, resourceLabel, resource, "maxUnits", "MaxUnits", readNumberCellAt(row.cells, columnIndexByLabel.get("MaxUnits")));
       assignIfChanged(changes, "resources", resource.uid, resourceLabel, resource, "calendarUID", "CalendarUID", readStringCellAt(row.cells, columnIndexByLabel.get("CalendarUID")));
     }
+  }
+
+  function importResourcesSheetAsResources(workbook: XlsxWorkbookLike): ResourceModel[] {
+    const resourcesSheet = workbook.sheets.find((sheet) => sheet.name === "Resources");
+    if (!resourcesSheet) {
+      return [];
+    }
+    const columnIndexByLabel = readHeaderMap(resourcesSheet, HEADER_ROW_INDEX);
+    const uidColumnIndex = columnIndexByLabel.get("UID");
+    if (uidColumnIndex === undefined) {
+      return [];
+    }
+    const resources: ResourceModel[] = [];
+    for (const [rowIndex, row] of resourcesSheet.rows.slice(DATA_ROW_START_INDEX).entries()) {
+      const uid = readStringCell(row.cells[uidColumnIndex]);
+      if (!uid) {
+        continue;
+      }
+      resources.push({
+        uid,
+        id: readStringCellAt(row.cells, columnIndexByLabel.get("ID")) || String(rowIndex + 1),
+        name: readStringCellAt(row.cells, columnIndexByLabel.get("Name")) || uid,
+        type: readNumberCellAt(row.cells, columnIndexByLabel.get("Type")) ?? undefined,
+        initials: readStringCellAt(row.cells, columnIndexByLabel.get("Initials")) || undefined,
+        group: readStringCellAt(row.cells, columnIndexByLabel.get("Group")) || undefined,
+        maxUnits: readNumberCellAt(row.cells, columnIndexByLabel.get("MaxUnits")) ?? undefined,
+        calendarUID: readStringCellAt(row.cells, columnIndexByLabel.get("CalendarUID")) || undefined,
+        standardRate: readStringCellAt(row.cells, columnIndexByLabel.get("StandardRate")) || undefined,
+        overtimeRate: readStringCellAt(row.cells, columnIndexByLabel.get("OvertimeRate")) || undefined,
+        costPerUse: readNumberCellAt(row.cells, columnIndexByLabel.get("CostPerUse")) ?? undefined,
+        work: readStringCellAt(row.cells, columnIndexByLabel.get("Work")) || undefined,
+        actualWork: readStringCellAt(row.cells, columnIndexByLabel.get("ActualWork")) || undefined,
+        remainingWork: readStringCellAt(row.cells, columnIndexByLabel.get("RemainingWork")) || undefined,
+        extendedAttributes: [],
+        baselines: [],
+        timephasedData: []
+      });
+    }
+    return resources;
   }
 
   function importAssignmentsSheet(workbook: XlsxWorkbookLike, model: ProjectModel, changes: ImportChange[]): void {
@@ -808,6 +936,46 @@
     }
   }
 
+  function importAssignmentsSheetAsAssignments(workbook: XlsxWorkbookLike): AssignmentModel[] {
+    const assignmentsSheet = workbook.sheets.find((sheet) => sheet.name === "Assignments");
+    if (!assignmentsSheet) {
+      return [];
+    }
+    const columnIndexByLabel = readHeaderMap(assignmentsSheet, HEADER_ROW_INDEX);
+    const uidColumnIndex = columnIndexByLabel.get("UID");
+    if (uidColumnIndex === undefined) {
+      return [];
+    }
+    const assignments: AssignmentModel[] = [];
+    for (const row of assignmentsSheet.rows.slice(DATA_ROW_START_INDEX)) {
+      const uid = readStringCell(row.cells[uidColumnIndex]);
+      if (!uid) {
+        continue;
+      }
+      const taskUid = readStringCellAt(row.cells, columnIndexByLabel.get("TaskUID"));
+      const resourceUid = readStringCellAt(row.cells, columnIndexByLabel.get("ResourceUID"));
+      if (!taskUid || !resourceUid) {
+        continue;
+      }
+      assignments.push({
+        uid,
+        taskUid,
+        resourceUid,
+        start: normalizeDateTimeInput(readStringCellAt(row.cells, columnIndexByLabel.get("Start"))) || undefined,
+        finish: normalizeDateTimeInput(readStringCellAt(row.cells, columnIndexByLabel.get("Finish"))) || undefined,
+        units: readNumberCellAt(row.cells, columnIndexByLabel.get("Units")) ?? undefined,
+        work: readStringCellAt(row.cells, columnIndexByLabel.get("Work")) || undefined,
+        actualWork: readStringCellAt(row.cells, columnIndexByLabel.get("ActualWork")) || undefined,
+        remainingWork: readStringCellAt(row.cells, columnIndexByLabel.get("RemainingWork")) || undefined,
+        percentWorkComplete: readNumberCellAt(row.cells, columnIndexByLabel.get("PercentWorkComplete")) ?? undefined,
+        extendedAttributes: [],
+        baselines: [],
+        timephasedData: []
+      });
+    }
+    return assignments;
+  }
+
   function importCalendarsSheet(workbook: XlsxWorkbookLike, model: ProjectModel, changes: ImportChange[]): void {
     const calendarsSheet = workbook.sheets.find((sheet) => sheet.name === "Calendars");
     if (!calendarsSheet) {
@@ -833,6 +1001,44 @@
       assignIfChanged(changes, "calendars", calendar.uid, calendarLabel, calendar, "isBaseCalendar", "IsBaseCalendar", readBooleanCellAt(row.cells, columnIndexByLabel.get("IsBaseCalendar")));
       assignIfChanged(changes, "calendars", calendar.uid, calendarLabel, calendar, "baseCalendarUID", "BaseCalendarUID", readStringCellAt(row.cells, columnIndexByLabel.get("BaseCalendarUID")));
     }
+  }
+
+  function importCalendarsSheetAsCalendars(workbook: XlsxWorkbookLike, project: ProjectInfo): CalendarModel[] {
+    const calendarsSheet = workbook.sheets.find((sheet) => sheet.name === "Calendars");
+    const calendars: CalendarModel[] = [];
+    const columnIndexByLabel = calendarsSheet ? readHeaderMap(calendarsSheet, HEADER_ROW_INDEX) : new Map<string, number>();
+    const uidColumnIndex = columnIndexByLabel.get("UID");
+    if (calendarsSheet && uidColumnIndex !== undefined) {
+      for (const row of calendarsSheet.rows.slice(DATA_ROW_START_INDEX)) {
+        const uid = readStringCell(row.cells[uidColumnIndex]);
+        if (!uid) {
+          continue;
+        }
+        calendars.push({
+          uid,
+          name: readStringCellAt(row.cells, columnIndexByLabel.get("Name")) || uid,
+          isBaseCalendar: readBooleanCellAt(row.cells, columnIndexByLabel.get("IsBaseCalendar")) ?? false,
+          baseCalendarUID: readStringCellAt(row.cells, columnIndexByLabel.get("BaseCalendarUID")) || undefined,
+          weekDays: [],
+          exceptions: [],
+          workWeeks: []
+        });
+      }
+    }
+    if (calendars.length === 0) {
+      calendars.push({
+        uid: project.calendarUID || "1",
+        name: "Standard",
+        isBaseCalendar: true,
+        weekDays: buildDefaultStandardWeekDays(project),
+        exceptions: [],
+        workWeeks: []
+      });
+      if (!project.calendarUID) {
+        project.calendarUID = calendars[0].uid;
+      }
+    }
+    return calendars;
   }
 
   function importNonWorkingDaysSheet(workbook: XlsxWorkbookLike, model: ProjectModel, changes: ImportChange[]): void {
@@ -877,6 +1083,81 @@
       }
       assignIfChanged(changes, "calendars", calendar.uid, calendar.name, exception, "dayWorking", `Exception${indexValue}.DayWorking`, readBooleanCellAt(row.cells, columnIndexByLabel.get("DayWorking")));
     }
+  }
+
+  function importNonWorkingDaysSheetAsCalendarExceptions(workbook: XlsxWorkbookLike, calendars: CalendarModel[]): void {
+    const nonWorkingDaysSheet = workbook.sheets.find((sheet) => sheet.name === "NonWorkingDays");
+    if (!nonWorkingDaysSheet) {
+      return;
+    }
+    const columnIndexByLabel = readHeaderMap(nonWorkingDaysSheet, HEADER_ROW_INDEX);
+    const calendarUidColumnIndex = columnIndexByLabel.get("CalendarUID");
+    const indexColumnIndex = columnIndexByLabel.get("Index");
+    if (calendarUidColumnIndex === undefined || indexColumnIndex === undefined) {
+      return;
+    }
+    const calendarByUid = new Map(calendars.map((calendar) => [calendar.uid, calendar]));
+    for (const row of nonWorkingDaysSheet.rows.slice(DATA_ROW_START_INDEX)) {
+      const calendarUid = readStringCell(row.cells[calendarUidColumnIndex]);
+      const indexValue = readNumberCell(row.cells[indexColumnIndex]);
+      if (!calendarUid || !indexValue) {
+        continue;
+      }
+      const calendar = calendarByUid.get(calendarUid);
+      if (!calendar) {
+        continue;
+      }
+      const dateValue = readStringCellAt(row.cells, columnIndexByLabel.get("Date"));
+      const name = readStringCellAt(row.cells, columnIndexByLabel.get("Name")) || undefined;
+      const dayWorking = readBooleanCellAt(row.cells, columnIndexByLabel.get("DayWorking")) ?? false;
+      let fromDate: string | undefined;
+      let toDate: string | undefined;
+      if (dateValue) {
+        const normalizedDate = normalizeDateOnly(dateValue);
+        if (normalizedDate) {
+          fromDate = `${normalizedDate}T00:00:00`;
+          toDate = `${normalizedDate}T23:59:59`;
+        }
+      } else {
+        fromDate = normalizeExceptionBoundaryInput(readStringCellAt(row.cells, columnIndexByLabel.get("FromDate")), false) || undefined;
+        toDate = normalizeExceptionBoundaryInput(readStringCellAt(row.cells, columnIndexByLabel.get("ToDate")), true) || undefined;
+      }
+      calendar.exceptions[indexValue - 1] = {
+        name,
+        fromDate,
+        toDate,
+        dayWorking,
+        workingTimes: []
+      };
+    }
+    for (const calendar of calendars) {
+      calendar.exceptions = calendar.exceptions.filter(Boolean);
+    }
+  }
+
+  function buildDefaultWorkingTimes(project: ProjectInfo): WorkingTimeModel[] {
+    const start = project.defaultStartTime || "09:00:00";
+    const finish = project.defaultFinishTime || "18:00:00";
+    if (start < "12:00:00" && finish > "13:00:00") {
+      return [
+        { fromTime: start, toTime: "12:00:00" },
+        { fromTime: "13:00:00", toTime: finish }
+      ];
+    }
+    return [{ fromTime: start, toTime: finish }];
+  }
+
+  function buildDefaultStandardWeekDays(project: ProjectInfo): WeekDayModel[] {
+    const workingTimes = buildDefaultWorkingTimes(project);
+    return Array.from({ length: 7 }, (_, index) => {
+      const dayType = index + 1;
+      const dayWorking = dayType !== 1 && dayType !== 7;
+      return {
+        dayType,
+        dayWorking,
+        workingTimes: dayWorking ? workingTimes.map((item) => ({ ...item })) : []
+      };
+    });
   }
 
   function formatExceptionDate(exception: CalendarExceptionModel): string | undefined {
@@ -1129,6 +1410,7 @@
     __mikuprojectProjectXlsx?: {
       exportProjectWorkbook: (model: ProjectModel) => XlsxWorkbookLike;
       importProjectWorkbook: (workbook: XlsxWorkbookLike, baseModel: ProjectModel) => ProjectModel;
+      importProjectWorkbookAsProjectModel: (workbook: XlsxWorkbookLike) => ProjectModel;
       importProjectWorkbookDetailed: (workbook: XlsxWorkbookLike, baseModel: ProjectModel) => {
         model: ProjectModel;
         changes: ImportChange[];
@@ -1137,6 +1419,7 @@
   }).__mikuprojectProjectXlsx = {
     exportProjectWorkbook,
     importProjectWorkbook,
+    importProjectWorkbookAsProjectModel,
     importProjectWorkbookDetailed
   };
 })();

@@ -127,6 +127,28 @@
     };
   }
 
+  function importProjectWorkbookJsonAsProjectModel(documentLike: unknown): {
+    model: ProjectModel;
+    warnings: WorkbookJsonWarning[];
+  } {
+    const validation = validateWorkbookJsonDocument(documentLike);
+    const document = validation.document;
+    const workbook = {
+      sheets: [
+        buildProjectSheet(document.sheets.Project || []),
+        buildTabularSheet("Tasks", document.sheets.Tasks || [], SHEET_HEADERS.Tasks),
+        buildTabularSheet("Resources", document.sheets.Resources || [], SHEET_HEADERS.Resources),
+        buildTabularSheet("Assignments", document.sheets.Assignments || [], SHEET_HEADERS.Assignments),
+        buildTabularSheet("Calendars", document.sheets.Calendars || [], SHEET_HEADERS.Calendars),
+        buildTabularSheet("NonWorkingDays", document.sheets.NonWorkingDays || [], SHEET_HEADERS.NonWorkingDays)
+      ]
+    };
+    return {
+      model: projectXlsx.importProjectWorkbookAsProjectModel(workbook),
+      warnings: validation.warnings
+    };
+  }
+
   function validateWorkbookJsonDocument(documentLike: unknown): {
     document: WorkbookJsonDocument;
     warnings: WorkbookJsonWarning[];
@@ -279,6 +301,10 @@
   (globalThis as typeof globalThis & {
     __mikuprojectProjectWorkbookJson?: {
       exportProjectWorkbookJson: (model: ProjectModel) => WorkbookJsonDocument;
+      importProjectWorkbookJsonAsProjectModel: (documentLike: unknown) => {
+        model: ProjectModel;
+        warnings: WorkbookJsonWarning[];
+      };
       importProjectWorkbookJson: (documentLike: unknown, baseModel: ProjectModel) => {
         model: ProjectModel;
         changes: ImportChange[];
@@ -291,6 +317,7 @@
     };
   }).__mikuprojectProjectWorkbookJson = {
     exportProjectWorkbookJson,
+    importProjectWorkbookJsonAsProjectModel,
     importProjectWorkbookJson,
     validateWorkbookJsonDocument
   };

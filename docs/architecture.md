@@ -90,12 +90,12 @@
 
 `mikuproject` は、生成AIとの直接連携に `MS Project XML` ではなく `JSON` を使う。
 
-- 既存 project 向けには `project_overview_view` と `phase_detail_view` を出力する
-- 既存 project 向けには `full bundle` も出力できる
+- 既存 project 向けには `project_overview_view` と `phase_detail_view` と `task_edit_view` を出力する
+- 既存 project 向けには `full bundle` も出力でき、少なくとも `project_overview_view` / `phase_detail_views_full` / `task_edit_views_full` を含む
 - 新規生成向けには、生成AIが返した `project_draft_view` を取り込める
+- 既存 project 向けには、Patch JSON の `add_task` / `add_resource` / `add_assignment` / `add_calendar` / `update_project` / `update_task` / `update_resource` / `update_assignment` / `update_calendar` / `move_task` / `delete_task` / `delete_resource` / `delete_assignment` / `delete_calendar` / `link_tasks` / `unlink_tasks` first cut を取り込める
 - `mikuproject_workbook_json` は `.json`、生成AI 向け編集用 JSON は `.editjson` を推奨拡張子とする
-- 現時点で UI から実装済みなのは `project_overview_view` / `phase_detail_view` / `full bundle` の出力と `project_draft_view` の取込である
-- `task_edit_view` と Patch JSON 適用は設計メモ段階で、まだ実装していない
+- 現時点で UI から実装済みなのは `project_overview_view` / `phase_detail_view` / `task_edit_view` / `full bundle` の出力、`project_draft_view` の取込、Patch JSON の `add_task` / `add_resource` / `add_assignment` / `add_calendar` / `update_project` / `update_task` / `update_resource` / `update_assignment` / `update_calendar` / `move_task` / `delete_task` / `delete_resource` / `delete_assignment` / `delete_calendar` / `link_tasks` / `unlink_tasks` first cut の取込である
 
 詳細な考え方は `docs/mikuproject-ai-json-spec.md` と `docs/msprojectxml-ai-integration.md` に置く。
 
@@ -137,7 +137,13 @@ npm test
 npm run build
 ```
 
-`npm run build` は `build:app` と `test` を順に実行する。`build:app` は `build:web` と `build:xlsx-sample` を順に実行する。
+sample 生成も含めた従来相当のフル実行:
+
+```bash
+npm run build:full
+```
+
+`npm run build` は日常開発向けの軽い確認で、`build:web` と `test:fast` を順に実行する。`npm run build:app` は `build:web` と `build:xlsx-sample` を順に実行する。`npm run build:full` は `build:web` と `test:full` を順に実行し、日常で見たい core UI smoke suite までを確認する。`build:xlsx-sample` は必要なときだけ `build:app` か `npm run build:xlsx-sample` で明示実行する。`npm run test:extended` は validation、`XLSX import`、preview 切替、重い patch/export 系、projection/replace 系を追加で確認する。`npm test` / `npm run test:all` はそれらも含めた完全実行である。
 
 スクリプトの役割は次のとおり。
 
@@ -146,6 +152,9 @@ npm run build
 - `npm run build:web`: JavaScript 生成と HTML 生成をまとめて行う
 - `npm run build:xlsx-sample`: `local-data/` 配下へサンプル XLSX / Markdown を生成する
 - `npm run build:app`: `build:web` と `build:xlsx-sample` を順に実行する
+- `npm run build:full`: `build:web` と `test:full` を順に実行する
+- `npm run test:extended`: validation、`XLSX import`、preview 切替、重い patch/export 系、projection/replace 系 UI suite を実行する
+- `npm run test:all`: `fast + ui + extended` をすべて実行する
 
 `scripts/build-project.mjs` は `--js-only` と `--html-only` を受け取り、JavaScript 生成と HTML 生成を切り替える。
 

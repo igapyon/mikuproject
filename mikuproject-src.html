@@ -96,7 +96,7 @@
                   `.xlsx` と `mikuproject_workbook_json (.json)` は `MS Project XML` の代替正本ではなく、確認と限定編集のための周辺表現として扱います。
                 </p>
                 <p class="md-note-card__text">
-                  `project_draft_view (.editjson)` は生成AI 向けの編集用 JSON として扱います。反映結果は、`Project / Tasks / Resources / Assignments / Calendars` ごとの件数と、`UID` 単位の差分要約として画面上に表示します。
+                  `project_draft_view (.editjson)` と Patch JSON は生成AI 向けの編集用 JSON として扱います。反映結果は、`Project / Tasks / Resources / Assignments / Calendars` ごとの件数と、`UID` 単位の差分要約として画面上に表示します。
                 </p>
                 <p class="md-note-card__text"><strong>反映対象</strong></p>
                 <ul class="md-note-list">
@@ -138,7 +138,7 @@
               </div>
               <template id="aiPromptTemplate">{{AI_PROMPT_TEXT}}</template>
               <div class="md-form-grid">
-                <lht-text-field-help field-id="projectDraftImportInput" label="生成AIが返した JSON" rows="14" help-text="生成AIが返した `project_draft_view` の JSON テキストを貼り付けます。最後に json フェンスを持つ応答全体でもかまいません。"></lht-text-field-help>
+                <lht-text-field-help field-id="projectDraftImportInput" label="生成AIが返した JSON" rows="14" help-text="生成AIが返した `project_draft_view` または Patch JSON のテキストを貼り付けます。最後に json フェンスを持つ応答全体でもかまいません。"></lht-text-field-help>
               </div>
             </section>
           </div>
@@ -365,8 +365,18 @@
                   既存 project を生成AIへ渡すための projection JSON をここから生成します。
                 </lht-help-tooltip>
                 <button id="exportProjectOverviewBtn" type="button" class="md-button md-button--tonal">project_overview_view</button>
+                <button id="exportTaskEditBtn" type="button" class="md-button md-button--tonal">task_edit_view</button>
                 <button id="exportPhaseDetailFullBtn" type="button" class="md-button md-button--tonal">phase_detail_view full</button>
               </div>
+              <section class="md-note-card md-note-card--subtle" aria-label="AI task edit">
+                <h4 class="md-note-card__title">task_edit_view</h4>
+                <p class="md-note-card__text">
+                  個別 task を生成AIへ渡して、局所文脈つきで安全な Patch JSON を返させたい時に使います。
+                </p>
+                <div class="md-form-grid md-form-grid--one">
+                  <lht-text-field-help field-id="taskEditUidInput" label="対象 task UID" rows="1" placeholder="空欄なら先頭の通常 task" help-text="編集対象にしたい task UID を指定します。空欄の場合は先頭の通常 task を使います。"></lht-text-field-help>
+                </div>
+              </section>
               <section class="md-note-card md-note-card--subtle" aria-label="AI scoped phase detail">
                 <h4 class="md-note-card__title">phase_detail_view scoped</h4>
                 <p class="md-note-card__text">
@@ -421,6 +431,7 @@
           <textarea id="workbookJsonOutput"></textarea>
           <textarea id="aiBundleOutput"></textarea>
           <textarea id="projectOverviewOutput"></textarea>
+          <textarea id="taskEditOutput"></textarea>
           <input id="phaseDetailUidInput" type="text" />
           <input id="phaseDetailRootUidInput" type="text" />
           <input id="phaseDetailMaxDepthInput" type="text" />
@@ -434,14 +445,18 @@
   </main>
   <script src="src/js/types.js"></script>
   <script src="src/js/markdown-escape.js"></script>
+  <script src="src/js/ai-json-util.js"></script>
+  <script src="src/js/main-util.js"></script>
   <script src="src/js/excel-io.js"></script>
   <script src="src/js/msproject-xml.js"></script>
   <script src="src/js/project-workbook-schema.js"></script>
   <script src="src/js/project-xlsx.js"></script>
   <script src="src/js/project-workbook-json.js"></script>
+  <script src="src/js/project-patch-json.js"></script>
   <script src="src/js/wbs-xlsx.js"></script>
   <script src="src/js/wbs-markdown.js"></script>
   <script src="src/js/wbs-svg.js"></script>
+  <script src="src/js/main-render.js"></script>
   <script src="src/js/main.js"></script>
 </body>
 </html>

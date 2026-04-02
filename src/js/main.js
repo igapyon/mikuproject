@@ -338,10 +338,14 @@
             .map((phase) => phase === null || phase === void 0 ? void 0 : phase.uid)
             .filter((uid) => Boolean(uid))
             .map((phaseUid) => mikuprojectXml.exportPhaseDetailView(model, phaseUid, { mode: "full" }));
+        const taskEditViewsFull = model.tasks
+            .filter((task) => !(task.uid === "0" || task.summary))
+            .map((task) => mikuprojectXml.exportTaskEditView(model, task.uid));
         const aiBundle = {
             view_type: "ai_projection_bundle",
             project_overview_view: projectOverview,
-            phase_detail_views_full: phaseDetailViewsFull
+            phase_detail_views_full: phaseDetailViewsFull,
+            task_edit_views_full: taskEditViewsFull
         };
         const phaseDetailFull = mikuprojectXml.exportPhaseDetailView(model, undefined, { mode: "full" });
         const allReadmeText = [
@@ -432,11 +436,11 @@
     function renderValidationIssues(issues) {
         mikuprojectMainRender.renderValidationIssues(document, issues);
     }
-    function renderImportWarnings(warnings) {
-        mikuprojectMainRender.renderImportWarnings(document, warnings);
+    function renderImportWarnings(warnings, options = {}) {
+        mikuprojectMainRender.renderImportWarnings(document, warnings, options);
     }
-    function renderXlsxImportSummary(changes) {
-        mikuprojectMainRender.renderXlsxImportSummary(document, changes);
+    function renderXlsxImportSummary(changes, options = {}) {
+        mikuprojectMainRender.renderXlsxImportSummary(document, changes, options);
     }
     function updateSummary(model) {
         mikuprojectMainRender.updateSummary(document, model, updateSvgButton);
@@ -546,6 +550,23 @@
         showToast("project_overview_view を保存しました");
         setActiveTab("output");
     }
+    function exportCurrentTaskEditView() {
+        var _a, _b;
+        const model = ensureCurrentModel();
+        syncXmlTextFromModel(model);
+        const requestedTaskUid = getInput("taskEditUidInput").value.trim() || undefined;
+        const view = mikuprojectXml.exportTaskEditView(model, requestedTaskUid);
+        if ((_a = view.target_task) === null || _a === void 0 ? void 0 : _a.uid) {
+            getInput("taskEditUidInput").value = view.target_task.uid;
+        }
+        const viewText = JSON.stringify(view, null, 2);
+        getTextArea("taskEditOutput").value = viewText;
+        const taskSuffix = ((_b = view.target_task) === null || _b === void 0 ? void 0 : _b.uid) ? `-${view.target_task.uid}` : "";
+        downloadBlob(new Blob([`${viewText}\n`], { type: "application/json;charset=utf-8" }), `mikuproject-task-edit-view${taskSuffix}.editjson`);
+        setStatus("task_edit_view を生成して保存しました");
+        showToast("task_edit_view を保存しました");
+        setActiveTab("output");
+    }
     function exportCurrentAiProjectionBundle() {
         const model = ensureCurrentModel();
         syncXmlTextFromModel(model);
@@ -554,15 +575,19 @@
             .map((phase) => phase === null || phase === void 0 ? void 0 : phase.uid)
             .filter((uid) => Boolean(uid))
             .map((phaseUid) => mikuprojectXml.exportPhaseDetailView(model, phaseUid, { mode: "full" }));
+        const taskEditViewsFull = model.tasks
+            .filter((task) => !(task.uid === "0" || task.summary))
+            .map((task) => mikuprojectXml.exportTaskEditView(model, task.uid));
         const bundle = {
             view_type: "ai_projection_bundle",
             project_overview_view: projectOverview,
-            phase_detail_views_full: phaseDetailViewsFull
+            phase_detail_views_full: phaseDetailViewsFull,
+            task_edit_views_full: taskEditViewsFull
         };
         const bundleText = JSON.stringify(bundle, null, 2);
         getTextArea("aiBundleOutput").value = bundleText;
         downloadBlob(new Blob([`${bundleText}\n`], { type: "application/json;charset=utf-8" }), "mikuproject-full-bundle.editjson");
-        setStatus(`AI 連携用まとめ JSON を生成して保存しました (phase_detail_view full ${phaseDetailViewsFull.length} 件)`);
+        setStatus(`AI 連携用まとめ JSON を生成して保存しました (phase_detail_view full ${phaseDetailViewsFull.length} 件 / task_edit_view ${taskEditViewsFull.length} 件)`);
         showToast("AI 連携用まとめ JSON を保存しました");
         setActiveTab("output");
     }
@@ -597,8 +622,8 @@
         const issues = mikuprojectXml.validateProjectModel(currentModel);
         updateSummary(currentModel);
         renderValidationIssues(issues);
-        renderImportWarnings(result.warnings);
-        renderXlsxImportSummary(result.changes);
+        renderImportWarnings(result.warnings, { sourceLabel: "Patch JSON" });
+        renderXlsxImportSummary(result.changes, { sourceLabel: "Patch JSON", warnings: result.warnings });
         if (result.changes.length > 0) {
             getTextArea("xmlInput").value = mikuprojectXml.exportMsProjectXml(currentModel);
             markXmlDirty();
@@ -657,8 +682,8 @@
         const issues = mikuprojectXml.validateProjectModel(currentModel);
         updateSummary(currentModel);
         renderValidationIssues(issues);
-        renderImportWarnings(result.warnings);
-        renderXlsxImportSummary(result.changes);
+        renderImportWarnings(result.warnings, { sourceLabel: "JSON Import" });
+        renderXlsxImportSummary(result.changes, { sourceLabel: "JSON Import", warnings: result.warnings });
         if (result.changes.length > 0) {
             getTextArea("xmlInput").value = mikuprojectXml.exportMsProjectXml(currentModel);
             markXmlDirty();
@@ -834,7 +859,7 @@
         updateSummary(currentModel);
         renderValidationIssues(issues);
         renderImportWarnings([]);
-        renderXlsxImportSummary(result.changes);
+        renderXlsxImportSummary(result.changes, { sourceLabel: "XLSX Import" });
         if (result.changes.length > 0) {
             getTextArea("xmlInput").value = mikuprojectXml.exportMsProjectXml(currentModel);
             markXmlDirty();
@@ -1093,6 +1118,14 @@
             }
             catch (error) {
                 setStatus(error instanceof Error ? error.message : "project_overview_view 生成に失敗しました");
+            }
+        });
+        getElement("exportTaskEditBtn").addEventListener("click", () => {
+            try {
+                exportCurrentTaskEditView();
+            }
+            catch (error) {
+                setStatus(error instanceof Error ? error.message : "task_edit_view 生成に失敗しました");
             }
         });
         getElement("exportAiBundleBtn").addEventListener("click", () => {

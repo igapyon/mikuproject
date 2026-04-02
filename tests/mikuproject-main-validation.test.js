@@ -117,6 +117,7 @@ function mountDom() {
     <button id="previewMonthlySvgBtn" type="button"></button>
     <button id="exportAiBundleBtn" type="button"></button>
     <button id="exportProjectOverviewBtn" type="button"></button>
+    <button id="exportTaskEditBtn" type="button"></button>
     <button id="exportPhaseDetailFullBtn" type="button"></button>
     <button id="exportPhaseDetailBtn" type="button"></button>
     <button id="loadProjectDraftSampleBtn" type="button"></button>
@@ -126,6 +127,7 @@ function mountDom() {
     <button id="copyAiPromptBtn" type="button"></button>
     <input id="importFileInput" type="file" />
     <input id="phaseDetailUidInput" type="text" />
+    <input id="taskEditUidInput" type="text" />
     <input id="phaseDetailRootUidInput" type="text" />
     <input id="phaseDetailMaxDepthInput" type="text" />
     <input id="wbsDisplayDaysBeforeInput" />

@@ -455,29 +455,163 @@ preview / validation の現状メモ:
 
 生成AI連携の現状実装範囲:
 
-- 既存 project 向けには `project_overview_view` / `phase_detail_view` / `full bundle` の export を持つ
+- 既存 project 向けには `project_overview_view` / `phase_detail_view` / `task_edit_view` / `full bundle` の export を持つ
+- `full bundle` には少なくとも `project_overview_view` / `phase_detail_views_full` / `task_edit_views_full` を含めてよい
 - 新規生成向けには `project_draft_view` の import を持つ
-- 既存 project 向けには Patch JSON の `update_task` first cut import / 適用を持つ
-- `task_edit_view` の export は、現時点では未実装とする
-- Patch JSON のうち `move_task` / `link_tasks` / `unlink_tasks` / `add_task` / `delete_task` は、現時点では未実装とする
+- 既存 project 向けには Patch JSON の `update_project` / `update_task` / `update_resource` / `update_assignment` / `update_calendar` / `link_tasks` / `unlink_tasks` first cut import / 適用を持つ
+- `task_edit_view` は既存 task を `uid` で特定して出力する個別編集用 projection とする
+- `task_edit_view` は少なくとも `project` / `phase` / `target_task` / `parent_task` / `sibling_tasks` / `predecessors` / `successors` / `assignments` / `rules` を含む
+- `task_edit_view` の `target_task` では `name` / `parent_uid` / `position` / `is_summary` / `is_milestone` / `planned_duration` / `planned_duration_hours` / `planned_start` / `planned_finish` / `percent_complete` / `notes` / `calendar_uid` / `critical` を見せる
+- `task_edit_view.rules.allow_patch_ops` には、少なくとも `update_task` / `move_task` / `link_tasks` / `unlink_tasks` / `add_task` / `delete_task` / `update_assignment` / `add_assignment` / `delete_assignment` を含めてよい
+- Patch JSON のうち `add_task` / `add_resource` / `add_assignment` / `add_calendar` / `move_task` / `delete_task` / `delete_resource` / `delete_assignment` / `delete_calendar` は first cut を実装済みとする
 
 Patch JSON の次段 MVP 方針:
 
 - 既存 project 向けの AI 返却形式として `Patch JSON` を将来追加する
 - first cut は `operations` 配列を持つ部分適用 JSON とする
-- first cut では、少なくとも `update_task` の import / 適用から着手する
+- first cut では、少なくとも `update_task` の import / 適用から着手し、依存関係の最小操作として `link_tasks` / `unlink_tasks` も段階的に含める
 - first cut では、対象 task は `uid` で特定する
 - first cut では、task の基本計画項目
   - `name`
+  - `notes`
+  - `calendar_uid`
+  - `percent_complete`
+  - `percent_work_complete`
+  - `critical`
   - `planned_start`
   - `planned_finish`
   - `planned_duration`
   - `planned_duration_hours`
+  - `is_milestone`
   を優先して扱う
-- first cut では、`update_task` に絞る方針を推奨する
-- `add_task` は将来候補として残すが、`uid` 採番、親子位置、summary 構造、依存関係の整合が必要なため、first cut からは外す
-- `delete_task` は破壊範囲が大きいため、first cut からは外す
-- `move_task` / `link_tasks` / `unlink_tasks` は設計上の候補として残すが、first cut の実装対象とは限らない
+- first cut では、project の基本項目
+  - `name`
+  - `title`
+  - `author`
+  - `company`
+  - `start_date`
+  - `finish_date`
+  - `current_date`
+  - `status_date`
+  - `calendar_uid`
+  - `minutes_per_day`
+  - `minutes_per_week`
+  - `days_per_month`
+  - `schedule_from_start`
+  を `update_project` で扱う
+- `update_project` は `uid` を持たず、project 全体に対する単一 op として `fields` を受ける
+- `update_project.name` は空でない文字列として扱う
+- `update_project.title` / `author` / `company` は文字列として扱い、空文字を指定した場合はクリアしてよい
+- `update_project.start_date` / `finish_date` / `current_date` / `status_date` は date-only または date-time を受け、date-only の場合は project 既定勤務時間帯を補完して扱う
+- `update_project.start_date > finish_date` になる変更は warning として無視する
+- `update_project.calendar_uid` が既存 calendar を指していない場合は warning として無視する
+- `update_project.minutes_per_day` / `minutes_per_week` / `days_per_month` は `0` より大きい数値として扱う
+- `update_project.schedule_from_start` は boolean として扱う
+- first cut では、assignment の基本項目
+  - `start`
+  - `finish`
+  - `units`
+  - `work`
+  - `percent_work_complete`
+  を `update_assignment` で扱う
+- first cut では、resource の基本項目
+  - `name`
+  - `initials`
+  - `group`
+  - `calendar_uid`
+  - `max_units`
+  - `standard_rate`
+  - `overtime_rate`
+  - `cost_per_use`
+  - `percent_work_complete`
+  を `update_resource` で扱う
+- first cut では、calendar の基本項目
+  - `name`
+  - `is_base_calendar`
+  - `base_calendar_uid`
+  を `update_calendar` で扱う
+- first cut では、assignment の新規追加として `add_assignment` を扱う
+- first cut では、task の基本計画項目は `update_task` に寄せ、依存関係は `link_tasks` / `unlink_tasks` に分離する
+- `update_task.is_milestone` は既存 task の milestone 化 / 解除を扱ってよい
+- `update_task.notes` は task の `Notes` を更新してよく、空文字を指定した場合は `Notes` をクリアしてよい
+- `update_task.calendar_uid` は task の `CalendarUID` を更新してよく、空文字を指定した場合は個別 calendar 指定をクリアしてよい
+- `update_task.calendar_uid` が既存 calendar を指していない場合は warning として無視する
+- `update_task.percent_complete` / `percent_work_complete` は `0..100` の数値として扱う
+- `update_task.critical` は boolean として扱う
+- `update_task` では summary task を milestone 化してはならない
+- `update_task.is_milestone=true` の場合は `planned_finish = planned_start`、`planned_duration = 0` に正規化する
+- `update_resource` は既存 resource を `uid` で特定して部分更新する
+- `update_resource.name` は空でない文字列として扱う
+- `update_resource.initials` / `group` / `calendar_uid` は文字列として扱い、空文字を指定した場合はクリアしてよい
+- `update_resource.calendar_uid` が既存 calendar を指していない場合は warning として無視する
+- `update_resource.max_units` は `0` 以上の数値として扱う
+- `update_resource.standard_rate` / `overtime_rate` は文字列として扱い、空文字を指定した場合はクリアしてよい
+- `update_resource.cost_per_use` は `0` 以上の数値として扱う
+- `update_resource.percent_work_complete` は `0..100` の数値として扱う
+- `update_calendar` は既存 calendar を `uid` で特定して部分更新する
+- `update_calendar.name` は空でない文字列として扱う
+- `update_calendar.is_base_calendar` は boolean として扱う
+- `update_calendar.base_calendar_uid` は文字列として扱い、空文字を指定した場合はクリアしてよい
+- `update_calendar.base_calendar_uid` は既存 calendar を指す必要があり、自身を指してはならない
+- `add_calendar` の first cut は `uid` / `name` を必須とする
+- `add_calendar` では `is_base_calendar` / `base_calendar_uid` を任意で受けてよい
+- `add_calendar.base_calendar_uid` は既存 calendar を指す必要があり、自身を指してはならない
+- `delete_calendar` の first cut は `uid` を受け、project / task / resource / 他 calendar の `base_calendar_uid` から参照されていない calendar の単純削除だけを扱う
+- `delete_calendar` が成功した場合、差分表示では対象 calendar の `Name` を `(deleted)` として示す
+- `add_resource` の first cut は `uid` / `name` を必須とする
+- `add_resource` では `initials` / `group` / `calendar_uid` / `max_units` / `standard_rate` / `overtime_rate` / `cost_per_use` / `percent_work_complete` を任意で受けてよい
+- `add_resource.calendar_uid` は既存 calendar を指す必要がある
+- `add_resource.max_units` は `0` 以上の数値として扱う
+- `add_resource.standard_rate` / `overtime_rate` は文字列として扱う
+- `add_resource.cost_per_use` は `0` 以上の数値として扱う
+- `add_resource.percent_work_complete` は `0..100` の数値として扱う
+- `delete_resource` の first cut は `uid` を受け、assignment が付いていない resource の単純削除だけを扱う
+- `delete_resource` first cut では assignment が残っている resource は削除できない
+- `delete_resource` が成功した場合、差分表示では対象 resource の `Name` を `(deleted)` として示す
+- `update_assignment` は既存 assignment を `uid` で特定して部分更新する
+- `update_assignment.start` / `finish` は date-only または date-time を受け、date-only の場合は project 既定勤務時間帯を補完して扱う
+- `update_assignment.start > finish` になる変更は warning として無視する
+- `update_assignment.units` は `0` 以上の数値として扱う
+- `update_assignment.work` は空でない文字列として扱う
+- `update_assignment.percent_work_complete` は `0..100` の数値として扱う
+- `add_assignment` の first cut は `uid` / `task_uid` / `resource_uid` を必須とする
+- `add_assignment.task_uid` は既存 task、`resource_uid` は既存 resource を指す必要がある
+- `add_assignment` では `start` / `finish` / `units` / `work` / `percent_work_complete` を任意で受けてよい
+- `add_assignment.start` / `finish` は date-only または date-time を受け、date-only の場合は project 既定勤務時間帯を補完して扱う
+- `add_assignment.start > finish`、`units < 0`、空 `work`、`percent_work_complete` の範囲外は warning として無視する
+- `delete_assignment` の first cut は `uid` を受け、1 件の assignment を単純削除する
+- `delete_assignment` が成功した場合、差分表示では対象 assignment の `TaskUID / ResourceUID` を `(deleted)` として示す
+- `add_task` の first cut は、単一 task の追加に絞って `uid` / `name` / `new_parent_uid` / `new_index` を受ける
+- `add_task.new_index` は `0-based` とし、sibling 範囲外は warning として無視する
+- `add_task.new_parent_uid` は root 追加では `null` を許容し、非 root の場合は summary task を指す必要がある
+- `add_task` では通常 task / milestone / summary task を明示的に追加できる
+- summary task の追加は「空 summary を 1 件追加する」形で扱い、subtree は同時投入しない
+- summary task の子は、後続の `add_task` / `move_task` で段階的に入れる前提とする
+- したがって summary task 追加の JSON は、first cut では `uid` / `name` / `is_summary=true` / `new_parent_uid` / `new_index` を基本とし、子 task 一括定義は持たない
+- `add_task` では `is_summary=true` と `is_milestone=true` を同時に指定してはならない
+- `add_task` では `planned_start` / `planned_finish` / `planned_duration` / `planned_duration_hours` を任意で受けてよい
+- `add_task.planned_start` / `planned_finish` の形式不正や、`planned_start > planned_finish` は warning として無視する
+- `add_task.is_milestone=true` の場合は `planned_finish = planned_start`、`planned_duration = 0` に正規化する
+- `add_task` に未対応 key が含まれる場合は warning として無視する
+- `delete_task` の first cut は `uid` を受け、葉 task の削除だけを扱う
+- `delete_task` first cut では summary task や子 task を持つ task の削除は扱わない
+- `delete_task` first cut では assignment が付いている task の削除は扱わない
+- `delete_task` first cut では後続依存から参照されている task の削除は扱わない
+- `delete_task` が拒否される場合、warning には `children` / `assignments` / `successors` などの blocker 情報を含めて返す
+- `delete_task` が成功した場合、差分表示では削除対象 task の `Name / ParentUID / Position` を `(deleted)` として示す
+- `delete_task` は cascade delete を行わず、削除したい subtree がある場合も、まず葉 task から順に削除する前提とする
+- 削除前に依存関係や親子関係が blocker になる場合は、先に `unlink_tasks` や `move_task` で整理してから `delete_task` を行う
+- `move_task` の first cut は `uid` / `new_parent_uid` / `new_index` を受け、subtree 単位の移動として扱う
+- `move_task.new_index` は `0-based` とし、sibling 範囲外は warning として無視する
+- `move_task.new_parent_uid` は root への移動では `null` を許容し、非 root の場合は summary task を指す必要がある
+- `move_task` では task を自身または配下へ移動してはならない
+- `move_task` で結果が変わらない no-op 移動は warning として無視する
+- `predecessors` は `update_task.fields` には含めず、依存関係の変更は `link_tasks` / `unlink_tasks` へ分離する方針とする
+- その理由は、依存関係が単なる field 更新ではなく task 間リンク更新であり、将来の `type / lag` 拡張や validation と相性がよいためである
+- `link_tasks` の first draft は `from_uid` / `to_uid` を必須とし、`type` は省略時 `FS` を既定としてよい
+- `unlink_tasks` の first draft も `from_uid` / `to_uid` を必須とし、必要なら `type` や `lag` / `lag_hours` を併記して解除対象を特定できる形とする
+- `unlink_tasks` で複数の依存関係が同じ条件に一致した場合は、その条件に一致した link をすべて解除する方針とする
+- first draft では、依存関係の変更は predecessor 一覧の全置換ではなく、追加と解除を op 単位で返す方針とする
 - 未知 `op`、存在しない `uid`、不正 field、不正日付は validation または import warning/error の対象とする
 - `project_draft_view` は新規草案作成を優先するため、非稼働日を厳密に考慮しなくてもよい
 - `project_draft_view` では、粗い草案でもよいので task に仮の `planned_start` / `planned_finish` を入れてよい

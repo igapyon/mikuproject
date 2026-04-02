@@ -94,6 +94,7 @@ function mountDom() {
     <button id="previewMonthlySvgBtn" type="button">Monthly Calendar SVG</button>
     <button id="exportAiBundleBtn" type="button">project_overview + all phase_detail full</button>
     <button id="exportProjectOverviewBtn" type="button">project_overview_view</button>
+    <button id="exportTaskEditBtn" type="button">task_edit_view</button>
     <button id="exportPhaseDetailFullBtn" type="button">phase_detail_view full</button>
     <button id="exportPhaseDetailBtn" type="button">phase_detail_view</button>
     <button id="loadProjectDraftSampleBtn" type="button">サンプル draft</button>
@@ -103,6 +104,7 @@ function mountDom() {
     <button id="copyAiPromptBtn" type="button">Copy AI Prompt</button>
     <input id="importFileInput" type="file" />
     <input id="phaseDetailUidInput" type="text" />
+    <input id="taskEditUidInput" type="text" />
     <input id="phaseDetailRootUidInput" type="text" />
     <input id="phaseDetailMaxDepthInput" type="text" />
     <div id="statusMessage"></div>
@@ -159,6 +161,7 @@ function mountDom() {
       <textarea id="workbookJsonOutput"></textarea>
       <textarea id="aiBundleOutput"></textarea>
       <textarea id="projectOverviewOutput"></textarea>
+      <textarea id="taskEditOutput"></textarea>
       <textarea id="phaseDetailOutput"></textarea>
     </section>
     <div id="toast"></div>

@@ -45,6 +45,10 @@ const hierarchyXml = readFileSync(
   path.resolve(__dirname, "../testdata/hierarchy.xml"),
   "utf8"
 );
+const dependencyXml = readFileSync(
+  path.resolve(__dirname, "../testdata/dependency.xml"),
+  "utf8"
+);
 
 const excelIoStubCode = `
 globalThis.__mikuprojectExcelIo = {
@@ -115,6 +119,7 @@ function mountDom() {
     <button id="previewMonthlySvgBtn" type="button"></button>
     <button id="exportAiBundleBtn" type="button"></button>
     <button id="exportProjectOverviewBtn" type="button"></button>
+    <button id="exportTaskEditBtn" type="button"></button>
     <button id="exportPhaseDetailFullBtn" type="button"></button>
     <button id="exportPhaseDetailBtn" type="button"></button>
     <button id="loadProjectDraftSampleBtn" type="button"></button>
@@ -124,6 +129,7 @@ function mountDom() {
     <button id="copyAiPromptBtnPane" type="button"></button>
     <input id="importFileInput" type="file" />
     <input id="phaseDetailUidInput" type="text" />
+    <input id="taskEditUidInput" type="text" />
     <input id="phaseDetailRootUidInput" type="text" />
     <input id="phaseDetailMaxDepthInput" type="text" />
     <input id="wbsDisplayDaysBeforeInput" />
@@ -166,6 +172,7 @@ function mountDom() {
       <textarea id="workbookJsonOutput"></textarea>
       <textarea id="aiBundleOutput"></textarea>
       <textarea id="projectOverviewOutput"></textarea>
+      <textarea id="taskEditOutput"></textarea>
       <textarea id="phaseDetailOutput"></textarea>
     </section>
     <div id="toast"></div>
@@ -254,6 +261,29 @@ describe("mikuproject main ai json", () => {
     expect(HTMLAnchorElement.prototype.click.mock.calls.length - anchorClickCalls).toBeGreaterThanOrEqual(2);
   });
 
+  it("exports task_edit_view", () => {
+    bootPage();
+
+    document.getElementById("xmlInput").value = hierarchyXml;
+    parseXmlViaHook();
+    document.getElementById("taskEditUidInput").value = "3";
+
+    document.getElementById("exportTaskEditBtn").click();
+
+    const taskEdit = JSON.parse(document.getElementById("taskEditOutput").value);
+    expect(taskEdit.view_type).toBe("task_edit_view");
+    expect(taskEdit.target_task.uid).toBe("3");
+    expect(taskEdit.parent_task).toBeTruthy();
+    expect(Array.isArray(taskEdit.sibling_tasks)).toBe(true);
+    expect(Array.isArray(taskEdit.predecessors)).toBe(true);
+    expect(Array.isArray(taskEdit.successors)).toBe(true);
+    expect(Array.isArray(taskEdit.assignments)).toBe(true);
+    expect(taskEdit.rules.allow_patch_ops).toContain("update_task");
+    expect(taskEdit.rules.allow_patch_ops).toContain("update_assignment");
+    const clickedAnchor = HTMLAnchorElement.prototype.click.mock.instances.at(-1);
+    expect(clickedAnchor.download).toBe("mikuproject-task-edit-view-3.editjson");
+  });
+
   it("exports ai projection bundle", () => {
     bootPage();
 
@@ -272,6 +302,9 @@ describe("mikuproject main ai json", () => {
     expect(bundle.phase_detail_views_full.length).toBeGreaterThan(0);
     expect(bundle.phase_detail_views_full.every((item) => item.view_type === "phase_detail_view")).toBe(true);
     expect(bundle.phase_detail_views_full.every((item) => item.scope?.mode === "full")).toBe(true);
+    expect(Array.isArray(bundle.task_edit_views_full)).toBe(true);
+    expect(bundle.task_edit_views_full.length).toBeGreaterThan(0);
+    expect(bundle.task_edit_views_full.every((item) => item.view_type === "task_edit_view")).toBe(true);
     const clickedAnchor = HTMLAnchorElement.prototype.click.mock.instances.at(-1);
     expect(clickedAnchor.download).toBe("mikuproject-full-bundle.editjson");
     expect(URL.createObjectURL.mock.calls.length - createObjectUrlCalls).toBeGreaterThanOrEqual(1);
@@ -439,9 +472,11 @@ describe("mikuproject main ai json", () => {
     expect(document.getElementById("modelOutput").value).toContain("\"start\": \"2026-03-24T09:00:00\"");
     expect(document.getElementById("modelOutput").value).toContain("\"finish\": \"2026-03-26T18:00:00\"");
     expect(document.getElementById("statusMessage").textContent).toContain("Patch JSON を読み込んで 3 件の変更を反映しました");
-    expect(document.getElementById("xlsxImportSummary").innerHTML).toContain("planned_start");
-    expect(document.getElementById("xlsxImportSummary").innerHTML).toContain("planned_finish");
-    expect(document.getElementById("xlsxImportSummary").innerHTML).toContain("name");
+    expect(document.getElementById("xlsxImportSummary").textContent).toContain("Patch JSON 反映結果");
+    expect(document.getElementById("xlsxImportSummary").textContent).toContain("Patch JSON の部分適用結果です");
+    expect(document.getElementById("xlsxImportSummary").innerHTML).toContain("Start");
+    expect(document.getElementById("xlsxImportSummary").innerHTML).toContain("Finish");
+    expect(document.getElementById("xlsxImportSummary").innerHTML).toContain("Name");
   });
 
   it("reports patch json warnings for unsupported operations", async () => {
@@ -450,10 +485,8 @@ describe("mikuproject main ai json", () => {
     document.getElementById("projectDraftImportInput").value = JSON.stringify({
       operations: [
         {
-          op: "link_tasks",
-          from_uid: "1",
-          to_uid: "3",
-          type: "FS"
+          op: "rename_task",
+          uid: "3"
         }
       ]
     }, null, 2);
@@ -464,7 +497,1666 @@ describe("mikuproject main ai json", () => {
 
     expect(document.getElementById("statusMessage").textContent).toContain("Patch JSON に反映対象の変更はありませんでした");
     expect(document.getElementById("statusMessage").textContent).toContain("warning を無視しました");
+    expect(document.getElementById("importWarnings").textContent).toContain("Patch JSON warning");
     expect(document.getElementById("importWarnings").textContent).toContain("未対応の op は無視します");
+    expect(document.getElementById("importWarnings").textContent).toContain("operations[0].op = rename_task");
+  });
+
+  it("imports patch json add_task into the current model and xml", async () => {
+    bootPage();
+
+    document.getElementById("xmlInput").value = hierarchyXml;
+    parseXmlViaHook();
+
+    document.getElementById("projectDraftImportInput").value = JSON.stringify({
+      operations: [
+        {
+          op: "add_task",
+          uid: "4",
+          name: "Child C",
+          new_parent_uid: "1",
+          new_index: 1,
+          planned_start: "2026-03-17",
+          planned_finish: "2026-03-17"
+        }
+      ]
+    }, null, 2);
+
+    document.getElementById("importProjectDraftBtn").click();
+    await flushAsyncWork();
+    await flushAsyncWork();
+
+    expect(document.getElementById("statusMessage").textContent).toContain("Patch JSON を読み込んで 5 件の変更を反映しました");
+    expect(document.getElementById("xmlInput").value).toContain("<UID>4</UID>");
+    expect(document.getElementById("xmlInput").value).toContain("<Name>Child C</Name>");
+    expect(document.getElementById("xmlInput").value).toContain("<OutlineLevel>2</OutlineLevel>");
+    expect(document.getElementById("xmlInput").value).toContain("<OutlineNumber>1.2</OutlineNumber>");
+    expect(document.getElementById("xlsxImportSummary").innerHTML).toContain("ParentUID");
+    expect(document.getElementById("xlsxImportSummary").innerHTML).toContain("Position");
+    expect(document.getElementById("xlsxImportSummary").textContent).toContain("Child C");
+  });
+
+  it("rejects add_task when planned_start is after planned_finish", async () => {
+    bootPage();
+
+    document.getElementById("xmlInput").value = hierarchyXml;
+    parseXmlViaHook();
+
+    document.getElementById("projectDraftImportInput").value = JSON.stringify({
+      operations: [
+        {
+          op: "add_task",
+          uid: "4",
+          name: "Broken Task",
+          new_parent_uid: "1",
+          new_index: 1,
+          planned_start: "2026-03-18",
+          planned_finish: "2026-03-17"
+        }
+      ]
+    }, null, 2);
+
+    document.getElementById("importProjectDraftBtn").click();
+    await flushAsyncWork();
+    await flushAsyncWork();
+
+    expect(document.getElementById("statusMessage").textContent).toContain("Patch JSON に反映対象の変更はありませんでした");
+    expect(document.getElementById("importWarnings").textContent).toContain("add_task.planned_start が planned_finish より後です");
+    expect(document.getElementById("xmlInput").value).not.toContain("<UID>4</UID>");
+  });
+
+  it("imports summary add_task into the current model and xml", async () => {
+    bootPage();
+
+    document.getElementById("xmlInput").value = hierarchyXml;
+    parseXmlViaHook();
+
+    document.getElementById("projectDraftImportInput").value = JSON.stringify({
+      operations: [
+        {
+          op: "add_task",
+          uid: "4",
+          name: "New Summary",
+          is_summary: true,
+          new_parent_uid: null,
+          new_index: 1
+        }
+      ]
+    }, null, 2);
+
+    document.getElementById("importProjectDraftBtn").click();
+    await flushAsyncWork();
+    await flushAsyncWork();
+
+    expect(document.getElementById("statusMessage").textContent).toContain("Patch JSON を読み込んで 3 件の変更を反映しました");
+    expect(document.getElementById("xmlInput").value).toContain("<UID>4</UID>");
+    expect(document.getElementById("xmlInput").value).toContain("<Name>New Summary</Name>");
+    expect(document.getElementById("xmlInput").value).toContain("<Summary>1</Summary>");
+    expect(document.getElementById("xmlInput").value).toContain("<OutlineLevel>1</OutlineLevel>");
+    expect(document.getElementById("xlsxImportSummary").textContent).toContain("New Summary");
+    expect(document.getElementById("xlsxImportSummary").innerHTML).toContain("ParentUID");
+  });
+
+  it("rejects add_task when is_summary and is_milestone are both true", async () => {
+    bootPage();
+
+    document.getElementById("xmlInput").value = hierarchyXml;
+    parseXmlViaHook();
+
+    document.getElementById("projectDraftImportInput").value = JSON.stringify({
+      operations: [
+        {
+          op: "add_task",
+          uid: "4",
+          name: "Broken Summary Gate",
+          is_summary: true,
+          is_milestone: true,
+          new_parent_uid: null,
+          new_index: 1
+        }
+      ]
+    }, null, 2);
+
+    document.getElementById("importProjectDraftBtn").click();
+    await flushAsyncWork();
+    await flushAsyncWork();
+
+    expect(document.getElementById("statusMessage").textContent).toContain("Patch JSON に反映対象の変更はありませんでした");
+    expect(document.getElementById("importWarnings").textContent).toContain("add_task では is_summary と is_milestone を同時に true にできません");
+    expect(document.getElementById("xmlInput").value).not.toContain("<UID>4</UID>");
+  });
+
+  it("normalizes milestone add_task finish and duration", async () => {
+    bootPage();
+
+    document.getElementById("xmlInput").value = hierarchyXml;
+    parseXmlViaHook();
+
+    document.getElementById("projectDraftImportInput").value = JSON.stringify({
+      operations: [
+        {
+          op: "add_task",
+          uid: "4",
+          name: "Gate",
+          new_parent_uid: "1",
+          new_index: 1,
+          is_milestone: true,
+          planned_start: "2026-03-17",
+          planned_finish: "2026-03-18",
+          planned_duration_hours: 8,
+          extra_key: "ignored"
+        }
+      ]
+    }, null, 2);
+
+    document.getElementById("importProjectDraftBtn").click();
+    await flushAsyncWork();
+    await flushAsyncWork();
+
+    expect(document.getElementById("statusMessage").textContent).toContain("warning を無視しました");
+    expect(document.getElementById("xmlInput").value).toContain("<UID>4</UID>");
+    expect(document.getElementById("xmlInput").value).toContain("<Milestone>1</Milestone>");
+    expect(document.getElementById("xmlInput").value).toContain("<Finish>2026-03-17T09:00:00</Finish>");
+    expect(document.getElementById("xmlInput").value).toContain("<Duration>PT0H0M0S</Duration>");
+    expect(document.getElementById("importWarnings").textContent).toContain("add_task.is_milestone=true のため planned_finish は planned_start に揃えます");
+    expect(document.getElementById("importWarnings").textContent).toContain("add_task.is_milestone=true のため planned_duration は 0 に揃えます");
+    expect(document.getElementById("importWarnings").textContent).toContain("add_task の未対応 key は無視します: extra_key");
+  });
+
+  it("imports patch json move_task into the current model and xml", async () => {
+    bootPage();
+
+    document.getElementById("xmlInput").value = hierarchyXml;
+    parseXmlViaHook();
+
+    document.getElementById("projectDraftImportInput").value = JSON.stringify({
+      operations: [
+        {
+          op: "move_task",
+          uid: "3",
+          new_parent_uid: null,
+          new_index: 1
+        }
+      ]
+    }, null, 2);
+
+    document.getElementById("importProjectDraftBtn").click();
+    await flushAsyncWork();
+    await flushAsyncWork();
+
+    expect(document.getElementById("statusMessage").textContent).toContain("Patch JSON を読み込んで 1 件の変更を反映しました");
+    expect(document.getElementById("xmlInput").value).toContain("<UID>3</UID>");
+    expect(document.getElementById("xmlInput").value).toContain("<OutlineLevel>1</OutlineLevel>");
+    expect(document.getElementById("xmlInput").value).toContain("<OutlineNumber>2</OutlineNumber>");
+    expect(document.getElementById("xlsxImportSummary").innerHTML).toContain("ParentUID");
+    expect(document.getElementById("xlsxImportSummary").textContent).toContain("(root)");
+  });
+
+  it("imports patch json delete_task into the current model and xml", async () => {
+    bootPage();
+
+    document.getElementById("xmlInput").value = hierarchyXml;
+    parseXmlViaHook();
+
+    document.getElementById("projectDraftImportInput").value = JSON.stringify({
+      operations: [
+        {
+          op: "delete_task",
+          uid: "3"
+        }
+      ]
+    }, null, 2);
+
+    document.getElementById("importProjectDraftBtn").click();
+    await flushAsyncWork();
+    await flushAsyncWork();
+
+    expect(document.getElementById("statusMessage").textContent).toContain("Patch JSON を読み込んで 3 件の変更を反映しました");
+    expect(document.getElementById("xmlInput").value).not.toContain("<UID>3</UID>");
+    expect(document.getElementById("xmlInput").value).not.toContain("<Name>Child B</Name>");
+    expect(document.getElementById("xlsxImportSummary").innerHTML).toContain("ParentUID");
+    expect(document.getElementById("xlsxImportSummary").innerHTML).toContain("Position");
+    expect(document.getElementById("xlsxImportSummary").textContent).toContain("(deleted)");
+  });
+
+  it("rejects delete_task for summary task in first cut", async () => {
+    bootPage();
+
+    document.getElementById("xmlInput").value = hierarchyXml;
+    parseXmlViaHook();
+
+    document.getElementById("projectDraftImportInput").value = JSON.stringify({
+      operations: [
+        {
+          op: "delete_task",
+          uid: "1"
+        }
+      ]
+    }, null, 2);
+
+    document.getElementById("importProjectDraftBtn").click();
+    await flushAsyncWork();
+    await flushAsyncWork();
+
+    expect(document.getElementById("statusMessage").textContent).toContain("Patch JSON に反映対象の変更はありませんでした");
+    expect(document.getElementById("importWarnings").textContent).toContain("delete_task first cut では summary task や子を持つ task は削除できません");
+    expect(document.getElementById("importWarnings").textContent).toContain("children=2");
+    expect(document.getElementById("xmlInput").value).toContain("<UID>1</UID>");
+  });
+
+  it("rejects delete_task when assignments still reference the task", async () => {
+    bootPage();
+
+    const xmlWithAssignment = hierarchyXml
+      .replace("<Resources />", [
+        "<Resources>",
+        "  <Resource>",
+        "    <UID>1</UID>",
+        "    <ID>1</ID>",
+        "    <Name>Owner</Name>",
+        "  </Resource>",
+        "</Resources>"
+      ].join("\n"))
+      .replace("<Assignments />", [
+        "<Assignments>",
+        "  <Assignment>",
+        "    <UID>1</UID>",
+        "    <TaskUID>3</TaskUID>",
+        "    <ResourceUID>1</ResourceUID>",
+        "  </Assignment>",
+        "</Assignments>"
+      ].join("\n"));
+    document.getElementById("xmlInput").value = xmlWithAssignment;
+    parseXmlViaHook();
+
+    document.getElementById("projectDraftImportInput").value = JSON.stringify({
+      operations: [
+        {
+          op: "delete_task",
+          uid: "3"
+        }
+      ]
+    }, null, 2);
+
+    document.getElementById("importProjectDraftBtn").click();
+    await flushAsyncWork();
+    await flushAsyncWork();
+
+    expect(document.getElementById("statusMessage").textContent).toContain("Patch JSON に反映対象の変更はありませんでした");
+    expect(document.getElementById("importWarnings").textContent).toContain("delete_task first cut では assignment がある task は削除できません");
+    expect(document.getElementById("importWarnings").textContent).toContain("assignments=1");
+    expect(document.getElementById("xmlInput").value).toContain("<UID>3</UID>");
+  });
+
+  it("rejects delete_task when successors still reference the task", async () => {
+    bootPage();
+
+    const xmlWithDependency = hierarchyXml.replace(
+      "</Notes>\n    </Task>",
+      [
+        "</Notes>",
+        "      <PredecessorLink>",
+        "        <PredecessorUID>2</PredecessorUID>",
+        "        <Type>1</Type>",
+        "      </PredecessorLink>",
+        "    </Task>"
+      ].join("\n")
+    );
+    document.getElementById("xmlInput").value = xmlWithDependency;
+    parseXmlViaHook();
+
+    document.getElementById("projectDraftImportInput").value = JSON.stringify({
+      operations: [
+        {
+          op: "delete_task",
+          uid: "2"
+        }
+      ]
+    }, null, 2);
+
+    document.getElementById("importProjectDraftBtn").click();
+    await flushAsyncWork();
+    await flushAsyncWork();
+
+    expect(document.getElementById("statusMessage").textContent).toContain("Patch JSON に反映対象の変更はありませんでした");
+    expect(document.getElementById("importWarnings").textContent).toContain("delete_task first cut では後続依存がある task は削除できません");
+    expect(document.getElementById("importWarnings").textContent).toContain("successors=3");
+    expect(document.getElementById("xmlInput").value).toContain("<UID>2</UID>");
+  });
+
+  it("ignores no-op patch json move_task", async () => {
+    bootPage();
+
+    document.getElementById("xmlInput").value = hierarchyXml;
+    parseXmlViaHook();
+
+    document.getElementById("projectDraftImportInput").value = JSON.stringify({
+      operations: [
+        {
+          op: "move_task",
+          uid: "3",
+          new_parent_uid: "1",
+          new_index: 1
+        }
+      ]
+    }, null, 2);
+
+    document.getElementById("importProjectDraftBtn").click();
+    await flushAsyncWork();
+    await flushAsyncWork();
+
+    expect(document.getElementById("statusMessage").textContent).toContain("Patch JSON に反映対象の変更はありませんでした");
+    expect(document.getElementById("statusMessage").textContent).toContain("warning を無視しました");
+    expect(document.getElementById("importWarnings").textContent).toContain("move_task は結果が変わらないため無視します");
+    expect(document.getElementById("importWarnings").textContent).toContain("parent=1 index=1");
+  });
+
+  it("imports patch json link_tasks into the current model and xml", async () => {
+    bootPage();
+
+    document.getElementById("projectDraftImportInput").value = JSON.stringify({
+      operations: [
+        {
+          op: "link_tasks",
+          from_uid: "2",
+          to_uid: "3",
+          type: "SS",
+          lag_hours: 4
+        }
+      ]
+    }, null, 2);
+
+    document.getElementById("importProjectDraftBtn").click();
+    await flushAsyncWork();
+    await flushAsyncWork();
+
+    expect(document.getElementById("statusMessage").textContent).toContain("Patch JSON を読み込んで 1 件の変更を反映しました");
+    expect(document.getElementById("xmlInput").value).toContain("<PredecessorUID>2</PredecessorUID>");
+    expect(document.getElementById("xmlInput").value).toContain("<Type>2</Type>");
+    expect(document.getElementById("xmlInput").value).toContain("<LinkLag>PT4H0M0S</LinkLag>");
+    expect(document.getElementById("xlsxImportSummary").textContent).toContain("Predecessors");
+    expect(document.getElementById("xlsxImportSummary").textContent).toContain("UID=3");
+    expect(document.getElementById("xlsxImportSummary").textContent).toContain("2(SS, lag=PT4H0M0S)");
+  });
+
+  it("imports patch json unlink_tasks into the current model and xml", async () => {
+    bootPage();
+
+    document.getElementById("projectDraftImportInput").value = JSON.stringify({
+      operations: [
+        {
+          op: "link_tasks",
+          from_uid: "2",
+          to_uid: "3",
+          type: "SS",
+          lag_hours: 4
+        }
+      ]
+    }, null, 2);
+    document.getElementById("importProjectDraftBtn").click();
+    await flushAsyncWork();
+    await flushAsyncWork();
+
+    document.getElementById("projectDraftImportInput").value = JSON.stringify({
+      operations: [
+        {
+          op: "unlink_tasks",
+          from_uid: "2",
+          to_uid: "3",
+          type: "SS"
+        }
+      ]
+    }, null, 2);
+    document.getElementById("importProjectDraftBtn").click();
+    await flushAsyncWork();
+    await flushAsyncWork();
+
+    expect(document.getElementById("statusMessage").textContent).toContain("Patch JSON を読み込んで 1 件の変更を反映しました");
+    expect(document.getElementById("xmlInput").value).not.toContain("<PredecessorUID>2</PredecessorUID>");
+    expect(document.getElementById("xlsxImportSummary").textContent).toContain("Predecessors");
+    expect(document.getElementById("xlsxImportSummary").textContent).toContain("2(SS, lag=PT4H0M0S)");
+  });
+
+  it("imports patch json unlink_tasks with lag filter into the current model and xml", async () => {
+    bootPage();
+
+    document.getElementById("projectDraftImportInput").value = JSON.stringify({
+      operations: [
+        {
+          op: "link_tasks",
+          from_uid: "2",
+          to_uid: "3",
+          type: "SS",
+          lag_hours: 4
+        }
+      ]
+    }, null, 2);
+    document.getElementById("importProjectDraftBtn").click();
+    await flushAsyncWork();
+    await flushAsyncWork();
+
+    document.getElementById("projectDraftImportInput").value = JSON.stringify({
+      operations: [
+        {
+          op: "unlink_tasks",
+          from_uid: "2",
+          to_uid: "3",
+          type: "SS",
+          lag: "PT4H0M0S"
+        }
+      ]
+    }, null, 2);
+    document.getElementById("importProjectDraftBtn").click();
+    await flushAsyncWork();
+    await flushAsyncWork();
+
+    expect(document.getElementById("statusMessage").textContent).toContain("Patch JSON を読み込んで 1 件の変更を反映しました");
+    expect(document.getElementById("xmlInput").value).not.toContain("<PredecessorUID>2</PredecessorUID>");
+  });
+
+  it("reports link_tasks warnings with type and lag details", async () => {
+    bootPage();
+
+    document.getElementById("projectDraftImportInput").value = JSON.stringify({
+      operations: [
+        {
+          op: "link_tasks",
+          from_uid: "2",
+          to_uid: "3",
+          type: "SS",
+          lag_hours: 4
+        },
+        {
+          op: "link_tasks",
+          from_uid: "2",
+          to_uid: "3",
+          type: "SS",
+          lag_hours: 4
+        }
+      ]
+    }, null, 2);
+
+    document.getElementById("importProjectDraftBtn").click();
+    await flushAsyncWork();
+    await flushAsyncWork();
+
+    expect(document.getElementById("statusMessage").textContent).toContain("warning を無視しました");
+    expect(document.getElementById("importWarnings").textContent).toContain("link_tasks の依存関係は既に存在します");
+    expect(document.getElementById("importWarnings").textContent).toContain("2 -> 3 (SS, lag=PT4H0M0S)");
+  });
+
+  it("reports unlink_tasks warnings with requested type details", async () => {
+    bootPage();
+
+    document.getElementById("projectDraftImportInput").value = JSON.stringify({
+      operations: [
+        {
+          op: "unlink_tasks",
+          from_uid: "2",
+          to_uid: "3",
+          type: "FF"
+        }
+      ]
+    }, null, 2);
+
+    document.getElementById("importProjectDraftBtn").click();
+    await flushAsyncWork();
+    await flushAsyncWork();
+
+    expect(document.getElementById("statusMessage").textContent).toContain("warning を無視しました");
+    expect(document.getElementById("importWarnings").textContent).toContain("unlink_tasks の対象依存関係が見つかりません");
+    expect(document.getElementById("importWarnings").textContent).toContain("2 -> 3 (FF)");
+  });
+
+  it("reports unlink_tasks warnings with requested lag details", async () => {
+    bootPage();
+
+    document.getElementById("projectDraftImportInput").value = JSON.stringify({
+      operations: [
+        {
+          op: "link_tasks",
+          from_uid: "2",
+          to_uid: "3",
+          type: "SS",
+          lag_hours: 4
+        }
+      ]
+    }, null, 2);
+    document.getElementById("importProjectDraftBtn").click();
+    await flushAsyncWork();
+    await flushAsyncWork();
+
+    document.getElementById("projectDraftImportInput").value = JSON.stringify({
+      operations: [
+        {
+          op: "unlink_tasks",
+          from_uid: "2",
+          to_uid: "3",
+          type: "SS",
+          lag_hours: 8
+        }
+      ]
+    }, null, 2);
+
+    document.getElementById("importProjectDraftBtn").click();
+    await flushAsyncWork();
+    await flushAsyncWork();
+
+    expect(document.getElementById("statusMessage").textContent).toContain("warning を無視しました");
+    expect(document.getElementById("importWarnings").textContent).toContain("unlink_tasks の対象依存関係が見つかりません");
+    expect(document.getElementById("importWarnings").textContent).toContain("2 -> 3 (SS, lag=PT8H0M0S)");
+  });
+
+  it("reports when unlink_tasks removes multiple matching dependencies", async () => {
+    bootPage();
+
+    const xmlWithDuplicateLinks = hierarchyXml.replace(
+      "</Notes>\n    </Task>",
+      [
+        "</Notes>",
+        "      <PredecessorLink>",
+        "        <PredecessorUID>2</PredecessorUID>",
+        "        <Type>1</Type>",
+        "        <LinkLag>PT0H0M0S</LinkLag>",
+        "      </PredecessorLink>",
+        "      <PredecessorLink>",
+        "        <PredecessorUID>2</PredecessorUID>",
+        "        <Type>1</Type>",
+        "        <LinkLag>PT0H0M0S</LinkLag>",
+        "      </PredecessorLink>",
+        "    </Task>"
+      ].join("\n")
+    );
+    document.getElementById("xmlInput").value = xmlWithDuplicateLinks;
+    parseXmlViaHook();
+
+    document.getElementById("projectDraftImportInput").value = JSON.stringify({
+      operations: [
+        {
+          op: "unlink_tasks",
+          from_uid: "2",
+          to_uid: "3",
+          type: "FS",
+          lag: "PT0H0M0S"
+        }
+      ]
+    }, null, 2);
+
+    document.getElementById("importProjectDraftBtn").click();
+    await flushAsyncWork();
+    await flushAsyncWork();
+
+    expect(document.getElementById("statusMessage").textContent).toContain("warning を無視しました");
+    expect(document.getElementById("importWarnings").textContent).toContain("一致した依存関係 2 件をすべて解除しました");
+    expect(document.getElementById("importWarnings").textContent).toContain("2 -> 3 (FS)");
+    expect(document.getElementById("xmlInput").value).not.toContain("<PredecessorUID>2</PredecessorUID>");
+  });
+
+  it("rejects link_tasks that would create a dependency cycle", async () => {
+    bootPage();
+
+    document.getElementById("projectDraftImportInput").value = JSON.stringify({
+      operations: [
+        {
+          op: "link_tasks",
+          from_uid: "2",
+          to_uid: "3",
+          type: "FS"
+        },
+        {
+          op: "link_tasks",
+          from_uid: "3",
+          to_uid: "2",
+          type: "FS"
+        }
+      ]
+    }, null, 2);
+
+    document.getElementById("importProjectDraftBtn").click();
+    await flushAsyncWork();
+    await flushAsyncWork();
+
+    expect(document.getElementById("statusMessage").textContent).toContain("warning を無視しました");
+    expect(document.getElementById("importWarnings").textContent).toContain("link_tasks で循環依存になるため無視します");
+    expect(document.getElementById("importWarnings").textContent).toContain("3 -> 2 (FS)");
+    expect(document.getElementById("xmlInput").value).toContain("<PredecessorUID>2</PredecessorUID>");
+    expect(document.getElementById("xmlInput").value).not.toContain("<PredecessorUID>3</PredecessorUID>");
+  });
+
+  it("rejects invalid link_tasks lag text", async () => {
+    bootPage();
+
+    document.getElementById("projectDraftImportInput").value = JSON.stringify({
+      operations: [
+        {
+          op: "link_tasks",
+          from_uid: "2",
+          to_uid: "3",
+          type: "FS",
+          lag: "4hours"
+        }
+      ]
+    }, null, 2);
+
+    document.getElementById("importProjectDraftBtn").click();
+    await flushAsyncWork();
+    await flushAsyncWork();
+
+    expect(document.getElementById("statusMessage").textContent).toContain("warning を無視しました");
+    expect(document.getElementById("importWarnings").textContent).toContain("link_tasks.lag は ISO 8601 duration 形式が必要です");
+    expect(document.getElementById("xmlInput").value).toContain("<PredecessorUID>2</PredecessorUID>");
+    expect(document.getElementById("xmlInput").value).not.toContain("<LinkLag>4hours</LinkLag>");
+  });
+
+  it("imports patch json update_task is_milestone into the current model and xml", async () => {
+    bootPage();
+
+    document.getElementById("xmlInput").value = hierarchyXml;
+    parseXmlViaHook();
+
+    document.getElementById("projectDraftImportInput").value = JSON.stringify({
+      operations: [
+        {
+          op: "update_task",
+          uid: "3",
+          fields: {
+            is_milestone: true
+          }
+        }
+      ]
+    }, null, 2);
+
+    document.getElementById("importProjectDraftBtn").click();
+    await flushAsyncWork();
+    await flushAsyncWork();
+
+    expect(document.getElementById("statusMessage").textContent).toContain("Patch JSON を読み込んで 3 件の変更を反映しました");
+    expect(document.getElementById("xmlInput").value).toContain("<UID>3</UID>");
+    expect(document.getElementById("xmlInput").value).toContain("<Milestone>1</Milestone>");
+    expect(document.getElementById("xmlInput").value).toContain("<Finish>2026-03-17T09:00:00</Finish>");
+    expect(document.getElementById("xmlInput").value).toContain("<Duration>PT0H0M0S</Duration>");
+    expect(document.getElementById("importWarnings").textContent).toContain("update_task.is_milestone=true のため planned_finish は planned_start に揃えます");
+    expect(document.getElementById("importWarnings").textContent).toContain("update_task.is_milestone=true のため planned_duration は 0 に揃えます");
+    expect(document.getElementById("xlsxImportSummary").innerHTML).toContain("Milestone");
+  });
+
+  it("rejects update_task is_milestone on summary task", async () => {
+    bootPage();
+
+    document.getElementById("xmlInput").value = hierarchyXml;
+    parseXmlViaHook();
+
+    document.getElementById("projectDraftImportInput").value = JSON.stringify({
+      operations: [
+        {
+          op: "update_task",
+          uid: "1",
+          fields: {
+            is_milestone: true
+          }
+        }
+      ]
+    }, null, 2);
+
+    document.getElementById("importProjectDraftBtn").click();
+    await flushAsyncWork();
+    await flushAsyncWork();
+
+    expect(document.getElementById("statusMessage").textContent).toContain("Patch JSON に反映対象の変更はありませんでした");
+    expect(document.getElementById("importWarnings").textContent).toContain("update_task では summary task を milestone にできません");
+    expect(document.getElementById("xmlInput").value).toContain("<UID>1</UID>");
+    expect(document.getElementById("xmlInput").value).toContain("<Milestone>0</Milestone>");
+  });
+
+  it("imports patch json update_task notes into the current model and xml", async () => {
+    bootPage();
+
+    document.getElementById("xmlInput").value = hierarchyXml;
+    parseXmlViaHook();
+
+    document.getElementById("projectDraftImportInput").value = JSON.stringify({
+      operations: [
+        {
+          op: "update_task",
+          uid: "3",
+          fields: {
+            notes: "Patched note"
+          }
+        }
+      ]
+    }, null, 2);
+
+    document.getElementById("importProjectDraftBtn").click();
+    await flushAsyncWork();
+    await flushAsyncWork();
+
+    expect(document.getElementById("statusMessage").textContent).toContain("Patch JSON を読み込んで 1 件の変更を反映しました");
+    expect(document.getElementById("xmlInput").value).toContain("<Notes>Patched note</Notes>");
+    expect(document.getElementById("modelOutput").value).toContain("\"notes\": \"Patched note\"");
+    expect(document.getElementById("xlsxImportSummary").innerHTML).toContain("Notes");
+  });
+
+  it("clears task notes with patch json update_task notes empty string", async () => {
+    bootPage();
+
+    document.getElementById("xmlInput").value = hierarchyXml;
+    parseXmlViaHook();
+
+    document.getElementById("projectDraftImportInput").value = JSON.stringify({
+      operations: [
+        {
+          op: "update_task",
+          uid: "3",
+          fields: {
+            notes: ""
+          }
+        }
+      ]
+    }, null, 2);
+
+    document.getElementById("importProjectDraftBtn").click();
+    await flushAsyncWork();
+    await flushAsyncWork();
+
+    expect(document.getElementById("statusMessage").textContent).toContain("Patch JSON を読み込んで 1 件の変更を反映しました");
+    expect(document.getElementById("xmlInput").value).not.toContain("<Notes>Second child task</Notes>");
+    expect(document.getElementById("modelOutput").value).not.toContain("\"notes\": \"Second child task\"");
+    expect(document.getElementById("xlsxImportSummary").innerHTML).toContain("Notes");
+  });
+
+  it("imports patch json update_task calendar_uid into the current model and xml", async () => {
+    bootPage();
+
+    document.getElementById("xmlInput").value = dependencyXml;
+    parseXmlViaHook();
+
+    document.getElementById("projectDraftImportInput").value = JSON.stringify({
+      operations: [
+        {
+          op: "update_task",
+          uid: "2",
+          fields: {
+            calendar_uid: "1"
+          }
+        }
+      ]
+    }, null, 2);
+
+    document.getElementById("importProjectDraftBtn").click();
+    await flushAsyncWork();
+    await flushAsyncWork();
+
+    expect(document.getElementById("statusMessage").textContent).toContain("Patch JSON を読み込んで 1 件の変更を反映しました");
+    expect(document.getElementById("xmlInput").value).toContain("<UID>2</UID>");
+    expect(document.getElementById("xmlInput").value).toContain("<CalendarUID>1</CalendarUID>");
+    expect(document.getElementById("modelOutput").value).toContain("\"calendarUID\": \"1\"");
+    expect(document.getElementById("xlsxImportSummary").innerHTML).toContain("CalendarUID");
+  });
+
+  it("clears task calendar_uid with patch json update_task calendar_uid empty string", async () => {
+    bootPage();
+
+    const xmlWithTaskCalendar = dependencyXml.replace(
+      "<PercentComplete>0</PercentComplete>",
+      "<PercentComplete>0</PercentComplete>\n      <CalendarUID>1</CalendarUID>"
+    );
+    document.getElementById("xmlInput").value = xmlWithTaskCalendar;
+    parseXmlViaHook();
+
+    document.getElementById("projectDraftImportInput").value = JSON.stringify({
+      operations: [
+        {
+          op: "update_task",
+          uid: "2",
+          fields: {
+            calendar_uid: ""
+          }
+        }
+      ]
+    }, null, 2);
+
+    document.getElementById("importProjectDraftBtn").click();
+    await flushAsyncWork();
+    await flushAsyncWork();
+
+    expect(document.getElementById("statusMessage").textContent).toContain("Patch JSON を読み込んで 1 件の変更を反映しました");
+    expect((document.getElementById("xmlInput").value.match(/<CalendarUID>1<\/CalendarUID>/g) || []).length).toBe(1);
+    expect(JSON.parse(document.getElementById("modelOutput").value).tasks.find((task) => task.uid === "2").calendarUID).toBeUndefined();
+    expect(document.getElementById("xlsxImportSummary").innerHTML).toContain("CalendarUID");
+  });
+
+  it("rejects unknown patch json update_task calendar_uid", async () => {
+    bootPage();
+
+    document.getElementById("xmlInput").value = dependencyXml;
+    parseXmlViaHook();
+
+    document.getElementById("projectDraftImportInput").value = JSON.stringify({
+      operations: [
+        {
+          op: "update_task",
+          uid: "2",
+          fields: {
+            calendar_uid: "999"
+          }
+        }
+      ]
+    }, null, 2);
+
+    document.getElementById("importProjectDraftBtn").click();
+    await flushAsyncWork();
+    await flushAsyncWork();
+
+    expect(document.getElementById("statusMessage").textContent).toContain("Patch JSON に反映対象の変更はありませんでした");
+    expect(document.getElementById("importWarnings").textContent).toContain("update_task.calendar_uid が既存 calendar を指していません");
+    expect(JSON.parse(document.getElementById("modelOutput").value).tasks.find((task) => task.uid === "2").calendarUID).toBeUndefined();
+  });
+
+  it("imports patch json update_task progress fields into the current model and xml", async () => {
+    bootPage();
+
+    document.getElementById("xmlInput").value = hierarchyXml;
+    parseXmlViaHook();
+
+    document.getElementById("projectDraftImportInput").value = JSON.stringify({
+      operations: [
+        {
+          op: "update_task",
+          uid: "3",
+          fields: {
+            percent_complete: 40,
+            percent_work_complete: 60
+          }
+        }
+      ]
+    }, null, 2);
+
+    document.getElementById("importProjectDraftBtn").click();
+    await flushAsyncWork();
+    await flushAsyncWork();
+
+    expect(document.getElementById("statusMessage").textContent).toContain("Patch JSON を読み込んで 2 件の変更を反映しました");
+    expect(document.getElementById("xmlInput").value).toContain("<PercentComplete>40</PercentComplete>");
+    expect(document.getElementById("xmlInput").value).toContain("<PercentWorkComplete>60</PercentWorkComplete>");
+    expect(document.getElementById("modelOutput").value).toContain("\"percentComplete\": 40");
+    expect(document.getElementById("modelOutput").value).toContain("\"percentWorkComplete\": 60");
+    expect(document.getElementById("xlsxImportSummary").innerHTML).toContain("PercentComplete");
+    expect(document.getElementById("xlsxImportSummary").innerHTML).toContain("PercentWorkComplete");
+  });
+
+  it("rejects out-of-range patch json progress fields", async () => {
+    bootPage();
+
+    document.getElementById("xmlInput").value = hierarchyXml;
+    parseXmlViaHook();
+
+    document.getElementById("projectDraftImportInput").value = JSON.stringify({
+      operations: [
+        {
+          op: "update_task",
+          uid: "3",
+          fields: {
+            percent_complete: 120,
+            percent_work_complete: -1
+          }
+        }
+      ]
+    }, null, 2);
+
+    document.getElementById("importProjectDraftBtn").click();
+    await flushAsyncWork();
+    await flushAsyncWork();
+
+    expect(document.getElementById("statusMessage").textContent).toContain("Patch JSON に反映対象の変更はありませんでした");
+    expect(document.getElementById("importWarnings").textContent).toContain("update_task.percent_complete は 0 以上 100 以下の数値が必要です");
+    expect(document.getElementById("importWarnings").textContent).toContain("update_task.percent_work_complete は 0 以上 100 以下の数値が必要です");
+  });
+
+  it("imports patch json update_task critical into the current model and xml", async () => {
+    bootPage();
+
+    document.getElementById("xmlInput").value = hierarchyXml;
+    parseXmlViaHook();
+
+    document.getElementById("projectDraftImportInput").value = JSON.stringify({
+      operations: [
+        {
+          op: "update_task",
+          uid: "3",
+          fields: {
+            critical: true
+          }
+        }
+      ]
+    }, null, 2);
+
+    document.getElementById("importProjectDraftBtn").click();
+    await flushAsyncWork();
+    await flushAsyncWork();
+
+    expect(document.getElementById("statusMessage").textContent).toContain("Patch JSON を読み込んで 1 件の変更を反映しました");
+    expect(document.getElementById("xmlInput").value).toContain("<Critical>1</Critical>");
+    expect(document.getElementById("modelOutput").value).toContain("\"critical\": true");
+    expect(document.getElementById("xlsxImportSummary").innerHTML).toContain("Critical");
+  });
+
+  it("rejects invalid patch json critical type", async () => {
+    bootPage();
+
+    document.getElementById("xmlInput").value = hierarchyXml;
+    parseXmlViaHook();
+
+    document.getElementById("projectDraftImportInput").value = JSON.stringify({
+      operations: [
+        {
+          op: "update_task",
+          uid: "3",
+          fields: {
+            critical: "yes"
+          }
+        }
+      ]
+    }, null, 2);
+
+    document.getElementById("importProjectDraftBtn").click();
+    await flushAsyncWork();
+    await flushAsyncWork();
+
+    expect(document.getElementById("statusMessage").textContent).toContain("Patch JSON に反映対象の変更はありませんでした");
+    expect(document.getElementById("importWarnings").textContent).toContain("update_task.critical は boolean が必要です");
+  });
+
+  it("imports patch json update_project into the current model and xml", async () => {
+    bootPage();
+
+    const xmlWithExtraCalendar = dependencyXml.replace(
+      "</Calendars>",
+      `  <Calendar>\n      <UID>2</UID>\n      <Name>Alt</Name>\n      <IsBaseCalendar>0</IsBaseCalendar>\n      <BaseCalendarUID>1</BaseCalendarUID>\n    </Calendar>\n  </Calendars>`
+    );
+    document.getElementById("xmlInput").value = xmlWithExtraCalendar;
+    parseXmlViaHook();
+
+    document.getElementById("projectDraftImportInput").value = JSON.stringify({
+      operations: [
+        {
+          op: "update_project",
+          fields: {
+            name: "Dependency Project Prime",
+            title: "Prime Title",
+            author: "Prime Author",
+            company: "Prime Company",
+            start_date: "2026-03-15",
+            finish_date: "2026-03-20",
+            current_date: "2026-03-17",
+            status_date: "2026-03-18",
+            calendar_uid: "2",
+            minutes_per_day: 420,
+            minutes_per_week: 2100,
+            days_per_month: 18,
+            schedule_from_start: false
+          }
+        }
+      ]
+    }, null, 2);
+
+    document.getElementById("importProjectDraftBtn").click();
+    await flushAsyncWork();
+    await flushAsyncWork();
+
+    expect(document.getElementById("statusMessage").textContent).toContain("Patch JSON を読み込んで 13 件の変更を反映しました");
+    expect(document.getElementById("xmlInput").value).toContain("<Name>Dependency Project Prime</Name>");
+    expect(document.getElementById("xmlInput").value).toContain("<Title>Prime Title</Title>");
+    expect(document.getElementById("xmlInput").value).toContain("<Author>Prime Author</Author>");
+    expect(document.getElementById("xmlInput").value).toContain("<Company>Prime Company</Company>");
+    expect(document.getElementById("xmlInput").value).toContain("<StartDate>2026-03-15T09:00:00</StartDate>");
+    expect(document.getElementById("xmlInput").value).toContain("<FinishDate>2026-03-20T18:00:00</FinishDate>");
+    expect(document.getElementById("xmlInput").value).toContain("<CurrentDate>2026-03-17T09:00:00</CurrentDate>");
+    expect(document.getElementById("xmlInput").value).toContain("<StatusDate>2026-03-18T09:00:00</StatusDate>");
+    expect(document.getElementById("xmlInput").value).toContain("<CalendarUID>2</CalendarUID>");
+    expect(document.getElementById("xmlInput").value).toContain("<MinutesPerDay>420</MinutesPerDay>");
+    expect(document.getElementById("xmlInput").value).toContain("<MinutesPerWeek>2100</MinutesPerWeek>");
+    expect(document.getElementById("xmlInput").value).toContain("<DaysPerMonth>18</DaysPerMonth>");
+    expect(document.getElementById("xmlInput").value).toContain("<ScheduleFromStart>0</ScheduleFromStart>");
+    expect(document.getElementById("xlsxImportSummary").textContent).toContain("Project");
+    expect(document.getElementById("xlsxImportSummary").innerHTML).toContain("Title");
+    expect(document.getElementById("xlsxImportSummary").innerHTML).toContain("StartDate");
+    expect(document.getElementById("xlsxImportSummary").innerHTML).toContain("MinutesPerDay");
+  });
+
+  it("rejects invalid patch json update_project fields", async () => {
+    bootPage();
+
+    document.getElementById("xmlInput").value = dependencyXml;
+    parseXmlViaHook();
+
+    document.getElementById("projectDraftImportInput").value = JSON.stringify({
+      operations: [
+        {
+          op: "update_project",
+          fields: {
+            name: "",
+            start_date: "2026-03-20",
+            finish_date: "2026-03-19",
+            current_date: "bad-date",
+            calendar_uid: "999",
+            minutes_per_day: 0,
+            schedule_from_start: "yes"
+          }
+        }
+      ]
+    }, null, 2);
+
+    document.getElementById("importProjectDraftBtn").click();
+    await flushAsyncWork();
+    await flushAsyncWork();
+
+    expect(document.getElementById("statusMessage").textContent).toContain("Patch JSON に反映対象の変更はありませんでした");
+    expect(document.getElementById("importWarnings").textContent).toContain("update_project.name は空でない文字列が必要です");
+    expect(document.getElementById("importWarnings").textContent).toContain("update_project.start_date が finish_date より後です");
+    expect(document.getElementById("importWarnings").textContent).toContain("update_project.current_date の日付形式が解釈できません");
+    expect(document.getElementById("importWarnings").textContent).toContain("update_project.calendar_uid が既存 calendar を指していません");
+    expect(document.getElementById("importWarnings").textContent).toContain("update_project.minutes_per_day は 0 より大きい数値が必要です");
+    expect(document.getElementById("importWarnings").textContent).toContain("update_project.schedule_from_start は boolean が必要です");
+  });
+
+  it("imports patch json update_resource into the current model and xml", async () => {
+    bootPage();
+
+    document.getElementById("xmlInput").value = dependencyXml;
+    parseXmlViaHook();
+
+    document.getElementById("projectDraftImportInput").value = JSON.stringify({
+      operations: [
+        {
+          op: "update_resource",
+          uid: "1",
+          fields: {
+            name: "Miku Prime",
+            initials: "MP",
+            group: "Platform",
+            calendar_uid: "1",
+            max_units: 0.75,
+            standard_rate: "1000",
+            overtime_rate: "1500",
+            cost_per_use: 250,
+            percent_work_complete: 60
+          }
+        }
+      ]
+    }, null, 2);
+
+    document.getElementById("importProjectDraftBtn").click();
+    await flushAsyncWork();
+    await flushAsyncWork();
+
+    expect(document.getElementById("statusMessage").textContent).toContain("Patch JSON を読み込んで 9 件の変更を反映しました");
+    expect(document.getElementById("xmlInput").value).toContain("<Name>Miku Prime</Name>");
+    expect(document.getElementById("xmlInput").value).toContain("<Initials>MP</Initials>");
+    expect(document.getElementById("xmlInput").value).toContain("<Group>Platform</Group>");
+    expect(document.getElementById("xmlInput").value).toContain("<CalendarUID>1</CalendarUID>");
+    expect(document.getElementById("xmlInput").value).toContain("<MaxUnits>0.75</MaxUnits>");
+    expect(document.getElementById("xmlInput").value).toContain("<StandardRate>1000</StandardRate>");
+    expect(document.getElementById("xmlInput").value).toContain("<OvertimeRate>1500</OvertimeRate>");
+    expect(document.getElementById("xmlInput").value).toContain("<CostPerUse>250</CostPerUse>");
+    expect(document.getElementById("xmlInput").value).toContain("<PercentWorkComplete>60</PercentWorkComplete>");
+    expect(document.getElementById("modelOutput").value).toContain("\"initials\": \"MP\"");
+    expect(document.getElementById("modelOutput").value).toContain("\"maxUnits\": 0.75");
+    expect(document.getElementById("modelOutput").value).toContain("\"costPerUse\": 250");
+    expect(document.getElementById("modelOutput").value).toContain("\"percentWorkComplete\": 60");
+    expect(document.getElementById("xlsxImportSummary").textContent).toContain("Resources");
+    expect(document.getElementById("xlsxImportSummary").innerHTML).toContain("Initials");
+    expect(document.getElementById("xlsxImportSummary").innerHTML).toContain("MaxUnits");
+    expect(document.getElementById("xlsxImportSummary").innerHTML).toContain("StandardRate");
+    expect(document.getElementById("xlsxImportSummary").innerHTML).toContain("CostPerUse");
+  });
+
+  it("rejects invalid patch json update_resource fields", async () => {
+    bootPage();
+
+    document.getElementById("xmlInput").value = dependencyXml;
+    parseXmlViaHook();
+
+    document.getElementById("projectDraftImportInput").value = JSON.stringify({
+      operations: [
+        {
+          op: "update_resource",
+          uid: "1",
+          fields: {
+            name: "",
+            calendar_uid: "999",
+            max_units: -1,
+            cost_per_use: -1,
+            percent_work_complete: 120
+          }
+        }
+      ]
+    }, null, 2);
+
+    document.getElementById("importProjectDraftBtn").click();
+    await flushAsyncWork();
+    await flushAsyncWork();
+
+    expect(document.getElementById("statusMessage").textContent).toContain("Patch JSON に反映対象の変更はありませんでした");
+    expect(document.getElementById("importWarnings").textContent).toContain("update_resource.name は空でない文字列が必要です");
+    expect(document.getElementById("importWarnings").textContent).toContain("update_resource.calendar_uid が既存 calendar を指していません");
+    expect(document.getElementById("importWarnings").textContent).toContain("update_resource.max_units は 0 以上の数値が必要です");
+    expect(document.getElementById("importWarnings").textContent).toContain("update_resource.cost_per_use は 0 以上の数値が必要です");
+    expect(document.getElementById("importWarnings").textContent).toContain("update_resource.percent_work_complete は 0 以上 100 以下の数値が必要です");
+  });
+
+  it("imports patch json update_calendar into the current model and xml", async () => {
+    bootPage();
+
+    const xmlWithExtraCalendar = dependencyXml.replace(
+      "</Calendars>",
+      `  <Calendar>\n      <UID>2</UID>\n      <Name>Alt</Name>\n      <IsBaseCalendar>0</IsBaseCalendar>\n      <BaseCalendarUID>1</BaseCalendarUID>\n      <WeekDays />\n    </Calendar>\n  </Calendars>`
+    );
+    document.getElementById("xmlInput").value = xmlWithExtraCalendar;
+    parseXmlViaHook();
+
+    document.getElementById("projectDraftImportInput").value = JSON.stringify({
+      operations: [
+        {
+          op: "update_calendar",
+          uid: "2",
+          fields: {
+            name: "Alt Prime",
+            is_base_calendar: true,
+            base_calendar_uid: ""
+          }
+        }
+      ]
+    }, null, 2);
+
+    document.getElementById("importProjectDraftBtn").click();
+    await flushAsyncWork();
+    await flushAsyncWork();
+
+    expect(document.getElementById("statusMessage").textContent).toContain("Patch JSON を読み込んで 3 件の変更を反映しました");
+    expect(document.getElementById("xmlInput").value).toContain("<UID>2</UID>");
+    expect(document.getElementById("xmlInput").value).toContain("<Name>Alt Prime</Name>");
+    expect(document.getElementById("xmlInput").value).toContain("<IsBaseCalendar>1</IsBaseCalendar>");
+    expect(document.getElementById("modelOutput").value).toContain("\"isBaseCalendar\": true");
+    expect(document.getElementById("xlsxImportSummary").textContent).toContain("Calendars");
+    expect(document.getElementById("xlsxImportSummary").innerHTML).toContain("IsBaseCalendar");
+    expect(document.getElementById("xlsxImportSummary").innerHTML).toContain("BaseCalendarUID");
+  });
+
+  it("rejects invalid patch json update_calendar fields", async () => {
+    bootPage();
+
+    document.getElementById("xmlInput").value = dependencyXml;
+    parseXmlViaHook();
+
+    document.getElementById("projectDraftImportInput").value = JSON.stringify({
+      operations: [
+        {
+          op: "update_calendar",
+          uid: "1",
+          fields: {
+            name: "",
+            is_base_calendar: "yes",
+            base_calendar_uid: "1"
+          }
+        }
+      ]
+    }, null, 2);
+
+    document.getElementById("importProjectDraftBtn").click();
+    await flushAsyncWork();
+    await flushAsyncWork();
+
+    expect(document.getElementById("statusMessage").textContent).toContain("Patch JSON に反映対象の変更はありませんでした");
+    expect(document.getElementById("importWarnings").textContent).toContain("update_calendar.name は空でない文字列が必要です");
+    expect(document.getElementById("importWarnings").textContent).toContain("update_calendar.is_base_calendar は boolean が必要です");
+    expect(document.getElementById("importWarnings").textContent).toContain("update_calendar.base_calendar_uid は自身を指せません");
+  });
+
+  it("imports patch json add_calendar into the current model and xml", async () => {
+    bootPage();
+
+    document.getElementById("xmlInput").value = dependencyXml;
+    parseXmlViaHook();
+
+    document.getElementById("projectDraftImportInput").value = JSON.stringify({
+      operations: [
+        {
+          op: "add_calendar",
+          uid: "2",
+          name: "Night Shift",
+          is_base_calendar: false,
+          base_calendar_uid: "1"
+        }
+      ]
+    }, null, 2);
+
+    document.getElementById("importProjectDraftBtn").click();
+    await flushAsyncWork();
+    await flushAsyncWork();
+
+    expect(document.getElementById("statusMessage").textContent).toContain("Patch JSON を読み込んで 2 件の変更を反映しました");
+    expect(document.getElementById("xmlInput").value).toContain("<UID>2</UID>");
+    expect(document.getElementById("xmlInput").value).toContain("<Name>Night Shift</Name>");
+    expect(document.getElementById("xmlInput").value).toContain("<BaseCalendarUID>1</BaseCalendarUID>");
+    expect(document.getElementById("xlsxImportSummary").textContent).toContain("Calendars");
+    expect(document.getElementById("xlsxImportSummary").innerHTML).toContain("BaseCalendarUID");
+  });
+
+  it("rejects invalid patch json add_calendar fields", async () => {
+    bootPage();
+
+    document.getElementById("xmlInput").value = dependencyXml;
+    parseXmlViaHook();
+
+    document.getElementById("projectDraftImportInput").value = JSON.stringify({
+      operations: [
+        {
+          op: "add_calendar",
+          uid: "2",
+          name: "",
+          is_base_calendar: "yes",
+          base_calendar_uid: "999"
+        }
+      ]
+    }, null, 2);
+
+    document.getElementById("importProjectDraftBtn").click();
+    await flushAsyncWork();
+    await flushAsyncWork();
+
+    expect(document.getElementById("statusMessage").textContent).toContain("Patch JSON に反映対象の変更はありませんでした");
+    expect(document.getElementById("importWarnings").textContent).toContain("add_calendar.name は空でない文字列が必要です");
+  });
+
+  it("imports patch json delete_calendar into the current model and xml", async () => {
+    bootPage();
+
+    const xmlWithExtraCalendar = dependencyXml.replace(
+      "</Calendars>",
+      `  <Calendar>\n      <UID>2</UID>\n      <Name>Alt</Name>\n      <IsBaseCalendar>0</IsBaseCalendar>\n      <WeekDays />\n    </Calendar>\n  </Calendars>`
+    );
+    document.getElementById("xmlInput").value = xmlWithExtraCalendar;
+    parseXmlViaHook();
+
+    document.getElementById("projectDraftImportInput").value = JSON.stringify({
+      operations: [
+        {
+          op: "delete_calendar",
+          uid: "2"
+        }
+      ]
+    }, null, 2);
+
+    document.getElementById("importProjectDraftBtn").click();
+    await flushAsyncWork();
+    await flushAsyncWork();
+
+    expect(document.getElementById("statusMessage").textContent).toContain("Patch JSON を読み込んで 1 件の変更を反映しました");
+    expect(document.getElementById("xmlInput").value).not.toContain("<Name>Alt</Name>");
+    expect(document.getElementById("xlsxImportSummary").textContent).toContain("(deleted)");
+  });
+
+  it("rejects delete_calendar when references still exist", async () => {
+    bootPage();
+
+    document.getElementById("xmlInput").value = dependencyXml;
+    parseXmlViaHook();
+
+    document.getElementById("projectDraftImportInput").value = JSON.stringify({
+      operations: [
+        {
+          op: "delete_calendar",
+          uid: "1"
+        }
+      ]
+    }, null, 2);
+
+    document.getElementById("importProjectDraftBtn").click();
+    await flushAsyncWork();
+    await flushAsyncWork();
+
+    expect(document.getElementById("statusMessage").textContent).toContain("Patch JSON に反映対象の変更はありませんでした");
+    expect(document.getElementById("importWarnings").textContent).toContain("delete_calendar first cut では参照が残っている calendar は削除できません");
+  });
+
+  it("imports patch json add_resource into the current model and xml", async () => {
+    bootPage();
+
+    document.getElementById("xmlInput").value = dependencyXml;
+    parseXmlViaHook();
+
+    document.getElementById("projectDraftImportInput").value = JSON.stringify({
+      operations: [
+        {
+          op: "add_resource",
+          uid: "2",
+          name: "Mikuku",
+          initials: "M",
+          group: "PMO",
+          calendar_uid: "1",
+          max_units: 1,
+          standard_rate: "1200",
+          overtime_rate: "1800",
+          cost_per_use: 300,
+          percent_work_complete: 25
+        }
+      ]
+    }, null, 2);
+
+    document.getElementById("importProjectDraftBtn").click();
+    await flushAsyncWork();
+    await flushAsyncWork();
+
+    expect(document.getElementById("statusMessage").textContent).toContain("Patch JSON を読み込んで 9 件の変更を反映しました");
+    expect(document.getElementById("xmlInput").value).toContain("<UID>2</UID>");
+    expect(document.getElementById("xmlInput").value).toContain("<Name>Mikuku</Name>");
+    expect(document.getElementById("xmlInput").value).toContain("<Initials>M</Initials>");
+    expect(document.getElementById("xmlInput").value).toContain("<Group>PMO</Group>");
+    expect(document.getElementById("xmlInput").value).toContain("<CalendarUID>1</CalendarUID>");
+    expect(document.getElementById("xmlInput").value).toContain("<MaxUnits>1</MaxUnits>");
+    expect(document.getElementById("xmlInput").value).toContain("<StandardRate>1200</StandardRate>");
+    expect(document.getElementById("xmlInput").value).toContain("<OvertimeRate>1800</OvertimeRate>");
+    expect(document.getElementById("xmlInput").value).toContain("<CostPerUse>300</CostPerUse>");
+    expect(document.getElementById("xmlInput").value).toContain("<PercentWorkComplete>25</PercentWorkComplete>");
+    expect(document.getElementById("xlsxImportSummary").textContent).toContain("Resources");
+    expect(document.getElementById("xlsxImportSummary").innerHTML).toContain("Initials");
+    expect(document.getElementById("xlsxImportSummary").innerHTML).toContain("StandardRate");
+    expect(document.getElementById("xlsxImportSummary").innerHTML).toContain("CostPerUse");
+  });
+
+  it("rejects invalid patch json add_resource fields", async () => {
+    bootPage();
+
+    document.getElementById("xmlInput").value = dependencyXml;
+    parseXmlViaHook();
+
+    document.getElementById("projectDraftImportInput").value = JSON.stringify({
+      operations: [
+        {
+          op: "add_resource",
+          uid: "2",
+          name: "",
+          calendar_uid: "999",
+          max_units: -1,
+          cost_per_use: -1,
+          percent_work_complete: 120
+        }
+      ]
+    }, null, 2);
+
+    document.getElementById("importProjectDraftBtn").click();
+    await flushAsyncWork();
+    await flushAsyncWork();
+
+    expect(document.getElementById("statusMessage").textContent).toContain("Patch JSON に反映対象の変更はありませんでした");
+    expect(document.getElementById("importWarnings").textContent).toContain("add_resource.name は空でない文字列が必要です");
+  });
+
+  it("imports patch json delete_resource into the current model and xml", async () => {
+    bootPage();
+
+    const xmlWithoutAssignments = dependencyXml.replace(/<Assignments>[\s\S]*<\/Assignments>/, "<Assignments />");
+    document.getElementById("xmlInput").value = xmlWithoutAssignments;
+    parseXmlViaHook();
+
+    document.getElementById("projectDraftImportInput").value = JSON.stringify({
+      operations: [
+        {
+          op: "delete_resource",
+          uid: "1"
+        }
+      ]
+    }, null, 2);
+
+    document.getElementById("importProjectDraftBtn").click();
+    await flushAsyncWork();
+    await flushAsyncWork();
+
+    expect(document.getElementById("statusMessage").textContent).toContain("Patch JSON を読み込んで 1 件の変更を反映しました");
+    expect(document.getElementById("xmlInput").value).not.toContain("<Name>Miku</Name>");
+    expect(document.getElementById("xlsxImportSummary").textContent).toContain("(deleted)");
+  });
+
+  it("rejects delete_resource when assignments still reference the resource", async () => {
+    bootPage();
+
+    document.getElementById("xmlInput").value = dependencyXml;
+    parseXmlViaHook();
+
+    document.getElementById("projectDraftImportInput").value = JSON.stringify({
+      operations: [
+        {
+          op: "delete_resource",
+          uid: "1"
+        }
+      ]
+    }, null, 2);
+
+    document.getElementById("importProjectDraftBtn").click();
+    await flushAsyncWork();
+    await flushAsyncWork();
+
+    expect(document.getElementById("statusMessage").textContent).toContain("Patch JSON に反映対象の変更はありませんでした");
+    expect(document.getElementById("importWarnings").textContent).toContain("delete_resource first cut では assignment がある resource は削除できません");
+  });
+
+  it("imports patch json update_assignment into the current model and xml", async () => {
+    bootPage();
+
+    document.getElementById("xmlInput").value = dependencyXml;
+    parseXmlViaHook();
+
+    document.getElementById("projectDraftImportInput").value = JSON.stringify({
+      operations: [
+        {
+          op: "update_assignment",
+          uid: "1",
+          fields: {
+            start: "2026-03-17",
+            finish: "2026-03-18",
+            units: 0.5,
+            work: "PT12H0M0S",
+            percent_work_complete: 75
+          }
+        }
+      ]
+    }, null, 2);
+
+    document.getElementById("importProjectDraftBtn").click();
+    await flushAsyncWork();
+    await flushAsyncWork();
+
+    expect(document.getElementById("statusMessage").textContent).toContain("Patch JSON を読み込んで 5 件の変更を反映しました");
+    expect(document.getElementById("xmlInput").value).toContain("<Assignment>");
+    expect(document.getElementById("xmlInput").value).toContain("<UID>1</UID>");
+    expect(document.getElementById("xmlInput").value).toContain("<Start>2026-03-17T09:00:00</Start>");
+    expect(document.getElementById("xmlInput").value).toContain("<Finish>2026-03-18T18:00:00</Finish>");
+    expect(document.getElementById("xmlInput").value).toContain("<Units>0.5</Units>");
+    expect(document.getElementById("xmlInput").value).toContain("<Work>PT12H0M0S</Work>");
+    expect(document.getElementById("xmlInput").value).toContain("<PercentWorkComplete>75</PercentWorkComplete>");
+    expect(document.getElementById("modelOutput").value).toContain("\"units\": 0.5");
+    expect(document.getElementById("modelOutput").value).toContain("\"percentWorkComplete\": 75");
+    expect(document.getElementById("xlsxImportSummary").textContent).toContain("Assignments");
+    expect(document.getElementById("xlsxImportSummary").innerHTML).toContain("Units");
+    expect(document.getElementById("xlsxImportSummary").innerHTML).toContain("Work");
+    expect(document.getElementById("xlsxImportSummary").innerHTML).toContain("PercentWorkComplete");
+  });
+
+  it("rejects invalid patch json update_assignment range and values", async () => {
+    bootPage();
+
+    document.getElementById("xmlInput").value = dependencyXml;
+    parseXmlViaHook();
+
+    document.getElementById("projectDraftImportInput").value = JSON.stringify({
+      operations: [
+        {
+          op: "update_assignment",
+          uid: "1",
+          fields: {
+            start: "2026-03-20",
+            finish: "2026-03-19",
+            units: -1,
+            work: "",
+            percent_work_complete: 120
+          }
+        }
+      ]
+    }, null, 2);
+
+    document.getElementById("importProjectDraftBtn").click();
+    await flushAsyncWork();
+    await flushAsyncWork();
+
+    expect(document.getElementById("statusMessage").textContent).toContain("Patch JSON に反映対象の変更はありませんでした");
+    expect(document.getElementById("importWarnings").textContent).toContain("update_assignment.start が finish より後です");
+    expect(document.getElementById("importWarnings").textContent).toContain("update_assignment.units は 0 以上の数値が必要です");
+    expect(document.getElementById("importWarnings").textContent).toContain("update_assignment.work は空でない文字列が必要です");
+    expect(document.getElementById("importWarnings").textContent).toContain("update_assignment.percent_work_complete は 0 以上 100 以下の数値が必要です");
+    expect(document.getElementById("xmlInput").value).toContain("<Start>2026-03-16T09:00:00</Start>");
+    expect(document.getElementById("xmlInput").value).toContain("<Finish>2026-03-17T18:00:00</Finish>");
+  });
+
+  it("imports patch json add_assignment into the current model and xml", async () => {
+    bootPage();
+
+    document.getElementById("xmlInput").value = dependencyXml;
+    parseXmlViaHook();
+
+    document.getElementById("projectDraftImportInput").value = JSON.stringify({
+      operations: [
+        {
+          op: "add_assignment",
+          uid: "3",
+          task_uid: "2",
+          resource_uid: "1",
+          start: "2026-03-19",
+          finish: "2026-03-19",
+          units: 0.25,
+          work: "PT2H0M0S",
+          percent_work_complete: 10
+        }
+      ]
+    }, null, 2);
+
+    document.getElementById("importProjectDraftBtn").click();
+    await flushAsyncWork();
+    await flushAsyncWork();
+
+    expect(document.getElementById("statusMessage").textContent).toContain("Patch JSON を読み込んで 7 件の変更を反映しました");
+    expect(document.getElementById("xmlInput").value).toContain("<UID>3</UID>");
+    expect(document.getElementById("xmlInput").value).toContain("<TaskUID>2</TaskUID>");
+    expect(document.getElementById("xmlInput").value).toContain("<ResourceUID>1</ResourceUID>");
+    expect(document.getElementById("xmlInput").value).toContain("<Units>0.25</Units>");
+    expect(document.getElementById("xmlInput").value).toContain("<Work>PT2H0M0S</Work>");
+    expect(document.getElementById("xmlInput").value).toContain("<PercentWorkComplete>10</PercentWorkComplete>");
+    expect(document.getElementById("xlsxImportSummary").textContent).toContain("Assignments");
+    expect(document.getElementById("xlsxImportSummary").innerHTML).toContain("TaskUID");
+    expect(document.getElementById("xlsxImportSummary").innerHTML).toContain("ResourceUID");
+  });
+
+  it("rejects invalid patch json add_assignment references and values", async () => {
+    bootPage();
+
+    document.getElementById("xmlInput").value = dependencyXml;
+    parseXmlViaHook();
+
+    document.getElementById("projectDraftImportInput").value = JSON.stringify({
+      operations: [
+        {
+          op: "add_assignment",
+          uid: "3",
+          task_uid: "999",
+          resource_uid: "1",
+          units: -1
+        }
+      ]
+    }, null, 2);
+
+    document.getElementById("importProjectDraftBtn").click();
+    await flushAsyncWork();
+    await flushAsyncWork();
+
+    expect(document.getElementById("statusMessage").textContent).toContain("Patch JSON に反映対象の変更はありませんでした");
+    expect(document.getElementById("importWarnings").textContent).toContain("add_assignment.task_uid が既存 task を指していません");
+    expect(document.getElementById("xmlInput").value).not.toContain("<UID>3</UID>");
+  });
+
+  it("imports patch json delete_assignment into the current model and xml", async () => {
+    bootPage();
+
+    document.getElementById("xmlInput").value = dependencyXml;
+    parseXmlViaHook();
+
+    document.getElementById("projectDraftImportInput").value = JSON.stringify({
+      operations: [
+        {
+          op: "delete_assignment",
+          uid: "1"
+        }
+      ]
+    }, null, 2);
+
+    document.getElementById("importProjectDraftBtn").click();
+    await flushAsyncWork();
+    await flushAsyncWork();
+
+    expect(document.getElementById("statusMessage").textContent).toContain("Patch JSON を読み込んで 2 件の変更を反映しました");
+    expect(document.getElementById("xmlInput").value).not.toContain("<Assignment>");
+    expect(document.getElementById("xlsxImportSummary").textContent).toContain("Assignments");
+    expect(document.getElementById("xlsxImportSummary").innerHTML).toContain("TaskUID");
+    expect(document.getElementById("xlsxImportSummary").innerHTML).toContain("ResourceUID");
+    expect(document.getElementById("xlsxImportSummary").textContent).toContain("(deleted)");
+  });
+
+  it("rejects missing patch json delete_assignment target", async () => {
+    bootPage();
+
+    document.getElementById("xmlInput").value = dependencyXml;
+    parseXmlViaHook();
+
+    document.getElementById("projectDraftImportInput").value = JSON.stringify({
+      operations: [
+        {
+          op: "delete_assignment",
+          uid: "999"
+        }
+      ]
+    }, null, 2);
+
+    document.getElementById("importProjectDraftBtn").click();
+    await flushAsyncWork();
+    await flushAsyncWork();
+
+    expect(document.getElementById("statusMessage").textContent).toContain("Patch JSON に反映対象の変更はありませんでした");
+    expect(document.getElementById("importWarnings").textContent).toContain("delete_assignment の uid が既存 assignment を指していません");
+    expect(document.getElementById("xmlInput").value).toContain("<Assignment>");
+  });
+
+  it("groups patch json task warnings by uid", async () => {
+    bootPage();
+
+    document.getElementById("projectDraftImportInput").value = JSON.stringify({
+      operations: [
+        {
+          op: "update_task",
+          uid: "3",
+          fields: {
+            unknown_field: "ignored"
+          }
+        }
+      ]
+    }, null, 2);
+
+    document.getElementById("importProjectDraftBtn").click();
+    await flushAsyncWork();
+    await flushAsyncWork();
+
+    expect(document.getElementById("statusMessage").textContent).toContain("warning を無視しました");
+    expect(document.getElementById("importWarnings").textContent).toContain("UID=3");
+    expect(document.getElementById("importWarnings").textContent).toContain("初期実装");
+    expect(document.getElementById("importWarnings").textContent).toContain("未対応の field は無視します");
+    expect(document.getElementById("xlsxImportSummary").classList.contains("md-hidden")).toBe(true);
   });
 
   it("loads sample project_draft_view into the input area", () => {

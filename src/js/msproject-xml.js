@@ -1640,6 +1640,36 @@
                 forbid_summary_task_direct_edit: true
             };
         }
+        if (scope === "task_edit_view") {
+            return {
+                allow_patch_ops: [
+                    "update_task",
+                    "move_task",
+                    "link_tasks",
+                    "unlink_tasks",
+                    "add_task",
+                    "delete_task",
+                    "update_assignment",
+                    "add_assignment",
+                    "delete_assignment"
+                ],
+                allowed_edit_fields: [
+                    "name",
+                    "notes",
+                    "calendar_uid",
+                    "percent_complete",
+                    "percent_work_complete",
+                    "critical",
+                    "planned_start",
+                    "planned_finish",
+                    "planned_duration",
+                    "planned_duration_hours",
+                    "is_milestone"
+                ],
+                forbid_completed_task_changes: true,
+                forbid_summary_task_direct_edit: true
+            };
+        }
         return {
             allow_patch_ops: ["add_task", "update_task", "move_task", "link_tasks", "unlink_tasks"],
             forbid_completed_task_changes: true,
@@ -2045,6 +2075,118 @@
                 });
             })),
             rules: buildDefaultRules("phase_detail_view")
+        };
+    }
+    function exportTaskEditView(model, requestedTaskUid) {
+        var _a;
+        const tasks = model.tasks.filter((task) => !isPlaceholderUid(task.uid));
+        if (tasks.length === 0) {
+            throw new Error("task が見つかりません");
+        }
+        const targetTask = requestedTaskUid
+            ? tasks.find((task) => task.uid === requestedTaskUid)
+            : tasks.find((task) => !task.summary) || tasks[0];
+        if (!targetTask) {
+            throw new Error(`task が見つかりません: ${requestedTaskUid}`);
+        }
+        const parentMap = buildTaskParentMap(model.tasks);
+        const positionMap = buildTaskPositionMap(model.tasks, parentMap);
+        const parentUid = parentMap.get(targetTask.uid) || null;
+        const parentTask = parentUid ? tasks.find((task) => task.uid === parentUid) : undefined;
+        const siblingTasks = tasks
+            .filter((task) => (parentMap.get(task.uid) || null) === parentUid && task.uid !== targetTask.uid)
+            .map((task) => {
+            var _a;
+            return ({
+                uid: task.uid,
+                name: task.name,
+                position: (_a = positionMap.get(task.uid)) !== null && _a !== void 0 ? _a : 0,
+                is_summary: task.summary,
+                is_milestone: task.milestone
+            });
+        });
+        const phaseTasks = collectTopLevelPhases(model.tasks);
+        const phaseUidSet = new Set(phaseTasks.map((task) => task.uid));
+        const phaseUid = resolvePhaseUidForTask(targetTask.uid, parentMap, phaseUidSet);
+        const phaseTask = phaseUid ? tasks.find((task) => task.uid === phaseUid) : undefined;
+        const taskByUid = new Map(tasks.map((task) => [task.uid, task]));
+        const predecessors = targetTask.predecessors.map((item) => {
+            var _a, _b;
+            return ({
+                task_uid: item.predecessorUid,
+                name: ((_a = taskByUid.get(item.predecessorUid)) === null || _a === void 0 ? void 0 : _a.name) || item.predecessorUid,
+                type: formatDependencyType(item.type),
+                lag: item.linkLag || "PT0H0M0S",
+                lag_hours: (_b = parseDurationHours(item.linkLag || "PT0H0M0S")) !== null && _b !== void 0 ? _b : 0
+            });
+        });
+        const successors = tasks.flatMap((task) => task.predecessors
+            .filter((item) => item.predecessorUid === targetTask.uid)
+            .map((item) => {
+            var _a;
+            return ({
+                task_uid: task.uid,
+                name: task.name,
+                type: formatDependencyType(item.type),
+                lag: item.linkLag || "PT0H0M0S",
+                lag_hours: (_a = parseDurationHours(item.linkLag || "PT0H0M0S")) !== null && _a !== void 0 ? _a : 0
+            });
+        }));
+        const assignments = model.assignments
+            .filter((assignment) => assignment.taskUid === targetTask.uid)
+            .map((assignment) => {
+            const resource = model.resources.find((item) => item.uid === assignment.resourceUid);
+            return {
+                uid: assignment.uid,
+                resource_uid: assignment.resourceUid,
+                resource_name: (resource === null || resource === void 0 ? void 0 : resource.name) || assignment.resourceUid,
+                start: assignment.start,
+                finish: assignment.finish,
+                units: assignment.units,
+                work: assignment.work,
+                percent_work_complete: assignment.percentWorkComplete
+            };
+        });
+        return {
+            view_type: "task_edit_view",
+            project: {
+                name: model.project.name,
+                planned_start: model.project.startDate,
+                planned_finish: model.project.finishDate
+            },
+            phase: phaseTask
+                ? {
+                    uid: phaseTask.uid,
+                    name: phaseTask.name
+                }
+                : null,
+            target_task: {
+                uid: targetTask.uid,
+                name: targetTask.name,
+                parent_uid: parentUid,
+                position: (_a = positionMap.get(targetTask.uid)) !== null && _a !== void 0 ? _a : 0,
+                is_summary: targetTask.summary,
+                is_milestone: targetTask.milestone,
+                planned_duration: targetTask.duration,
+                planned_duration_hours: parseDurationHours(targetTask.duration),
+                planned_start: targetTask.start,
+                planned_finish: targetTask.finish,
+                percent_complete: targetTask.percentComplete,
+                notes: targetTask.notes,
+                calendar_uid: targetTask.calendarUID || null,
+                critical: targetTask.critical
+            },
+            parent_task: parentTask
+                ? {
+                    uid: parentTask.uid,
+                    name: parentTask.name
+                }
+                : null,
+            sibling_tasks: siblingTasks,
+            predecessors,
+            successors,
+            assignments,
+            rules: buildDefaultRules("task_edit_view")
         };
     }
     function buildTaskSectionMap(tasks, projectName) {
@@ -3669,6 +3811,7 @@
         buildProjectDraftRequest,
         importProjectDraftView,
         exportProjectOverviewView,
+        exportTaskEditView,
         exportPhaseDetailView,
         exportCsvParentId,
         normalizeProjectModel,

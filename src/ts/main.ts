@@ -21,6 +21,7 @@
       }) => unknown;
       importProjectDraftView: (draft: unknown) => ProjectModel;
       exportProjectOverviewView: (model: ProjectModel) => unknown;
+      exportTaskEditView: (model: ProjectModel, taskUid?: string) => unknown;
       exportPhaseDetailView: (
         model: ProjectModel,
         phaseUid?: string,
@@ -68,7 +69,7 @@
   const mikuprojectMainRender = (globalThis as typeof globalThis & {
     __mikuprojectMainRender?: {
       renderValidationIssues: (doc: Document, issues: ValidationIssue[]) => void;
-      renderImportWarnings: (doc: Document, warnings: Array<{ message: string }>) => void;
+      renderImportWarnings: (doc: Document, warnings: Array<{ message: string; scope?: "project" | "tasks" | "resources" | "assignments" | "calendars"; uid?: string; label?: string }>, options?: { sourceLabel?: string }) => void;
       renderXlsxImportSummary: (doc: Document, changes: Array<{
         scope: "project" | "tasks" | "resources" | "assignments" | "calendars";
         uid: string;
@@ -76,7 +77,10 @@
         field: string;
         before: string | number | boolean | undefined;
         after: string | number | boolean;
-      }>) => void;
+      }>, options?: {
+        sourceLabel?: string;
+        warnings?: Array<{ message: string; scope?: "project" | "tasks" | "resources" | "assignments" | "calendars"; uid?: string; label?: string }>;
+      }) => void;
       updateSummary: (doc: Document, model: ProjectModel | null, updateSvgButton: () => void) => void;
     };
   }).__mikuprojectMainRender;
@@ -586,10 +590,14 @@
       .map((phase) => phase?.uid)
       .filter((uid): uid is string => Boolean(uid))
       .map((phaseUid) => mikuprojectXml.exportPhaseDetailView(model, phaseUid, { mode: "full" }));
+    const taskEditViewsFull = model.tasks
+      .filter((task) => !(task.uid === "0" || task.summary))
+      .map((task) => mikuprojectXml.exportTaskEditView(model, task.uid));
     const aiBundle = {
       view_type: "ai_projection_bundle",
       project_overview_view: projectOverview,
-      phase_detail_views_full: phaseDetailViewsFull
+      phase_detail_views_full: phaseDetailViewsFull,
+      task_edit_views_full: taskEditViewsFull
     };
     const phaseDetailFull = mikuprojectXml.exportPhaseDetailView(model, undefined, { mode: "full" });
     const allReadmeText = [
@@ -699,8 +707,11 @@
     mikuprojectMainRender.renderValidationIssues(document, issues);
   }
 
-  function renderImportWarnings(warnings: Array<{ message: string }>): void {
-    mikuprojectMainRender.renderImportWarnings(document, warnings);
+  function renderImportWarnings(
+    warnings: Array<{ message: string; scope?: "project" | "tasks" | "resources" | "assignments" | "calendars"; uid?: string; label?: string }>,
+    options: { sourceLabel?: string } = {}
+  ): void {
+    mikuprojectMainRender.renderImportWarnings(document, warnings, options);
   }
 
   function renderXlsxImportSummary(changes: Array<{
@@ -710,8 +721,11 @@
     field: string;
     before: string | number | boolean | undefined;
     after: string | number | boolean;
-  }>): void {
-    mikuprojectMainRender.renderXlsxImportSummary(document, changes);
+  }>, options: {
+    sourceLabel?: string;
+    warnings?: Array<{ message: string; scope?: "project" | "tasks" | "resources" | "assignments" | "calendars"; uid?: string; label?: string }>;
+  } = {}): void {
+    mikuprojectMainRender.renderXlsxImportSummary(document, changes, options);
   }
 
   function updateSummary(model: ProjectModel | null): void {
@@ -836,6 +850,28 @@
     setActiveTab("output");
   }
 
+  function exportCurrentTaskEditView(): void {
+    const model = ensureCurrentModel();
+    syncXmlTextFromModel(model);
+    const requestedTaskUid = getInput("taskEditUidInput").value.trim() || undefined;
+    const view = mikuprojectXml.exportTaskEditView(model, requestedTaskUid) as {
+      target_task?: { uid?: string };
+    };
+    if (view.target_task?.uid) {
+      getInput("taskEditUidInput").value = view.target_task.uid;
+    }
+    const viewText = JSON.stringify(view, null, 2);
+    getTextArea("taskEditOutput").value = viewText;
+    const taskSuffix = view.target_task?.uid ? `-${view.target_task.uid}` : "";
+    downloadBlob(
+      new Blob([`${viewText}\n`], { type: "application/json;charset=utf-8" }),
+      `mikuproject-task-edit-view${taskSuffix}.editjson`
+    );
+    setStatus("task_edit_view を生成して保存しました");
+    showToast("task_edit_view を保存しました");
+    setActiveTab("output");
+  }
+
   function exportCurrentAiProjectionBundle(): void {
     const model = ensureCurrentModel();
     syncXmlTextFromModel(model);
@@ -846,10 +882,14 @@
       .map((phase) => phase?.uid)
       .filter((uid): uid is string => Boolean(uid))
       .map((phaseUid) => mikuprojectXml.exportPhaseDetailView(model, phaseUid, { mode: "full" }));
+    const taskEditViewsFull = model.tasks
+      .filter((task) => !(task.uid === "0" || task.summary))
+      .map((task) => mikuprojectXml.exportTaskEditView(model, task.uid));
     const bundle = {
       view_type: "ai_projection_bundle",
       project_overview_view: projectOverview,
-      phase_detail_views_full: phaseDetailViewsFull
+      phase_detail_views_full: phaseDetailViewsFull,
+      task_edit_views_full: taskEditViewsFull
     };
     const bundleText = JSON.stringify(bundle, null, 2);
     getTextArea("aiBundleOutput").value = bundleText;
@@ -857,7 +897,7 @@
       new Blob([`${bundleText}\n`], { type: "application/json;charset=utf-8" }),
       "mikuproject-full-bundle.editjson"
     );
-    setStatus(`AI 連携用まとめ JSON を生成して保存しました (phase_detail_view full ${phaseDetailViewsFull.length} 件)`);
+    setStatus(`AI 連携用まとめ JSON を生成して保存しました (phase_detail_view full ${phaseDetailViewsFull.length} 件 / task_edit_view ${taskEditViewsFull.length} 件)`);
     showToast("AI 連携用まとめ JSON を保存しました");
     setActiveTab("output");
   }
@@ -894,8 +934,8 @@
     const issues = mikuprojectXml.validateProjectModel(currentModel);
     updateSummary(currentModel);
     renderValidationIssues(issues);
-    renderImportWarnings(result.warnings);
-    renderXlsxImportSummary(result.changes);
+    renderImportWarnings(result.warnings, { sourceLabel: "Patch JSON" });
+    renderXlsxImportSummary(result.changes, { sourceLabel: "Patch JSON", warnings: result.warnings });
     if (result.changes.length > 0) {
       getTextArea("xmlInput").value = mikuprojectXml.exportMsProjectXml(currentModel);
       markXmlDirty();
@@ -958,8 +998,8 @@
     const issues = mikuprojectXml.validateProjectModel(currentModel);
     updateSummary(currentModel);
     renderValidationIssues(issues);
-    renderImportWarnings(result.warnings);
-    renderXlsxImportSummary(result.changes);
+    renderImportWarnings(result.warnings, { sourceLabel: "JSON Import" });
+    renderXlsxImportSummary(result.changes, { sourceLabel: "JSON Import", warnings: result.warnings });
     if (result.changes.length > 0) {
       getTextArea("xmlInput").value = mikuprojectXml.exportMsProjectXml(currentModel);
       markXmlDirty();
@@ -1156,7 +1196,7 @@
     updateSummary(currentModel);
     renderValidationIssues(issues);
     renderImportWarnings([]);
-    renderXlsxImportSummary(result.changes);
+    renderXlsxImportSummary(result.changes, { sourceLabel: "XLSX Import" });
     if (result.changes.length > 0) {
       getTextArea("xmlInput").value = mikuprojectXml.exportMsProjectXml(currentModel);
       markXmlDirty();
@@ -1435,6 +1475,13 @@
         setStatus(error instanceof Error ? error.message : "project_overview_view 生成に失敗しました");
       }
     });
+    getElement<HTMLButtonElement>("exportTaskEditBtn").addEventListener("click", () => {
+      try {
+        exportCurrentTaskEditView();
+      } catch (error) {
+        setStatus(error instanceof Error ? error.message : "task_edit_view 生成に失敗しました");
+      }
+    });
     getElement<HTMLButtonElement>("exportAiBundleBtn").addEventListener("click", () => {
       try {
         exportCurrentAiProjectionBundle();
@@ -1560,7 +1607,10 @@
         field: string;
         before: string | number | boolean | undefined;
         after: string | number | boolean;
-      }>) => void;
+      }>, options?: {
+        sourceLabel?: string;
+        warnings?: Array<{ message: string; scope?: "project" | "tasks" | "resources" | "assignments" | "calendars"; uid?: string; label?: string }>;
+      }) => void;
     };
   }).__mikuprojectMainTestHooks = {
     parseCurrentXml,

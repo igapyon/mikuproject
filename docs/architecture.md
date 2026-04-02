@@ -90,13 +90,12 @@
 
 `mikuproject` は、生成AIとの直接連携に `MS Project XML` ではなく `JSON` を使う。
 
-- 既存 project 向けには `project_overview_view` と `phase_detail_view` を出力する
-- 既存 project 向けには `full bundle` も出力できる
+- 既存 project 向けには `project_overview_view` と `phase_detail_view` と `task_edit_view` を出力する
+- 既存 project 向けには `full bundle` も出力でき、少なくとも `project_overview_view` / `phase_detail_views_full` / `task_edit_views_full` を含む
 - 新規生成向けには、生成AIが返した `project_draft_view` を取り込める
-- 既存 project 向けには、Patch JSON の `update_task` first cut を取り込める
+- 既存 project 向けには、Patch JSON の `add_task` / `add_resource` / `add_assignment` / `add_calendar` / `update_project` / `update_task` / `update_resource` / `update_assignment` / `update_calendar` / `move_task` / `delete_task` / `delete_resource` / `delete_assignment` / `delete_calendar` / `link_tasks` / `unlink_tasks` first cut を取り込める
 - `mikuproject_workbook_json` は `.json`、生成AI 向け編集用 JSON は `.editjson` を推奨拡張子とする
-- 現時点で UI から実装済みなのは `project_overview_view` / `phase_detail_view` / `full bundle` の出力、`project_draft_view` の取込、Patch JSON の `update_task` first cut の取込である
-- `task_edit_view` と、Patch JSON の `move_task` / `link_tasks` / `unlink_tasks` / `add_task` / `delete_task` は設計メモ段階で、まだ実装していない
+- 現時点で UI から実装済みなのは `project_overview_view` / `phase_detail_view` / `task_edit_view` / `full bundle` の出力、`project_draft_view` の取込、Patch JSON の `add_task` / `add_resource` / `add_assignment` / `add_calendar` / `update_project` / `update_task` / `update_resource` / `update_assignment` / `update_calendar` / `move_task` / `delete_task` / `delete_resource` / `delete_assignment` / `delete_calendar` / `link_tasks` / `unlink_tasks` first cut の取込である
 
 詳細な考え方は `docs/mikuproject-ai-json-spec.md` と `docs/msprojectxml-ai-integration.md` に置く。
 

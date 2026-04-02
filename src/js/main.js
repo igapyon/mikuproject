@@ -676,25 +676,22 @@
             throw new Error("workbook JSON を入力してください");
         }
         const documentLike = JSON.parse(mikuprojectAiJsonUtil.extractLastJsonBlock(trimmedSourceText));
-        const baseModel = ensureCurrentModel();
-        const result = mikuprojectProjectWorkbookJson.importProjectWorkbookJson(documentLike, baseModel);
-        currentModel = result.model;
+        const previousModel = currentModel;
+        const replaceResult = mikuprojectProjectWorkbookJson.importProjectWorkbookJsonAsProjectModel(documentLike);
+        currentModel = replaceResult.model;
+        const diffResult = previousModel
+            ? mikuprojectProjectWorkbookJson.importProjectWorkbookJson(documentLike, previousModel)
+            : { changes: [], warnings: replaceResult.warnings };
         const issues = mikuprojectXml.validateProjectModel(currentModel);
+        syncXmlTextFromModel(currentModel);
         updateSummary(currentModel);
         renderValidationIssues(issues);
-        renderImportWarnings(result.warnings, { sourceLabel: "JSON Import" });
-        renderXlsxImportSummary(result.changes, { sourceLabel: "JSON Import", warnings: result.warnings });
-        if (result.changes.length > 0) {
-            getTextArea("xmlInput").value = mikuprojectXml.exportMsProjectXml(currentModel);
-            markXmlDirty();
-        }
-        isXmlSourceDirty = false;
-        const summaryText = result.changes.length > 0
-            ? `JSON を読み込んで ${result.changes.length} 件の変更を反映しました。XML は再生成済みで、必要なら XML Export で保存できます`
-            : "JSON に反映対象の変更はありませんでした。XML は未変更です";
-        const warningText = result.warnings.length > 0 ? `。JSON 取込で ${result.warnings.length} 件の warning を無視しました` : "";
+        renderImportWarnings(replaceResult.warnings, { sourceLabel: "JSON Replace" });
+        renderXlsxImportSummary(diffResult.changes, { sourceLabel: "JSON Replace", warnings: replaceResult.warnings });
+        const summaryText = "JSON を読み込んで project 全体を置き換えました。XML は再生成済みで、必要なら XML Export で保存できます";
+        const warningText = replaceResult.warnings.length > 0 ? `。JSON 取込で ${replaceResult.warnings.length} 件の warning を無視しました` : "";
         setStatus(issues.length > 0 ? `${summaryText}${warningText}。検証で ${issues.length} 件の問題があります` : `${summaryText}${warningText}`);
-        showToast("JSON を反映しました");
+        showToast("JSON を読み込みました");
         setActiveTab("transform", { skipTransformRefresh: true });
         await exportCurrentMermaid({ silent: true });
     }
@@ -847,29 +844,25 @@
         if (!file) {
             return;
         }
-        const baseModel = ensureCurrentModel();
+        const previousModel = currentModel;
         const bytes = new Uint8Array(await file.arrayBuffer());
         const codec = new mikuprojectExcelIo.XlsxWorkbookCodec();
         const workbook = typeof codec.importWorkbookAsync === "function"
             ? await codec.importWorkbookAsync(bytes)
             : codec.importWorkbook(bytes);
-        const result = mikuprojectProjectXlsx.importProjectWorkbookDetailed(workbook, baseModel);
-        currentModel = result.model;
+        currentModel = mikuprojectProjectXlsx.importProjectWorkbookAsProjectModel(workbook);
+        const diffResult = previousModel
+            ? mikuprojectProjectXlsx.importProjectWorkbookDetailed(workbook, previousModel)
+            : { changes: [] };
         const issues = mikuprojectXml.validateProjectModel(currentModel);
+        syncXmlTextFromModel(currentModel);
         updateSummary(currentModel);
         renderValidationIssues(issues);
         renderImportWarnings([]);
-        renderXlsxImportSummary(result.changes, { sourceLabel: "XLSX Import" });
-        if (result.changes.length > 0) {
-            getTextArea("xmlInput").value = mikuprojectXml.exportMsProjectXml(currentModel);
-            markXmlDirty();
-        }
-        const summaryText = result.changes.length > 0
-            ? `XLSX を読み込んで ${result.changes.length} 件の変更を反映しました。XML は再生成済みで、必要なら XML Export で保存できます`
-            : "XLSX に反映対象の変更はありませんでした。XML は未変更です";
-        isXmlSourceDirty = false;
+        renderXlsxImportSummary(diffResult.changes, { sourceLabel: "XLSX Replace" });
+        const summaryText = "XLSX を読み込んで project 全体を置き換えました。XML は再生成済みで、必要なら XML Export で保存できます";
         setStatus(issues.length > 0 ? `${summaryText}。検証で ${issues.length} 件の問題があります` : summaryText);
-        showToast("XLSX を反映しました");
+        showToast("XLSX を読み込みました");
         setActiveTab("transform", { skipTransformRefresh: true });
         await exportCurrentMermaid({ silent: true });
     }

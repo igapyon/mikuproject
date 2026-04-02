@@ -195,8 +195,14 @@
     if (sourceLabel === "Patch JSON") {
       return "Patch JSON の部分適用結果です。反映後の XML は更新済みで、必要なら XML Export で保存できます。";
     }
+    if (sourceLabel === "JSON Replace") {
+      return "workbook JSON による全置換結果です。差分表示は取込前の project との差を示します。";
+    }
     if (sourceLabel === "JSON Import") {
       return "workbook JSON の取込結果です。反映後の XML は更新済みで、必要なら XML Export で保存できます。";
+    }
+    if (sourceLabel === "XLSX Replace") {
+      return "XLSX による全置換結果です。差分表示は取込前の project との差を示します。";
     }
     if (sourceLabel === "XLSX Import") {
       return "Excel 編集結果の取込内容です。反映後の XML は更新済みで、必要なら XML Export で保存できます。";

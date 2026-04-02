@@ -219,12 +219,13 @@
     <section aria-label="What is this">
       <h2>What is this?</h2>
       <p class="lead">
-        <code>mikuproject</code> は、<code>MS Project XML</code> を基軸に、変換・可視化・限定編集を行う single-file web app です。
+        <code>mikuproject</code> は、<code>MS Project XML</code> を意味の基軸に、生成AIとの往復を支えるために設計されたローカル HTML ツールです。WBS の草案作成から再編集・再取込、人向けの可視化・帳票化までを、ひとつの流れとして扱えます。
       </p>
       <ul>
-        <li><code>MS Project XML</code> を基軸にした変換・可視化・限定編集を重視しています。</li>
-        <li>生成AI 連携を意識した projection の出力と草案の再取込を持ちます。</li>
-        <li>人が読むための <code>WBS Excel ブック (.xlsx)</code> 帳票出力を持ちます。</li>
+        <li>WBS の草案作成から再編集・再取込、人向けの可視化・帳票化までを、ひとつの流れとして扱えます。</li>
+        <li><code>MS Project XML</code> を意味の基軸として保ちます。</li>
+        <li>生成AIと人の往復に適した表現変換 / 再取込 / 介在を支えます。</li>
+        <li>人が読むための可視化と、WBS 帳票・SVG を含む成果物出力を提供します。</li>
         <li>Web ブラウザさえあればインストール不要・ネットワーク不要で利用できます。</li>
       </ul>
     </section>
@@ -236,18 +237,18 @@
       <div class="panel-grid">
         <div class="panel">
           <ul>
-            <li><code>MS Project XML</code> を読み込み、内部モデルへ変換します。</li>
-            <li>内部モデルを JSON とサマリとして確認できます。</li>
+            <li>生成AIに渡すためのプロジェクト概要・工程詳細・一式データを出力できます。</li>
+            <li>生成AIが返した WBS 素案や Patch JSON を取り込んで反映できます。</li>
+            <li><code>MS Project XML</code> を読み込み、内部モデルへ変換して確認できます。</li>
             <li><code>MS Project XML</code> を再生成できます。</li>
-            <li>Mermaid gantt テキストと、native SVG の preview / SVG を出力できます。</li>
           </ul>
         </div>
         <div class="panel">
           <ul>
-            <li><code>Project / Tasks / Resources / Assignments / Calendars</code> workbook を <code>XLSX Export / Import</code> できます。</li>
-            <li>人が読むための <code>WBS Excel ブック (.xlsx)</code> を出力できます。</li>
-            <li><code>CSV + ParentID</code> の生成と解析を行えます。</li>
-            <li>生成AI向け JSON projection の出力と草案 JSON の取込ができます。</li>
+            <li>日次・週次のガント表現や月次カレンダーの <code>SVG</code> を出力できます。</li>
+            <li><code>Project / Tasks / Resources / Assignments / Calendars</code> workbook を、構造を保ったまま <code>XLSX / JSON</code> で入出力できます。</li>
+            <li>人が読むための <code>WBS Excel ブック (.xlsx)</code> と <code>WBS Markdown</code> を出力できます。</li>
+            <li><code>CSV + ParentID</code>、Mermaid、<code>ALL</code> ZIP を出力できます。</li>
           </ul>
         </div>
       </div>
@@ -258,9 +259,9 @@
     <section aria-label="Use cases">
       <h2>Use Cases</h2>
       <ul>
-        <li>管理用の Excel ブックに必要な情報を入力し、<code>WBS Excel ブック (.xlsx)</code> 形式へ変換したい。</li>
-        <li>生成AI に専用プロンプトを与えて WBS 草案を作成し、その結果を取り込んで <code>WBS Excel ブック (.xlsx)</code> にしたい。</li>
-        <li><code>MS Project</code> のデータを <code>MS Project XML</code> 形式でエクスポートし、それを <code>WBS Excel ブック (.xlsx)</code> 形式へ変換したい。</li>
+        <li>生成AIとの対話で WBS 草案を作成し、<code>mikuproject</code> に取り込んで、人と生成AIが確認・修正しながら、帳票や可視化成果物として仕上げたい。</li>
+        <li>既存の <code>MS Project XML</code> を <code>mikuproject</code> に取り込み、内容を確認しながら、<code>WBS Excel ブック (.xlsx)</code> や日次・週次のガント表現や月次カレンダーの <code>SVG</code>、<code>Markdown</code> などの人向け成果物へ展開したい。</li>
+        <li><code>mikuproject</code> で扱う WBS やプロジェクト情報を生成AI向けに表現変換し、生成AIが返した結果を再び取り込みながら、人と生成AIがレビュー・調整・再利用しやすい形へ整えたい。</li>
       </ul>
     </section>
 
@@ -270,9 +271,9 @@
       <h2>How to use</h2>
       <ol>
         <li>Web ブラウザで <code>mikuproject.html</code> を開きます。</li>
-        <li><code>Load from file</code> から project ファイルを読み込むか、サンプルを使います。</li>
-        <li>内部モデル、validation、native SVG preview を確認します。</li>
-        <li>必要に応じて <code>MS Project XML</code>、<code>XLSX</code>、<code>WBS Excel ブック (.xlsx)</code>、Mermaid、CSV を保存します。</li>
+        <li><code>Load from file</code>、<code>サンプル</code>、<code>生成AI連携</code> から <code>MS Project XML / XLSX / workbook JSON / .editjson / CSV + ParentID</code> を入力します。</li>
+        <li>内部モデル、validation、<code>Daily / Weekly / Monthly Calendar</code> preview を確認します。</li>
+        <li>必要に応じて <code>MS Project XML / XLSX / WBS XLSX / WBS Markdown / workbook JSON / CSV + ParentID / Daily SVG / Weekly SVG / Monthly Calendar SVG / Mermaid / .editjson / ALL ZIP</code> を保存します。</li>
       </ol>
       <div class="link-row">
         <a class="link-btn" href="./mikuproject.html">Open mikuproject</a>
@@ -316,7 +317,7 @@
             <img src="./docs/screenshots/screen03.png" alt="mikuproject Output screen" />
           </div>
           <figcaption>
-            Output 画面。<code>MS Project XML</code>、<code>XLSX</code>、<code>JSON</code>、<code>CSV</code>、<code>WBS XLSX</code>、Mermaid、SVG を保存できます。
+            Output 画面。<code>MS Project XML</code>、<code>XLSX</code>、<code>JSON</code>、<code>CSV</code>、<code>WBS XLSX</code>、<code>WBS Markdown</code>、Mermaid、<code>SVG</code>、<code>.editjson</code>、<code>ALL</code> ZIP を保存できます。
           </figcaption>
         </figure>
         <figure class="shot-card">

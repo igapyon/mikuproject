@@ -29,6 +29,10 @@ const msProjectXmlCode = readFileSync(
   path.resolve(__dirname, "../src/js/msproject-xml.js"),
   "utf8"
 );
+const projectPatchJsonCode = readFileSync(
+  path.resolve(__dirname, "../src/js/project-patch-json.js"),
+  "utf8"
+);
 const mainRenderCode = readFileSync(
   path.resolve(__dirname, "../src/js/main-render.js"),
   "utf8"
@@ -39,6 +43,10 @@ const mainCode = readFileSync(
 );
 const dependencyXml = readFileSync(
   path.resolve(__dirname, "../testdata/dependency.xml"),
+  "utf8"
+);
+const hierarchyXml = readFileSync(
+  path.resolve(__dirname, "../testdata/hierarchy.xml"),
   "utf8"
 );
 
@@ -97,6 +105,10 @@ globalThis.__mikuprojectNativeSvg = {
   })
 };
 `;
+
+const bootPageCode = `${typesCode}\n${markdownEscapeCode}\n${aiJsonUtilCode}\n${mainUtilCode}\n${excelIoStubCode}\n${msProjectXmlCode}\n${projectXlsxStubCode}\n${projectWorkbookJsonStubCode}\n${projectPatchJsonStubCode}\n${wbsXlsxStubCode}\n${wbsMarkdownStubCode}\n${nativeSvgStubCode}\n${mainRenderCode}\n${mainCode}`;
+const bootPageRunner = new Function(bootPageCode);
+const bootPatchModuleRunner = new Function(`${typesCode}\n${msProjectXmlCode}\n${projectPatchJsonCode}`);
 
 function mountDom() {
   document.body.innerHTML = `
@@ -185,7 +197,7 @@ function mountDom() {
 
 function bootPage() {
   mountDom();
-  new Function(`${typesCode}\n${markdownEscapeCode}\n${aiJsonUtilCode}\n${mainUtilCode}\n${excelIoStubCode}\n${msProjectXmlCode}\n${projectXlsxStubCode}\n${projectWorkbookJsonStubCode}\n${projectPatchJsonStubCode}\n${wbsXlsxStubCode}\n${wbsMarkdownStubCode}\n${nativeSvgStubCode}\n${mainRenderCode}\n${mainCode}`)();
+  bootPageRunner();
   document.dispatchEvent(new Event("DOMContentLoaded"));
 }
 
@@ -195,6 +207,18 @@ function getMainHooks() {
 
 function parseXmlViaHook() {
   getMainHooks().parseCurrentXml();
+}
+
+function applyPatchWithoutMain(xmlText, documentLike) {
+  bootPatchModuleRunner();
+  const xml = globalThis.__mikuprojectXml;
+  const patch = globalThis.__mikuprojectProjectPatchJson;
+  const model = xml.importMsProjectXml(xmlText);
+  const result = patch.importProjectPatchJson(documentLike, model);
+  return {
+    ...result,
+    xml: xml.exportMsProjectXml(result.model)
+  };
 }
 
 describe("mikuproject main validation", () => {
@@ -341,5 +365,94 @@ describe("mikuproject main validation", () => {
     expect(document.getElementById("validationIssues").textContent).toContain("UID=2");
     expect(document.getElementById("validationIssues").textContent).toContain("Execute");
     expect(document.getElementById("validationIssues").textContent).toContain("TaskUID=99");
+  });
+
+  it("rejects invalid patch json operations without main UI", () => {
+    const projectResult = applyPatchWithoutMain(dependencyXml, {
+      operations: [{
+        op: "update_project",
+        fields: {
+          name: "",
+          start_date: "2026-03-20",
+          finish_date: "2026-03-19",
+          current_date: "bad-date",
+          calendar_uid: "999",
+          minutes_per_day: 0,
+          schedule_from_start: "yes"
+        }
+      }]
+    });
+    const assignmentResult = applyPatchWithoutMain(dependencyXml, {
+      operations: [
+        { op: "update_assignment", uid: "1", fields: { start: "2026-03-20", finish: "2026-03-19", units: -1, work: "", percent_work_complete: 120 } },
+        { op: "add_assignment", uid: "3", task_uid: "999", resource_uid: "1", units: -1 }
+      ]
+    });
+
+    const projectWarnings = projectResult.warnings.map((warning) => warning.message).join("\n");
+    const assignmentWarnings = assignmentResult.warnings.map((warning) => warning.message).join("\n");
+
+    expect(projectResult.changes).toHaveLength(0);
+    expect(projectWarnings).toContain("update_project.name は空でない文字列が必要です");
+    expect(projectWarnings).toContain("update_project.start_date が finish_date より後です");
+    expect(projectWarnings).toContain("update_project.current_date の日付形式が解釈できません");
+    expect(projectWarnings).toContain("update_project.calendar_uid が既存 calendar を指していません");
+    expect(projectWarnings).toContain("update_project.minutes_per_day は 0 より大きい数値が必要です");
+    expect(projectWarnings).toContain("update_project.schedule_from_start は boolean が必要です");
+    expect(projectResult.xml).toContain("<Name>Dependency Project</Name>");
+
+    expect(assignmentResult.changes).toHaveLength(0);
+    expect(assignmentWarnings).toContain("update_assignment.start が finish より後です");
+    expect(assignmentWarnings).toContain("update_assignment.units は 0 以上の数値が必要です");
+    expect(assignmentWarnings).toContain("update_assignment.work は空でない文字列が必要です");
+    expect(assignmentWarnings).toContain("update_assignment.percent_work_complete は 0 以上 100 以下の数値が必要です");
+    expect(assignmentWarnings).toContain("add_assignment.task_uid が既存 task を指していません");
+  });
+
+  it("reports patch json warning details without main UI", () => {
+    const linked = applyPatchWithoutMain(hierarchyXml, {
+      operations: [{ op: "link_tasks", from_uid: "2", to_uid: "3", type: "SS", lag_hours: 4 }]
+    });
+    const duplicate = applyPatchWithoutMain(linked.xml, {
+      operations: [{ op: "link_tasks", from_uid: "2", to_uid: "3", type: "SS", lag_hours: 4 }]
+    });
+    const missingLag = applyPatchWithoutMain(linked.xml, {
+      operations: [{ op: "unlink_tasks", from_uid: "2", to_uid: "3", type: "SS", lag_hours: 8 }]
+    });
+    const modelResult = applyPatchWithoutMain(dependencyXml, {
+      operations: [
+        {
+          op: "update_resource",
+          uid: "1",
+          fields: { name: "", calendar_uid: "999", max_units: -1, cost_per_use: -1, percent_work_complete: 120 }
+        },
+        { op: "update_calendar", uid: "1", fields: { name: "", is_base_calendar: "yes", base_calendar_uid: "1" } },
+        { op: "add_calendar", uid: "2", name: "", is_base_calendar: "yes", base_calendar_uid: "999" },
+        { op: "add_resource", uid: "2", name: "", calendar_uid: "999", max_units: -1, cost_per_use: -1, percent_work_complete: 120 },
+        { op: "delete_calendar", uid: "1" },
+        { op: "delete_resource", uid: "1" }
+      ]
+    });
+
+    expect(duplicate.warnings.map((warning) => warning.message).join("\n")).toContain(
+      "link_tasks の依存関係は既に存在します: 2 -> 3 (SS, lag=PT4H0M0S)"
+    );
+    expect(missingLag.warnings.map((warning) => warning.message).join("\n")).toContain(
+      "unlink_tasks の対象依存関係が見つかりません: 2 -> 3 (SS, lag=PT8H0M0S)"
+    );
+
+    const modelWarnings = modelResult.warnings.map((warning) => warning.message).join("\n");
+    expect(modelWarnings).toContain("update_resource.name は空でない文字列が必要です");
+    expect(modelWarnings).toContain("update_resource.calendar_uid が既存 calendar を指していません");
+    expect(modelWarnings).toContain("update_resource.max_units は 0 以上の数値が必要です");
+    expect(modelWarnings).toContain("update_resource.cost_per_use は 0 以上の数値が必要です");
+    expect(modelWarnings).toContain("update_resource.percent_work_complete は 0 以上 100 以下の数値が必要です");
+    expect(modelWarnings).toContain("update_calendar.name は空でない文字列が必要です");
+    expect(modelWarnings).toContain("update_calendar.is_base_calendar は boolean が必要です");
+    expect(modelWarnings).toContain("update_calendar.base_calendar_uid は自身を指せません");
+    expect(modelWarnings).toContain("add_calendar.name は空でない文字列が必要です");
+    expect(modelWarnings).toContain("add_resource.name は空でない文字列が必要です");
+    expect(modelWarnings).toContain("delete_calendar first cut では参照が残っている calendar は削除できません");
+    expect(modelWarnings).toContain("delete_resource first cut では assignment がある resource は削除できません");
   });
 });

@@ -69,6 +69,8 @@ const mainCode = readFileSync(
   path.resolve(__dirname, "../src/js/main.js"),
   "utf8"
 );
+const bootPageCode = `${typesCode}\n${markdownEscapeCode}\n${aiJsonUtilCode}\n${mainUtilCode}\n${excelIoCode}\n${msProjectXmlCode}\n${projectWorkbookSchemaCode}\n${projectXlsxCode}\n${projectWorkbookJsonCode}\n${projectPatchJsonCode}\n${wbsXlsxCode}\n${wbsMarkdownCode}\n${nativeSvgCode}\n${mainRenderCode}\n${mainCode}`;
+const bootPageRunner = new Function(bootPageCode);
 function mountFullDom() {
   document.body.innerHTML = `
     <button id="importFileBtn" type="button">Load from file</button>
@@ -330,7 +332,7 @@ function mountMinimalDom() {
 
 function bootPage(mount = mountFullDom) {
   mount();
-  new Function(`${typesCode}\n${markdownEscapeCode}\n${aiJsonUtilCode}\n${mainUtilCode}\n${excelIoCode}\n${msProjectXmlCode}\n${projectWorkbookSchemaCode}\n${projectXlsxCode}\n${projectWorkbookJsonCode}\n${projectPatchJsonCode}\n${wbsXlsxCode}\n${wbsMarkdownCode}\n${nativeSvgCode}\n${mainRenderCode}\n${mainCode}`)();
+  bootPageRunner();
   document.dispatchEvent(new Event("DOMContentLoaded"));
 }
 

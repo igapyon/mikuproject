@@ -1,104 +1,69 @@
-// @vitest-environment jsdom
-
 import { readFileSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { vi } from "vitest";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 const typesCode = readFileSync(
-  path.resolve(__dirname, "../src/js/types.js"),
+  path.resolve(__dirname, "../../src/js/types.js"),
   "utf8"
 );
 const markdownEscapeCode = readFileSync(
-  path.resolve(__dirname, "../src/js/markdown-escape.js"),
+  path.resolve(__dirname, "../../src/js/markdown-escape.js"),
   "utf8"
 );
 const aiJsonUtilCode = readFileSync(
-  path.resolve(__dirname, "../src/js/ai-json-util.js"),
+  path.resolve(__dirname, "../../src/js/ai-json-util.js"),
   "utf8"
 );
 const mainUtilCode = readFileSync(
-  path.resolve(__dirname, "../src/js/main-util.js"),
+  path.resolve(__dirname, "../../src/js/main-util.js"),
+  "utf8"
+);
+const excelIoCode = readFileSync(
+  path.resolve(__dirname, "../../src/js/excel-io.js"),
+  "utf8"
+);
+const msProjectXmlCode = readFileSync(
+  path.resolve(__dirname, "../../src/js/msproject-xml.js"),
+  "utf8"
+);
+const projectWorkbookSchemaCode = readFileSync(
+  path.resolve(__dirname, "../../src/js/project-workbook-schema.js"),
+  "utf8"
+);
+const projectXlsxCode = readFileSync(
+  path.resolve(__dirname, "../../src/js/project-xlsx.js"),
+  "utf8"
+);
+const projectWorkbookJsonCode = readFileSync(
+  path.resolve(__dirname, "../../src/js/project-workbook-json.js"),
   "utf8"
 );
 const mainRenderCode = readFileSync(
-  path.resolve(__dirname, "../src/js/main-render.js"),
+  path.resolve(__dirname, "../../src/js/main-render.js"),
   "utf8"
 );
 const mainCode = readFileSync(
-  path.resolve(__dirname, "../src/js/main.js"),
+  path.resolve(__dirname, "../../src/js/main.js"),
   "utf8"
 );
 
-const msProjectXmlStubCode = `
-globalThis.__mikuprojectXml = {
-  SAMPLE_XML: "<Project><Name>Stub</Name><StartDate>2026-03-16T09:00:00</StartDate><FinishDate>2026-03-16T18:00:00</FinishDate><ScheduleFromStart>1</ScheduleFromStart><Tasks /><Resources /><Assignments /></Project>",
-  SAMPLE_PROJECT_DRAFT_VIEW: {},
-  importMsProjectXml: () => ({
-    project: { name: "Stub", title: "Stub", startDate: "2026-03-16T09:00:00", finishDate: "2026-03-16T18:00:00", scheduleFromStart: true, outlineCodes: [], wbsMasks: [], extendedAttributes: [] },
-    tasks: [],
-    resources: [],
-    assignments: [],
-    calendars: []
-  }),
-  importCsvParentId: () => ({
-    project: { name: "Stub", title: "Stub", startDate: "2026-03-16T09:00:00", finishDate: "2026-03-16T18:00:00", scheduleFromStart: true, outlineCodes: [], wbsMasks: [], extendedAttributes: [] },
-    tasks: [],
-    resources: [],
-    assignments: [],
-    calendars: []
-  }),
-  exportMsProjectXml: () => "<Project />",
-  exportMermaidGantt: () => "gantt",
-  buildProjectDraftRequest: () => ({}),
-  importProjectDraftView: () => ({
-    project: { name: "Stub", title: "Stub", startDate: "2026-03-16T09:00:00", finishDate: "2026-03-16T18:00:00", scheduleFromStart: true, outlineCodes: [], wbsMasks: [], extendedAttributes: [] },
-    tasks: [],
-    resources: [],
-    assignments: [],
-    calendars: []
-  }),
-  exportProjectOverviewView: () => ({}),
-  exportPhaseDetailView: () => ({}),
-  exportCsvParentId: () => "ID,Name",
-  normalizeProjectModel: (model) => model,
-  validateProjectModel: () => []
-};
-`;
-
-const excelIoStubCode = `
-globalThis.__mikuprojectExcelIo = {
-  XlsxWorkbookCodec: function () {
-    this.exportWorkbook = () => new Uint8Array();
-    this.importWorkbook = () => ({ sheets: [] });
-  }
-};
-`;
-
-const projectXlsxStubCode = `
-globalThis.__mikuprojectProjectXlsx = {
-  exportProjectWorkbook: () => ({ sheets: [] }),
-  importProjectWorkbook: (_workbook, baseModel) => baseModel,
-  importProjectWorkbookDetailed: (_workbook, baseModel) => ({ model: baseModel, changes: [] })
-};
-`;
-
-const projectWorkbookJsonStubCode = `
-globalThis.__mikuprojectProjectWorkbookJson = {
-  exportProjectWorkbookJson: () => ({}),
-  importProjectWorkbookJson: (_documentLike, baseModel) => ({ model: baseModel, changes: [], warnings: [] }),
-  validateWorkbookJsonDocument: (documentLike) => ({ document: documentLike, warnings: [] })
-};
-`;
+export const dependencyXml = readFileSync(
+  path.resolve(__dirname, "../../testdata/dependency.xml"),
+  "utf8"
+);
+export const workbookImportSampleJson = readFileSync(
+  path.resolve(__dirname, "../../testdata/workbook-import-sample.json"),
+  "utf8"
+);
 
 const projectPatchJsonStubCode = `
 globalThis.__mikuprojectProjectPatchJson = {
-  importProjectPatchJson: (_documentLike, baseModel) => ({ model: baseModel, changes: [], warnings: [] }),
-  validatePatchDocument: (documentLike) => ({ document: documentLike, warnings: [] })
+  importProjectPatchJson: () => ({ model: null, changes: [], warnings: [] })
 };
 `;
 
@@ -117,13 +82,16 @@ globalThis.__mikuprojectWbsMarkdown = {
 
 const nativeSvgStubCode = `
 globalThis.__mikuprojectNativeSvg = {
-  exportNativeSvg: () => "<svg></svg>",
-  exportWeeklyNativeSvg: () => "<svg></svg>",
-  exportMonthlyWbsCalendarSvgArchive: () => ({ entries: [], zipBytes: new Uint8Array() })
+  exportNativeSvg: () => "<svg data-stub=\\"daily\\"></svg>",
+  exportWeeklyNativeSvg: () => "<svg data-stub=\\"weekly\\"></svg>",
+  exportMonthlyWbsCalendarSvgArchive: () => ({
+    entries: [{ fileName: "2026-03.svg", svg: "<svg data-stub=\\"monthly\\"></svg>" }],
+    zipBytes: new Uint8Array()
+  })
 };
 `;
 
-const bootPageCode = `${typesCode}\n${markdownEscapeCode}\n${aiJsonUtilCode}\n${mainUtilCode}\n${msProjectXmlStubCode}\n${excelIoStubCode}\n${projectXlsxStubCode}\n${projectWorkbookJsonStubCode}\n${projectPatchJsonStubCode}\n${wbsXlsxStubCode}\n${wbsMarkdownStubCode}\n${nativeSvgStubCode}\n${mainRenderCode}\n${mainCode}`;
+const bootPageCode = `${typesCode}\n${markdownEscapeCode}\n${aiJsonUtilCode}\n${mainUtilCode}\n${excelIoCode}\n${msProjectXmlCode}\n${projectWorkbookSchemaCode}\n${projectXlsxCode}\n${projectWorkbookJsonCode}\n${projectPatchJsonStubCode}\n${wbsXlsxStubCode}\n${wbsMarkdownStubCode}\n${nativeSvgStubCode}\n${mainRenderCode}\n${mainCode}`;
 const bootPageRunner = new Function(bootPageCode);
 
 function mountDom() {
@@ -180,9 +148,14 @@ function mountDom() {
       <div id="summaryResourceCount"></div>
       <div id="summaryAssignmentCount"></div>
       <div id="summaryCalendarCount"></div>
-      <div id="validationIssues" class="md-hidden"></div>
-      <div id="importWarnings" class="md-hidden"></div>
-      <div id="xlsxImportSummary" class="md-hidden"></div>
+      <div class="md-feedback-stack">
+        <div class="md-label md-hidden">検証結果</div>
+        <div id="validationIssues" class="md-hidden"></div>
+        <div class="md-label md-hidden">import warnings</div>
+        <div id="importWarnings" class="md-hidden"></div>
+        <div class="md-label md-hidden">import summary</div>
+        <div id="xlsxImportSummary" class="md-hidden"></div>
+      </div>
       <div id="projectPreview"></div>
       <div id="taskPreview"></div>
       <div id="resourcePreview"></div>
@@ -206,46 +179,56 @@ function mountDom() {
   toast.show = vi.fn();
 }
 
-function bootPage() {
+export function bootPage() {
   mountDom();
   bootPageRunner();
   document.dispatchEvent(new Event("DOMContentLoaded"));
 }
 
-describe("mikuproject main file input wiring", () => {
-  beforeEach(() => {
-    document.body.innerHTML = "";
+export function getMainHooks() {
+  return globalThis.__mikuprojectMainTestHooks;
+}
+
+export function parseXmlViaHook() {
+  getMainHooks().parseCurrentXml();
+}
+
+export async function flushAsyncWork() {
+  await Promise.resolve();
+  await Promise.resolve();
+}
+
+export function setImportFiles(file) {
+  const importInput = document.getElementById("importFileInput");
+  Object.defineProperty(importInput, "files", {
+    configurable: true,
+    value: [file]
   });
+  importInput.dispatchEvent(new Event("change"));
+}
 
-  it("clears file input value before reselecting the same file", () => {
-    bootPage();
-
-    const importInput = document.getElementById("importFileInput");
-    Object.defineProperty(importInput, "value", {
-      configurable: true,
-      writable: true,
-      value: "same-file.xlsx"
-    });
-
-    importInput.dispatchEvent(new Event("click"));
-
-    expect(importInput.value).toBe("");
+export function setupMainXlsxImportDom() {
+  document.body.innerHTML = "";
+  Object.defineProperty(URL, "createObjectURL", {
+    value: vi.fn(() => "blob:mock"),
+    configurable: true
   });
-
-  it("opens file chooser from the visible import button after clearing the input value", () => {
-    bootPage();
-
-    const importInput = document.getElementById("importFileInput");
-    Object.defineProperty(importInput, "value", {
-      configurable: true,
-      writable: true,
-      value: "stale-value.xlsx"
-    });
-    importInput.click = vi.fn();
-
-    document.getElementById("importFileBtn").click();
-
-    expect(importInput.value).toBe("");
-    expect(importInput.click).toHaveBeenCalled();
+  Object.defineProperty(URL, "revokeObjectURL", {
+    value: vi.fn(),
+    configurable: true
   });
-});
+  HTMLAnchorElement.prototype.click = vi.fn();
+  const clipboard = {
+    writeText: vi.fn(async () => {})
+  };
+  Object.defineProperty(globalThis.navigator, "clipboard", {
+    value: clipboard,
+    configurable: true
+  });
+  Object.defineProperty(window.navigator, "clipboard", {
+    value: clipboard,
+    configurable: true
+  });
+  vi.useFakeTimers();
+  vi.setSystemTime(new Date("2026-03-16T23:12:00+09:00"));
+}

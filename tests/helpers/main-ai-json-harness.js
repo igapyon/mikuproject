@@ -1,80 +1,60 @@
-// @vitest-environment jsdom
-
 import { readFileSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { vi } from "vitest";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 const typesCode = readFileSync(
-  path.resolve(__dirname, "../src/js/types.js"),
+  path.resolve(__dirname, "../../src/js/types.js"),
   "utf8"
 );
 const markdownEscapeCode = readFileSync(
-  path.resolve(__dirname, "../src/js/markdown-escape.js"),
+  path.resolve(__dirname, "../../src/js/markdown-escape.js"),
   "utf8"
 );
 const aiJsonUtilCode = readFileSync(
-  path.resolve(__dirname, "../src/js/ai-json-util.js"),
+  path.resolve(__dirname, "../../src/js/ai-json-util.js"),
   "utf8"
 );
 const mainUtilCode = readFileSync(
-  path.resolve(__dirname, "../src/js/main-util.js"),
+  path.resolve(__dirname, "../../src/js/main-util.js"),
+  "utf8"
+);
+const msProjectXmlCode = readFileSync(
+  path.resolve(__dirname, "../../src/js/msproject-xml.js"),
+  "utf8"
+);
+const projectPatchJsonCode = readFileSync(
+  path.resolve(__dirname, "../../src/js/project-patch-json.js"),
   "utf8"
 );
 const mainRenderCode = readFileSync(
-  path.resolve(__dirname, "../src/js/main-render.js"),
+  path.resolve(__dirname, "../../src/js/main-render.js"),
   "utf8"
 );
 const mainCode = readFileSync(
-  path.resolve(__dirname, "../src/js/main.js"),
+  path.resolve(__dirname, "../../src/js/main.js"),
   "utf8"
 );
 
-const msProjectXmlStubCode = `
-globalThis.__mikuprojectXml = {
-  SAMPLE_XML: "<Project><Name>Stub</Name><StartDate>2026-03-16T09:00:00</StartDate><FinishDate>2026-03-16T18:00:00</FinishDate><ScheduleFromStart>1</ScheduleFromStart><Tasks /><Resources /><Assignments /></Project>",
-  SAMPLE_PROJECT_DRAFT_VIEW: {},
-  importMsProjectXml: () => ({
-    project: { name: "Stub", title: "Stub", startDate: "2026-03-16T09:00:00", finishDate: "2026-03-16T18:00:00", scheduleFromStart: true, outlineCodes: [], wbsMasks: [], extendedAttributes: [] },
-    tasks: [],
-    resources: [],
-    assignments: [],
-    calendars: []
-  }),
-  importCsvParentId: () => ({
-    project: { name: "Stub", title: "Stub", startDate: "2026-03-16T09:00:00", finishDate: "2026-03-16T18:00:00", scheduleFromStart: true, outlineCodes: [], wbsMasks: [], extendedAttributes: [] },
-    tasks: [],
-    resources: [],
-    assignments: [],
-    calendars: []
-  }),
-  exportMsProjectXml: () => "<Project />",
-  exportMermaidGantt: () => "gantt",
-  buildProjectDraftRequest: () => ({}),
-  importProjectDraftView: () => ({
-    project: { name: "Stub", title: "Stub", startDate: "2026-03-16T09:00:00", finishDate: "2026-03-16T18:00:00", scheduleFromStart: true, outlineCodes: [], wbsMasks: [], extendedAttributes: [] },
-    tasks: [],
-    resources: [],
-    assignments: [],
-    calendars: []
-  }),
-  exportProjectOverviewView: () => ({}),
-  exportPhaseDetailView: () => ({}),
-  exportCsvParentId: () => "ID,Name",
-  normalizeProjectModel: (model) => model,
-  validateProjectModel: () => []
-};
-`;
+export const hierarchyXml = readFileSync(
+  path.resolve(__dirname, "../../testdata/hierarchy.xml"),
+  "utf8"
+);
+export const dependencyXml = readFileSync(
+  path.resolve(__dirname, "../../testdata/dependency.xml"),
+  "utf8"
+);
 
 const excelIoStubCode = `
 globalThis.__mikuprojectExcelIo = {
   XlsxWorkbookCodec: function () {
     this.exportWorkbook = () => new Uint8Array();
     this.importWorkbook = () => ({ sheets: [] });
+    this.importWorkbookAsync = async () => ({ sheets: [] });
   }
 };
 `;
@@ -89,16 +69,9 @@ globalThis.__mikuprojectProjectXlsx = {
 
 const projectWorkbookJsonStubCode = `
 globalThis.__mikuprojectProjectWorkbookJson = {
-  exportProjectWorkbookJson: () => ({}),
+  exportProjectWorkbookJson: () => ({ format: "mikuproject_workbook_json", sheets: [] }),
   importProjectWorkbookJson: (_documentLike, baseModel) => ({ model: baseModel, changes: [], warnings: [] }),
   validateWorkbookJsonDocument: (documentLike) => ({ document: documentLike, warnings: [] })
-};
-`;
-
-const projectPatchJsonStubCode = `
-globalThis.__mikuprojectProjectPatchJson = {
-  importProjectPatchJson: (_documentLike, baseModel) => ({ model: baseModel, changes: [], warnings: [] }),
-  validatePatchDocument: (documentLike) => ({ document: documentLike, warnings: [] })
 };
 `;
 
@@ -117,13 +90,16 @@ globalThis.__mikuprojectWbsMarkdown = {
 
 const nativeSvgStubCode = `
 globalThis.__mikuprojectNativeSvg = {
-  exportNativeSvg: () => "<svg></svg>",
-  exportWeeklyNativeSvg: () => "<svg></svg>",
-  exportMonthlyWbsCalendarSvgArchive: () => ({ entries: [], zipBytes: new Uint8Array() })
+  exportNativeSvg: () => "<svg data-stub=\\"daily\\"></svg>",
+  exportWeeklyNativeSvg: () => "<svg data-stub=\\"weekly\\">weekly overview</svg>",
+  exportMonthlyWbsCalendarSvgArchive: () => ({
+    entries: [{ fileName: "2026-03.svg", svg: "<svg data-stub=\\"monthly\\">2026-03</svg>" }],
+    zipBytes: new Uint8Array()
+  })
 };
 `;
 
-const bootPageCode = `${typesCode}\n${markdownEscapeCode}\n${aiJsonUtilCode}\n${mainUtilCode}\n${msProjectXmlStubCode}\n${excelIoStubCode}\n${projectXlsxStubCode}\n${projectWorkbookJsonStubCode}\n${projectPatchJsonStubCode}\n${wbsXlsxStubCode}\n${wbsMarkdownStubCode}\n${nativeSvgStubCode}\n${mainRenderCode}\n${mainCode}`;
+const bootPageCode = `${typesCode}\n${markdownEscapeCode}\n${aiJsonUtilCode}\n${mainUtilCode}\n${msProjectXmlCode}\n${projectPatchJsonCode}\n${excelIoStubCode}\n${projectXlsxStubCode}\n${projectWorkbookJsonStubCode}\n${wbsXlsxStubCode}\n${wbsMarkdownStubCode}\n${nativeSvgStubCode}\n${mainRenderCode}\n${mainCode}`;
 const bootPageRunner = new Function(bootPageCode);
 
 function mountDom() {
@@ -152,7 +128,7 @@ function mountDom() {
     <button id="importProjectDraftBtn" type="button"></button>
     <button id="downloadXmlBtn" type="button"></button>
     <button id="roundTripBtn" type="button"></button>
-    <button id="copyAiPromptBtn" type="button"></button>
+    <button id="copyAiPromptBtnPane" type="button"></button>
     <input id="importFileInput" type="file" />
     <input id="phaseDetailUidInput" type="text" />
     <input id="taskEditUidInput" type="text" />
@@ -170,7 +146,9 @@ function mountDom() {
     </div>
     <section id="tabPanelInput" class="md-tab-panel" data-tab-panel="input">
       <textarea id="xmlInput"></textarea>
-      <template id="aiPromptTemplate"># mikuproject AI JSON Spec</template>
+      <template id="aiPromptTemplate"># mikuproject AI JSON Spec
+
+あなたはこれから mikuproject とやりとりします。</template>
       <textarea id="projectDraftImportInput"></textarea>
       <div id="xmlSaveState"></div>
     </section>
@@ -180,72 +158,76 @@ function mountDom() {
       <div id="summaryResourceCount"></div>
       <div id="summaryAssignmentCount"></div>
       <div id="summaryCalendarCount"></div>
-      <div id="validationIssues" class="md-hidden"></div>
-      <div id="importWarnings" class="md-hidden"></div>
-      <div id="xlsxImportSummary" class="md-hidden"></div>
+      <div id="nativeSvgPreview"></div>
+      <textarea id="modelOutput"></textarea>
       <div id="projectPreview"></div>
       <div id="taskPreview"></div>
       <div id="resourcePreview"></div>
       <div id="assignmentPreview"></div>
       <div id="calendarPreview"></div>
-      <textarea id="modelOutput"></textarea>
       <textarea id="mermaidOutput"></textarea>
-      <div id="wbsPreviewTitle"></div>
-      <div id="wbsPreviewRange"></div>
-      <div id="nativeSvgPreview"></div>
+      <div id="validationIssues" class="md-hidden"></div>
+      <div id="importWarnings" class="md-hidden"></div>
+      <div id="xlsxImportSummary" class="md-hidden"></div>
     </section>
     <section id="tabPanelOutput" class="md-tab-panel" data-tab-panel="output" hidden>
       <textarea id="workbookJsonOutput"></textarea>
       <textarea id="aiBundleOutput"></textarea>
       <textarea id="projectOverviewOutput"></textarea>
+      <textarea id="taskEditOutput"></textarea>
       <textarea id="phaseDetailOutput"></textarea>
     </section>
     <div id="toast"></div>
   `;
   const toast = document.getElementById("toast");
   toast.show = vi.fn();
+  const copyButton = document.getElementById("copyAiPromptBtnPane");
+  if (copyButton) {
+    copyButton.id = "copyAiPromptBtn";
+  }
 }
 
-function bootPage() {
+export function bootPage() {
   mountDom();
   bootPageRunner();
   document.dispatchEvent(new Event("DOMContentLoaded"));
 }
 
-describe("mikuproject main file input wiring", () => {
-  beforeEach(() => {
-    document.body.innerHTML = "";
+export function setupMainAiJsonTestDom() {
+  document.body.innerHTML = "";
+  Object.defineProperty(URL, "createObjectURL", {
+    value: vi.fn(() => "blob:mock"),
+    configurable: true
   });
-
-  it("clears file input value before reselecting the same file", () => {
-    bootPage();
-
-    const importInput = document.getElementById("importFileInput");
-    Object.defineProperty(importInput, "value", {
-      configurable: true,
-      writable: true,
-      value: "same-file.xlsx"
-    });
-
-    importInput.dispatchEvent(new Event("click"));
-
-    expect(importInput.value).toBe("");
+  Object.defineProperty(URL, "revokeObjectURL", {
+    value: vi.fn(),
+    configurable: true
   });
-
-  it("opens file chooser from the visible import button after clearing the input value", () => {
-    bootPage();
-
-    const importInput = document.getElementById("importFileInput");
-    Object.defineProperty(importInput, "value", {
-      configurable: true,
-      writable: true,
-      value: "stale-value.xlsx"
-    });
-    importInput.click = vi.fn();
-
-    document.getElementById("importFileBtn").click();
-
-    expect(importInput.value).toBe("");
-    expect(importInput.click).toHaveBeenCalled();
+  HTMLAnchorElement.prototype.click = vi.fn();
+  const clipboard = {
+    writeText: vi.fn(async () => {})
+  };
+  Object.defineProperty(globalThis.navigator, "clipboard", {
+    value: clipboard,
+    configurable: true
   });
-});
+  Object.defineProperty(window.navigator, "clipboard", {
+    value: clipboard,
+    configurable: true
+  });
+  vi.useFakeTimers();
+  vi.setSystemTime(new Date("2026-03-16T23:12:00+09:00"));
+}
+
+export function getMainHooks() {
+  return globalThis.__mikuprojectMainTestHooks;
+}
+
+export function parseXmlViaHook() {
+  getMainHooks().parseCurrentXml();
+}
+
+export async function flushAsyncWork() {
+  await Promise.resolve();
+  await Promise.resolve();
+}

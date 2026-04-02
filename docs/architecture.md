@@ -6,9 +6,9 @@
 
 重視しているのは次の 3 点である。
 
-- `MS Project XML` を基軸にした変換・可視化・限定編集
-- 生成AI 連携を意識した projection / 再取込
-- 人が読むための `WBS Excel ブック (.xlsx)` 帳票出力
+- `MS Project XML` を意味の基軸として保つこと
+- 生成AIと人の往復に適した表現変換 / 再取込 / 介在を支えること
+- 人が読むための可視化と、WBS 帳票・SVG を含む成果物出力を提供すること
 
 ## 全体構成
 
@@ -23,11 +23,11 @@
 - `MS Project XML -> ProjectModel -> XLSX`
 - `MS Project XML -> ProjectModel -> mikuproject_workbook_json`
 - `MS Project XML -> ProjectModel -> Mermaid`
-- `MS Project XML -> ProjectModel -> 生成AI向け JSON projection`
+- `MS Project XML -> ProjectModel -> 生成AI向け JSON`
 
 また、新規生成向けには次の流れを持つ。
 
-- `project_draft_view -> ProjectModel -> MS Project XML / WBS Excel ブック (.xlsx)`
+- `project_draft_view -> ProjectModel -> MS Project XML / WBS Excel ブック (.xlsx) / 可視化成果物`
 
 `XLSX Import` と workbook JSON import は、自由編集をそのまま受け入れるのではなく、限定列の部分更新として扱う。
 
@@ -65,8 +65,8 @@
 ### Input
 
 - `Load from file` からの `MS Project XML / XLSX / workbook JSON (.json) / 生成AI向け編集用 JSON (.editjson) / CSV + ParentID` の読込
-- `project_draft_view` ベースで生成したサンプル XML の読込
-- 生成AIが返した `project_draft_view` の JSON 貼り付け取込
+- 生成AIによる WBS 草案（`project_draft_view`）をもとに生成した `MS Project XML` の読込
+- 生成AIが返した WBS 草案（`project_draft_view`）の JSON 貼り付け取込
 
 ### Overview
 
@@ -84,7 +84,7 @@
 - `CSV + ParentID` の保存
 - Mermaid fenced code block を含む `.md` の保存
 - `Daily SVG / Weekly SVG / Monthly Calendar SVG` の保存
-- 生成AI向け `project_overview_view` / `phase_detail_view` / `full bundle` の `.editjson` 保存
+- 生成AI向け `project_overview_view` / `phase_detail_view` / `task_edit_view` / `full bundle` の `.editjson` 保存
 
 ## 生成AI連携
 
@@ -143,7 +143,7 @@ sample 生成も含めた従来相当のフル実行:
 npm run build:full
 ```
 
-`npm run build` は日常開発向けの軽い確認で、`build:web` と `test:fast` を順に実行する。`npm run build:app` は `build:web` と `build:xlsx-sample` を順に実行する。`npm run build:full` は `build:web` と `test:full` を順に実行し、日常で見たい core UI smoke suite までを確認する。`build:xlsx-sample` は必要なときだけ `build:app` か `npm run build:xlsx-sample` で明示実行する。`npm run test:extended` は validation、`XLSX import`、preview 切替、重い patch/export 系、projection/replace 系を追加で確認する。`npm test` / `npm run test:all` はそれらも含めた完全実行である。
+`npm run build` は日常開発向けの軽い確認で、`build:web` と `test:fast` を順に実行する。`npm run build:app` は `build:web` と `build:xlsx-sample` を順に実行する。`npm run build:full` は `build:web` と `test:full` を順に実行し、日常で見たい core UI smoke suite までを確認する。`build:xlsx-sample` は必要なときだけ `build:app` か `npm run build:xlsx-sample` で明示実行する。`npm run test:extended` は validation、`XLSX import`、preview 切替、重い patch/export 系、表現変換/replace 系を追加で確認する。`npm test` / `npm run test:all` はそれらも含めた完全実行である。
 
 スクリプトの役割は次のとおり。
 
@@ -153,7 +153,7 @@ npm run build:full
 - `npm run build:xlsx-sample`: `local-data/` 配下へサンプル XLSX / Markdown を生成する
 - `npm run build:app`: `build:web` と `build:xlsx-sample` を順に実行する
 - `npm run build:full`: `build:web` と `test:full` を順に実行する
-- `npm run test:extended`: validation、`XLSX import`、preview 切替、重い patch/export 系、projection/replace 系 UI suite を実行する
+- `npm run test:extended`: validation、`XLSX import`、preview 切替、重い patch/export 系、表現変換/replace 系 UI suite を実行する
 - `npm run test:all`: `fast + ui + extended` をすべて実行する
 
 `scripts/build-project.mjs` は `--js-only` と `--html-only` を受け取り、JavaScript 生成と HTML 生成を切り替える。

@@ -20,6 +20,8 @@ const TARGETS = [
     tsOrder: [
       "src/ts/types.ts",
       "src/ts/markdown-escape.ts",
+      "src/ts/ai-json-util.ts",
+      "src/ts/main-util.ts",
       "src/ts/excel-io.ts",
       "src/ts/msproject-xml.ts",
       "src/ts/project-workbook-schema.ts",
@@ -29,6 +31,7 @@ const TARGETS = [
       "src/ts/wbs-xlsx.ts",
       "src/ts/wbs-markdown.ts",
       "src/ts/wbs-svg.ts",
+      "src/ts/main-render.ts",
       "src/ts/main.ts"
     ]
   }

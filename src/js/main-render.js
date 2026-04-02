@@ -124,6 +124,74 @@
         }
         return String(value);
     }
+    function formatImportFieldLabel(field) {
+        const labelMap = {
+            name: "Name",
+            title: "Title",
+            author: "Author",
+            company: "Company",
+            initials: "Initials",
+            group: "Group",
+            notes: "Notes",
+            start: "Start",
+            finish: "Finish",
+            units: "Units",
+            work: "Work",
+            planned_start: "Start",
+            planned_finish: "Finish",
+            planned_duration: "Duration",
+            planned_duration_hours: "DurationHours",
+            is_milestone: "Milestone",
+            parent_uid: "ParentUID",
+            position: "Position",
+            taskUid: "TaskUID",
+            resourceUid: "ResourceUID",
+            percentComplete: "PercentComplete",
+            percentWorkComplete: "PercentWorkComplete",
+            critical: "Critical",
+            maxUnits: "MaxUnits",
+            standardRate: "StandardRate",
+            overtimeRate: "OvertimeRate",
+            costPerUse: "CostPerUse",
+            calendarUID: "CalendarUID",
+            isBaseCalendar: "IsBaseCalendar",
+            baseCalendarUID: "BaseCalendarUID",
+            currentDate: "CurrentDate",
+            startDate: "StartDate",
+            finishDate: "FinishDate",
+            statusDate: "StatusDate",
+            minutesPerDay: "MinutesPerDay",
+            minutesPerWeek: "MinutesPerWeek",
+            daysPerMonth: "DaysPerMonth",
+            scheduleFromStart: "ScheduleFromStart"
+        };
+        return labelMap[field] || field;
+    }
+    function formatImportSummaryHint(sourceLabel) {
+        if (sourceLabel === "Patch JSON") {
+            return "Patch JSON の部分適用結果です。反映後の XML は更新済みで、必要なら XML Export で保存できます。";
+        }
+        if (sourceLabel === "JSON Import") {
+            return "workbook JSON の取込結果です。反映後の XML は更新済みで、必要なら XML Export で保存できます。";
+        }
+        if (sourceLabel === "XLSX Import") {
+            return "Excel 編集結果の取込内容です。反映後の XML は更新済みで、必要なら XML Export で保存できます。";
+        }
+        return "反映後の XML は更新済みです。必要なら XML Export で保存できます。";
+    }
+    function formatWarningDigest(warnings, sourceLabel) {
+        if (warnings.length === 0) {
+            return "";
+        }
+        const groupedTaskWarnings = Array.from(new Map(warnings
+            .filter((warning) => warning.uid)
+            .map((warning) => [`${warning.uid}:${warning.label || ""}`, `UID=${warning.uid} ${warning.label || ""}`])).values());
+        const warningPrefix = sourceLabel ? `${sourceLabel} warning` : "warning";
+        if (groupedTaskWarnings.length === 0) {
+            return `${warningPrefix} ${warnings.length} 件`;
+        }
+        return `${warningPrefix} ${warnings.length} 件 / ${groupedTaskWarnings.join(", ")}`;
+    }
     function escapeHtml(value) {
         return value
             .replace(/&/g, "&amp;")
@@ -183,7 +251,7 @@
     `;
         updateFeedbackVisibility(doc);
     }
-    function renderImportWarnings(doc, warnings) {
+    function renderImportWarnings(doc, warnings, options = {}) {
         const container = getElement(doc, "importWarnings");
         const label = container.previousElementSibling;
         if (warnings.length === 0) {
@@ -193,17 +261,46 @@
             updateFeedbackVisibility(doc);
             return;
         }
+        const genericWarnings = warnings.filter((warning) => !warning.uid);
+        const groupedWarnings = new Map();
+        warnings
+            .filter((warning) => warning.uid)
+            .forEach((warning) => {
+            const uid = warning.uid;
+            const key = `${warning.scope || "generic"}:${uid}:${warning.label || ""}`;
+            const current = groupedWarnings.get(key);
+            if (current) {
+                current.items.push(warning.message);
+                return;
+            }
+            groupedWarnings.set(key, {
+                uid,
+                label: warning.label,
+                items: [warning.message]
+            });
+        });
+        const title = options.sourceLabel ? `${options.sourceLabel} warning` : "取込 warning";
         container.classList.remove("md-hidden");
         label === null || label === void 0 ? void 0 : label.classList.remove("md-hidden");
         container.innerHTML = `
-      <div class="md-issues__title">取込 warning</div>
-      <ul class="md-issues__list">
-        ${warnings.map((warning) => `<li class="md-issues__item">${escapeHtml(warning.message)}</li>`).join("")}
-      </ul>
+      <div class="md-issues__title">${escapeHtml(title)}</div>
+      ${genericWarnings.length > 0 ? `
+        <ul class="md-issues__list">
+          ${genericWarnings.map((warning) => `<li class="md-issues__item">${escapeHtml(warning.message)}</li>`).join("")}
+        </ul>
+      ` : ""}
+      ${Array.from(groupedWarnings.values()).map((group) => `
+        <div class="md-issues__section">
+          <div class="md-issues__section-title">UID=${escapeHtml(group.uid)} ${escapeHtml(group.label || "")}</div>
+          <ul class="md-issues__list">
+            ${group.items.map((message) => `<li class="md-issues__item">${escapeHtml(message)}</li>`).join("")}
+          </ul>
+        </div>
+      `).join("")}
     `;
         updateFeedbackVisibility(doc);
     }
-    function renderXlsxImportSummary(doc, changes) {
+    function renderXlsxImportSummary(doc, changes, options = {}) {
         const container = getElement(doc, "xlsxImportSummary");
         const label = container.previousElementSibling;
         if (changes.length === 0) {
@@ -227,6 +324,13 @@
             assignments: 0,
             calendars: 0
         };
+        const scopeFieldCounts = {
+            project: 0,
+            tasks: 0,
+            resources: 0,
+            assignments: 0,
+            calendars: 0
+        };
         const groupedByScope = new Map();
         const groupedChanges = new Map();
         for (const change of changes) {
@@ -238,6 +342,7 @@
                     before: change.before,
                     after: change.after
                 });
+                scopeFieldCounts[change.scope] += 1;
                 continue;
             }
             groupedChanges.set(groupKey, {
@@ -251,6 +356,7 @@
                     }]
             });
             scopeCounts[change.scope] += 1;
+            scopeFieldCounts[change.scope] += 1;
         }
         for (const group of groupedChanges.values()) {
             const scopedGroups = groupedByScope.get(group.scope) || [];
@@ -266,10 +372,12 @@
         const unchangedScopes = allScopes.filter((scope) => scopeCounts[scope] === 0);
         container.classList.remove("md-hidden");
         label === null || label === void 0 ? void 0 : label.classList.remove("md-hidden");
+        const title = options.sourceLabel ? `${options.sourceLabel} 反映結果` : "Import 反映結果";
         container.innerHTML = `
-      <div class="md-xlsx-summary__title">XLSX Import 反映結果</div>
+      <div class="md-xlsx-summary__title">${escapeHtml(title)}</div>
       <div class="md-xlsx-summary__counts">
-        ${changedScopes.map((scope) => `<span class="md-xlsx-summary__count">${scopeLabel[scope]} ${scopeCounts[scope]}</span>`).join("")}
+        ${changedScopes.map((scope) => `<span class="md-xlsx-summary__count">${scopeLabel[scope]} ${scopeCounts[scope]} / ${scopeFieldCounts[scope]} fields</span>`).join("")}
+        ${options.warnings && options.warnings.length > 0 ? `<span class="md-xlsx-summary__count md-xlsx-summary__count--warning">${escapeHtml(formatWarningDigest(options.warnings, options.sourceLabel))}</span>` : ""}
       </div>
       ${unchangedScopes.length > 0 ? `<div class="md-xlsx-summary__unchanged">変更なし: ${unchangedScopes.map((scope) => scopeLabel[scope]).join(", ")}</div>` : ""}
       ${changedScopes.map((scope) => `
@@ -278,16 +386,32 @@
           <ul class="md-xlsx-summary__list">
             ${(groupedByScope.get(scope) || []).map((group) => `
               <li class="md-xlsx-summary__item">
-                <div class="md-xlsx-summary__item-title">UID=${group.uid} ${escapeHtml(group.label)}</div>
+                <div class="md-xlsx-summary__item-title-row">
+                  <div class="md-xlsx-summary__item-title">UID=${group.uid} ${escapeHtml(group.label)}</div>
+                  <div class="md-xlsx-summary__item-badge">${group.items.length} fields</div>
+                </div>
                 <div class="md-xlsx-summary__item-body">
-                  ${group.items.map((item) => `${escapeHtml(item.field)}: ${escapeHtml(formatChangeValue(item.before))} -> ${escapeHtml(formatChangeValue(item.after))}`).join(" / ")}
+                  <div class="md-xlsx-summary__change-head">
+                    <span class="md-xlsx-summary__field">Field</span>
+                    <span class="md-xlsx-summary__head-label">Before</span>
+                    <span class="md-xlsx-summary__arrow"></span>
+                    <span class="md-xlsx-summary__head-label">After</span>
+                  </div>
+                  ${group.items.map((item) => `
+                    <div class="md-xlsx-summary__change-row">
+                      <span class="md-xlsx-summary__field">${escapeHtml(formatImportFieldLabel(item.field))}</span>
+                      <span class="md-xlsx-summary__value md-xlsx-summary__value--before">${escapeHtml(formatChangeValue(item.before))}</span>
+                      <span class="md-xlsx-summary__arrow">→</span>
+                      <span class="md-xlsx-summary__value md-xlsx-summary__value--after">${escapeHtml(formatChangeValue(item.after))}</span>
+                    </div>
+                  `).join("")}
                 </div>
               </li>
             `).join("")}
           </ul>
         </div>
       `).join("")}
-      <div class="md-xlsx-summary__hint">反映後の XML は更新済みです。必要なら XML Export で保存できます。</div>
+      <div class="md-xlsx-summary__hint">${escapeHtml(formatImportSummaryHint(options.sourceLabel))}</div>
     `;
         updateFeedbackVisibility(doc);
     }

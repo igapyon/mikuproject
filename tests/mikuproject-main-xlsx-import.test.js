@@ -111,6 +111,7 @@ function mountDom() {
     <button id="previewMonthlySvgBtn" type="button"></button>
     <button id="exportAiBundleBtn" type="button"></button>
     <button id="exportProjectOverviewBtn" type="button"></button>
+    <button id="exportTaskEditBtn" type="button"></button>
     <button id="exportPhaseDetailFullBtn" type="button"></button>
     <button id="exportPhaseDetailBtn" type="button"></button>
     <button id="loadProjectDraftSampleBtn" type="button"></button>
@@ -120,6 +121,7 @@ function mountDom() {
     <button id="copyAiPromptBtn" type="button"></button>
     <input id="importFileInput" type="file" />
     <input id="phaseDetailUidInput" type="text" />
+    <input id="taskEditUidInput" type="text" />
     <input id="phaseDetailRootUidInput" type="text" />
     <input id="phaseDetailMaxDepthInput" type="text" />
     <input id="wbsDisplayDaysBeforeInput" />
@@ -271,10 +273,15 @@ describe("mikuproject main xlsx import", () => {
     expect(document.getElementById("statusMessage").textContent).toContain("XML Export で保存できます");
     expect(document.getElementById("xmlSaveState").textContent).toContain("XML 保存状態: 未保存");
     expect(document.getElementById("xlsxImportSummary").textContent).toContain("Tasks 1");
-    expect(document.getElementById("xlsxImportSummary").textContent).toContain("Duration: PT0H0M0S -> PT24H0M0S");
-    expect(document.getElementById("xlsxImportSummary").textContent).toContain("PercentComplete: 100 -> 77");
-    expect(document.getElementById("xlsxImportSummary").textContent).toContain("CalendarUID: (empty) -> 2");
-    expect(document.getElementById("xlsxImportSummary").textContent).toContain("Predecessors: (empty) -> 2");
+    expect(document.getElementById("xlsxImportSummary").textContent).toContain("Duration");
+    expect(document.getElementById("xlsxImportSummary").textContent).toContain("PT0H0M0S");
+    expect(document.getElementById("xlsxImportSummary").textContent).toContain("PT24H0M0S");
+    expect(document.getElementById("xlsxImportSummary").textContent).toContain("PercentComplete");
+    expect(document.getElementById("xlsxImportSummary").textContent).toContain("77");
+    expect(document.getElementById("xlsxImportSummary").textContent).toContain("CalendarUID");
+    expect(document.getElementById("xlsxImportSummary").textContent).toContain("(empty)");
+    expect(document.getElementById("xlsxImportSummary").textContent).toContain("2");
+    expect(document.getElementById("xlsxImportSummary").textContent).toContain("Predecessors");
   });
 
   it("imports resource sheet edits back into the current model and xml", async () => {
@@ -337,7 +344,11 @@ describe("mikuproject main xlsx import", () => {
 
     expect(document.getElementById("modelOutput").value).toContain("\"name\": \"初期実装 Imported From JSON\"");
     expect(document.getElementById("statusMessage").textContent).toContain("JSON を読み込んで 2 件の変更を反映しました");
-    expect(document.getElementById("xlsxImportSummary").textContent).toContain("PercentComplete: 100 -> 66");
+    expect(document.getElementById("xlsxImportSummary").textContent).toContain("JSON Import 反映結果");
+    expect(document.getElementById("xlsxImportSummary").textContent).toContain("workbook JSON の取込結果です");
+    expect(document.getElementById("xlsxImportSummary").textContent).toContain("PercentComplete");
+    expect(document.getElementById("xlsxImportSummary").textContent).toContain("100");
+    expect(document.getElementById("xlsxImportSummary").textContent).toContain("66");
   });
 
   it("imports workbook json from a file into the current model and xml", async () => {
@@ -358,7 +369,9 @@ describe("mikuproject main xlsx import", () => {
 
     expect(document.getElementById("modelOutput").value).toContain("\"name\": \"初期実装 Imported From JSON File\"");
     expect(document.getElementById("statusMessage").textContent).toContain("JSON を読み込んで 2 件の変更を反映しました");
-    expect(document.getElementById("xlsxImportSummary").textContent).toContain("PercentComplete: 100 -> 55");
+    expect(document.getElementById("xlsxImportSummary").textContent).toContain("PercentComplete");
+    expect(document.getElementById("xlsxImportSummary").textContent).toContain("100");
+    expect(document.getElementById("xlsxImportSummary").textContent).toContain("55");
   });
 
   it("reports ignored workbook json warnings in status message", async () => {
@@ -416,8 +429,12 @@ describe("mikuproject main xlsx import", () => {
     expect(document.getElementById("modelOutput").value).toContain("\"name\": \"Project From XLSX\"");
     expect(document.getElementById("modelOutput").value).toContain("\"minutesPerDay\": 420");
     expect(document.getElementById("statusMessage").textContent).toContain("XLSX を読み込んで 2 件の変更を反映しました");
+    expect(document.getElementById("xlsxImportSummary").textContent).toContain("XLSX Import 反映結果");
+    expect(document.getElementById("xlsxImportSummary").textContent).toContain("Excel 編集結果の取込内容です");
     expect(document.getElementById("xlsxImportSummary").textContent).toContain("Project 1");
-    expect(document.getElementById("xlsxImportSummary").textContent).toContain("MinutesPerDay: 480 -> 420");
+    expect(document.getElementById("xlsxImportSummary").textContent).toContain("MinutesPerDay");
+    expect(document.getElementById("xlsxImportSummary").textContent).toContain("480");
+    expect(document.getElementById("xlsxImportSummary").textContent).toContain("420");
   });
 
   it("reports when xlsx import has no applicable changes", async () => {
@@ -480,7 +497,9 @@ describe("mikuproject main xlsx import", () => {
     expect(document.getElementById("statusMessage").textContent).toContain("XLSX を読み込んで 1 件の変更を反映しました");
     expect(document.getElementById("modelOutput").value).toContain("\"duration\": \"PT99H0M0S\"");
     expect(document.getElementById("modelOutput").value).not.toContain("\"weekDays\": 99");
-    expect(document.getElementById("xlsxImportSummary").textContent).toContain("Duration: PT0H0M0S -> PT99H0M0S");
+    expect(document.getElementById("xlsxImportSummary").textContent).toContain("Duration");
+    expect(document.getElementById("xlsxImportSummary").textContent).toContain("PT0H0M0S");
+    expect(document.getElementById("xlsxImportSummary").textContent).toContain("PT99H0M0S");
   });
 
   it("ignores calendar WeekDays, Exceptions, and WorkWeeks edits in xlsx import", async () => {
@@ -529,8 +548,15 @@ describe("mikuproject main xlsx import", () => {
     ]);
 
     expect(document.getElementById("xlsxImportSummary").textContent).toContain("Project 1");
-    expect(document.getElementById("xlsxImportSummary").textContent).toContain("CalendarUID: 1 -> 2");
-    expect(document.getElementById("xlsxImportSummary").textContent).toContain("Author: (empty) -> Author From XLSX");
+    expect(document.getElementById("xlsxImportSummary").textContent).toContain("3 fields");
+    expect(document.getElementById("xlsxImportSummary").textContent).toContain("Before");
+    expect(document.getElementById("xlsxImportSummary").textContent).toContain("After");
+    expect(document.getElementById("xlsxImportSummary").textContent).toContain("CalendarUID");
+    expect(document.getElementById("xlsxImportSummary").textContent).toContain("1");
+    expect(document.getElementById("xlsxImportSummary").textContent).toContain("2");
+    expect(document.getElementById("xlsxImportSummary").textContent).toContain("Author");
+    expect(document.getElementById("xlsxImportSummary").textContent).toContain("(empty)");
+    expect(document.getElementById("xlsxImportSummary").textContent).toContain("Author From XLSX");
   });
 
   it("renders grouped xlsx import summary content without xlsx import wiring", () => {
@@ -548,5 +574,6 @@ describe("mikuproject main xlsx import", () => {
     expect(document.getElementById("xlsxImportSummary").textContent).toContain("Resources 1");
     expect(document.getElementById("xlsxImportSummary").textContent).toContain("Assignments 1");
     expect(document.getElementById("xlsxImportSummary").textContent).toContain("Calendars 1");
+    expect(document.getElementById("xlsxImportSummary").textContent).toContain("2 fields");
   });
 });

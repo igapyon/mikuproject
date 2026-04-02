@@ -88,6 +88,7 @@ function mountFullDom() {
     <button id="previewMonthlySvgBtn" type="button">Monthly Calendar SVG</button>
     <button id="exportAiBundleBtn" type="button">project_overview + all phase_detail full</button>
     <button id="exportProjectOverviewBtn" type="button">project_overview_view</button>
+    <button id="exportTaskEditBtn" type="button">task_edit_view</button>
     <button id="exportPhaseDetailFullBtn" type="button">phase_detail_view full</button>
     <button id="exportPhaseDetailBtn" type="button">phase_detail_view</button>
     <button id="loadProjectDraftSampleBtn" type="button">サンプル draft</button>
@@ -95,6 +96,7 @@ function mountFullDom() {
     <button id="downloadXmlBtn" type="button">MS Project XML</button>
     <input id="importFileInput" type="file" />
     <input id="phaseDetailUidInput" type="text" />
+    <input id="taskEditUidInput" type="text" />
     <input id="phaseDetailRootUidInput" type="text" />
     <input id="phaseDetailMaxDepthInput" type="text" />
     <div id="statusMessage"></div>
@@ -265,6 +267,7 @@ function mountMinimalDom() {
     <button id="previewMonthlySvgBtn" type="button"></button>
     <button id="exportAiBundleBtn" type="button"></button>
     <button id="exportProjectOverviewBtn" type="button"></button>
+    <button id="exportTaskEditBtn" type="button"></button>
     <button id="exportPhaseDetailFullBtn" type="button"></button>
     <button id="exportPhaseDetailBtn" type="button"></button>
     <button id="loadProjectDraftSampleBtn" type="button"></button>
@@ -274,6 +277,7 @@ function mountMinimalDom() {
     <button id="copyAiPromptBtn" type="button"></button>
     <input id="importFileInput" type="file" />
     <input id="phaseDetailUidInput" type="text" />
+    <input id="taskEditUidInput" type="text" />
     <input id="phaseDetailRootUidInput" type="text" />
     <input id="phaseDetailMaxDepthInput" type="text" />
     <input id="wbsDisplayDaysBeforeInput" />

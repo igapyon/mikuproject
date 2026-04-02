@@ -19,32 +19,16 @@
   - 空 editable セルを埋めた変更を import できる
   - `Name / Start / Finish / PercentComplete / PercentWorkComplete / Notes` など主要 editable 列が戻る
   - `Milestone / Summary / Critical` など現在の task 真偽値列が戻る
-- `Tasks.Predecessors` を workbook import 対象に広げ、別インスタンスへ `XLSX` を受け渡しても task 依存関係の最小 round-trip が成立するようにする
-  - まずは `predecessorUid` の最小表現を `,` 区切りで安全に読み戻す MVP を検討する
-  - `type / linkLag` など複雑な依存表現は後段に分けてよい
-- MVP の workbook import 対象候補として、少なくとも次の列を優先順位つきで整理する
-  - 最優先候補: `Tasks.Duration`
-  - 最優先候補: `Tasks.CalendarUID`
-  - 次点候補: `Resources.CalendarUID`
-  - 次点候補: `Resources.StandardRate / OvertimeRate / CostPerUse`
-  - 次点候補: `Assignments.Start / Finish`
+- `Tasks.Predecessors` について、現状の `predecessorUid` `,` 区切り MVP から、`type / linkLag` など複雑な依存表現をどこまで戻すか整理する
+- workbook import の次段候補として、少なくとも次の列を優先順位つきで整理する
+  - 優先候補: `Resources.StandardRate / OvertimeRate / CostPerUse`
+  - 優先候補: `Assignments.Start / Finish`
 - `phase_detail_view scoped` の `phase UID / root UID / max depth` 指定を、より選びやすい UI に改善する
-- `task_edit_view` の projection を実装する
-- `.editjson` の import で現状 `project_draft_view` だけを受けている制約を見直し、将来の `task_edit_view` / Patch JSON など他の `view_type` も扱えるようにする
-- 既存 project 向け Patch JSON の schema を具体化する
-- 既存 project 向け Patch JSON について、少なくとも `update_task` を含む最小 operation set の設計メモを `md` で固める
-- 既存 project 向け Patch JSON を生成AIへ返させるための prompt / rules / 出力例を `md` で整備する
-- 既存 project 向け Patch JSON で、`predecessors` を `update_task.fields` に含めるか、`link_tasks / unlink_tasks` に分離するかを明確化する
-- Patch JSON を内部モデルへ適用する処理を実装する
-- Patch JSON の読込導線と、`project_draft_view` との判別 UI / status message / 差分要約表示を整備する
-- Patch JSON の正常系・異常系・validation・round-trip 観点のテストを追加する
-- Patch JSON import 後の validation と差分要約 UI を実装する
 - import 前後で、どの `task / calendar / assignment` がどう変わったかを見やすく確認できる差分可視化を追加する
 - 差分適用を前提として、生成AI や外部編集結果を全件置換ではなく部分適用できる運用を強化する
 - `project_draft_request` を UI から生成しやすくするか整理する
 - UI の微調整として、`Input / Overview / Output` の各カードの余白・見出し・ボタン階層を見直し、`miku` 系テーマの統一感をさらに整える
 - `Overview` タブの summary / validation / preview の情報密度を見直し、どこを見る画面なのかをより直感的に伝わる構成へ調整する
-- `Overview` の label placement 調査で追加したデバッグ関数・判断ログ用コード・不要化した分岐が残っていないか点検し、不要なら整理する
 - `Output` タブの生成AI連携と各種 export ボタンの優先度表現を見直し、主操作と補助操作の区別をより明確にする
 - `build:xlsx-sample` の所要時間を個別計測し、sample workbook 生成処理の支配要因を確認する
 - `docs/spec.md` に残っている実装済み前提との差分を定期的に解消する

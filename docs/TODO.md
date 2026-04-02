@@ -20,6 +20,8 @@
   - `Name / Start / Finish / PercentComplete / PercentWorkComplete / Notes` など主要 editable 列が戻る
   - `Milestone / Summary / Critical` など現在の task 真偽値列が戻る
 - `Tasks.Predecessors` について、現状の `predecessorUid` `,` 区切り MVP から、`type / linkLag` など複雑な依存表現をどこまで戻すか整理する
+- `.xlsm` について、`xlsx` 相当の workbook として import だけ受ける first cut を追加する
+  - macro / VBA project の保持は行わず、今回の利用範囲では落ちてよい前提とする
 - workbook import の次段候補として、少なくとも次の列を優先順位つきで整理する
   - 優先候補: `Resources.StandardRate / OvertimeRate / CostPerUse`
   - 優先候補: `Assignments.Start / Finish`
@@ -29,6 +31,9 @@
 - `project_draft_request` を UI から生成しやすくするか整理する
 - UI の微調整として、`Input / Overview / Output` の各カードの余白・見出し・ボタン階層を見直し、`miku` 系テーマの統一感をさらに整える
 - `Overview` タブの summary / validation / preview の情報密度を見直し、どこを見る画面なのかをより直感的に伝わる構成へ調整する
+- `Overview` 画面について、簡易な task 操作機能を追加するか検討する
+  - 今は表示専用だが、軽い編集や操作だけはできると便利な可能性がある
+  - 一方で責務過多や誤操作の不幸もありうるため、まずは仕様整理から始める
 - `Output` タブの生成AI連携と各種 export ボタンの優先度表現を見直し、主操作と補助操作の区別をより明確にする
 - `build:xlsx-sample` の所要時間を個別計測し、sample workbook 生成処理の支配要因を確認する
 - `docs/spec.md` に残っている実装済み前提との差分を定期的に解消する
@@ -49,6 +54,18 @@
 - `mikuproject-sample.xlsx` の `Resources / Assignments / NonWorkingDays` で、強調色が過剰にならない最終バランスを調整する
 - `WBS` の `プロジェクト情報` / `凡例` などと、`Project` シートの `Basic Info` に入っているドット編みかけ表現を除去する
 - WBS workbook の表示改善を継続する
+- SVG 出力について、プロジェクト名の位置を少し上にできるか調整する
+- SVG 出力の phase の線を、今より少し太くするか検討する
+  - 現状は細く感じるため、可読性と全体バランスを見ながら調整可否を確認する
+- SVG のガントチャートについて、前後関係を dependency connector として表示するか検討する
+  - 参考イメージは、task bar の背面に置く細い connector line とする
+  - 完全な自由曲線ではなく、横→縦→横の直交配線を角丸でつなぐ表現を first candidate とする
+  - 始点と終点では、bar 端から少し離した短い水平セグメントを持たせる
+  - 長い区間は水平・垂直を基本にし、角だけを小さめの半径で丸める
+  - bar / milestone / label より背面に描き、dependency は補助情報として主張しすぎないようにする
+  - 線幅は task bar より細く、色は薄めにして、最後だけ小さい矢印で向きを示す
+  - first cut では `FS` だけ表示するか、`SS / FF / SF` まで含めるかを整理する
+  - connector の交差、密集時の可読性、`Daily / Weekly` の両方で成立するかを確認する
 - `Daily` 表示の日ごとの横幅を、もう少し狭くできるか検討する
   - まずは変更仕様の整理から始め、可読性、文字詰まり、祝日/週境界の見え方、`Weekly / Monthly` とのバランスを確認する
 - WBS workbook の見た目改善と、構造忠実 workbook との責務分離を保つ

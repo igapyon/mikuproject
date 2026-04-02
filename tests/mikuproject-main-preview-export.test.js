@@ -302,6 +302,72 @@ describe("mikuproject main preview export", () => {
     expect(dailySvg).toContain('text-anchor="end">MS Project XML と XLSX の相互変換・round-trip実装</text>');
   });
 
+  it("renders dependency connectors in daily and weekly native svg", () => {
+    bootPage();
+
+    const model = {
+      project: {
+        name: "Dependency Demo",
+        startDate: "2026-03-16T09:00:00",
+        finishDate: "2026-03-20T18:00:00",
+        currentDate: "2026-03-18T12:00:00",
+        scheduleFromStart: true,
+        outlineCodes: [],
+        wbsMasks: [],
+        extendedAttributes: []
+      },
+      tasks: [
+        {
+          uid: "1",
+          id: "1",
+          name: "Prep",
+          outlineLevel: 1,
+          outlineNumber: "1",
+          start: "2026-03-16T09:00:00",
+          finish: "2026-03-17T18:00:00",
+          duration: "PT16H0M0S",
+          milestone: false,
+          summary: false,
+          percentComplete: 100,
+          predecessors: [],
+          extendedAttributes: [],
+          baselines: [],
+          timephasedData: []
+        },
+        {
+          uid: "2",
+          id: "2",
+          name: "Ship",
+          outlineLevel: 1,
+          outlineNumber: "2",
+          start: "2026-03-18T09:00:00",
+          finish: "2026-03-19T18:00:00",
+          duration: "PT16H0M0S",
+          milestone: false,
+          summary: false,
+          percentComplete: 0,
+          predecessors: [{ predecessorUid: "1", type: 1 }],
+          extendedAttributes: [],
+          baselines: [],
+          timephasedData: []
+        }
+      ],
+      resources: [],
+      assignments: [],
+      calendars: []
+    };
+
+    const dailySvg = globalThis.__mikuprojectNativeSvg.exportNativeSvg(model);
+    const weeklySvg = globalThis.__mikuprojectNativeSvg.exportWeeklyNativeSvg(model);
+
+    expect(dailySvg).toContain('class="dependencyPath"');
+    expect(dailySvg).toContain('marker-end="url(#dependencyArrow)"');
+    expect(dailySvg).toContain('data-from-uid="1"');
+    expect(dailySvg).toContain('data-to-uid="2"');
+    expect(weeklySvg).toContain('class="dependencyPath"');
+    expect(weeklySvg).toContain('marker-end="url(#dependencyArrow)"');
+  });
+
   it("exports csv with parent id from the current model", async () => {
     bootPage();
 

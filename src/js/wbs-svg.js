@@ -77,7 +77,13 @@
             ".phaseLabel { font-size: 13px; font-weight: 700; }",
             ".grid { stroke: #c9d3e1; stroke-width: 1; }",
             ".today { stroke: #ff6b5a; stroke-width: 2; }",
+            ".dependencyPath { fill: none; stroke: #9eb6c8; stroke-width: 1.5; stroke-linecap: round; stroke-linejoin: round; opacity: 0.95; }",
             "</style>",
+            "<defs>",
+            '<marker id="dependencyArrow" markerWidth="7" markerHeight="7" refX="5.5" refY="3.5" orient="auto" markerUnits="strokeWidth">',
+            '<path d="M0,0 L7,3.5 L0,7 Z" fill="#9eb6c8" />',
+            "</marker>",
+            "</defs>",
             `<rect x="0" y="0" width="${svgWidth}" height="${svgHeight}" fill="#ffffff"/>`,
             `<text class="title" x="${chartOriginX + (chartWidth / 2)}" y="${TOP_PADDING + 18}" text-anchor="middle">${escapeXml(model.project.name || "-")}</text>`
         ];
@@ -97,6 +103,15 @@
             const todayX = chartOriginX + (todayIndex * DAY_WIDTH) + (DAY_WIDTH / 2);
             parts.push(`<line class="today" x1="${todayX}" y1="${TOP_PADDING + 26}" x2="${todayX}" y2="${svgHeight - BOTTOM_PADDING}" />`);
         }
+        parts.push(...buildDependencyConnectorElements(model.tasks, rows, chartOriginX, chartOriginY, {
+            cellWidth: DAY_WIDTH,
+            rangeInset: 6,
+            milestoneHalfWidth: 13,
+            routeOffset: 14,
+            routeSpacing: 6,
+            targetInset: 4,
+            cornerRadius: 8
+        }));
         for (let rowIndex = 0; rowIndex < rows.length; rowIndex += 1) {
             const row = rows[rowIndex];
             const rowY = chartOriginY + row.y;
@@ -191,7 +206,13 @@
             ".grid { stroke: #c9d3e1; stroke-width: 1; }",
             ".today { stroke: #ff6b5a; stroke-width: 2; }",
             ".monthBoundary { stroke: #98a2b3; stroke-width: 1.5; }",
+            ".dependencyPath { fill: none; stroke: #9eb6c8; stroke-width: 1.5; stroke-linecap: round; stroke-linejoin: round; opacity: 0.95; }",
             "</style>",
+            "<defs>",
+            '<marker id="dependencyArrow" markerWidth="7" markerHeight="7" refX="5.5" refY="3.5" orient="auto" markerUnits="strokeWidth">',
+            '<path d="M0,0 L7,3.5 L0,7 Z" fill="#9eb6c8" />',
+            "</marker>",
+            "</defs>",
             `<rect x="0" y="0" width="${svgWidth}" height="${svgHeight}" fill="#ffffff"/>`,
             `<text class="title" x="${chartOriginX + (chartWidth / 2)}" y="${WEEKLY_TOP_PADDING + 18}" text-anchor="middle">${escapeXml(model.project.name || "-")} weekly overview</text>`,
             `<text class="meta" x="${chartOriginX + (chartWidth / 2)}" y="${WEEKLY_TOP_PADDING + 40}" text-anchor="middle">${escapeXml(`project range ${String(model.project.startDate || "").slice(0, 10)} - ${String(model.project.finishDate || "").slice(0, 10)}`)}</text>`
@@ -215,6 +236,15 @@
             const todayX = chartOriginX + (todayWeekIndex * WEEK_WIDTH) + (WEEK_WIDTH / 2);
             parts.push(`<line class="today" x1="${todayX}" y1="${WEEKLY_TOP_PADDING + 72}" x2="${todayX}" y2="${svgHeight - WEEKLY_BOTTOM_PADDING}" />`);
         }
+        parts.push(...buildDependencyConnectorElements(model.tasks, rows, chartOriginX, chartOriginY, {
+            cellWidth: WEEK_WIDTH,
+            rangeInset: 4,
+            milestoneHalfWidth: 11,
+            routeOffset: 12,
+            routeSpacing: 5,
+            targetInset: 4,
+            cornerRadius: 7
+        }));
         for (let rowIndex = 0; rowIndex < rows.length; rowIndex += 1) {
             const row = rows[rowIndex];
             const rowY = chartOriginY + row.y;
@@ -614,6 +644,102 @@
             leftRoom: Math.max(0, (shapeStartX - config.gap) - chartOriginX),
             rightRoom: Math.max(0, chartEndX - (shapeEndX + config.gap))
         };
+    }
+    function buildDependencyConnectorElements(tasks, rows, chartOriginX, chartOriginY, config) {
+        const geometryByUid = new Map();
+        for (const row of rows) {
+            const geometry = buildShapeGeometry(row, chartOriginX, chartOriginY, config.cellWidth, config.rangeInset, config.milestoneHalfWidth);
+            if (geometry) {
+                geometryByUid.set(row.task.uid, geometry);
+            }
+        }
+        const parts = [];
+        let connectorIndex = 0;
+        for (const task of tasks) {
+            const toGeometry = geometryByUid.get(task.uid);
+            if (!toGeometry) {
+                continue;
+            }
+            for (const predecessor of task.predecessors || []) {
+                if (predecessor.type !== undefined && predecessor.type !== 1) {
+                    continue;
+                }
+                const fromGeometry = geometryByUid.get(predecessor.predecessorUid);
+                if (!fromGeometry) {
+                    continue;
+                }
+                if (fromGeometry.uid === toGeometry.uid) {
+                    continue;
+                }
+                const endX = toGeometry.startX - config.targetInset;
+                const candidateLaneX = fromGeometry.endX + config.routeOffset + ((connectorIndex % 4) * config.routeSpacing);
+                const minLaneX = fromGeometry.endX + 4;
+                const maxLaneX = endX - 4;
+                const laneBaseX = maxLaneX <= minLaneX
+                    ? (fromGeometry.endX + endX) / 2
+                    : Math.max(minLaneX, Math.min(maxLaneX, candidateLaneX));
+                const path = buildDependencyConnectorPath(fromGeometry.endX, fromGeometry.midY, laneBaseX, endX, toGeometry.midY, config.cornerRadius);
+                parts.push(`<path class="dependencyPath" d="${path}" marker-end="url(#dependencyArrow)" data-from-uid="${escapeXml(fromGeometry.uid)}" data-to-uid="${escapeXml(toGeometry.uid)}" data-link-type="FS"/>`);
+                connectorIndex += 1;
+            }
+        }
+        return parts;
+    }
+    function buildShapeGeometry(row, chartOriginX, chartOriginY, cellWidth, rangeInset, milestoneHalfWidth) {
+        if (row.startIndex === null || row.endIndex === null) {
+            return null;
+        }
+        const startX = row.kind === "milestone"
+            ? chartOriginX + (row.startIndex * cellWidth) + (cellWidth / 2) - milestoneHalfWidth
+            : chartOriginX + (row.startIndex * cellWidth) + rangeInset;
+        const endX = row.kind === "milestone"
+            ? chartOriginX + (row.startIndex * cellWidth) + (cellWidth / 2) + milestoneHalfWidth
+            : chartOriginX + (row.endIndex * cellWidth) + cellWidth - rangeInset;
+        return {
+            uid: row.task.uid,
+            kind: row.kind,
+            startX,
+            endX,
+            midY: chartOriginY + row.y + (ROW_HEIGHT / 2)
+        };
+    }
+    function buildDependencyConnectorPath(startX, startY, laneX, endX, endY, radius) {
+        if (endX <= startX) {
+            return `M ${startX} ${startY} L ${startX} ${startY}`;
+        }
+        if (startY === endY) {
+            return `M ${startX} ${startY} L ${endX} ${endY}`;
+        }
+        const directionY = endY > startY ? 1 : -1;
+        const horizontalRoom = Math.max(2, laneX - startX);
+        const targetRoom = Math.max(2, endX - laneX);
+        const verticalRoom = Math.max(2, Math.abs(endY - startY));
+        const usableRadius = Math.min(radius, horizontalRoom * 0.8, targetRoom * 0.8, verticalRoom / 3);
+        const startCurveX = startX + usableRadius;
+        const startCurveY = startY + (directionY * usableRadius);
+        const simpleEndCurveX = endX - usableRadius;
+        if (targetRoom >= Math.max(18, usableRadius * 3)) {
+            const horizontalStartX = laneX + usableRadius;
+            return [
+                `M ${startX} ${startY}`,
+                `C ${startCurveX} ${startY} ${laneX} ${startY} ${laneX} ${startCurveY}`,
+                `L ${laneX} ${endY - (directionY * usableRadius)}`,
+                `C ${laneX} ${endY - (directionY * Math.max(3, usableRadius * 0.45))} ${laneX} ${endY} ${horizontalStartX} ${endY}`,
+                `L ${simpleEndCurveX} ${endY}`,
+                `L ${endX} ${endY}`
+            ].join(" ");
+        }
+        const endCurveEntryX = endX - Math.max(usableRadius, 8);
+        const midY = startY + ((endY - startY) / 2);
+        const axisX = (startX + endCurveEntryX) / 2;
+        const symmetricBulge = Math.min(Math.max(18, usableRadius * 2.4), Math.max(18, (endCurveEntryX - startX) * 0.95));
+        const midRise = Math.min(Math.max(10, usableRadius * 1.3), Math.max(10, verticalRoom * 0.32));
+        return [
+            `M ${startX} ${startY}`,
+            `C ${axisX + symmetricBulge} ${startY} ${axisX + symmetricBulge} ${midY - (directionY * midRise)} ${axisX} ${midY}`,
+            `C ${axisX - symmetricBulge} ${midY + (directionY * midRise)} ${axisX - symmetricBulge} ${endY} ${endCurveEntryX} ${endY}`,
+            `L ${endX} ${endY}`
+        ].join(" ");
     }
     function buildPlacementDecision(anchor, x, textWidth, reason, geometry, config, extras = {}) {
         return {

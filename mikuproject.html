@@ -3053,6 +3053,9 @@ md-outlined-select.md-outlined-field:focus-within::part(container) {
   
   
   
+  
+  
+  
   <script>
 (()=>{function s(o,e,t,r){var i=arguments.length,n=i<3?e:r===null?r=Object.getOwnPropertyDescriptor(e,t):r,a;if(typeof Reflect=="object"&&typeof Reflect.decorate=="function")n=Reflect.decorate(o,e,t,r);else for(var d=o.length-1;d>=0;d--)(a=o[d])&&(n=(i<3?a(n):i>3?a(e,t,n):a(e,t))||n);return i>3&&n&&Object.defineProperty(e,t,n),n}var E=o=>(e,t)=>{t!==void 0?t.addInitializer(()=>{customElements.define(o,e)}):customElements.define(o,e)};var Qe=globalThis,et=Qe.ShadowRoot&&(Qe.ShadyCSS===void 0||Qe.ShadyCSS.nativeShadow)&&"adoptedStyleSheets"in Document.prototype&&"replace"in CSSStyleSheet.prototype,Bt=Symbol(),$r=new WeakMap,Ne=class{constructor(e,t,r){if(this._$cssResult$=!0,r!==Bt)throw Error("CSSResult is not constructable. Use `unsafeCSS` or `css` instead.");this.cssText=e,this.t=t}get styleSheet(){let e=this.o,t=this.t;if(et&&e===void 0){let r=t!==void 0&&t.length===1;r&&(e=$r.get(t)),e===void 0&&((this.o=e=new CSSStyleSheet).replaceSync(this.cssText),r&&$r.set(t,e))}return e}toString(){return this.cssText}},Tr=o=>new Ne(typeof o=="string"?o:o+"",void 0,Bt),g=(o,...e)=>{let t=o.length===1?o[0]:e.reduce((r,i,n)=>r+(a=>{if(a._$cssResult$===!0)return a.cssText;if(typeof a=="number")return a;throw Error("Value passed to 'css' function must be a 'css' function result: "+a+". Use 'unsafeCSS' to pass non-literal values, but take care to ensure page security.")})(i)+o[n+1],o[0]);return new Ne(t,o,Bt)},Sr=(o,e)=>{if(et)o.adoptedStyleSheets=e.map(t=>t instanceof CSSStyleSheet?t:t.styleSheet);else for(let t of e){let r=document.createElement("style"),i=Qe.litNonce;i!==void 0&&r.setAttribute("nonce",i),r.textContent=t.cssText,o.appendChild(r)}},Ft=et?o=>o:o=>o instanceof CSSStyleSheet?(e=>{let t="";for(let r of e.cssRules)t+=r.cssText;return Tr(t)})(o):o;var{is:Io,defineProperty:ko,getOwnPropertyDescriptor:Oo,getOwnPropertyNames:Ro,getOwnPropertySymbols:Po,getPrototypeOf:Lo}=Object,ce=globalThis,Ir=ce.trustedTypes,Do=Ir?Ir.emptyScript:"",zo=ce.reactiveElementPolyfillSupport,Be=(o,e)=>o,Fe={toAttribute(o,e){switch(e){case Boolean:o=o?Do:null;break;case Object:case Array:o=o==null?o:JSON.stringify(o)}return o},fromAttribute(o,e){let t=o;switch(e){case Boolean:t=o!==null;break;case Number:t=o===null?null:Number(o);break;case Object:case Array:try{t=JSON.parse(o)}catch{t=null}}return t}},tt=(o,e)=>!Io(o,e),kr={attribute:!0,type:String,converter:Fe,reflect:!1,useDefault:!1,hasChanged:tt};Symbol.metadata??(Symbol.metadata=Symbol("metadata")),ce.litPropertyMetadata??(ce.litPropertyMetadata=new WeakMap);var re=class extends HTMLElement{static addInitializer(e){this._$Ei(),(this.l??(this.l=[])).push(e)}static get observedAttributes(){return this.finalize(),this._$Eh&&[...this._$Eh.keys()]}static createProperty(e,t=kr){if(t.state&&(t.attribute=!1),this._$Ei(),this.prototype.hasOwnProperty(e)&&((t=Object.create(t)).wrapped=!0),this.elementProperties.set(e,t),!t.noAccessor){let r=Symbol(),i=this.getPropertyDescriptor(e,r,t);i!==void 0&&ko(this.prototype,e,i)}}static getPropertyDescriptor(e,t,r){let{get:i,set:n}=Oo(this.prototype,e)??{get(){return this[t]},set(a){this[t]=a}};return{get:i,set(a){let d=i?.call(this);n?.call(this,a),this.requestUpdate(e,d,r)},configurable:!0,enumerable:!0}}static getPropertyOptions(e){return this.elementProperties.get(e)??kr}static _$Ei(){if(this.hasOwnProperty(Be("elementProperties")))return;let e=Lo(this);e.finalize(),e.l!==void 0&&(this.l=[...e.l]),this.elementProperties=new Map(e.elementProperties)}static finalize(){if(this.hasOwnProperty(Be("finalized")))return;if(this.finalized=!0,this._$Ei(),this.hasOwnProperty(Be("properties"))){let t=this.properties,r=[...Ro(t),...Po(t)];for(let i of r)this.createProperty(i,t[i])}let e=this[Symbol.metadata];if(e!==null){let t=litPropertyMetadata.get(e);if(t!==void 0)for(let[r,i]of t)this.elementProperties.set(r,i)}this._$Eh=new Map;for(let[t,r]of this.elementProperties){let i=this._$Eu(t,r);i!==void 0&&this._$Eh.set(i,t)}this.elementStyles=this.finalizeStyles(this.styles)}static finalizeStyles(e){let t=[];if(Array.isArray(e)){let r=new Set(e.flat(1/0).reverse());for(let i of r)t.unshift(Ft(i))}else e!==void 0&&t.push(Ft(e));return t}static _$Eu(e,t){let r=t.attribute;return r===!1?void 0:typeof r=="string"?r:typeof e=="string"?e.toLowerCase():void 0}constructor(){super(),this._$Ep=void 0,this.isUpdatePending=!1,this.hasUpdated=!1,this._$Em=null,this._$Ev()}_$Ev(){this._$ES=new Promise(e=>this.enableUpdating=e),this._$AL=new Map,this._$E_(),this.requestUpdate(),this.constructor.l?.forEach(e=>e(this))}addController(e){(this._$EO??(this._$EO=new Set)).add(e),this.renderRoot!==void 0&&this.isConnected&&e.hostConnected?.()}removeController(e){this._$EO?.delete(e)}_$E_(){let e=new Map,t=this.constructor.elementProperties;for(let r of t.keys())this.hasOwnProperty(r)&&(e.set(r,this[r]),delete this[r]);e.size>0&&(this._$Ep=e)}createRenderRoot(){let e=this.shadowRoot??this.attachShadow(this.constructor.shadowRootOptions);return Sr(e,this.constructor.elementStyles),e}connectedCallback(){this.renderRoot??(this.renderRoot=this.createRenderRoot()),this.enableUpdating(!0),this._$EO?.forEach(e=>e.hostConnected?.())}enableUpdating(e){}disconnectedCallback(){this._$EO?.forEach(e=>e.hostDisconnected?.())}attributeChangedCallback(e,t,r){this._$AK(e,r)}_$ET(e,t){let r=this.constructor.elementProperties.get(e),i=this.constructor._$Eu(e,r);if(i!==void 0&&r.reflect===!0){let n=(r.converter?.toAttribute!==void 0?r.converter:Fe).toAttribute(t,r.type);this._$Em=e,n==null?this.removeAttribute(i):this.setAttribute(i,n),this._$Em=null}}_$AK(e,t){let r=this.constructor,i=r._$Eh.get(e);if(i!==void 0&&this._$Em!==i){let n=r.getPropertyOptions(i),a=typeof n.converter=="function"?{fromAttribute:n.converter}:n.converter?.fromAttribute!==void 0?n.converter:Fe;this._$Em=i;let d=a.fromAttribute(t,n.type);this[i]=d??this._$Ej?.get(i)??d,this._$Em=null}}requestUpdate(e,t,r,i=!1,n){if(e!==void 0){let a=this.constructor;if(i===!1&&(n=this[e]),r??(r=a.getPropertyOptions(e)),!((r.hasChanged??tt)(n,t)||r.useDefault&&r.reflect&&n===this._$Ej?.get(e)&&!this.hasAttribute(a._$Eu(e,r))))return;this.C(e,t,r)}this.isUpdatePending===!1&&(this._$ES=this._$EP())}C(e,t,{useDefault:r,reflect:i,wrapped:n},a){r&&!(this._$Ej??(this._$Ej=new Map)).has(e)&&(this._$Ej.set(e,a??t??this[e]),n!==!0||a!==void 0)||(this._$AL.has(e)||(this.hasUpdated||r||(t=void 0),this._$AL.set(e,t)),i===!0&&this._$Em!==e&&(this._$Eq??(this._$Eq=new Set)).add(e))}async _$EP(){this.isUpdatePending=!0;try{await this._$ES}catch(t){Promise.reject(t)}let e=this.scheduleUpdate();return e!=null&&await e,!this.isUpdatePending}scheduleUpdate(){return this.performUpdate()}performUpdate(){if(!this.isUpdatePending)return;if(!this.hasUpdated){if(this.renderRoot??(this.renderRoot=this.createRenderRoot()),this._$Ep){for(let[i,n]of this._$Ep)this[i]=n;this._$Ep=void 0}let r=this.constructor.elementProperties;if(r.size>0)for(let[i,n]of r){let{wrapped:a}=n,d=this[i];a!==!0||this._$AL.has(i)||d===void 0||this.C(i,void 0,n,d)}}let e=!1,t=this._$AL;try{e=this.shouldUpdate(t),e?(this.willUpdate(t),this._$EO?.forEach(r=>r.hostUpdate?.()),this.update(t)):this._$EM()}catch(r){throw e=!1,this._$EM(),r}e&&this._$AE(t)}willUpdate(e){}_$AE(e){this._$EO?.forEach(t=>t.hostUpdated?.()),this.hasUpdated||(this.hasUpdated=!0,this.firstUpdated(e)),this.updated(e)}_$EM(){this._$AL=new Map,this.isUpdatePending=!1}get updateComplete(){return this.getUpdateComplete()}getUpdateComplete(){return this._$ES}shouldUpdate(e){return!0}update(e){this._$Eq&&(this._$Eq=this._$Eq.forEach(t=>this._$ET(t,this[t]))),this._$EM()}updated(e){}firstUpdated(e){}};re.elementStyles=[],re.shadowRootOptions={mode:"open"},re[Be("elementProperties")]=new Map,re[Be("finalized")]=new Map,zo?.({ReactiveElement:re}),(ce.reactiveElementVersions??(ce.reactiveElementVersions=[])).push("2.1.2");var Mo={attribute:!0,type:String,converter:Fe,reflect:!1,hasChanged:tt},No=(o=Mo,e,t)=>{let{kind:r,metadata:i}=t,n=globalThis.litPropertyMetadata.get(i);if(n===void 0&&globalThis.litPropertyMetadata.set(i,n=new Map),r==="setter"&&((o=Object.create(o)).wrapped=!0),n.set(t.name,o),r==="accessor"){let{name:a}=t;return{set(d){let c=e.get.call(this);e.set.call(this,d),this.requestUpdate(a,c,o,!0,d)},init(d){return d!==void 0&&this.C(a,void 0,o,d),d}}}if(r==="setter"){let{name:a}=t;return function(d){let c=this[a];e.call(this,d),this.requestUpdate(a,c,o,!0,d)}}throw Error("Unsupported decorator location: "+r)};function l(o){return(e,t)=>typeof t=="object"?No(o,e,t):((r,i,n)=>{let a=i.hasOwnProperty(n);return i.constructor.createProperty(n,r),a?Object.getOwnPropertyDescriptor(i,n):void 0})(o,e,t)}function k(o){return l({...o,state:!0,attribute:!1})}var Q=(o,e,t)=>(t.configurable=!0,t.enumerable=!0,Reflect.decorate&&typeof e!="object"&&Object.defineProperty(o,e,t),t);function S(o,e){return(t,r,i)=>{let n=a=>a.renderRoot?.querySelector(o)??null;if(e){let{get:a,set:d}=typeof r=="object"?t:i??(()=>{let c=Symbol();return{get(){return this[c]},set(h){this[c]=h}}})();return Q(t,r,{get(){let c=a.call(this);return c===void 0&&(c=n(this),(c!==null||this.hasUpdated)&&d.call(this,c)),c}})}return Q(t,r,{get(){return n(this)}})}}var Bo;function Or(o){return(e,t)=>Q(e,t,{get(){return(this.renderRoot??Bo??(Bo=document.createDocumentFragment())).querySelectorAll(o)}})}function N(o){return(e,t)=>{let{slot:r,selector:i}=o??{},n="slot"+(r?`[name=${r}]`:":not([name])");return Q(e,t,{get(){let a=this.renderRoot?.querySelector(n),d=a?.assignedElements(o)??[];return i===void 0?d:d.filter(c=>c.matches(i))}})}}function rt(o){return(e,t)=>{let{slot:r}=o??{},i="slot"+(r?`[name=${r}]`:":not([name])");return Q(e,t,{get(){return this.renderRoot?.querySelector(i)?.assignedNodes(o)??[]}})}}var qe=globalThis,Rr=o=>o,ot=qe.trustedTypes,Pr=ot?ot.createPolicy("lit-html",{createHTML:o=>o}):void 0,qt="$lit$",oe=`lit$${Math.random().toFixed(9).slice(2)}$`,Vt="?"+oe,Fo=`<${Vt}>`,_e=document,Ve=()=>_e.createComment(""),He=o=>o===null||typeof o!="object"&&typeof o!="function",Ht=Array.isArray,Br=o=>Ht(o)||typeof o?.[Symbol.iterator]=="function",Ut=`[ 	
 \f\r]`,Ue=/<(?:(!--|\/[^a-zA-Z])|(\/?[a-zA-Z][^>\s]*)|(\/?$))/g,Lr=/-->/g,Dr=/>/g,ye=RegExp(`>|${Ut}(?:([^\\s"'>=/]+)(${Ut}*=${Ut}*(?:[^ 	
@@ -5337,6 +5340,184 @@ if (!customElements.get("lht-page-menu")) {
  * SPDX-License-Identifier: Apache-2.0
  */
 (() => {
+    function extractLastJsonBlock(value) {
+        var _a, _b;
+        const matches = Array.from(value.matchAll(/```json\s*([\s\S]*?)```/g));
+        if (matches.length > 0) {
+            return ((_b = (_a = matches.at(-1)) === null || _a === void 0 ? void 0 : _a[1]) === null || _b === void 0 ? void 0 : _b.trim()) || "";
+        }
+        return value.trim();
+    }
+    function detectJsonDocumentKind(documentLike) {
+        if (!documentLike || typeof documentLike !== "object") {
+            return undefined;
+        }
+        const candidate = documentLike;
+        if (candidate.format === "mikuproject_workbook_json") {
+            return "workbook_json";
+        }
+        if (candidate.view_type === "project_draft_view") {
+            return "project_draft_view";
+        }
+        if (Array.isArray(candidate.operations)) {
+            return "patch_json";
+        }
+        return undefined;
+    }
+    globalThis.__mikuprojectAiJsonUtil = {
+        extractLastJsonBlock,
+        detectJsonDocumentKind
+    };
+})();
+  </script>
+
+  <script>
+/*
+ * Copyright 2026 Toshiki Iga
+ * SPDX-License-Identifier: Apache-2.0
+ */
+(() => {
+    const ZIP_TEXT_ENCODER = new TextEncoder();
+    const ZIP_CRC32_TABLE = buildZipCrc32Table();
+    function parseOptionalNonNegativeInteger(raw) {
+        const value = raw.trim();
+        if (!value) {
+            return undefined;
+        }
+        const parsed = Number(value);
+        if (!Number.isFinite(parsed)) {
+            return undefined;
+        }
+        return Math.max(0, Math.floor(parsed));
+    }
+    function formatTimestampCompact(date) {
+        return [
+            date.getFullYear(),
+            String(date.getMonth() + 1).padStart(2, "0"),
+            String(date.getDate()).padStart(2, "0"),
+            String(date.getHours()).padStart(2, "0"),
+            String(date.getMinutes()).padStart(2, "0")
+        ].join("");
+    }
+    function formatSaveStamp(date) {
+        return [
+            date.getFullYear(),
+            String(date.getMonth() + 1).padStart(2, "0"),
+            String(date.getDate()).padStart(2, "0")
+        ].join("-") + " " + [
+            String(date.getHours()).padStart(2, "0"),
+            String(date.getMinutes()).padStart(2, "0")
+        ].join(":");
+    }
+    function encodeUtf8(value) {
+        return ZIP_TEXT_ENCODER.encode(value);
+    }
+    function concatUint8Arrays(parts) {
+        const totalLength = parts.reduce((sum, part) => sum + part.byteLength, 0);
+        const result = new Uint8Array(totalLength);
+        let offset = 0;
+        for (const part of parts) {
+            result.set(part, offset);
+            offset += part.byteLength;
+        }
+        return result;
+    }
+    function computeZipCrc32(bytes) {
+        let crc = 0xffffffff;
+        for (const byte of bytes) {
+            crc = (crc >>> 8) ^ ZIP_CRC32_TABLE[(crc ^ byte) & 0xff];
+        }
+        return (crc ^ 0xffffffff) >>> 0;
+    }
+    function buildZipCrc32Table() {
+        const table = new Uint32Array(256);
+        for (let index = 0; index < 256; index += 1) {
+            let value = index;
+            for (let bit = 0; bit < 8; bit += 1) {
+                value = (value & 1) !== 0 ? (0xedb88320 ^ (value >>> 1)) : (value >>> 1);
+            }
+            table[index] = value >>> 0;
+        }
+        return table;
+    }
+    function packZipEntries(entries) {
+        const localParts = [];
+        const centralParts = [];
+        let offset = 0;
+        const zipFixedModTime = 0;
+        const zipFixedModDate = ((2025 - 1980) << 9) | (1 << 5) | 1;
+        for (const entry of entries) {
+            const nameBytes = encodeUtf8(entry.name);
+            const crc32 = computeZipCrc32(entry.data);
+            const localHeader = new Uint8Array(30 + nameBytes.length);
+            const localView = new DataView(localHeader.buffer);
+            localView.setUint32(0, 0x04034b50, true);
+            localView.setUint16(4, 20, true);
+            localView.setUint16(6, 0, true);
+            localView.setUint16(8, 0, true);
+            localView.setUint16(10, zipFixedModTime, true);
+            localView.setUint16(12, zipFixedModDate, true);
+            localView.setUint32(14, crc32, true);
+            localView.setUint32(18, entry.data.byteLength, true);
+            localView.setUint32(22, entry.data.byteLength, true);
+            localView.setUint16(26, nameBytes.length, true);
+            localView.setUint16(28, 0, true);
+            localHeader.set(nameBytes, 30);
+            const centralHeader = new Uint8Array(46 + nameBytes.length);
+            const centralView = new DataView(centralHeader.buffer);
+            centralView.setUint32(0, 0x02014b50, true);
+            centralView.setUint16(4, 20, true);
+            centralView.setUint16(6, 20, true);
+            centralView.setUint16(8, 0, true);
+            centralView.setUint16(10, 0, true);
+            centralView.setUint16(12, zipFixedModTime, true);
+            centralView.setUint16(14, zipFixedModDate, true);
+            centralView.setUint32(16, crc32, true);
+            centralView.setUint32(20, entry.data.byteLength, true);
+            centralView.setUint32(24, entry.data.byteLength, true);
+            centralView.setUint16(28, nameBytes.length, true);
+            centralView.setUint16(30, 0, true);
+            centralView.setUint16(32, 0, true);
+            centralView.setUint16(34, 0, true);
+            centralView.setUint16(36, 0, true);
+            centralView.setUint32(38, 0, true);
+            centralView.setUint32(42, offset, true);
+            centralHeader.set(nameBytes, 46);
+            localParts.push(localHeader, entry.data);
+            centralParts.push(centralHeader);
+            offset += localHeader.byteLength + entry.data.byteLength;
+        }
+        const centralDirectoryOffset = offset;
+        const centralDirectorySize = centralParts.reduce((sum, part) => sum + part.byteLength, 0);
+        const endOfCentralDirectory = new Uint8Array(22);
+        const endView = new DataView(endOfCentralDirectory.buffer);
+        endView.setUint32(0, 0x06054b50, true);
+        endView.setUint16(4, 0, true);
+        endView.setUint16(6, 0, true);
+        endView.setUint16(8, entries.length, true);
+        endView.setUint16(10, entries.length, true);
+        endView.setUint32(12, centralDirectorySize, true);
+        endView.setUint32(16, centralDirectoryOffset, true);
+        endView.setUint16(20, 0, true);
+        return concatUint8Arrays([...localParts, ...centralParts, endOfCentralDirectory]);
+    }
+    globalThis.__mikuprojectMainUtil = {
+        parseOptionalNonNegativeInteger,
+        formatTimestampCompact,
+        formatSaveStamp,
+        encodeUtf8,
+        computeZipCrc32,
+        packZipEntries
+    };
+})();
+  </script>
+
+  <script>
+/*
+ * Copyright 2026 Toshiki Iga
+ * SPDX-License-Identifier: Apache-2.0
+ */
+(() => {
     const TEXT_ENCODER = new TextEncoder();
     const TEXT_DECODER = new TextDecoder();
     const INVALID_SHEET_NAME_PATTERN = /[:\\/?*\[\]]/;
@@ -6550,6 +6731,9 @@ if (!customElements.get("lht-page-menu")) {
  * SPDX-License-Identifier: Apache-2.0
  */
 (() => {
+    const DEFAULT_PROJECT_MINUTES_PER_DAY = 480;
+    const DEFAULT_PROJECT_MINUTES_PER_WEEK = 2400;
+    const DEFAULT_PROJECT_DAYS_PER_MONTH = 20;
     const SAMPLE_PROJECT_DRAFT_VIEW = {
         view_type: "project_draft_view",
         project: {
@@ -6557,9 +6741,9 @@ if (!customElements.get("lht-page-menu")) {
             planned_start: "2026-03-16",
             planned_finish: "2026-04-01",
             schedule_from_start: true,
-            minutes_per_day: 480,
-            minutes_per_week: 2400,
-            days_per_month: 20
+            minutes_per_day: DEFAULT_PROJECT_MINUTES_PER_DAY,
+            minutes_per_week: DEFAULT_PROJECT_MINUTES_PER_WEEK,
+            days_per_month: DEFAULT_PROJECT_DAYS_PER_MONTH
         },
         tasks: [
             {
@@ -8415,13 +8599,13 @@ if (!customElements.get("lht-page-menu")) {
                 scheduleFromStart: data.project.schedule_from_start !== undefined ? Boolean(data.project.schedule_from_start) : true,
                 minutesPerDay: typeof data.project.minutes_per_day === "number" && Number.isFinite(data.project.minutes_per_day)
                     ? data.project.minutes_per_day
-                    : undefined,
+                    : DEFAULT_PROJECT_MINUTES_PER_DAY,
                 minutesPerWeek: typeof data.project.minutes_per_week === "number" && Number.isFinite(data.project.minutes_per_week)
                     ? data.project.minutes_per_week
-                    : undefined,
+                    : DEFAULT_PROJECT_MINUTES_PER_WEEK,
                 daysPerMonth: typeof data.project.days_per_month === "number" && Number.isFinite(data.project.days_per_month)
                     ? data.project.days_per_month
-                    : undefined,
+                    : DEFAULT_PROJECT_DAYS_PER_MONTH,
                 outlineCodes: [],
                 wbsMasks: [],
                 extendedAttributes: []
@@ -14316,9 +14500,398 @@ if (!customElements.get("lht-page-menu")) {
  * SPDX-License-Identifier: Apache-2.0
  */
 (() => {
+    function getElement(doc, id) {
+        const element = doc.getElementById(id);
+        if (!element) {
+            throw new Error(`Element not found: ${id}`);
+        }
+        return element;
+    }
+    function getTextArea(doc, id) {
+        return getElement(doc, id);
+    }
+    function renderPreviewList(doc, containerId, items) {
+        const container = getElement(doc, containerId);
+        if (items.length === 0) {
+            container.innerHTML = `<div class="md-preview-empty">まだ表示できる項目がありません。</div>`;
+            return;
+        }
+        container.innerHTML = items.join("");
+    }
+    function formatFirstBaselineSummary(item) {
+        var _a, _b;
+        const baseline = item.baselines[0];
+        if (!baseline) {
+            return "-";
+        }
+        return `#${(_a = baseline.number) !== null && _a !== void 0 ? _a : "-"} ${baseline.start || "-"} -> ${baseline.finish || "-"} / Work=${baseline.work || "-"} / Cost=${(_b = baseline.cost) !== null && _b !== void 0 ? _b : "-"}`;
+    }
+    function formatFirstTimephasedSummary(item) {
+        var _a, _b;
+        const timephasedData = item.timephasedData[0];
+        if (!timephasedData) {
+            return "-";
+        }
+        return `Type=${(_a = timephasedData.type) !== null && _a !== void 0 ? _a : "-"} ${timephasedData.start || "-"} -> ${timephasedData.finish || "-"} / Unit=${(_b = timephasedData.unit) !== null && _b !== void 0 ? _b : "-"} / Value=${timephasedData.value || "-"}`;
+    }
+    function formatFirstExtendedAttributeSummary(item) {
+        const attribute = item.extendedAttributes[0];
+        if (!attribute) {
+            return "-";
+        }
+        return `FieldID=${attribute.fieldID || "-"} / Value=${attribute.value || "-"}`;
+    }
+    function formatFirstProjectExtendedAttributeSummary(project) {
+        const attribute = project.extendedAttributes[0];
+        if (!attribute) {
+            return "-";
+        }
+        return `FieldID=${attribute.fieldID || "-"} / FieldName=${attribute.fieldName || "-"} / Alias=${attribute.alias || "-"}`;
+    }
+    function formatFirstOutlineCodeSummary(project) {
+        const outlineCode = project.outlineCodes[0];
+        if (!outlineCode) {
+            return "-";
+        }
+        return `FieldID=${outlineCode.fieldID || "-"} / FieldName=${outlineCode.fieldName || "-"} / Alias=${outlineCode.alias || "-"}`;
+    }
+    function formatFirstWbsMaskSummary(project) {
+        var _a, _b;
+        const wbsMask = project.wbsMasks[0];
+        if (!wbsMask) {
+            return "-";
+        }
+        return `Level=${wbsMask.level} / Mask=${wbsMask.mask || "-"} / Length=${(_a = wbsMask.length) !== null && _a !== void 0 ? _a : "-"} / Sequence=${(_b = wbsMask.sequence) !== null && _b !== void 0 ? _b : "-"}`;
+    }
+    function formatCalendarWeekDaySummary(calendar) {
+        const weekDay = calendar.weekDays[0];
+        if (!weekDay) {
+            return "-";
+        }
+        const workingTimes = weekDay.workingTimes.length > 0
+            ? weekDay.workingTimes.map((item) => `${item.fromTime}-${item.toTime}`).join(", ")
+            : "-";
+        return `DayType=${weekDay.dayType} / Working=${weekDay.dayWorking ? 1 : 0} / Times=${workingTimes}`;
+    }
+    function formatCalendarExceptionSummary(calendar) {
+        const exception = calendar.exceptions[0];
+        if (!exception) {
+            return "-";
+        }
+        return `${exception.name || "(no name)"} ${exception.fromDate || "-"} -> ${exception.toDate || "-"} / Working=${exception.dayWorking ? 1 : 0}`;
+    }
+    function formatCalendarWorkWeekSummary(calendar) {
+        const workWeek = calendar.workWeeks[0];
+        if (!workWeek) {
+            return "-";
+        }
+        return `${workWeek.name || "(no name)"} ${workWeek.fromDate || "-"} -> ${workWeek.toDate || "-"} / WeekDays=${workWeek.weekDays.length}`;
+    }
+    function formatCalendarReferenceSummary(model, calendar) {
+        const projectRefs = model.project.calendarUID === calendar.uid ? 1 : 0;
+        const taskRefs = model.tasks.filter((task) => task.calendarUID === calendar.uid).length;
+        const resourceRefs = model.resources.filter((resource) => resource.calendarUID === calendar.uid).length;
+        const baseRefs = model.calendars.filter((item) => item.baseCalendarUID === calendar.uid).length;
+        return `Project=${projectRefs} / Tasks=${taskRefs} / Resources=${resourceRefs} / BaseOf=${baseRefs}`;
+    }
+    function formatCalendarLink(model, calendarUID) {
+        if (!calendarUID) {
+            return "-";
+        }
+        const calendar = model.calendars.find((item) => item.uid === calendarUID);
+        return calendar ? `${calendarUID} (${calendar.name || "(no name)"})` : `${calendarUID} (missing)`;
+    }
+    function formatTaskLink(model, taskUID) {
+        if (!taskUID) {
+            return "-";
+        }
+        const task = model.tasks.find((item) => item.uid === taskUID);
+        return task ? `${taskUID} (${task.name || "(no name)"})` : `${taskUID} (missing)`;
+    }
+    function formatResourceLink(model, resourceUID) {
+        if (!resourceUID) {
+            return "-";
+        }
+        const resource = model.resources.find((item) => item.uid === resourceUID);
+        return resource ? `${resourceUID} (${resource.name || "(no name)"})` : `${resourceUID} (missing)`;
+    }
+    function formatChangeValue(value) {
+        if (value === undefined) {
+            return "(empty)";
+        }
+        return String(value);
+    }
+    function escapeHtml(value) {
+        return value
+            .replace(/&/g, "&amp;")
+            .replace(/</g, "&lt;")
+            .replace(/>/g, "&gt;")
+            .replace(/"/g, "&quot;")
+            .replace(/'/g, "&#39;");
+    }
+    function updateFeedbackVisibility(doc) {
+        const stack = doc.querySelector(".md-feedback-stack");
+        const validationIssues = getElement(doc, "validationIssues");
+        const importWarnings = getElement(doc, "importWarnings");
+        const xlsxImportSummary = getElement(doc, "xlsxImportSummary");
+        const shouldShow = !validationIssues.classList.contains("md-hidden")
+            || !importWarnings.classList.contains("md-hidden")
+            || !xlsxImportSummary.classList.contains("md-hidden");
+        stack === null || stack === void 0 ? void 0 : stack.classList.toggle("md-hidden", !shouldShow);
+    }
+    function renderValidationIssues(doc, issues) {
+        const container = getElement(doc, "validationIssues");
+        const label = container.previousElementSibling;
+        if (issues.length === 0) {
+            container.classList.add("md-hidden");
+            container.innerHTML = "";
+            label === null || label === void 0 ? void 0 : label.classList.add("md-hidden");
+            updateFeedbackVisibility(doc);
+            return;
+        }
+        const sections = ["project", "tasks", "resources", "assignments", "calendars"];
+        const sectionLabels = {
+            project: "Project",
+            tasks: "Tasks",
+            resources: "Resources",
+            assignments: "Assignments",
+            calendars: "Calendars"
+        };
+        container.classList.remove("md-hidden");
+        label === null || label === void 0 ? void 0 : label.classList.remove("md-hidden");
+        container.innerHTML = `
+      <div class="md-issues__title">検証メッセージ</div>
+      ${sections
+            .map((scope) => {
+            const scopedIssues = issues.filter((issue) => issue.scope === scope);
+            if (scopedIssues.length === 0) {
+                return "";
+            }
+            return `
+            <div class="md-issues__section">
+              <div class="md-issues__section-title">${sectionLabels[scope]}</div>
+              <ul class="md-issues__list">
+                ${scopedIssues.map((issue) => `<li class="md-issues__item">[${issue.level}] ${issue.message}</li>`).join("")}
+              </ul>
+            </div>
+          `;
+        })
+            .join("")}
+    `;
+        updateFeedbackVisibility(doc);
+    }
+    function renderImportWarnings(doc, warnings) {
+        const container = getElement(doc, "importWarnings");
+        const label = container.previousElementSibling;
+        if (warnings.length === 0) {
+            container.classList.add("md-hidden");
+            container.innerHTML = "";
+            label === null || label === void 0 ? void 0 : label.classList.add("md-hidden");
+            updateFeedbackVisibility(doc);
+            return;
+        }
+        container.classList.remove("md-hidden");
+        label === null || label === void 0 ? void 0 : label.classList.remove("md-hidden");
+        container.innerHTML = `
+      <div class="md-issues__title">取込 warning</div>
+      <ul class="md-issues__list">
+        ${warnings.map((warning) => `<li class="md-issues__item">${escapeHtml(warning.message)}</li>`).join("")}
+      </ul>
+    `;
+        updateFeedbackVisibility(doc);
+    }
+    function renderXlsxImportSummary(doc, changes) {
+        const container = getElement(doc, "xlsxImportSummary");
+        const label = container.previousElementSibling;
+        if (changes.length === 0) {
+            container.classList.add("md-hidden");
+            container.innerHTML = "";
+            label === null || label === void 0 ? void 0 : label.classList.add("md-hidden");
+            updateFeedbackVisibility(doc);
+            return;
+        }
+        const scopeLabel = {
+            project: "Project",
+            tasks: "Tasks",
+            resources: "Resources",
+            assignments: "Assignments",
+            calendars: "Calendars"
+        };
+        const scopeCounts = {
+            project: 0,
+            tasks: 0,
+            resources: 0,
+            assignments: 0,
+            calendars: 0
+        };
+        const groupedByScope = new Map();
+        const groupedChanges = new Map();
+        for (const change of changes) {
+            const groupKey = `${change.scope}:${change.uid}:${change.label}`;
+            const currentGroup = groupedChanges.get(groupKey);
+            if (currentGroup) {
+                currentGroup.items.push({
+                    field: change.field,
+                    before: change.before,
+                    after: change.after
+                });
+                continue;
+            }
+            groupedChanges.set(groupKey, {
+                scope: change.scope,
+                uid: change.uid,
+                label: change.label,
+                items: [{
+                        field: change.field,
+                        before: change.before,
+                        after: change.after
+                    }]
+            });
+            scopeCounts[change.scope] += 1;
+        }
+        for (const group of groupedChanges.values()) {
+            const scopedGroups = groupedByScope.get(group.scope) || [];
+            scopedGroups.push({
+                uid: group.uid,
+                label: group.label,
+                items: group.items
+            });
+            groupedByScope.set(group.scope, scopedGroups);
+        }
+        const allScopes = ["project", "tasks", "resources", "assignments", "calendars"];
+        const changedScopes = allScopes.filter((scope) => scopeCounts[scope] > 0);
+        const unchangedScopes = allScopes.filter((scope) => scopeCounts[scope] === 0);
+        container.classList.remove("md-hidden");
+        label === null || label === void 0 ? void 0 : label.classList.remove("md-hidden");
+        container.innerHTML = `
+      <div class="md-xlsx-summary__title">XLSX Import 反映結果</div>
+      <div class="md-xlsx-summary__counts">
+        ${changedScopes.map((scope) => `<span class="md-xlsx-summary__count">${scopeLabel[scope]} ${scopeCounts[scope]}</span>`).join("")}
+      </div>
+      ${unchangedScopes.length > 0 ? `<div class="md-xlsx-summary__unchanged">変更なし: ${unchangedScopes.map((scope) => scopeLabel[scope]).join(", ")}</div>` : ""}
+      ${changedScopes.map((scope) => `
+        <div class="md-xlsx-summary__section">
+          <div class="md-xlsx-summary__section-title">${scopeLabel[scope]}</div>
+          <ul class="md-xlsx-summary__list">
+            ${(groupedByScope.get(scope) || []).map((group) => `
+              <li class="md-xlsx-summary__item">
+                <div class="md-xlsx-summary__item-title">UID=${group.uid} ${escapeHtml(group.label)}</div>
+                <div class="md-xlsx-summary__item-body">
+                  ${group.items.map((item) => `${escapeHtml(item.field)}: ${escapeHtml(formatChangeValue(item.before))} -> ${escapeHtml(formatChangeValue(item.after))}`).join(" / ")}
+                </div>
+              </li>
+            `).join("")}
+          </ul>
+        </div>
+      `).join("")}
+      <div class="md-xlsx-summary__hint">反映後の XML は更新済みです。必要なら XML Export で保存できます。</div>
+    `;
+        updateFeedbackVisibility(doc);
+    }
+    function updateSummary(doc, model, updateSvgButton) {
+        updateSvgButton();
+        getElement(doc, "summaryProjectName").textContent = (model === null || model === void 0 ? void 0 : model.project.name) || "-";
+        getElement(doc, "summaryTaskCount").textContent = String((model === null || model === void 0 ? void 0 : model.tasks.length) || 0);
+        getElement(doc, "summaryResourceCount").textContent = String((model === null || model === void 0 ? void 0 : model.resources.length) || 0);
+        getElement(doc, "summaryAssignmentCount").textContent = String((model === null || model === void 0 ? void 0 : model.assignments.length) || 0);
+        getElement(doc, "summaryCalendarCount").textContent = String((model === null || model === void 0 ? void 0 : model.calendars.length) || 0);
+        getTextArea(doc, "modelOutput").value = model ? JSON.stringify(model, null, 2) : "";
+        renderPreviewList(doc, "projectPreview", model ? [`
+      <div class="md-preview-item">
+        <div class="md-preview-item__title">${model.project.name || "(no name)"}</div>
+        <div class="md-preview-item__meta">Title=${model.project.title || "-"}
+Author=${model.project.author || "-"} / Company=${model.project.company || "-"}
+Start=${model.project.startDate || "-"} / Finish=${model.project.finishDate || "-"}
+Calendar=${formatCalendarLink(model, model.project.calendarUID)}
+OutlineCodes=${model.project.outlineCodes.length} / WBSMasks=${model.project.wbsMasks.length} / Ext=${model.project.extendedAttributes.length}
+OutlineCode1=${formatFirstOutlineCodeSummary(model.project)}
+WBSMask1=${formatFirstWbsMaskSummary(model.project)}
+Ext1=${formatFirstProjectExtendedAttributeSummary(model.project)}</div>
+      </div>
+    `] : []);
+        renderPreviewList(doc, "taskPreview", model ? model.tasks.map((task) => `
+      <div class="md-preview-item">
+        <div class="md-preview-item__title">${task.name || "(no name)"}</div>
+        <div class="md-preview-item__meta">UID=${task.uid} / ID=${task.id} / Outline=${task.outlineNumber || task.outlineLevel}
+Calendar=${formatCalendarLink(model, task.calendarUID)}
+Start=${task.start || "-"}
+Finish=${task.finish || "-"}
+Predecessors=${task.predecessors.map((item) => item.predecessorUid).join(", ") || "-"}
+Ext=${task.extendedAttributes.length} / Baselines=${task.baselines.length} / Timephased=${task.timephasedData.length}
+Ext1=${formatFirstExtendedAttributeSummary(task)}
+Baseline1=${formatFirstBaselineSummary(task)}
+Timephased1=${formatFirstTimephasedSummary(task)}</div>
+      </div>
+    `) : []);
+        renderPreviewList(doc, "resourcePreview", model ? model.resources.map((resource) => `
+      <div class="md-preview-item">
+        <div class="md-preview-item__title">${resource.name || "(no name)"}</div>
+        <div class="md-preview-item__meta">UID=${resource.uid} / ID=${resource.id}
+Initials=${resource.initials || "-"}
+Group=${resource.group || "-"}
+Calendar=${formatCalendarLink(model, resource.calendarUID)}
+Ext=${resource.extendedAttributes.length} / Baselines=${resource.baselines.length} / Timephased=${resource.timephasedData.length}
+Ext1=${formatFirstExtendedAttributeSummary(resource)}
+Baseline1=${formatFirstBaselineSummary(resource)}
+Timephased1=${formatFirstTimephasedSummary(resource)}</div>
+      </div>
+    `) : []);
+        renderPreviewList(doc, "assignmentPreview", model ? model.assignments.map((assignment) => `
+      <div class="md-preview-item">
+        <div class="md-preview-item__title">Assignment ${assignment.uid || "-"}</div>
+        <div class="md-preview-item__meta">Task=${formatTaskLink(model, assignment.taskUid)}
+Resource=${formatResourceLink(model, assignment.resourceUid)}
+Start=${assignment.start || "-"}
+Finish=${assignment.finish || "-"}
+Ext=${assignment.extendedAttributes.length} / Baselines=${assignment.baselines.length} / Timephased=${assignment.timephasedData.length}
+Ext1=${formatFirstExtendedAttributeSummary(assignment)}
+Baseline1=${formatFirstBaselineSummary(assignment)}
+Timephased1=${formatFirstTimephasedSummary(assignment)}</div>
+      </div>
+    `) : []);
+        renderPreviewList(doc, "calendarPreview", model ? model.calendars.map((calendar) => `
+      <div class="md-preview-item">
+        <div class="md-preview-item__title">${calendar.name || "(no name)"}</div>
+        <div class="md-preview-item__meta">UID=${calendar.uid}
+Base=${calendar.isBaseCalendar ? 1 : 0} / Baseline=${calendar.isBaselineCalendar ? 1 : 0} / BaseCalendarUID=${calendar.baseCalendarUID || "-"}
+WeekDays=${calendar.weekDays.length} / Exceptions=${calendar.exceptions.length} / WorkWeeks=${calendar.workWeeks.length}
+Refs=${formatCalendarReferenceSummary(model, calendar)}
+WeekDay1=${formatCalendarWeekDaySummary(calendar)}
+Exception1=${formatCalendarExceptionSummary(calendar)}
+WorkWeek1=${formatCalendarWorkWeekSummary(calendar)}</div>
+      </div>
+    `) : []);
+    }
+    globalThis.__mikuprojectMainRender = {
+        renderValidationIssues,
+        renderImportWarnings,
+        renderXlsxImportSummary,
+        updateSummary
+    };
+})();
+  </script>
+
+  <script>
+/*
+ * Copyright 2026 Toshiki Iga
+ * SPDX-License-Identifier: Apache-2.0
+ */
+(() => {
     const mikuprojectXml = globalThis.__mikuprojectXml;
     if (!mikuprojectXml) {
         throw new Error("mikuproject XML module is not loaded");
+    }
+    const mikuprojectAiJsonUtil = globalThis.__mikuprojectAiJsonUtil;
+    if (!mikuprojectAiJsonUtil) {
+        throw new Error("mikuproject AI JSON util module is not loaded");
+    }
+    const mikuprojectMainUtil = globalThis.__mikuprojectMainUtil;
+    if (!mikuprojectMainUtil) {
+        throw new Error("mikuproject main util module is not loaded");
+    }
+    const mikuprojectMainRender = globalThis.__mikuprojectMainRender;
+    if (!mikuprojectMainRender) {
+        throw new Error("mikuproject main render module is not loaded");
     }
     const mikuprojectExcelIo = globalThis.__mikuprojectExcelIo;
     if (!mikuprojectExcelIo) {
@@ -14358,8 +14931,6 @@ if (!customElements.get("lht-page-menu")) {
     let currentSvgPreviewMode = "daily";
     let isXmlSourceDirty = true;
     let isRefreshingTransformTab = false;
-    const ZIP_TEXT_ENCODER = new TextEncoder();
-    const ZIP_CRC32_TABLE = buildZipCrc32Table();
     function getElement(id) {
         const element = document.getElementById(id);
         if (!element) {
@@ -14469,15 +15040,7 @@ if (!customElements.get("lht-page-menu")) {
         setActiveTab(currentTabId);
     }
     function parseOptionalNonNegativeInteger(raw) {
-        const value = raw.trim();
-        if (!value) {
-            return undefined;
-        }
-        const parsed = Number(value);
-        if (!Number.isFinite(parsed)) {
-            return undefined;
-        }
-        return Math.max(0, Math.floor(parsed));
+        return mikuprojectMainUtil.parseOptionalNonNegativeInteger(raw);
     }
     function parseWbsDisplayDaysBeforeBaseDate() {
         return parseOptionalNonNegativeInteger(getInput("wbsDisplayDaysBeforeInput").value);
@@ -14597,105 +15160,7 @@ if (!customElements.get("lht-page-menu")) {
         window.setTimeout(() => URL.revokeObjectURL(objectUrl), 0);
     }
     function formatTimestampCompact(date) {
-        return [
-            date.getFullYear(),
-            String(date.getMonth() + 1).padStart(2, "0"),
-            String(date.getDate()).padStart(2, "0"),
-            String(date.getHours()).padStart(2, "0"),
-            String(date.getMinutes()).padStart(2, "0")
-        ].join("");
-    }
-    function encodeUtf8(value) {
-        return ZIP_TEXT_ENCODER.encode(value);
-    }
-    function concatUint8Arrays(parts) {
-        const totalLength = parts.reduce((sum, part) => sum + part.byteLength, 0);
-        const result = new Uint8Array(totalLength);
-        let offset = 0;
-        for (const part of parts) {
-            result.set(part, offset);
-            offset += part.byteLength;
-        }
-        return result;
-    }
-    function computeZipCrc32(bytes) {
-        let crc = 0xffffffff;
-        for (const byte of bytes) {
-            crc = (crc >>> 8) ^ ZIP_CRC32_TABLE[(crc ^ byte) & 0xff];
-        }
-        return (crc ^ 0xffffffff) >>> 0;
-    }
-    function buildZipCrc32Table() {
-        const table = new Uint32Array(256);
-        for (let index = 0; index < 256; index += 1) {
-            let value = index;
-            for (let bit = 0; bit < 8; bit += 1) {
-                value = (value & 1) !== 0 ? (0xedb88320 ^ (value >>> 1)) : (value >>> 1);
-            }
-            table[index] = value >>> 0;
-        }
-        return table;
-    }
-    function packZipEntries(entries) {
-        const localParts = [];
-        const centralParts = [];
-        let offset = 0;
-        const zipFixedModTime = 0;
-        const zipFixedModDate = ((2025 - 1980) << 9) | (1 << 5) | 1;
-        for (const entry of entries) {
-            const nameBytes = encodeUtf8(entry.name);
-            const crc32 = computeZipCrc32(entry.data);
-            const localHeader = new Uint8Array(30 + nameBytes.length);
-            const localView = new DataView(localHeader.buffer);
-            localView.setUint32(0, 0x04034b50, true);
-            localView.setUint16(4, 20, true);
-            localView.setUint16(6, 0, true);
-            localView.setUint16(8, 0, true);
-            localView.setUint16(10, zipFixedModTime, true);
-            localView.setUint16(12, zipFixedModDate, true);
-            localView.setUint32(14, crc32, true);
-            localView.setUint32(18, entry.data.byteLength, true);
-            localView.setUint32(22, entry.data.byteLength, true);
-            localView.setUint16(26, nameBytes.length, true);
-            localView.setUint16(28, 0, true);
-            localHeader.set(nameBytes, 30);
-            const centralHeader = new Uint8Array(46 + nameBytes.length);
-            const centralView = new DataView(centralHeader.buffer);
-            centralView.setUint32(0, 0x02014b50, true);
-            centralView.setUint16(4, 20, true);
-            centralView.setUint16(6, 20, true);
-            centralView.setUint16(8, 0, true);
-            centralView.setUint16(10, 0, true);
-            centralView.setUint16(12, zipFixedModTime, true);
-            centralView.setUint16(14, zipFixedModDate, true);
-            centralView.setUint32(16, crc32, true);
-            centralView.setUint32(20, entry.data.byteLength, true);
-            centralView.setUint32(24, entry.data.byteLength, true);
-            centralView.setUint16(28, nameBytes.length, true);
-            centralView.setUint16(30, 0, true);
-            centralView.setUint16(32, 0, true);
-            centralView.setUint16(34, 0, true);
-            centralView.setUint16(36, 0, true);
-            centralView.setUint32(38, 0, true);
-            centralView.setUint32(42, offset, true);
-            centralHeader.set(nameBytes, 46);
-            localParts.push(localHeader, entry.data);
-            centralParts.push(centralHeader);
-            offset += localHeader.byteLength + entry.data.byteLength;
-        }
-        const centralDirectoryOffset = offset;
-        const centralDirectorySize = centralParts.reduce((sum, part) => sum + part.byteLength, 0);
-        const endOfCentralDirectory = new Uint8Array(22);
-        const endView = new DataView(endOfCentralDirectory.buffer);
-        endView.setUint32(0, 0x06054b50, true);
-        endView.setUint16(4, 0, true);
-        endView.setUint16(6, 0, true);
-        endView.setUint16(8, entries.length, true);
-        endView.setUint16(10, entries.length, true);
-        endView.setUint32(12, centralDirectorySize, true);
-        endView.setUint32(16, centralDirectoryOffset, true);
-        endView.setUint16(20, 0, true);
-        return concatUint8Arrays([...localParts, ...centralParts, endOfCentralDirectory]);
+        return mikuprojectMainUtil.formatTimestampCompact(date);
     }
     async function renderSvgPreview() {
         if (!currentModel) {
@@ -14775,27 +15240,27 @@ if (!customElements.get("lht-page-menu")) {
             "- *.editjson: AI-facing projection exports"
         ].join("\n");
         const entries = [
-            { name: "README.txt", data: encodeUtf8(`${allReadmeText}\n`) },
-            { name: `mikuproject-export-${stamp}.xml`, data: encodeUtf8(`${xmlText}\n`) },
+            { name: "README.txt", data: mikuprojectMainUtil.encodeUtf8(`${allReadmeText}\n`) },
+            { name: `mikuproject-export-${stamp}.xml`, data: mikuprojectMainUtil.encodeUtf8(`${xmlText}\n`) },
             { name: `mikuproject-export-${stamp}.xlsx`, data: codec.exportWorkbook(workbook) },
-            { name: `mikuproject-workbook-${stamp}.json`, data: encodeUtf8(`${workbookJsonText}\n`) },
-            { name: `mikuproject-export-${stamp}.csv`, data: encodeUtf8(`${csvText}\n`) },
+            { name: `mikuproject-workbook-${stamp}.json`, data: mikuprojectMainUtil.encodeUtf8(`${workbookJsonText}\n`) },
+            { name: `mikuproject-export-${stamp}.csv`, data: mikuprojectMainUtil.encodeUtf8(`${csvText}\n`) },
             { name: `mikuproject-wbs-${stamp}.xlsx`, data: codec.exportWorkbook(wbsWorkbook) },
-            { name: `mikuproject-wbs-${dateOnlyStamp}.md`, data: encodeUtf8(`${wbsMarkdown}\n`) },
-            { name: `mikuproject-wbs-daily-${stamp}.svg`, data: encodeUtf8(dailySvg) },
-            { name: `mikuproject-wbs-weekly-${stamp}.svg`, data: encodeUtf8(weeklySvg) },
-            { name: `mikuproject-wbs-mermaid-${stamp}.md`, data: encodeUtf8(`\`\`\`mermaid\n${mermaidText}\n\`\`\`\n`) }
+            { name: `mikuproject-wbs-${dateOnlyStamp}.md`, data: mikuprojectMainUtil.encodeUtf8(`${wbsMarkdown}\n`) },
+            { name: `mikuproject-wbs-daily-${stamp}.svg`, data: mikuprojectMainUtil.encodeUtf8(dailySvg) },
+            { name: `mikuproject-wbs-weekly-${stamp}.svg`, data: mikuprojectMainUtil.encodeUtf8(weeklySvg) },
+            { name: `mikuproject-wbs-mermaid-${stamp}.md`, data: mikuprojectMainUtil.encodeUtf8(`\`\`\`mermaid\n${mermaidText}\n\`\`\`\n`) }
         ];
         for (const entry of monthlyArchive.entries) {
             entries.push({
                 name: `monthly-calendar/${entry.fileName}`,
-                data: encodeUtf8(entry.svg)
+                data: mikuprojectMainUtil.encodeUtf8(entry.svg)
             });
         }
-        entries.push({ name: "mikuproject-project-overview-view.editjson", data: encodeUtf8(`${JSON.stringify(projectOverview, null, 2)}\n`) }, { name: "mikuproject-full-bundle.editjson", data: encodeUtf8(`${JSON.stringify(aiBundle, null, 2)}\n`) }, { name: "mikuproject-phase-detail-view-full.editjson", data: encodeUtf8(`${JSON.stringify(phaseDetailFull, null, 2)}\n`) });
+        entries.push({ name: "mikuproject-project-overview-view.editjson", data: mikuprojectMainUtil.encodeUtf8(`${JSON.stringify(projectOverview, null, 2)}\n`) }, { name: "mikuproject-full-bundle.editjson", data: mikuprojectMainUtil.encodeUtf8(`${JSON.stringify(aiBundle, null, 2)}\n`) }, { name: "mikuproject-phase-detail-view-full.editjson", data: mikuprojectMainUtil.encodeUtf8(`${JSON.stringify(phaseDetailFull, null, 2)}\n`) });
         return {
             fileName: `mikuproject-all-${stamp}.zip`,
-            zipBytes: packZipEntries(entries),
+            zipBytes: mikuprojectMainUtil.packZipEntries(entries),
             entryCount: entries.length
         };
     }
@@ -14810,14 +15275,7 @@ if (!customElements.get("lht-page-menu")) {
         getElement("statusMessage").textContent = message;
     }
     function formatSaveStamp(date) {
-        return [
-            date.getFullYear(),
-            String(date.getMonth() + 1).padStart(2, "0"),
-            String(date.getDate()).padStart(2, "0")
-        ].join("-") + " " + [
-            String(date.getHours()).padStart(2, "0"),
-            String(date.getMinutes()).padStart(2, "0")
-        ].join(":");
+        return mikuprojectMainUtil.formatSaveStamp(date);
     }
     function updateXmlSaveState(isDirty) {
         const node = getElement("xmlSaveState");
@@ -14845,356 +15303,17 @@ if (!customElements.get("lht-page-menu")) {
         refreshXmlSaveState();
         return xmlText;
     }
-    function renderPreviewList(containerId, items) {
-        const container = getElement(containerId);
-        if (items.length === 0) {
-            container.innerHTML = `<div class="md-preview-empty">まだ表示できる項目がありません。</div>`;
-            return;
-        }
-        container.innerHTML = items.join("");
-    }
-    function formatFirstBaselineSummary(item) {
-        var _a, _b;
-        const baseline = item.baselines[0];
-        if (!baseline) {
-            return "-";
-        }
-        return `#${(_a = baseline.number) !== null && _a !== void 0 ? _a : "-"} ${baseline.start || "-"} -> ${baseline.finish || "-"} / Work=${baseline.work || "-"} / Cost=${(_b = baseline.cost) !== null && _b !== void 0 ? _b : "-"}`;
-    }
-    function formatFirstTimephasedSummary(item) {
-        var _a, _b;
-        const timephasedData = item.timephasedData[0];
-        if (!timephasedData) {
-            return "-";
-        }
-        return `Type=${(_a = timephasedData.type) !== null && _a !== void 0 ? _a : "-"} ${timephasedData.start || "-"} -> ${timephasedData.finish || "-"} / Unit=${(_b = timephasedData.unit) !== null && _b !== void 0 ? _b : "-"} / Value=${timephasedData.value || "-"}`;
-    }
-    function formatFirstExtendedAttributeSummary(item) {
-        const attribute = item.extendedAttributes[0];
-        if (!attribute) {
-            return "-";
-        }
-        return `FieldID=${attribute.fieldID || "-"} / Value=${attribute.value || "-"}`;
-    }
-    function formatFirstProjectExtendedAttributeSummary(project) {
-        const attribute = project.extendedAttributes[0];
-        if (!attribute) {
-            return "-";
-        }
-        return `FieldID=${attribute.fieldID || "-"} / FieldName=${attribute.fieldName || "-"} / Alias=${attribute.alias || "-"}`;
-    }
-    function formatFirstOutlineCodeSummary(project) {
-        const outlineCode = project.outlineCodes[0];
-        if (!outlineCode) {
-            return "-";
-        }
-        return `FieldID=${outlineCode.fieldID || "-"} / FieldName=${outlineCode.fieldName || "-"} / Alias=${outlineCode.alias || "-"}`;
-    }
-    function formatFirstWbsMaskSummary(project) {
-        var _a, _b;
-        const wbsMask = project.wbsMasks[0];
-        if (!wbsMask) {
-            return "-";
-        }
-        return `Level=${wbsMask.level} / Mask=${wbsMask.mask || "-"} / Length=${(_a = wbsMask.length) !== null && _a !== void 0 ? _a : "-"} / Sequence=${(_b = wbsMask.sequence) !== null && _b !== void 0 ? _b : "-"}`;
-    }
-    function formatCalendarWeekDaySummary(calendar) {
-        const weekDay = calendar.weekDays[0];
-        if (!weekDay) {
-            return "-";
-        }
-        const workingTimes = weekDay.workingTimes.length > 0
-            ? weekDay.workingTimes.map((item) => `${item.fromTime}-${item.toTime}`).join(", ")
-            : "-";
-        return `DayType=${weekDay.dayType} / Working=${weekDay.dayWorking ? 1 : 0} / Times=${workingTimes}`;
-    }
-    function formatCalendarExceptionSummary(calendar) {
-        const exception = calendar.exceptions[0];
-        if (!exception) {
-            return "-";
-        }
-        return `${exception.name || "(no name)"} ${exception.fromDate || "-"} -> ${exception.toDate || "-"} / Working=${exception.dayWorking ? 1 : 0}`;
-    }
-    function formatCalendarWorkWeekSummary(calendar) {
-        const workWeek = calendar.workWeeks[0];
-        if (!workWeek) {
-            return "-";
-        }
-        return `${workWeek.name || "(no name)"} ${workWeek.fromDate || "-"} -> ${workWeek.toDate || "-"} / WeekDays=${workWeek.weekDays.length}`;
-    }
-    function formatCalendarReferenceSummary(model, calendar) {
-        const projectRefs = model.project.calendarUID === calendar.uid ? 1 : 0;
-        const taskRefs = model.tasks.filter((task) => task.calendarUID === calendar.uid).length;
-        const resourceRefs = model.resources.filter((resource) => resource.calendarUID === calendar.uid).length;
-        const baseRefs = model.calendars.filter((item) => item.baseCalendarUID === calendar.uid).length;
-        return `Project=${projectRefs} / Tasks=${taskRefs} / Resources=${resourceRefs} / BaseOf=${baseRefs}`;
-    }
-    function formatCalendarLink(model, calendarUID) {
-        if (!calendarUID) {
-            return "-";
-        }
-        const calendar = model.calendars.find((item) => item.uid === calendarUID);
-        return calendar ? `${calendarUID} (${calendar.name || "(no name)"})` : `${calendarUID} (missing)`;
-    }
-    function formatTaskLink(model, taskUID) {
-        if (!taskUID) {
-            return "-";
-        }
-        const task = model.tasks.find((item) => item.uid === taskUID);
-        return task ? `${taskUID} (${task.name || "(no name)"})` : `${taskUID} (missing)`;
-    }
-    function formatResourceLink(model, resourceUID) {
-        if (!resourceUID) {
-            return "-";
-        }
-        const resource = model.resources.find((item) => item.uid === resourceUID);
-        return resource ? `${resourceUID} (${resource.name || "(no name)"})` : `${resourceUID} (missing)`;
-    }
     function renderValidationIssues(issues) {
-        const container = getElement("validationIssues");
-        const label = container.previousElementSibling;
-        if (issues.length === 0) {
-            container.classList.add("md-hidden");
-            container.innerHTML = "";
-            label === null || label === void 0 ? void 0 : label.classList.add("md-hidden");
-            updateFeedbackVisibility();
-            return;
-        }
-        const sections = ["project", "tasks", "resources", "assignments", "calendars"];
-        const sectionLabels = {
-            project: "Project",
-            tasks: "Tasks",
-            resources: "Resources",
-            assignments: "Assignments",
-            calendars: "Calendars"
-        };
-        container.classList.remove("md-hidden");
-        label === null || label === void 0 ? void 0 : label.classList.remove("md-hidden");
-        container.innerHTML = `
-      <div class="md-issues__title">検証メッセージ</div>
-      ${sections
-            .map((scope) => {
-            const scopedIssues = issues.filter((issue) => issue.scope === scope);
-            if (scopedIssues.length === 0) {
-                return "";
-            }
-            return `
-            <div class="md-issues__section">
-              <div class="md-issues__section-title">${sectionLabels[scope]}</div>
-              <ul class="md-issues__list">
-                ${scopedIssues.map((issue) => `<li class="md-issues__item">[${issue.level}] ${issue.message}</li>`).join("")}
-              </ul>
-            </div>
-          `;
-        })
-            .join("")}
-    `;
-        updateFeedbackVisibility();
+        mikuprojectMainRender.renderValidationIssues(document, issues);
     }
     function renderImportWarnings(warnings) {
-        const container = getElement("importWarnings");
-        const label = container.previousElementSibling;
-        if (warnings.length === 0) {
-            container.classList.add("md-hidden");
-            container.innerHTML = "";
-            label === null || label === void 0 ? void 0 : label.classList.add("md-hidden");
-            updateFeedbackVisibility();
-            return;
-        }
-        container.classList.remove("md-hidden");
-        label === null || label === void 0 ? void 0 : label.classList.remove("md-hidden");
-        container.innerHTML = `
-      <div class="md-issues__title">取込 warning</div>
-      <ul class="md-issues__list">
-        ${warnings.map((warning) => `<li class="md-issues__item">${escapeHtml(warning.message)}</li>`).join("")}
-      </ul>
-    `;
-        updateFeedbackVisibility();
+        mikuprojectMainRender.renderImportWarnings(document, warnings);
     }
     function renderXlsxImportSummary(changes) {
-        const container = getElement("xlsxImportSummary");
-        const label = container.previousElementSibling;
-        if (changes.length === 0) {
-            container.classList.add("md-hidden");
-            container.innerHTML = "";
-            label === null || label === void 0 ? void 0 : label.classList.add("md-hidden");
-            updateFeedbackVisibility();
-            return;
-        }
-        const scopeLabel = {
-            project: "Project",
-            tasks: "Tasks",
-            resources: "Resources",
-            assignments: "Assignments",
-            calendars: "Calendars"
-        };
-        const scopeCounts = {
-            project: 0,
-            tasks: 0,
-            resources: 0,
-            assignments: 0,
-            calendars: 0
-        };
-        const groupedByScope = new Map();
-        const groupedChanges = new Map();
-        for (const change of changes) {
-            const groupKey = `${change.scope}:${change.uid}:${change.label}`;
-            const currentGroup = groupedChanges.get(groupKey);
-            if (currentGroup) {
-                currentGroup.items.push({
-                    field: change.field,
-                    before: change.before,
-                    after: change.after
-                });
-                continue;
-            }
-            groupedChanges.set(groupKey, {
-                scope: change.scope,
-                uid: change.uid,
-                label: change.label,
-                items: [{
-                        field: change.field,
-                        before: change.before,
-                        after: change.after
-                    }]
-            });
-            scopeCounts[change.scope] += 1;
-        }
-        for (const group of groupedChanges.values()) {
-            const scopedGroups = groupedByScope.get(group.scope) || [];
-            scopedGroups.push({
-                uid: group.uid,
-                label: group.label,
-                items: group.items
-            });
-            groupedByScope.set(group.scope, scopedGroups);
-        }
-        const changedScopes = ["project", "tasks", "resources", "assignments", "calendars"].filter((scope) => scopeCounts[scope] > 0);
-        const unchangedScopes = ["project", "tasks", "resources", "assignments", "calendars"].filter((scope) => scopeCounts[scope] === 0);
-        container.classList.remove("md-hidden");
-        label === null || label === void 0 ? void 0 : label.classList.remove("md-hidden");
-        container.innerHTML = `
-      <div class="md-xlsx-summary__title">XLSX Import 反映結果</div>
-      <div class="md-xlsx-summary__counts">
-        ${changedScopes.map((scope) => `<span class="md-xlsx-summary__count">${scopeLabel[scope]} ${scopeCounts[scope]}</span>`).join("")}
-      </div>
-      ${unchangedScopes.length > 0 ? `<div class="md-xlsx-summary__unchanged">変更なし: ${unchangedScopes.map((scope) => scopeLabel[scope]).join(", ")}</div>` : ""}
-      ${changedScopes.map((scope) => `
-        <div class="md-xlsx-summary__section">
-          <div class="md-xlsx-summary__section-title">${scopeLabel[scope]}</div>
-          <ul class="md-xlsx-summary__list">
-            ${(groupedByScope.get(scope) || []).map((group) => `
-              <li class="md-xlsx-summary__item">
-                <div class="md-xlsx-summary__item-title">UID=${group.uid} ${escapeHtml(group.label)}</div>
-                <div class="md-xlsx-summary__item-body">
-                  ${group.items.map((item) => `${escapeHtml(item.field)}: ${escapeHtml(formatChangeValue(item.before))} -> ${escapeHtml(formatChangeValue(item.after))}`).join(" / ")}
-                </div>
-              </li>
-            `).join("")}
-          </ul>
-        </div>
-      `).join("")}
-      <div class="md-xlsx-summary__hint">反映後の XML は更新済みです。必要なら XML Export で保存できます。</div>
-    `;
-        updateFeedbackVisibility();
-    }
-    function updateFeedbackVisibility() {
-        const stack = document.querySelector(".md-feedback-stack");
-        const validationIssues = getElement("validationIssues");
-        const importWarnings = getElement("importWarnings");
-        const xlsxImportSummary = getElement("xlsxImportSummary");
-        const shouldShow = !validationIssues.classList.contains("md-hidden")
-            || !importWarnings.classList.contains("md-hidden")
-            || !xlsxImportSummary.classList.contains("md-hidden");
-        stack === null || stack === void 0 ? void 0 : stack.classList.toggle("md-hidden", !shouldShow);
-    }
-    function formatChangeValue(value) {
-        if (value === undefined) {
-            return "(empty)";
-        }
-        return String(value);
-    }
-    function escapeHtml(value) {
-        return value
-            .replace(/&/g, "&amp;")
-            .replace(/</g, "&lt;")
-            .replace(/>/g, "&gt;")
-            .replace(/"/g, "&quot;")
-            .replace(/'/g, "&#39;");
+        mikuprojectMainRender.renderXlsxImportSummary(document, changes);
     }
     function updateSummary(model) {
-        updateSvgButton();
-        getElement("summaryProjectName").textContent = (model === null || model === void 0 ? void 0 : model.project.name) || "-";
-        getElement("summaryTaskCount").textContent = String((model === null || model === void 0 ? void 0 : model.tasks.length) || 0);
-        getElement("summaryResourceCount").textContent = String((model === null || model === void 0 ? void 0 : model.resources.length) || 0);
-        getElement("summaryAssignmentCount").textContent = String((model === null || model === void 0 ? void 0 : model.assignments.length) || 0);
-        getElement("summaryCalendarCount").textContent = String((model === null || model === void 0 ? void 0 : model.calendars.length) || 0);
-        getTextArea("modelOutput").value = model ? JSON.stringify(model, null, 2) : "";
-        renderPreviewList("projectPreview", model ? [`
-      <div class="md-preview-item">
-        <div class="md-preview-item__title">${model.project.name || "(no name)"}</div>
-        <div class="md-preview-item__meta">Title=${model.project.title || "-"}
-Author=${model.project.author || "-"} / Company=${model.project.company || "-"}
-Start=${model.project.startDate || "-"} / Finish=${model.project.finishDate || "-"}
-Calendar=${formatCalendarLink(model, model.project.calendarUID)}
-OutlineCodes=${model.project.outlineCodes.length} / WBSMasks=${model.project.wbsMasks.length} / Ext=${model.project.extendedAttributes.length}
-OutlineCode1=${formatFirstOutlineCodeSummary(model.project)}
-WBSMask1=${formatFirstWbsMaskSummary(model.project)}
-Ext1=${formatFirstProjectExtendedAttributeSummary(model.project)}</div>
-      </div>
-    `] : []);
-        renderPreviewList("taskPreview", model ? model.tasks.map((task) => `
-      <div class="md-preview-item">
-        <div class="md-preview-item__title">${task.name || "(no name)"}</div>
-        <div class="md-preview-item__meta">UID=${task.uid} / ID=${task.id} / Outline=${task.outlineNumber || task.outlineLevel}
-Calendar=${formatCalendarLink(model, task.calendarUID)}
-Start=${task.start || "-"}
-Finish=${task.finish || "-"}
-Predecessors=${task.predecessors.map((item) => item.predecessorUid).join(", ") || "-"}
-Ext=${task.extendedAttributes.length} / Baselines=${task.baselines.length} / Timephased=${task.timephasedData.length}
-Ext1=${formatFirstExtendedAttributeSummary(task)}
-Baseline1=${formatFirstBaselineSummary(task)}
-Timephased1=${formatFirstTimephasedSummary(task)}</div>
-      </div>
-    `) : []);
-        renderPreviewList("resourcePreview", model ? model.resources.map((resource) => `
-      <div class="md-preview-item">
-        <div class="md-preview-item__title">${resource.name || "(no name)"}</div>
-        <div class="md-preview-item__meta">UID=${resource.uid} / ID=${resource.id}
-Initials=${resource.initials || "-"}
-Group=${resource.group || "-"}
-Calendar=${formatCalendarLink(model, resource.calendarUID)}
-Ext=${resource.extendedAttributes.length} / Baselines=${resource.baselines.length} / Timephased=${resource.timephasedData.length}
-Ext1=${formatFirstExtendedAttributeSummary(resource)}
-Baseline1=${formatFirstBaselineSummary(resource)}
-Timephased1=${formatFirstTimephasedSummary(resource)}</div>
-      </div>
-    `) : []);
-        renderPreviewList("assignmentPreview", model ? model.assignments.map((assignment) => `
-      <div class="md-preview-item">
-        <div class="md-preview-item__title">Assignment ${assignment.uid || "-"}</div>
-        <div class="md-preview-item__meta">Task=${formatTaskLink(model, assignment.taskUid)}
-Resource=${formatResourceLink(model, assignment.resourceUid)}
-Start=${assignment.start || "-"}
-Finish=${assignment.finish || "-"}
-Ext=${assignment.extendedAttributes.length} / Baselines=${assignment.baselines.length} / Timephased=${assignment.timephasedData.length}
-Ext1=${formatFirstExtendedAttributeSummary(assignment)}
-Baseline1=${formatFirstBaselineSummary(assignment)}
-Timephased1=${formatFirstTimephasedSummary(assignment)}</div>
-      </div>
-    `) : []);
-        renderPreviewList("calendarPreview", model ? model.calendars.map((calendar) => `
-      <div class="md-preview-item">
-        <div class="md-preview-item__title">${calendar.name || "(no name)"}</div>
-        <div class="md-preview-item__meta">UID=${calendar.uid}
-Base=${calendar.isBaseCalendar ? 1 : 0} / Baseline=${calendar.isBaselineCalendar ? 1 : 0} / BaseCalendarUID=${calendar.baseCalendarUID || "-"}
-WeekDays=${calendar.weekDays.length} / Exceptions=${calendar.exceptions.length} / WorkWeeks=${calendar.workWeeks.length}
-Refs=${formatCalendarReferenceSummary(model, calendar)}
-WeekDay1=${formatCalendarWeekDaySummary(calendar)}
-Exception1=${formatCalendarExceptionSummary(calendar)}
-WorkWeek1=${formatCalendarWorkWeekSummary(calendar)}</div>
-      </div>
-    `) : []);
+        mikuprojectMainRender.updateSummary(document, model, updateSvgButton);
     }
     function loadSample() {
         const sampleXml = mikuprojectXml.SAMPLE_XML;
@@ -15321,36 +15440,12 @@ WorkWeek1=${formatCalendarWorkWeekSummary(calendar)}</div>
         showToast("AI 連携用まとめ JSON を保存しました");
         setActiveTab("output");
     }
-    function extractLastJsonBlock(value) {
-        var _a, _b;
-        const matches = Array.from(value.matchAll(/```json\s*([\s\S]*?)```/g));
-        if (matches.length > 0) {
-            return ((_b = (_a = matches.at(-1)) === null || _a === void 0 ? void 0 : _a[1]) === null || _b === void 0 ? void 0 : _b.trim()) || "";
-        }
-        return value.trim();
-    }
-    function detectJsonDocumentKind(documentLike) {
-        if (!documentLike || typeof documentLike !== "object") {
-            return undefined;
-        }
-        const candidate = documentLike;
-        if (candidate.format === "mikuproject_workbook_json") {
-            return "workbook_json";
-        }
-        if (candidate.view_type === "project_draft_view") {
-            return "project_draft_view";
-        }
-        if (Array.isArray(candidate.operations)) {
-            return "patch_json";
-        }
-        return undefined;
-    }
     async function importProjectDraftFromText() {
         const sourceText = getTextArea("projectDraftImportInput").value.trim();
         if (!sourceText) {
             throw new Error("project_draft_view JSON を入力してください");
         }
-        const jsonText = extractLastJsonBlock(sourceText);
+        const jsonText = mikuprojectAiJsonUtil.extractLastJsonBlock(sourceText);
         const draft = JSON.parse(jsonText);
         currentModel = mikuprojectXml.importProjectDraftView(draft);
         syncXmlTextFromModel(currentModel);
@@ -15369,7 +15464,7 @@ WorkWeek1=${formatCalendarWorkWeekSummary(calendar)}</div>
         if (!trimmedSourceText) {
             throw new Error("Patch JSON を入力してください");
         }
-        const documentLike = JSON.parse(extractLastJsonBlock(trimmedSourceText));
+        const documentLike = JSON.parse(mikuprojectAiJsonUtil.extractLastJsonBlock(trimmedSourceText));
         const baseModel = ensureCurrentModel();
         const result = mikuprojectProjectPatchJson.importProjectPatchJson(documentLike, baseModel);
         currentModel = result.model;
@@ -15397,9 +15492,9 @@ WorkWeek1=${formatCalendarWorkWeekSummary(calendar)}</div>
         if (!sourceText) {
             throw new Error("project_draft_view または Patch JSON を入力してください");
         }
-        const jsonText = extractLastJsonBlock(sourceText);
+        const jsonText = mikuprojectAiJsonUtil.extractLastJsonBlock(sourceText);
         const documentLike = JSON.parse(jsonText);
-        const kind = detectJsonDocumentKind(documentLike);
+        const kind = mikuprojectAiJsonUtil.detectJsonDocumentKind(documentLike);
         if (kind === "project_draft_view") {
             await importProjectDraftFromText();
             return;
@@ -15429,7 +15524,7 @@ WorkWeek1=${formatCalendarWorkWeekSummary(calendar)}</div>
         if (!trimmedSourceText) {
             throw new Error("workbook JSON を入力してください");
         }
-        const documentLike = JSON.parse(extractLastJsonBlock(trimmedSourceText));
+        const documentLike = JSON.parse(mikuprojectAiJsonUtil.extractLastJsonBlock(trimmedSourceText));
         const baseModel = ensureCurrentModel();
         const result = mikuprojectProjectWorkbookJson.importProjectWorkbookJson(documentLike, baseModel);
         currentModel = result.model;
@@ -15484,8 +15579,8 @@ WorkWeek1=${formatCalendarWorkWeekSummary(calendar)}</div>
         }
         if (normalizedName.endsWith(".json")) {
             const sourceText = await file.text();
-            const documentLike = JSON.parse(extractLastJsonBlock(sourceText));
-            const kind = detectJsonDocumentKind(documentLike);
+            const documentLike = JSON.parse(mikuprojectAiJsonUtil.extractLastJsonBlock(sourceText));
+            const kind = mikuprojectAiJsonUtil.detectJsonDocumentKind(documentLike);
             if (kind === "workbook_json") {
                 await importWorkbookJsonFromSourceText(sourceText);
                 return;
@@ -16002,8 +16097,7 @@ WorkWeek1=${formatCalendarWorkWeekSummary(calendar)}</div>
         parseCurrentXml,
         exportCurrentMermaid,
         renderValidationIssues,
-        renderXlsxImportSummary,
-        updateFeedbackVisibility
+        renderXlsxImportSummary
     };
     document.addEventListener("DOMContentLoaded", initialize);
 })();

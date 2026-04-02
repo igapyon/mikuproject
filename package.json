@@ -12,7 +12,10 @@
     "build:web": "node scripts/build-project.mjs",
     "build:app": "npm run build:web && npm run build:xlsx-sample",
     "build:xlsx-sample": "node scripts/build-project-xlsx-sample.mjs",
-    "test": "vitest run"
+    "test": "node scripts/run-tests.mjs full",
+    "test:fast": "node scripts/run-tests.mjs fast",
+    "test:ui": "node scripts/run-tests.mjs ui",
+    "test:full": "node scripts/run-tests.mjs full"
   },
   "devDependencies": {
     "jsdom": "^26.1.0",

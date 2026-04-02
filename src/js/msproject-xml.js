@@ -3,6 +3,9 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 (() => {
+    const DEFAULT_PROJECT_MINUTES_PER_DAY = 480;
+    const DEFAULT_PROJECT_MINUTES_PER_WEEK = 2400;
+    const DEFAULT_PROJECT_DAYS_PER_MONTH = 20;
     const SAMPLE_PROJECT_DRAFT_VIEW = {
         view_type: "project_draft_view",
         project: {
@@ -10,9 +13,9 @@
             planned_start: "2026-03-16",
             planned_finish: "2026-04-01",
             schedule_from_start: true,
-            minutes_per_day: 480,
-            minutes_per_week: 2400,
-            days_per_month: 20
+            minutes_per_day: DEFAULT_PROJECT_MINUTES_PER_DAY,
+            minutes_per_week: DEFAULT_PROJECT_MINUTES_PER_WEEK,
+            days_per_month: DEFAULT_PROJECT_DAYS_PER_MONTH
         },
         tasks: [
             {
@@ -1868,13 +1871,13 @@
                 scheduleFromStart: data.project.schedule_from_start !== undefined ? Boolean(data.project.schedule_from_start) : true,
                 minutesPerDay: typeof data.project.minutes_per_day === "number" && Number.isFinite(data.project.minutes_per_day)
                     ? data.project.minutes_per_day
-                    : undefined,
+                    : DEFAULT_PROJECT_MINUTES_PER_DAY,
                 minutesPerWeek: typeof data.project.minutes_per_week === "number" && Number.isFinite(data.project.minutes_per_week)
                     ? data.project.minutes_per_week
-                    : undefined,
+                    : DEFAULT_PROJECT_MINUTES_PER_WEEK,
                 daysPerMonth: typeof data.project.days_per_month === "number" && Number.isFinite(data.project.days_per_month)
                     ? data.project.days_per_month
-                    : undefined,
+                    : DEFAULT_PROJECT_DAYS_PER_MONTH,
                 outlineCodes: [],
                 wbsMasks: [],
                 extendedAttributes: []

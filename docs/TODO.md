@@ -12,8 +12,6 @@
 - 作成するテキストファイルについて、BOM 付き / なしを切り替えるスイッチを追加する
 - `local-data/` 配下のファイルを、参照用・検証用・生成物で整理する
 - `local-data/` に置くべきでない生成物や一時ファイルがないか見直す
-- `npm test` を `scripts/run-tests.mjs` ベースへ切り替えるか検討する
-- `main.test.js` に残っている `xlsx import` の file input wiring を、UI 配線確認と import 結果確認へさらに分離する
 - `XLSX Import` の実地回帰観点を明文化し、少なくとも次を継続確認する
   - export した `.xlsx` をそのまま import できる
   - Excel で 1 セル変更した `.xlsx` を import できる
@@ -30,7 +28,6 @@
   - 次点候補: `Resources.CalendarUID`
   - 次点候補: `Resources.StandardRate / OvertimeRate / CostPerUse`
   - 次点候補: `Assignments.Start / Finish`
-- `main.ts` の summary / validation / preview 描画を別モジュール化し、DOM テストをさらに軽くする
 - `phase_detail_view scoped` の `phase UID / root UID / max depth` 指定を、より選びやすい UI に改善する
 - `task_edit_view` の projection を実装する
 - `.editjson` の import で現状 `project_draft_view` だけを受けている制約を見直し、将来の `task_edit_view` / Patch JSON など他の `view_type` も扱えるようにする
@@ -50,8 +47,6 @@
 - `Overview` の label placement 調査で追加したデバッグ関数・判断ログ用コード・不要化した分岐が残っていないか点検し、不要なら整理する
 - `Output` タブの生成AI連携と各種 export ボタンの優先度表現を見直し、主操作と補助操作の区別をより明確にする
 - `build:xlsx-sample` の所要時間を個別計測し、sample workbook 生成処理の支配要因を確認する
-- `main.test.js` の初期化 DOM をケース別に最小化できるか見直す
-- CI 向けに `test:fast` と `test:full` のような実行導線を分けるか検討する
 - `docs/spec.md` に残っている実装済み前提との差分を定期的に解消する
 - 正本 / 表示用 / import 対象 / export 専用 の扱いを、UI または docs で分かりやすく可視化する
 - `.xlsx import` の次段として、どのシート・列を今後 import 対象に広げるか整理する

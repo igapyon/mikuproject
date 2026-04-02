@@ -7,6 +7,18 @@
     if (!mikuprojectXml) {
         throw new Error("mikuproject XML module is not loaded");
     }
+    const mikuprojectAiJsonUtil = globalThis.__mikuprojectAiJsonUtil;
+    if (!mikuprojectAiJsonUtil) {
+        throw new Error("mikuproject AI JSON util module is not loaded");
+    }
+    const mikuprojectMainUtil = globalThis.__mikuprojectMainUtil;
+    if (!mikuprojectMainUtil) {
+        throw new Error("mikuproject main util module is not loaded");
+    }
+    const mikuprojectMainRender = globalThis.__mikuprojectMainRender;
+    if (!mikuprojectMainRender) {
+        throw new Error("mikuproject main render module is not loaded");
+    }
     const mikuprojectExcelIo = globalThis.__mikuprojectExcelIo;
     if (!mikuprojectExcelIo) {
         throw new Error("mikuproject Excel IO module is not loaded");
@@ -45,8 +57,6 @@
     let currentSvgPreviewMode = "daily";
     let isXmlSourceDirty = true;
     let isRefreshingTransformTab = false;
-    const ZIP_TEXT_ENCODER = new TextEncoder();
-    const ZIP_CRC32_TABLE = buildZipCrc32Table();
     function getElement(id) {
         const element = document.getElementById(id);
         if (!element) {
@@ -156,15 +166,7 @@
         setActiveTab(currentTabId);
     }
     function parseOptionalNonNegativeInteger(raw) {
-        const value = raw.trim();
-        if (!value) {
-            return undefined;
-        }
-        const parsed = Number(value);
-        if (!Number.isFinite(parsed)) {
-            return undefined;
-        }
-        return Math.max(0, Math.floor(parsed));
+        return mikuprojectMainUtil.parseOptionalNonNegativeInteger(raw);
     }
     function parseWbsDisplayDaysBeforeBaseDate() {
         return parseOptionalNonNegativeInteger(getInput("wbsDisplayDaysBeforeInput").value);
@@ -284,105 +286,7 @@
         window.setTimeout(() => URL.revokeObjectURL(objectUrl), 0);
     }
     function formatTimestampCompact(date) {
-        return [
-            date.getFullYear(),
-            String(date.getMonth() + 1).padStart(2, "0"),
-            String(date.getDate()).padStart(2, "0"),
-            String(date.getHours()).padStart(2, "0"),
-            String(date.getMinutes()).padStart(2, "0")
-        ].join("");
-    }
-    function encodeUtf8(value) {
-        return ZIP_TEXT_ENCODER.encode(value);
-    }
-    function concatUint8Arrays(parts) {
-        const totalLength = parts.reduce((sum, part) => sum + part.byteLength, 0);
-        const result = new Uint8Array(totalLength);
-        let offset = 0;
-        for (const part of parts) {
-            result.set(part, offset);
-            offset += part.byteLength;
-        }
-        return result;
-    }
-    function computeZipCrc32(bytes) {
-        let crc = 0xffffffff;
-        for (const byte of bytes) {
-            crc = (crc >>> 8) ^ ZIP_CRC32_TABLE[(crc ^ byte) & 0xff];
-        }
-        return (crc ^ 0xffffffff) >>> 0;
-    }
-    function buildZipCrc32Table() {
-        const table = new Uint32Array(256);
-        for (let index = 0; index < 256; index += 1) {
-            let value = index;
-            for (let bit = 0; bit < 8; bit += 1) {
-                value = (value & 1) !== 0 ? (0xedb88320 ^ (value >>> 1)) : (value >>> 1);
-            }
-            table[index] = value >>> 0;
-        }
-        return table;
-    }
-    function packZipEntries(entries) {
-        const localParts = [];
-        const centralParts = [];
-        let offset = 0;
-        const zipFixedModTime = 0;
-        const zipFixedModDate = ((2025 - 1980) << 9) | (1 << 5) | 1;
-        for (const entry of entries) {
-            const nameBytes = encodeUtf8(entry.name);
-            const crc32 = computeZipCrc32(entry.data);
-            const localHeader = new Uint8Array(30 + nameBytes.length);
-            const localView = new DataView(localHeader.buffer);
-            localView.setUint32(0, 0x04034b50, true);
-            localView.setUint16(4, 20, true);
-            localView.setUint16(6, 0, true);
-            localView.setUint16(8, 0, true);
-            localView.setUint16(10, zipFixedModTime, true);
-            localView.setUint16(12, zipFixedModDate, true);
-            localView.setUint32(14, crc32, true);
-            localView.setUint32(18, entry.data.byteLength, true);
-            localView.setUint32(22, entry.data.byteLength, true);
-            localView.setUint16(26, nameBytes.length, true);
-            localView.setUint16(28, 0, true);
-            localHeader.set(nameBytes, 30);
-            const centralHeader = new Uint8Array(46 + nameBytes.length);
-            const centralView = new DataView(centralHeader.buffer);
-            centralView.setUint32(0, 0x02014b50, true);
-            centralView.setUint16(4, 20, true);
-            centralView.setUint16(6, 20, true);
-            centralView.setUint16(8, 0, true);
-            centralView.setUint16(10, 0, true);
-            centralView.setUint16(12, zipFixedModTime, true);
-            centralView.setUint16(14, zipFixedModDate, true);
-            centralView.setUint32(16, crc32, true);
-            centralView.setUint32(20, entry.data.byteLength, true);
-            centralView.setUint32(24, entry.data.byteLength, true);
-            centralView.setUint16(28, nameBytes.length, true);
-            centralView.setUint16(30, 0, true);
-            centralView.setUint16(32, 0, true);
-            centralView.setUint16(34, 0, true);
-            centralView.setUint16(36, 0, true);
-            centralView.setUint32(38, 0, true);
-            centralView.setUint32(42, offset, true);
-            centralHeader.set(nameBytes, 46);
-            localParts.push(localHeader, entry.data);
-            centralParts.push(centralHeader);
-            offset += localHeader.byteLength + entry.data.byteLength;
-        }
-        const centralDirectoryOffset = offset;
-        const centralDirectorySize = centralParts.reduce((sum, part) => sum + part.byteLength, 0);
-        const endOfCentralDirectory = new Uint8Array(22);
-        const endView = new DataView(endOfCentralDirectory.buffer);
-        endView.setUint32(0, 0x06054b50, true);
-        endView.setUint16(4, 0, true);
-        endView.setUint16(6, 0, true);
-        endView.setUint16(8, entries.length, true);
-        endView.setUint16(10, entries.length, true);
-        endView.setUint32(12, centralDirectorySize, true);
-        endView.setUint32(16, centralDirectoryOffset, true);
-        endView.setUint16(20, 0, true);
-        return concatUint8Arrays([...localParts, ...centralParts, endOfCentralDirectory]);
+        return mikuprojectMainUtil.formatTimestampCompact(date);
     }
     async function renderSvgPreview() {
         if (!currentModel) {
@@ -462,27 +366,27 @@
             "- *.editjson: AI-facing projection exports"
         ].join("\n");
         const entries = [
-            { name: "README.txt", data: encodeUtf8(`${allReadmeText}\n`) },
-            { name: `mikuproject-export-${stamp}.xml`, data: encodeUtf8(`${xmlText}\n`) },
+            { name: "README.txt", data: mikuprojectMainUtil.encodeUtf8(`${allReadmeText}\n`) },
+            { name: `mikuproject-export-${stamp}.xml`, data: mikuprojectMainUtil.encodeUtf8(`${xmlText}\n`) },
             { name: `mikuproject-export-${stamp}.xlsx`, data: codec.exportWorkbook(workbook) },
-            { name: `mikuproject-workbook-${stamp}.json`, data: encodeUtf8(`${workbookJsonText}\n`) },
-            { name: `mikuproject-export-${stamp}.csv`, data: encodeUtf8(`${csvText}\n`) },
+            { name: `mikuproject-workbook-${stamp}.json`, data: mikuprojectMainUtil.encodeUtf8(`${workbookJsonText}\n`) },
+            { name: `mikuproject-export-${stamp}.csv`, data: mikuprojectMainUtil.encodeUtf8(`${csvText}\n`) },
             { name: `mikuproject-wbs-${stamp}.xlsx`, data: codec.exportWorkbook(wbsWorkbook) },
-            { name: `mikuproject-wbs-${dateOnlyStamp}.md`, data: encodeUtf8(`${wbsMarkdown}\n`) },
-            { name: `mikuproject-wbs-daily-${stamp}.svg`, data: encodeUtf8(dailySvg) },
-            { name: `mikuproject-wbs-weekly-${stamp}.svg`, data: encodeUtf8(weeklySvg) },
-            { name: `mikuproject-wbs-mermaid-${stamp}.md`, data: encodeUtf8(`\`\`\`mermaid\n${mermaidText}\n\`\`\`\n`) }
+            { name: `mikuproject-wbs-${dateOnlyStamp}.md`, data: mikuprojectMainUtil.encodeUtf8(`${wbsMarkdown}\n`) },
+            { name: `mikuproject-wbs-daily-${stamp}.svg`, data: mikuprojectMainUtil.encodeUtf8(dailySvg) },
+            { name: `mikuproject-wbs-weekly-${stamp}.svg`, data: mikuprojectMainUtil.encodeUtf8(weeklySvg) },
+            { name: `mikuproject-wbs-mermaid-${stamp}.md`, data: mikuprojectMainUtil.encodeUtf8(`\`\`\`mermaid\n${mermaidText}\n\`\`\`\n`) }
         ];
         for (const entry of monthlyArchive.entries) {
             entries.push({
                 name: `monthly-calendar/${entry.fileName}`,
-                data: encodeUtf8(entry.svg)
+                data: mikuprojectMainUtil.encodeUtf8(entry.svg)
             });
         }
-        entries.push({ name: "mikuproject-project-overview-view.editjson", data: encodeUtf8(`${JSON.stringify(projectOverview, null, 2)}\n`) }, { name: "mikuproject-full-bundle.editjson", data: encodeUtf8(`${JSON.stringify(aiBundle, null, 2)}\n`) }, { name: "mikuproject-phase-detail-view-full.editjson", data: encodeUtf8(`${JSON.stringify(phaseDetailFull, null, 2)}\n`) });
+        entries.push({ name: "mikuproject-project-overview-view.editjson", data: mikuprojectMainUtil.encodeUtf8(`${JSON.stringify(projectOverview, null, 2)}\n`) }, { name: "mikuproject-full-bundle.editjson", data: mikuprojectMainUtil.encodeUtf8(`${JSON.stringify(aiBundle, null, 2)}\n`) }, { name: "mikuproject-phase-detail-view-full.editjson", data: mikuprojectMainUtil.encodeUtf8(`${JSON.stringify(phaseDetailFull, null, 2)}\n`) });
         return {
             fileName: `mikuproject-all-${stamp}.zip`,
-            zipBytes: packZipEntries(entries),
+            zipBytes: mikuprojectMainUtil.packZipEntries(entries),
             entryCount: entries.length
         };
     }
@@ -497,14 +401,7 @@
         getElement("statusMessage").textContent = message;
     }
     function formatSaveStamp(date) {
-        return [
-            date.getFullYear(),
-            String(date.getMonth() + 1).padStart(2, "0"),
-            String(date.getDate()).padStart(2, "0")
-        ].join("-") + " " + [
-            String(date.getHours()).padStart(2, "0"),
-            String(date.getMinutes()).padStart(2, "0")
-        ].join(":");
+        return mikuprojectMainUtil.formatSaveStamp(date);
     }
     function updateXmlSaveState(isDirty) {
         const node = getElement("xmlSaveState");
@@ -532,356 +429,17 @@
         refreshXmlSaveState();
         return xmlText;
     }
-    function renderPreviewList(containerId, items) {
-        const container = getElement(containerId);
-        if (items.length === 0) {
-            container.innerHTML = `<div class="md-preview-empty">まだ表示できる項目がありません。</div>`;
-            return;
-        }
-        container.innerHTML = items.join("");
-    }
-    function formatFirstBaselineSummary(item) {
-        var _a, _b;
-        const baseline = item.baselines[0];
-        if (!baseline) {
-            return "-";
-        }
-        return `#${(_a = baseline.number) !== null && _a !== void 0 ? _a : "-"} ${baseline.start || "-"} -> ${baseline.finish || "-"} / Work=${baseline.work || "-"} / Cost=${(_b = baseline.cost) !== null && _b !== void 0 ? _b : "-"}`;
-    }
-    function formatFirstTimephasedSummary(item) {
-        var _a, _b;
-        const timephasedData = item.timephasedData[0];
-        if (!timephasedData) {
-            return "-";
-        }
-        return `Type=${(_a = timephasedData.type) !== null && _a !== void 0 ? _a : "-"} ${timephasedData.start || "-"} -> ${timephasedData.finish || "-"} / Unit=${(_b = timephasedData.unit) !== null && _b !== void 0 ? _b : "-"} / Value=${timephasedData.value || "-"}`;
-    }
-    function formatFirstExtendedAttributeSummary(item) {
-        const attribute = item.extendedAttributes[0];
-        if (!attribute) {
-            return "-";
-        }
-        return `FieldID=${attribute.fieldID || "-"} / Value=${attribute.value || "-"}`;
-    }
-    function formatFirstProjectExtendedAttributeSummary(project) {
-        const attribute = project.extendedAttributes[0];
-        if (!attribute) {
-            return "-";
-        }
-        return `FieldID=${attribute.fieldID || "-"} / FieldName=${attribute.fieldName || "-"} / Alias=${attribute.alias || "-"}`;
-    }
-    function formatFirstOutlineCodeSummary(project) {
-        const outlineCode = project.outlineCodes[0];
-        if (!outlineCode) {
-            return "-";
-        }
-        return `FieldID=${outlineCode.fieldID || "-"} / FieldName=${outlineCode.fieldName || "-"} / Alias=${outlineCode.alias || "-"}`;
-    }
-    function formatFirstWbsMaskSummary(project) {
-        var _a, _b;
-        const wbsMask = project.wbsMasks[0];
-        if (!wbsMask) {
-            return "-";
-        }
-        return `Level=${wbsMask.level} / Mask=${wbsMask.mask || "-"} / Length=${(_a = wbsMask.length) !== null && _a !== void 0 ? _a : "-"} / Sequence=${(_b = wbsMask.sequence) !== null && _b !== void 0 ? _b : "-"}`;
-    }
-    function formatCalendarWeekDaySummary(calendar) {
-        const weekDay = calendar.weekDays[0];
-        if (!weekDay) {
-            return "-";
-        }
-        const workingTimes = weekDay.workingTimes.length > 0
-            ? weekDay.workingTimes.map((item) => `${item.fromTime}-${item.toTime}`).join(", ")
-            : "-";
-        return `DayType=${weekDay.dayType} / Working=${weekDay.dayWorking ? 1 : 0} / Times=${workingTimes}`;
-    }
-    function formatCalendarExceptionSummary(calendar) {
-        const exception = calendar.exceptions[0];
-        if (!exception) {
-            return "-";
-        }
-        return `${exception.name || "(no name)"} ${exception.fromDate || "-"} -> ${exception.toDate || "-"} / Working=${exception.dayWorking ? 1 : 0}`;
-    }
-    function formatCalendarWorkWeekSummary(calendar) {
-        const workWeek = calendar.workWeeks[0];
-        if (!workWeek) {
-            return "-";
-        }
-        return `${workWeek.name || "(no name)"} ${workWeek.fromDate || "-"} -> ${workWeek.toDate || "-"} / WeekDays=${workWeek.weekDays.length}`;
-    }
-    function formatCalendarReferenceSummary(model, calendar) {
-        const projectRefs = model.project.calendarUID === calendar.uid ? 1 : 0;
-        const taskRefs = model.tasks.filter((task) => task.calendarUID === calendar.uid).length;
-        const resourceRefs = model.resources.filter((resource) => resource.calendarUID === calendar.uid).length;
-        const baseRefs = model.calendars.filter((item) => item.baseCalendarUID === calendar.uid).length;
-        return `Project=${projectRefs} / Tasks=${taskRefs} / Resources=${resourceRefs} / BaseOf=${baseRefs}`;
-    }
-    function formatCalendarLink(model, calendarUID) {
-        if (!calendarUID) {
-            return "-";
-        }
-        const calendar = model.calendars.find((item) => item.uid === calendarUID);
-        return calendar ? `${calendarUID} (${calendar.name || "(no name)"})` : `${calendarUID} (missing)`;
-    }
-    function formatTaskLink(model, taskUID) {
-        if (!taskUID) {
-            return "-";
-        }
-        const task = model.tasks.find((item) => item.uid === taskUID);
-        return task ? `${taskUID} (${task.name || "(no name)"})` : `${taskUID} (missing)`;
-    }
-    function formatResourceLink(model, resourceUID) {
-        if (!resourceUID) {
-            return "-";
-        }
-        const resource = model.resources.find((item) => item.uid === resourceUID);
-        return resource ? `${resourceUID} (${resource.name || "(no name)"})` : `${resourceUID} (missing)`;
-    }
     function renderValidationIssues(issues) {
-        const container = getElement("validationIssues");
-        const label = container.previousElementSibling;
-        if (issues.length === 0) {
-            container.classList.add("md-hidden");
-            container.innerHTML = "";
-            label === null || label === void 0 ? void 0 : label.classList.add("md-hidden");
-            updateFeedbackVisibility();
-            return;
-        }
-        const sections = ["project", "tasks", "resources", "assignments", "calendars"];
-        const sectionLabels = {
-            project: "Project",
-            tasks: "Tasks",
-            resources: "Resources",
-            assignments: "Assignments",
-            calendars: "Calendars"
-        };
-        container.classList.remove("md-hidden");
-        label === null || label === void 0 ? void 0 : label.classList.remove("md-hidden");
-        container.innerHTML = `
-      <div class="md-issues__title">検証メッセージ</div>
-      ${sections
-            .map((scope) => {
-            const scopedIssues = issues.filter((issue) => issue.scope === scope);
-            if (scopedIssues.length === 0) {
-                return "";
-            }
-            return `
-            <div class="md-issues__section">
-              <div class="md-issues__section-title">${sectionLabels[scope]}</div>
-              <ul class="md-issues__list">
-                ${scopedIssues.map((issue) => `<li class="md-issues__item">[${issue.level}] ${issue.message}</li>`).join("")}
-              </ul>
-            </div>
-          `;
-        })
-            .join("")}
-    `;
-        updateFeedbackVisibility();
+        mikuprojectMainRender.renderValidationIssues(document, issues);
     }
     function renderImportWarnings(warnings) {
-        const container = getElement("importWarnings");
-        const label = container.previousElementSibling;
-        if (warnings.length === 0) {
-            container.classList.add("md-hidden");
-            container.innerHTML = "";
-            label === null || label === void 0 ? void 0 : label.classList.add("md-hidden");
-            updateFeedbackVisibility();
-            return;
-        }
-        container.classList.remove("md-hidden");
-        label === null || label === void 0 ? void 0 : label.classList.remove("md-hidden");
-        container.innerHTML = `
-      <div class="md-issues__title">取込 warning</div>
-      <ul class="md-issues__list">
-        ${warnings.map((warning) => `<li class="md-issues__item">${escapeHtml(warning.message)}</li>`).join("")}
-      </ul>
-    `;
-        updateFeedbackVisibility();
+        mikuprojectMainRender.renderImportWarnings(document, warnings);
     }
     function renderXlsxImportSummary(changes) {
-        const container = getElement("xlsxImportSummary");
-        const label = container.previousElementSibling;
-        if (changes.length === 0) {
-            container.classList.add("md-hidden");
-            container.innerHTML = "";
-            label === null || label === void 0 ? void 0 : label.classList.add("md-hidden");
-            updateFeedbackVisibility();
-            return;
-        }
-        const scopeLabel = {
-            project: "Project",
-            tasks: "Tasks",
-            resources: "Resources",
-            assignments: "Assignments",
-            calendars: "Calendars"
-        };
-        const scopeCounts = {
-            project: 0,
-            tasks: 0,
-            resources: 0,
-            assignments: 0,
-            calendars: 0
-        };
-        const groupedByScope = new Map();
-        const groupedChanges = new Map();
-        for (const change of changes) {
-            const groupKey = `${change.scope}:${change.uid}:${change.label}`;
-            const currentGroup = groupedChanges.get(groupKey);
-            if (currentGroup) {
-                currentGroup.items.push({
-                    field: change.field,
-                    before: change.before,
-                    after: change.after
-                });
-                continue;
-            }
-            groupedChanges.set(groupKey, {
-                scope: change.scope,
-                uid: change.uid,
-                label: change.label,
-                items: [{
-                        field: change.field,
-                        before: change.before,
-                        after: change.after
-                    }]
-            });
-            scopeCounts[change.scope] += 1;
-        }
-        for (const group of groupedChanges.values()) {
-            const scopedGroups = groupedByScope.get(group.scope) || [];
-            scopedGroups.push({
-                uid: group.uid,
-                label: group.label,
-                items: group.items
-            });
-            groupedByScope.set(group.scope, scopedGroups);
-        }
-        const changedScopes = ["project", "tasks", "resources", "assignments", "calendars"].filter((scope) => scopeCounts[scope] > 0);
-        const unchangedScopes = ["project", "tasks", "resources", "assignments", "calendars"].filter((scope) => scopeCounts[scope] === 0);
-        container.classList.remove("md-hidden");
-        label === null || label === void 0 ? void 0 : label.classList.remove("md-hidden");
-        container.innerHTML = `
-      <div class="md-xlsx-summary__title">XLSX Import 反映結果</div>
-      <div class="md-xlsx-summary__counts">
-        ${changedScopes.map((scope) => `<span class="md-xlsx-summary__count">${scopeLabel[scope]} ${scopeCounts[scope]}</span>`).join("")}
-      </div>
-      ${unchangedScopes.length > 0 ? `<div class="md-xlsx-summary__unchanged">変更なし: ${unchangedScopes.map((scope) => scopeLabel[scope]).join(", ")}</div>` : ""}
-      ${changedScopes.map((scope) => `
-        <div class="md-xlsx-summary__section">
-          <div class="md-xlsx-summary__section-title">${scopeLabel[scope]}</div>
-          <ul class="md-xlsx-summary__list">
-            ${(groupedByScope.get(scope) || []).map((group) => `
-              <li class="md-xlsx-summary__item">
-                <div class="md-xlsx-summary__item-title">UID=${group.uid} ${escapeHtml(group.label)}</div>
-                <div class="md-xlsx-summary__item-body">
-                  ${group.items.map((item) => `${escapeHtml(item.field)}: ${escapeHtml(formatChangeValue(item.before))} -> ${escapeHtml(formatChangeValue(item.after))}`).join(" / ")}
-                </div>
-              </li>
-            `).join("")}
-          </ul>
-        </div>
-      `).join("")}
-      <div class="md-xlsx-summary__hint">反映後の XML は更新済みです。必要なら XML Export で保存できます。</div>
-    `;
-        updateFeedbackVisibility();
-    }
-    function updateFeedbackVisibility() {
-        const stack = document.querySelector(".md-feedback-stack");
-        const validationIssues = getElement("validationIssues");
-        const importWarnings = getElement("importWarnings");
-        const xlsxImportSummary = getElement("xlsxImportSummary");
-        const shouldShow = !validationIssues.classList.contains("md-hidden")
-            || !importWarnings.classList.contains("md-hidden")
-            || !xlsxImportSummary.classList.contains("md-hidden");
-        stack === null || stack === void 0 ? void 0 : stack.classList.toggle("md-hidden", !shouldShow);
-    }
-    function formatChangeValue(value) {
-        if (value === undefined) {
-            return "(empty)";
-        }
-        return String(value);
-    }
-    function escapeHtml(value) {
-        return value
-            .replace(/&/g, "&amp;")
-            .replace(/</g, "&lt;")
-            .replace(/>/g, "&gt;")
-            .replace(/"/g, "&quot;")
-            .replace(/'/g, "&#39;");
+        mikuprojectMainRender.renderXlsxImportSummary(document, changes);
     }
     function updateSummary(model) {
-        updateSvgButton();
-        getElement("summaryProjectName").textContent = (model === null || model === void 0 ? void 0 : model.project.name) || "-";
-        getElement("summaryTaskCount").textContent = String((model === null || model === void 0 ? void 0 : model.tasks.length) || 0);
-        getElement("summaryResourceCount").textContent = String((model === null || model === void 0 ? void 0 : model.resources.length) || 0);
-        getElement("summaryAssignmentCount").textContent = String((model === null || model === void 0 ? void 0 : model.assignments.length) || 0);
-        getElement("summaryCalendarCount").textContent = String((model === null || model === void 0 ? void 0 : model.calendars.length) || 0);
-        getTextArea("modelOutput").value = model ? JSON.stringify(model, null, 2) : "";
-        renderPreviewList("projectPreview", model ? [`
-      <div class="md-preview-item">
-        <div class="md-preview-item__title">${model.project.name || "(no name)"}</div>
-        <div class="md-preview-item__meta">Title=${model.project.title || "-"}
-Author=${model.project.author || "-"} / Company=${model.project.company || "-"}
-Start=${model.project.startDate || "-"} / Finish=${model.project.finishDate || "-"}
-Calendar=${formatCalendarLink(model, model.project.calendarUID)}
-OutlineCodes=${model.project.outlineCodes.length} / WBSMasks=${model.project.wbsMasks.length} / Ext=${model.project.extendedAttributes.length}
-OutlineCode1=${formatFirstOutlineCodeSummary(model.project)}
-WBSMask1=${formatFirstWbsMaskSummary(model.project)}
-Ext1=${formatFirstProjectExtendedAttributeSummary(model.project)}</div>
-      </div>
-    `] : []);
-        renderPreviewList("taskPreview", model ? model.tasks.map((task) => `
-      <div class="md-preview-item">
-        <div class="md-preview-item__title">${task.name || "(no name)"}</div>
-        <div class="md-preview-item__meta">UID=${task.uid} / ID=${task.id} / Outline=${task.outlineNumber || task.outlineLevel}
-Calendar=${formatCalendarLink(model, task.calendarUID)}
-Start=${task.start || "-"}
-Finish=${task.finish || "-"}
-Predecessors=${task.predecessors.map((item) => item.predecessorUid).join(", ") || "-"}
-Ext=${task.extendedAttributes.length} / Baselines=${task.baselines.length} / Timephased=${task.timephasedData.length}
-Ext1=${formatFirstExtendedAttributeSummary(task)}
-Baseline1=${formatFirstBaselineSummary(task)}
-Timephased1=${formatFirstTimephasedSummary(task)}</div>
-      </div>
-    `) : []);
-        renderPreviewList("resourcePreview", model ? model.resources.map((resource) => `
-      <div class="md-preview-item">
-        <div class="md-preview-item__title">${resource.name || "(no name)"}</div>
-        <div class="md-preview-item__meta">UID=${resource.uid} / ID=${resource.id}
-Initials=${resource.initials || "-"}
-Group=${resource.group || "-"}
-Calendar=${formatCalendarLink(model, resource.calendarUID)}
-Ext=${resource.extendedAttributes.length} / Baselines=${resource.baselines.length} / Timephased=${resource.timephasedData.length}
-Ext1=${formatFirstExtendedAttributeSummary(resource)}
-Baseline1=${formatFirstBaselineSummary(resource)}
-Timephased1=${formatFirstTimephasedSummary(resource)}</div>
-      </div>
-    `) : []);
-        renderPreviewList("assignmentPreview", model ? model.assignments.map((assignment) => `
-      <div class="md-preview-item">
-        <div class="md-preview-item__title">Assignment ${assignment.uid || "-"}</div>
-        <div class="md-preview-item__meta">Task=${formatTaskLink(model, assignment.taskUid)}
-Resource=${formatResourceLink(model, assignment.resourceUid)}
-Start=${assignment.start || "-"}
-Finish=${assignment.finish || "-"}
-Ext=${assignment.extendedAttributes.length} / Baselines=${assignment.baselines.length} / Timephased=${assignment.timephasedData.length}
-Ext1=${formatFirstExtendedAttributeSummary(assignment)}
-Baseline1=${formatFirstBaselineSummary(assignment)}
-Timephased1=${formatFirstTimephasedSummary(assignment)}</div>
-      </div>
-    `) : []);
-        renderPreviewList("calendarPreview", model ? model.calendars.map((calendar) => `
-      <div class="md-preview-item">
-        <div class="md-preview-item__title">${calendar.name || "(no name)"}</div>
-        <div class="md-preview-item__meta">UID=${calendar.uid}
-Base=${calendar.isBaseCalendar ? 1 : 0} / Baseline=${calendar.isBaselineCalendar ? 1 : 0} / BaseCalendarUID=${calendar.baseCalendarUID || "-"}
-WeekDays=${calendar.weekDays.length} / Exceptions=${calendar.exceptions.length} / WorkWeeks=${calendar.workWeeks.length}
-Refs=${formatCalendarReferenceSummary(model, calendar)}
-WeekDay1=${formatCalendarWeekDaySummary(calendar)}
-Exception1=${formatCalendarExceptionSummary(calendar)}
-WorkWeek1=${formatCalendarWorkWeekSummary(calendar)}</div>
-      </div>
-    `) : []);
+        mikuprojectMainRender.updateSummary(document, model, updateSvgButton);
     }
     function loadSample() {
         const sampleXml = mikuprojectXml.SAMPLE_XML;
@@ -1008,36 +566,12 @@ WorkWeek1=${formatCalendarWorkWeekSummary(calendar)}</div>
         showToast("AI 連携用まとめ JSON を保存しました");
         setActiveTab("output");
     }
-    function extractLastJsonBlock(value) {
-        var _a, _b;
-        const matches = Array.from(value.matchAll(/```json\s*([\s\S]*?)```/g));
-        if (matches.length > 0) {
-            return ((_b = (_a = matches.at(-1)) === null || _a === void 0 ? void 0 : _a[1]) === null || _b === void 0 ? void 0 : _b.trim()) || "";
-        }
-        return value.trim();
-    }
-    function detectJsonDocumentKind(documentLike) {
-        if (!documentLike || typeof documentLike !== "object") {
-            return undefined;
-        }
-        const candidate = documentLike;
-        if (candidate.format === "mikuproject_workbook_json") {
-            return "workbook_json";
-        }
-        if (candidate.view_type === "project_draft_view") {
-            return "project_draft_view";
-        }
-        if (Array.isArray(candidate.operations)) {
-            return "patch_json";
-        }
-        return undefined;
-    }
     async function importProjectDraftFromText() {
         const sourceText = getTextArea("projectDraftImportInput").value.trim();
         if (!sourceText) {
             throw new Error("project_draft_view JSON を入力してください");
         }
-        const jsonText = extractLastJsonBlock(sourceText);
+        const jsonText = mikuprojectAiJsonUtil.extractLastJsonBlock(sourceText);
         const draft = JSON.parse(jsonText);
         currentModel = mikuprojectXml.importProjectDraftView(draft);
         syncXmlTextFromModel(currentModel);
@@ -1056,7 +590,7 @@ WorkWeek1=${formatCalendarWorkWeekSummary(calendar)}</div>
         if (!trimmedSourceText) {
             throw new Error("Patch JSON を入力してください");
         }
-        const documentLike = JSON.parse(extractLastJsonBlock(trimmedSourceText));
+        const documentLike = JSON.parse(mikuprojectAiJsonUtil.extractLastJsonBlock(trimmedSourceText));
         const baseModel = ensureCurrentModel();
         const result = mikuprojectProjectPatchJson.importProjectPatchJson(documentLike, baseModel);
         currentModel = result.model;
@@ -1084,9 +618,9 @@ WorkWeek1=${formatCalendarWorkWeekSummary(calendar)}</div>
         if (!sourceText) {
             throw new Error("project_draft_view または Patch JSON を入力してください");
         }
-        const jsonText = extractLastJsonBlock(sourceText);
+        const jsonText = mikuprojectAiJsonUtil.extractLastJsonBlock(sourceText);
         const documentLike = JSON.parse(jsonText);
-        const kind = detectJsonDocumentKind(documentLike);
+        const kind = mikuprojectAiJsonUtil.detectJsonDocumentKind(documentLike);
         if (kind === "project_draft_view") {
             await importProjectDraftFromText();
             return;
@@ -1116,7 +650,7 @@ WorkWeek1=${formatCalendarWorkWeekSummary(calendar)}</div>
         if (!trimmedSourceText) {
             throw new Error("workbook JSON を入力してください");
         }
-        const documentLike = JSON.parse(extractLastJsonBlock(trimmedSourceText));
+        const documentLike = JSON.parse(mikuprojectAiJsonUtil.extractLastJsonBlock(trimmedSourceText));
         const baseModel = ensureCurrentModel();
         const result = mikuprojectProjectWorkbookJson.importProjectWorkbookJson(documentLike, baseModel);
         currentModel = result.model;
@@ -1171,8 +705,8 @@ WorkWeek1=${formatCalendarWorkWeekSummary(calendar)}</div>
         }
         if (normalizedName.endsWith(".json")) {
             const sourceText = await file.text();
-            const documentLike = JSON.parse(extractLastJsonBlock(sourceText));
-            const kind = detectJsonDocumentKind(documentLike);
+            const documentLike = JSON.parse(mikuprojectAiJsonUtil.extractLastJsonBlock(sourceText));
+            const kind = mikuprojectAiJsonUtil.detectJsonDocumentKind(documentLike);
             if (kind === "workbook_json") {
                 await importWorkbookJsonFromSourceText(sourceText);
                 return;
@@ -1689,8 +1223,7 @@ WorkWeek1=${formatCalendarWorkWeekSummary(calendar)}</div>
         parseCurrentXml,
         exportCurrentMermaid,
         renderValidationIssues,
-        renderXlsxImportSummary,
-        updateFeedbackVisibility
+        renderXlsxImportSummary
     };
     document.addEventListener("DOMContentLoaded", initialize);
 })();

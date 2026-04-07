@@ -5,12 +5,16 @@
   "description": "Local HTML tool for MS Project XML round-trip experiments.",
   "license": "Apache-2.0",
   "type": "module",
+  "bin": {
+    "mikuproject": "scripts/mikuproject-cli.mjs"
+  },
   "scripts": {
     "build": "npm run build:web && npm run test:fast",
     "build:js": "node scripts/build-project.mjs --js-only",
     "build:html": "node scripts/build-project.mjs --html-only",
     "build:web": "node scripts/build-project.mjs",
     "build:app": "npm run build:web && npm run build:xlsx-sample",
+    "cli": "node scripts/mikuproject-cli.mjs",
     "build:full": "npm run build:web && npm run test:full",
     "build:xlsx-sample": "node scripts/build-project-xlsx-sample.mjs",
     "test": "node scripts/run-tests.mjs all",

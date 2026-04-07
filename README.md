@@ -169,6 +169,31 @@ Node 側から `core API` を起動する最小 helper は [`scripts/lib/core-ap
 
 `AI JSON spec` 単体の取得用には `globalThis.__mikuprojectAiJsonSpec` も公開しています。
 
+## CLI first cut
+
+Node 側から `core API` を薄く包む最小 CLI first cut として、次の入口を追加している。
+
+- `mikuproject ai spec`
+- `mikuproject state from-draft`
+- `mikuproject state apply-patch`
+- `mikuproject export workbook-json`
+- `mikuproject export xml`
+- `mikuproject export xlsx`
+
+主成果物は `stdout`、warning / diagnostics は `stderr` を基本とする。
+
+例:
+
+```bash
+mikuproject ai spec
+mikuproject state from-draft --in draft.json --out workbook.json
+mikuproject state apply-patch --state workbook.json --in patch.json --out workbook.next.json
+mikuproject export xml --in workbook.json --out project.xml
+mikuproject export xlsx --in workbook.json --out project.xlsx
+```
+
+`report` 系の派生出力 CLI は次段候補として分離して扱う。
+
 ## 関連ドキュメント
 
 - [docs/architecture.md](docs/architecture.md)

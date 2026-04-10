@@ -3,6 +3,15 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 (() => {
+    function resolveXmlDomEnvironment() {
+        const configured = globalThis.__mikuprojectXmlDom;
+        if (configured && typeof configured.DOMParser === "function") {
+            return configured;
+        }
+        return {
+            DOMParser: globalThis.DOMParser
+        };
+    }
     const TEXT_ENCODER = new TextEncoder();
     const TEXT_DECODER = new TextDecoder();
     const INVALID_SHEET_NAME_PATTERN = /[:\\/?*\[\]]/;
@@ -939,8 +948,12 @@
         return null;
     }
     function parseXmlDocument(xmlText) {
-        const document = new DOMParser().parseFromString(xmlText, "application/xml");
-        if (document.querySelector("parsererror")) {
+        const environment = resolveXmlDomEnvironment();
+        if (typeof environment.DOMParser !== "function") {
+            throw new Error("XML DOMParser is not available");
+        }
+        const document = new environment.DOMParser().parseFromString(xmlText, "application/xml");
+        if (document.getElementsByTagName("parsererror")[0]) {
             throw new Error("Failed to parse XML document");
         }
         return document;

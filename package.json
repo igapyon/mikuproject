@@ -9,13 +9,14 @@
     "mikuproject": "scripts/mikuproject-cli.mjs"
   },
   "scripts": {
-    "build": "npm run build:web && npm run test:fast",
+    "build": "npm run build:web && npm run build:cli-bundle && npm run test:fast",
     "build:js": "node scripts/build-project.mjs --js-only",
     "build:html": "node scripts/build-project.mjs --html-only",
     "build:web": "node scripts/build-project.mjs",
+    "build:cli-bundle": "node scripts/build-cli-bundle.mjs",
     "build:app": "npm run build:web && npm run build:xlsx-sample",
     "cli": "node scripts/mikuproject-cli.mjs",
-    "build:full": "npm run build:web && npm run test:full",
+    "build:full": "npm run build:web && npm run build:cli-bundle && npm run test:full",
     "build:xlsx-sample": "node scripts/build-project-xlsx-sample.mjs",
     "test": "node scripts/run-tests.mjs all",
     "test:fast": "node scripts/run-tests.mjs fast",
@@ -23,6 +24,12 @@
     "test:extended": "node scripts/run-tests.mjs extended",
     "test:full": "node scripts/run-tests.mjs full",
     "test:all": "node scripts/run-tests.mjs all"
+  },
+  "dependencies": {
+    "@xmldom/xmldom": "^0.8.10"
+  },
+  "overrides": {
+    "vite": "7.3.2"
   },
   "devDependencies": {
     "jsdom": "^26.1.0",

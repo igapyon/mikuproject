@@ -21,6 +21,10 @@ const aiJsonSpecCode = readFileSync(
   path.resolve(__dirname, "../src/js/ai-json-spec.js"),
   "utf8"
 );
+const mainUtilCode = readFileSync(
+  path.resolve(__dirname, "../src/js/main-util.js"),
+  "utf8"
+);
 const msProjectXmlCode = readFileSync(
   path.resolve(__dirname, "../src/js/msproject-xml.js"),
   "utf8"
@@ -75,6 +79,7 @@ function bootModules() {
     typesCode,
     aiJsonUtilCode,
     aiJsonSpecCode,
+    mainUtilCode,
     msProjectXmlCode,
     markdownEscapeCode,
     projectWorkbookSchemaCode,
@@ -94,6 +99,7 @@ describe("mikuproject core api", () => {
   beforeEach(() => {
     delete globalThis.__mikuprojectAiJsonUtil;
     delete globalThis.__mikuprojectAiJsonSpec;
+    delete globalThis.__mikuprojectMainUtil;
     delete globalThis.__mikuprojectXml;
     delete globalThis.__mikuprojectMarkdownEscape;
     delete globalThis.__mikuprojectProjectWorkbookSchema;
@@ -285,6 +291,7 @@ describe("mikuproject core api", () => {
     const dailySvg = api.report.svg.exportDaily(model, { labelMode: "list" });
     const weeklySvg = api.report.svg.exportWeekly(model);
     const monthlyCalendar = api.report.svg.exportMonthlyCalendar(model);
+    const reportBundle = api.report.all.export(model);
     const wbsMarkdown = api.report.wbsMarkdown.export(model);
     const mermaidText = api.report.mermaid.exportGantt(model);
 
@@ -294,6 +301,14 @@ describe("mikuproject core api", () => {
     expect(weeklySvg).toContain("<svg");
     expect(monthlyCalendar.entries.length).toBeGreaterThan(0);
     expect(monthlyCalendar.zipBytes).toBeInstanceOf(Uint8Array);
+    expect(reportBundle.zipBytes).toBeInstanceOf(Uint8Array);
+    expect(reportBundle.entries.map((entry) => entry.name)).toContain("wbs.xlsx");
+    expect(reportBundle.entries.map((entry) => entry.name)).toContain("wbs.md");
+    expect(reportBundle.entries.map((entry) => entry.name)).toContain("mermaid.mmd");
+    expect(reportBundle.entries.map((entry) => entry.name)).toContain("daily.svg");
+    expect(reportBundle.entries.map((entry) => entry.name)).toContain("weekly.svg");
+    expect(reportBundle.entries.some((entry) => entry.name.startsWith("monthly-calendar/"))).toBe(true);
+    expect(reportBundle.entries.some((entry) => entry.name === "monthly-calendar.zip")).toBe(false);
     expect(wbsMarkdown).toContain("# WBS テーブル");
     expect(mermaidText).toContain("gantt");
   });

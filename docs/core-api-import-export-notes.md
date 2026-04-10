@@ -15,6 +15,8 @@
 
 外部再利用向けには、single-file web app 向けの既存 global を維持しつつ、集約入口として `globalThis.__mikuprojectCoreApi` を公開する。
 
+Node / CLI 側では、`scripts/lib/core-api-loader.mjs` が `globalThis.__mikuprojectXmlDom` も初期化する。これにより、`msproject-xml` と `excel-io` の XML parse / serialize はブラウザ DOM 直依存ではなく、CLI では `@xmldom/xmldom` 優先、未導入時は `jsdom` フォールバックで動く。
+
 ## 現状整理
 
 ### format-specific export

@@ -4,6 +4,8 @@
 
 GitHub: https://github.com/igapyon/mikuproject
 
+Agent Skills 版: https://github.com/igapyon/mikuproject-skills
+
 `mikuproject` は、`MS Project XML` を意味の基軸に、生成AIとの往復を支えるために設計されたローカル HTML ツールです。WBS の草案作成から再編集・再取込、人向けの可視化・帳票化までを、ひとつの流れとして扱えます。
 
 `mikuproject` の強みは、`MS Project XML` を意味の基軸として保ちながら、生成AIと人のあいだを往復できることです。WBS 草案の作成、生成AI が扱いやすい形への表現変換、生成AI から返った内容の再取込、人による確認と修正、そして可視化・帳票化までを、同じプロジェクト情報の流れとして扱えます。`XLSX`、`Markdown`、`JSON`、`Mermaid`、生成AI向け表現、そして必要に応じた `MS Project` への橋渡しは、それぞれの用途に応じた周辺表現として無理なく出し分けられます。
@@ -17,6 +19,8 @@ GitHub: https://github.com/igapyon/mikuproject
 配布物は `mikuproject.html` ひとつの single-file web app で、Web ブラウザさえあればインストール不要・ネットワーク不要で利用できます。
 
 `MS Project XML` を意味の基軸として扱い、`.xlsx` と workbook JSON は確認・可視化・限定編集のための周辺表現として扱います。生成AI 連携の編集用 JSON は、workbook JSON と区別するため当面 `.editjson` 拡張子を推奨します。
+
+Agent Skills から `mikuproject` の CLI / AI JSON 連携を扱うための関連リポジトリとして、[`mikuproject-skills`](https://github.com/igapyon/mikuproject-skills) があります。
 
 ## 代表的なユースケース
 
@@ -116,7 +120,7 @@ npm run build
 npm test
 ```
 
-開発用コマンドの詳細、テスト運用、`local-data/` の扱いは [docs/development.md](docs/development.md) を参照してください。
+`npm run build` には `build:web`、`build:cli-bundle`、`test:fast` が含まれる。開発用コマンドの詳細、テスト運用、`local-data/` の扱いは [docs/development.md](docs/development.md) を参照してください。
 
 ## 再利用 API
 
@@ -135,6 +139,7 @@ single-file web app 向けの既存 `globalThis.__mikuproject*` 群は維持し�
 
 `report` では次を公開する。
 
+- `all.export()`: `report` 成果物一式 ZIP の生成
 - `wbsXlsx.exportWorkbook()` / `wbsXlsx.exportBytes()`: `WBS XLSX` workbook と `.xlsx` bytes の生成
 - `svg.exportDaily()` / `svg.exportWeekly()` / `svg.exportMonthlyCalendar()`: `Daily / Weekly / Monthly Calendar SVG` の生成
 - `wbsMarkdown.export()`: `WBS Markdown` の生成
@@ -165,7 +170,7 @@ first cut の対応は次のとおり。
 - `project_draft_view`: `replace` のみ
 - `patch_json`: `patch` のみ
 
-Node 側から `core API` を起動する最小 helper は [`scripts/lib/core-api-loader.mjs`](scripts/lib/core-api-loader.mjs) に置いている。`importExternal()` の利用例は [`scripts/core-api-import-external-example.mjs`](scripts/core-api-import-external-example.mjs) を参照。
+Node 側から `core API` を起動する最小 helper は [`scripts/lib/core-api-loader.mjs`](scripts/lib/core-api-loader.mjs) に置いている。CLI ではこの loader が `globalThis.__mikuprojectXmlDom` を初期化し、XML 系の `DOMParser` / `XMLSerializer` / XML document 生成を環境非依存に扱う。`importExternal()` の利用例は [`scripts/core-api-import-external-example.mjs`](scripts/core-api-import-external-example.mjs) を参照。
 
 `AI JSON spec` 単体の取得用には `globalThis.__mikuprojectAiJsonSpec` も公開しています。
 
@@ -179,6 +184,13 @@ Node 側から `core API` を薄く包む最小 CLI first cut として、次の
 - `mikuproject export workbook-json`
 - `mikuproject export xml`
 - `mikuproject export xlsx`
+- `mikuproject report wbs-xlsx`
+- `mikuproject report daily-svg`
+- `mikuproject report weekly-svg`
+- `mikuproject report monthly-calendar-svg`
+- `mikuproject report all`
+- `mikuproject report wbs-markdown`
+- `mikuproject report mermaid`
 
 主成果物は `stdout`、warning / diagnostics は `stderr` を基本とする。
 
@@ -190,9 +202,46 @@ mikuproject state from-draft --in draft.json --out workbook.json
 mikuproject state apply-patch --state workbook.json --in patch.json --out workbook.next.json
 mikuproject export xml --in workbook.json --out project.xml
 mikuproject export xlsx --in workbook.json --out project.xlsx
+mikuproject report wbs-xlsx --in workbook.json --out project-wbs.xlsx
+mikuproject report daily-svg --in workbook.json --out project-daily.svg
+mikuproject report weekly-svg --in workbook.json --out project-weekly.svg
+mikuproject report monthly-calendar-svg --in workbook.json --out project-monthly.zip
+mikuproject report all --in workbook.json --out project-report-bundle.zip
+mikuproject report wbs-markdown --in workbook.json --out project-wbs.md
+mikuproject report mermaid --in workbook.json --out project.mmd
 ```
 
-`report` 系の派生出力 CLI は次段候補として分離して扱う。
+`report monthly-calendar-svg` は月別 SVG 一式をまとめた ZIP を出力する。
+`report all` は `wbs.xlsx` / `wbs.md` / `mermaid.mmd` / `daily.svg` / `weekly.svg` / `monthly-calendar/YYYY-MM.svg` をまとめた ZIP を出力する。
+
+## CLI bundle first cut
+
+`mikuproject` 側で CLI 実行に必要な runtime をまとめた自己完結ディレクトリ bundle を出力できるようにしている。
+
+```bash
+npm run build:cli-bundle
+```
+
+既定の出力先は `bundle/mikuproject-cli-bundle/` で、主に次を含む。
+
+```text
+bundle/
+  mikuproject-cli-bundle/
+    README.md
+    package.json
+    scripts/
+    src/
+    node_modules/
+```
+
+この bundle は追加の `npm install` なしで、そのまま CLI 実行に使える first cut を狙っている。たとえば次で動く。
+
+```bash
+node bundle/mikuproject-cli-bundle/scripts/mikuproject-cli.mjs ai spec
+node bundle/mikuproject-cli-bundle/scripts/mikuproject-cli.mjs export xml --in workbook.json --out project.xml
+```
+
+bundle 生成時は、repo root の `node_modules` にある CLI runtime 依存を取り込む。現時点では `@xmldom/xmldom` を CLI の優先 XML DOM 実装として使い、`jsdom` は HTML / Blob / File など XML 以外の Web API 補完のために同梱する。そのため、bundle 生成前には一度 `npm install` 済みであることを前提とする。
 
 ## 関連ドキュメント
 

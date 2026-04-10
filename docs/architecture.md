@@ -70,6 +70,17 @@ single-file web app としての配布を維持しつつ、外部再利用向け
 
 これにより、従来の UI 実装都合で分散していた `ProjectModel` 周りの入口を、外部利用者が 1 箇所から辿れるようにする。
 
+## XML DOM 方針
+
+XML の parse / serialize は、ブラウザ DOM 直依存ではなく `globalThis.__mikuprojectXmlDom` を介して解決する。
+
+- `msproject-xml` と `excel-io` は `DOMParser` を `__mikuprojectXmlDom` から優先取得する
+- `msproject-xml` の XML export は `XMLSerializer` と `createDocument` も同じ経路で解決する
+- Web ではブラウザ標準の XML DOM を使う
+- CLI では `scripts/lib/core-api-loader.mjs` が `@xmldom/xmldom` を優先して注入し、未導入時のみ `jsdom` の XML 実装へフォールバックする
+
+この方針により、CLI の XML 処理は `jsdom` 全体に依存せず、XML 用 DOM 実装だけを差し替えられる。`jsdom` は引き続き CLI 上の HTML / Blob / File など、XML 以外の Web API 補完に使う。
+
 ## リポジトリ構成
 
 - `mikuproject.html`: 生成済みの単一 HTML アプリ
@@ -81,6 +92,7 @@ single-file web app としての配布を維持しつつ、外部再利用向け
 - `tests/`: Vitest ベースのテスト
 - `testdata/`: XML テストデータ
 - `scripts/`: ビルド補助スクリプト
+- `scripts/lib/core-api-loader.mjs`: CLI / 外部再利用向けに core API と XML DOM 実装を初期化する
 - `docs/spec.md`: 現行仕様メモ
 - `docs/gap-notes.md`: 保持項目や互換性のギャップメモ
 
@@ -167,16 +179,17 @@ sample 生成も含めた従来相当のフル実行:
 npm run build:full
 ```
 
-`npm run build` は日常開発向けの軽い確認で、`build:web` と `test:fast` を順に実行する。`npm run build:app` は `build:web` と `build:xlsx-sample` を順に実行する。`npm run build:full` は `build:web` と `test:full` を順に実行し、日常で見たい core UI smoke suite までを確認する。`build:xlsx-sample` は必要なときだけ `build:app` か `npm run build:xlsx-sample` で明示実行する。`npm run test:extended` は validation、`XLSX import`、preview 切替、重い patch/export 系、表現変換/replace 系を追加で確認する。`npm test` / `npm run test:all` はそれらも含めた完全実行である。
+`npm run build` は日常開発向けの標準 build で、`build:web`、`build:cli-bundle`、`test:fast` を順に実行する。`npm run build:app` は `build:web` と `build:xlsx-sample` を順に実行する。`npm run build:full` は `build:web`、`build:cli-bundle`、`test:full` を順に実行し、日常で見たい core UI smoke suite までを確認する。`build:xlsx-sample` は必要なときだけ `build:app` か `npm run build:xlsx-sample` で明示実行する。`npm run test:extended` は validation、`XLSX import`、preview 切替、重い patch/export 系、表現変換/replace 系を追加で確認する。`npm test` / `npm run test:all` はそれらも含めた完全実行である。
 
 スクリプトの役割は次のとおり。
 
 - `npm run build:js`: `src/ts/` から `src/js/` を生成する
 - `npm run build:html`: `index-src.html` と `mikuproject-src.html` から `index.html` と `mikuproject.html` を生成する
 - `npm run build:web`: JavaScript 生成と HTML 生成をまとめて行う
+- `npm run build:cli-bundle`: 自己完結 CLI bundle を `bundle/mikuproject-cli-bundle/` へ生成する
 - `npm run build:xlsx-sample`: `local-data/` 配下へサンプル XLSX / Markdown を生成する
 - `npm run build:app`: `build:web` と `build:xlsx-sample` を順に実行する
-- `npm run build:full`: `build:web` と `test:full` を順に実行する
+- `npm run build:full`: `build:web`、`build:cli-bundle`、`test:full` を順に実行する
 - `npm run test:extended`: validation、`XLSX import`、preview 切替、重い patch/export 系、表現変換/replace 系 UI suite を実行する
 - `npm run test:all`: `fast + ui + extended` をすべて実行する
 

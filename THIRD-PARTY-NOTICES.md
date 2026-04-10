@@ -4,6 +4,18 @@ This document lists third-party software and reference materials used or referre
 
 ## Third-party software
 
+### `jsdom`
+
+- Usage: Used in the CLI and tests to provide browser-like Web APIs such as `window`, `document`, `Blob`, and `File`. XML processing in the CLI no longer depends on `jsdom` directly, but `jsdom` remains in use for non-XML Web API emulation.
+- License: MIT
+- Source: https://github.com/jsdom/jsdom
+
+### `@xmldom/xmldom`
+
+- Usage: Used in the CLI as the preferred XML DOM implementation for `DOMParser`, `XMLSerializer`, and XML document creation.
+- License: MIT
+- Source: https://github.com/xmldom/xmldom
+
 ## Reference materials
 
 ### `open-msp-viewer`
@@ -25,6 +37,18 @@ This document lists third-party software and reference materials used or referre
 この文書は、`mikuproject` が利用または参照している第三者ソフトウェアおよび参考資料を記載したものです。
 
 ## 第三者ソフトウェア
+
+### `jsdom`
+
+- 用途: CLI とテストで、`window`、`document`、`Blob`、`File` などのブラウザ相当 Web API を補うために利用する。CLI の XML 処理は `jsdom` 直依存ではなくなったが、XML 以外の Web API エミュレーション用途では引き続き利用する。
+- ライセンス: MIT
+- Source: https://github.com/jsdom/jsdom
+
+### `@xmldom/xmldom`
+
+- 用途: CLI で、`DOMParser`、`XMLSerializer`、XML document 生成の優先 XML DOM 実装として利用する。
+- ライセンス: MIT
+- Source: https://github.com/xmldom/xmldom
 
 ## 参考資料
 

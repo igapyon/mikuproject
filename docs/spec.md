@@ -174,7 +174,7 @@ STEP 1 の目的は、`MS Project XML` を意味的に往復できる状態を�
 - `Daily SVG`: `mikuproject-wbs-daily-<YYYYMMDDHHmm>.svg`
 - `Weekly SVG`: `mikuproject-wbs-weekly-<YYYYMMDDHHmm>.svg`
 - `Monthly Calendar SVG`: `mikuproject-monthly-wbs-calendar-<YYYYMMDDHHmm>.zip`
-- `Mermaid`: `mikuproject-wbs-mermaid-<YYYYMMDDHHmm>.md`
+- `Mermaid`: `mikuproject-wbs-mermaid-<YYYYMMDDHHmm>.mmd`
 
 `Daily SVG` のラベル配置は次の方針とする。
 
@@ -629,7 +629,8 @@ Patch JSON の次段 MVP 方針:
 - `predecessors` は `update_task.fields` には含めず、依存関係の変更は `link_tasks` / `unlink_tasks` へ分離する方針とする
 - その理由は、依存関係が単なる field 更新ではなく task 間リンク更新であり、将来の `type / lag` 拡張や validation と相性がよいためである
 - `link_tasks` の first draft は `from_uid` / `to_uid` を必須とし、`type` は省略時 `FS` を既定としてよい
-- `unlink_tasks` の first draft も `from_uid` / `to_uid` を必須とし、必要なら `type` や `lag` / `lag_hours` を併記して解除対象を特定できる形とする
+- `link_tasks` / `unlink_tasks` の `lag` は任意とし、指定する場合は `lag` または `lag_hours` のどちらか一方だけを返す。両方を返した場合は `lag` を優先し、`lag_hours` は warning 付きで無視する
+- `unlink_tasks` の first draft も `from_uid` / `to_uid` を必須とし、必要なら `type` や `lag` または `lag_hours` で解除対象を特定できる形とする
 - `unlink_tasks` で複数の依存関係が同じ条件に一致した場合は、その条件に一致した link をすべて解除する方針とする
 - first draft では、依存関係の変更は predecessor 一覧の全置換ではなく、追加と解除を op 単位で返す方針とする
 - 未知 `op`、存在しない `uid`、不正 field、不正日付は validation または import warning/error の対象とする
@@ -1061,6 +1062,7 @@ STEP 1 の中核処理は、次のような責務に分ける。
 - 仕様や表現方法に迷った場合は、`MS Project XML` の持ち方を優先する
 - 独自に扱いやすいモデル化は許容するが、`MS Project XML` との意味対応を壊さないことを優先する
 - 特にタスク階層や依存関係は、独自表現へ寄せすぎず、まず `MS Project` 側の表現を基準に考える
+- XML parser / serializer 実装は差し替え可能にし、モジュール側は `globalThis.__mikuprojectXmlDom` 経由で XML DOM を解決する
 
 ## テスト方針
 

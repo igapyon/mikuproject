@@ -618,6 +618,7 @@
       "mikuproject ALL ZIP",
       "",
       "GitHub: https://github.com/igapyon/mikuproject",
+      "Agent Skills: https://github.com/igapyon/mikuproject-skills",
       "mikuproject is a local single-file web app that converts MS Project XML into XLSX, Markdown, SVG, Mermaid, and AI-facing JSON exports.",
       "",
       "This archive contains the main outputs generated from the current model.",
@@ -631,7 +632,7 @@
       "- mikuproject-wbs-*.md: WBS Markdown export",
       "- mikuproject-wbs-daily-*.svg: daily WBS SVG export",
       "- mikuproject-wbs-weekly-*.svg: weekly WBS SVG export",
-      "- mikuproject-wbs-mermaid-*.md: Mermaid gantt export",
+      "- mikuproject-wbs-mermaid-*.mmd: Mermaid gantt export",
       "- monthly-calendar/YYYY-MM.svg: month-by-month calendar SVG export",
       "- *.editjson: AI-facing projection exports"
     ].join("\n");
@@ -646,7 +647,7 @@
       { name: `mikuproject-wbs-${dateOnlyStamp}.md`, data: mikuprojectMainUtil.encodeUtf8(`${wbsMarkdown}\n`) },
       { name: `mikuproject-wbs-daily-${stamp}.svg`, data: mikuprojectMainUtil.encodeUtf8(dailySvg) },
       { name: `mikuproject-wbs-weekly-${stamp}.svg`, data: mikuprojectMainUtil.encodeUtf8(weeklySvg) },
-      { name: `mikuproject-wbs-mermaid-${stamp}.md`, data: mikuprojectMainUtil.encodeUtf8(`\`\`\`mermaid\n${mermaidText}\n\`\`\`\n`) }
+      { name: `mikuproject-wbs-mermaid-${stamp}.mmd`, data: mikuprojectMainUtil.encodeUtf8(`${mermaidText}\n`) }
     ];
     for (const entry of monthlyArchive.entries) {
       entries.push({
@@ -1342,7 +1343,7 @@
     setActiveTab("output");
   }
 
-  function downloadCurrentMermaidMarkdown(): void {
+  function downloadCurrentMermaidMmd(): void {
     const model = ensureCurrentModel();
     syncXmlTextFromModel(model);
     const mermaidText = mikuprojectXml.exportMermaidGantt(model);
@@ -1355,13 +1356,12 @@
       String(now.getHours()).padStart(2, "0"),
       String(now.getMinutes()).padStart(2, "0")
     ].join("");
-    const markdownText = `\`\`\`mermaid\n${mermaidText}\n\`\`\`\n`;
     downloadBlob(
-      new Blob([markdownText], { type: "text/markdown;charset=utf-8" }),
-      `mikuproject-wbs-mermaid-${stamp}.md`
+      new Blob([`${mermaidText}\n`], { type: "text/plain;charset=utf-8" }),
+      `mikuproject-wbs-mermaid-${stamp}.mmd`
     );
-    setStatus("Mermaid Markdown を保存しました");
-    showToast("Mermaid Markdown を保存しました");
+    setStatus("Mermaid を保存しました");
+    showToast("Mermaid を保存しました");
     setActiveTab("output");
   }
 
@@ -1463,9 +1463,9 @@
     });
     getElement<HTMLButtonElement>("exportMermaidMdBtn").addEventListener("click", () => {
       try {
-        downloadCurrentMermaidMarkdown();
+        downloadCurrentMermaidMmd();
       } catch (error) {
-        setStatus(error instanceof Error ? error.message : "Mermaid Markdown 保存に失敗しました");
+        setStatus(error instanceof Error ? error.message : "Mermaid 保存に失敗しました");
       }
     });
     getElement<HTMLButtonElement>("exportCsvBtn").addEventListener("click", () => {

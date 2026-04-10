@@ -3,6 +3,20 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 (() => {
+  function resolveXmlDomEnvironment(): { DOMParser?: typeof DOMParser } {
+    const configured = (globalThis as typeof globalThis & {
+      __mikuprojectXmlDom?: {
+        DOMParser?: typeof DOMParser;
+      };
+    }).__mikuprojectXmlDom;
+    if (configured && typeof configured.DOMParser === "function") {
+      return configured;
+    }
+    return {
+      DOMParser: globalThis.DOMParser
+    };
+  }
+
   type XlsxPrimitiveValue = string | number | boolean;
   type XlsxNumberFormat = "general" | "integer" | "decimal" | "date" | "datetime" | "percent" | "text";
   type XlsxHorizontalAlign = "left" | "center" | "right";
@@ -1190,8 +1204,12 @@
   }
 
   function parseXmlDocument(xmlText: string): XMLDocument {
-    const document = new DOMParser().parseFromString(xmlText, "application/xml");
-    if (document.querySelector("parsererror")) {
+    const environment = resolveXmlDomEnvironment();
+    if (typeof environment.DOMParser !== "function") {
+      throw new Error("XML DOMParser is not available");
+    }
+    const document = new environment.DOMParser().parseFromString(xmlText, "application/xml");
+    if (document.getElementsByTagName("parsererror")[0]) {
       throw new Error("Failed to parse XML document");
     }
     return document;

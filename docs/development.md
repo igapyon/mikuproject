@@ -6,6 +6,12 @@
 npm install
 ```
 
+補足:
+
+- CLI の XML parse / serialize は `@xmldom/xmldom` を優先利用する
+- `jsdom` は CLI 上の HTML / Blob / File など、XML 以外の Web API 補完にも使っているため依存として残す
+- XML DOM の入口は `globalThis.__mikuprojectXmlDom` で、`msproject-xml` と `excel-io` が参照する
+
 ## よく使うコマンド
 
 ```bash
@@ -13,9 +19,9 @@ npm run build
 npm test
 ```
 
-- `npm run build` は日常開発向けの軽い確認で、`build:web` と `test:fast` を順に実行する
+- `npm run build` は日常開発向けの標準 build で、`build:web`、`build:cli-bundle`、`test:fast` を順に実行する
 - `npm run build:app` は `build:web` と `build:xlsx-sample` を順に実行する
-- `npm run build:full` は `build:web` と `test:full` を順に実行し、日常で見たい core UI smoke suite までを確認する
+- `npm run build:full` は `build:web`、`build:cli-bundle`、`test:full` を順に実行し、日常で見たい core UI smoke suite までを確認する
 - `build:xlsx-sample` は必要なときだけ `build:app` か `npm run build:xlsx-sample` で明示実行する
 
 ## テストの使い分け

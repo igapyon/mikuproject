@@ -96,6 +96,17 @@
     throw new Error("mikuproject AI JSON spec module is not loaded");
   }
 
+  const mikuprojectMainUtil = (globalThis as typeof globalThis & {
+    __mikuprojectMainUtil?: {
+      encodeUtf8: (value: string) => Uint8Array;
+      packZipEntries: (entries: Array<{ name: string; data: Uint8Array }>) => Uint8Array;
+    };
+  }).__mikuprojectMainUtil;
+
+  if (!mikuprojectMainUtil) {
+    throw new Error("mikuproject main util module is not loaded");
+  }
+
   const mikuprojectProjectWorkbookJson = (globalThis as typeof globalThis & {
     __mikuprojectProjectWorkbookJson?: {
       exportProjectWorkbookJson: (model: ProjectModel) => unknown;
@@ -456,6 +467,45 @@
     throw new Error(`未対応の import format です: ${(source as { format?: string }).format || "unknown"}`);
   }
 
+  function exportAllReportEntries(
+    model: ProjectModel,
+    options: ReportProgressOptions = {}
+  ): Array<{ name: string; data: Uint8Array }> {
+    const codec = new mikuprojectExcelIo.XlsxWorkbookCodec();
+    const monthlyArchive = mikuprojectNativeSvg.exportMonthlyWbsCalendarSvgArchive(model);
+    const entries = [
+      {
+        name: "wbs.xlsx",
+        data: codec.exportWorkbook(mikuprojectWbsXlsx.exportWbsWorkbook(model, options))
+      },
+      {
+        name: "wbs.md",
+        data: mikuprojectMainUtil.encodeUtf8(`${mikuprojectWbsMarkdown.exportWbsMarkdown(model, options)}\n`)
+      },
+      {
+        name: "mermaid.mmd",
+        data: mikuprojectMainUtil.encodeUtf8(`${mikuprojectXml.exportMermaidGantt(model)}\n`)
+      },
+      {
+        name: "daily.svg",
+        data: mikuprojectMainUtil.encodeUtf8(`${mikuprojectNativeSvg.exportNativeSvg(model, options)}\n`)
+      },
+      {
+        name: "weekly.svg",
+        data: mikuprojectMainUtil.encodeUtf8(`${mikuprojectNativeSvg.exportWeeklyNativeSvg(model, options)}\n`)
+      }
+    ];
+
+    for (const entry of monthlyArchive.entries) {
+      entries.push({
+        name: `monthly-calendar/${entry.fileName}`,
+        data: mikuprojectMainUtil.encodeUtf8(entry.svg)
+      });
+    }
+
+    return entries;
+  }
+
   (globalThis as typeof globalThis & {
     __mikuprojectCoreApi?: {
       version: 1;
@@ -547,6 +597,12 @@
         };
       };
       report: {
+        all: {
+          export: (model: ProjectModel, options?: ReportProgressOptions) => {
+            entries: Array<{ name: string; data: Uint8Array }>;
+            zipBytes: Uint8Array;
+          };
+        };
         wbsXlsx: {
           exportWorkbook: (model: ProjectModel, options?: ReportProgressOptions) => XlsxWorkbookLike;
           exportBytes: (model: ProjectModel, options?: ReportProgressOptions) => Uint8Array;
@@ -619,6 +675,15 @@
       applyToProjectModel: mikuprojectProjectPatchJson.importProjectPatchJson
     },
     report: {
+      all: {
+        export: (model: ProjectModel, options: ReportProgressOptions = {}) => {
+          const entries = exportAllReportEntries(model, options);
+          return {
+            entries,
+            zipBytes: mikuprojectMainUtil.packZipEntries(entries)
+          };
+        }
+      },
       wbsXlsx: {
         exportWorkbook: mikuprojectWbsXlsx.exportWbsWorkbook,
         exportBytes: (model: ProjectModel, options: ReportProgressOptions = {}) =>

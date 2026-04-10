@@ -2,9 +2,9 @@
 
 この文書は、`mikuproject AI JSON Prompt / Spec` の定義である。
 
-- Version: `v20260403`
+- Version: `v20260410`
 
-私たちは、これから取り組むプロジェクトの内容を理解し、WBS の観点から必要なマイルストーン / フェーズ / タスクを整理し、`mikuproject` に設定するための入力へ落とし込んでいきます。
+私たちは、これから取り組むプロジェクトの内容を理解し、WBS の観点から必要なマイルストーン / フェーズ / タスクを整理し、`mikuproject` に設定するための JSON へ落とし込んでいきます。
 
 `mikuproject` は、`MS Project XML` を基軸に、変換・可視化・限定編集を行う single-file web app です。
 
@@ -18,6 +18,15 @@
 
 このプロンプトを読んだ直後は、内容を受け取ったことを示すために `OK` とだけ回答してください。
 
+## 最重要ルール
+
+- 新規 project 草案を作る場合は、最後の `json` コードフェンスで `project_draft_view` を返してください
+- 既存 project を修正する場合は、最後の `json` コードフェンスで Patch JSON を返してください
+- 既存 project の修正では、project 全体 JSON や workbook JSON を再出力してはいけません
+- `project_draft_request` は入力側の補助形式であり、返答として返してはいけません
+- 返答に説明文を含めてもかまいませんが、`mikuproject` が処理する JSON は最後の `json` コードフェンス 1 個だけです
+- 不明な値を勝手に補完してはいけません。ただし新規 project 草案では、ユーザーが粗い草案や仮日付を求めている場合に限り、草案としての仮日付を入れてよいです
+
 ## 現時点の実装状況
 
 - 実装済み: `project_overview_view` の export
@@ -25,21 +34,21 @@
 - 実装済み: `task_edit_view` の export
 - 実装済み: `full bundle` には `project_overview_view` / `phase_detail_views_full` / `task_edit_views_full` を含める
 - 実装済み: `project_draft_view` の import
-- 実装済み: Patch JSON の `update_project` / `update_task` / `update_resource` / `update_assignment` / `update_calendar` / `link_tasks` / `unlink_tasks` first cut import / 適用
-- 実装済み: Patch JSON の `add_task` / `add_resource` / `add_assignment` / `add_calendar` / `move_task` / `delete_task` / `delete_resource` / `delete_assignment` / `delete_calendar` first cut import / 適用
-- `project_draft_request` は補助的な構想・helper であり、現行 UI の主機能ではありません
+- 実装済み: Patch JSON の `update_project` / `update_task` / `update_resource` / `update_assignment` / `update_calendar` / `link_tasks` / `unlink_tasks` import / 適用
+- 実装済み: Patch JSON の `add_task` / `add_resource` / `add_assignment` / `add_calendar` / `move_task` / `delete_task` / `delete_resource` / `delete_assignment` / `delete_calendar` import / 適用
+- `project_draft_request` は入力側の補助形式です。返答としては返しません
 
 ## 前提
 
 - AI へ渡される入力は用途別 projection JSON です
 - AI は説明文を返してよいです
-- 既存編集向けの Patch JSON は `add_task` / `add_resource` / `add_assignment` / `add_calendar` / `update_project` / `update_task` / `update_resource` / `update_assignment` / `update_calendar` / `move_task` / `delete_task` / `delete_resource` / `delete_assignment` / `delete_calendar` / `link_tasks` / `unlink_tasks` の first cut を実装済みです
+- 既存編集向けの Patch JSON は `add_task` / `add_resource` / `add_assignment` / `add_calendar` / `update_project` / `update_task` / `update_resource` / `update_assignment` / `update_calendar` / `move_task` / `delete_task` / `delete_resource` / `delete_assignment` / `delete_calendar` / `link_tasks` / `unlink_tasks` を実装済みです
 - `MS Project XML` は保存と互換のための外部形式ですが、AI は直接扱いません
 - workbook JSON と AI 向け編集用 JSON を混同しないため、当面 `project_draft_view` などの編集用 JSON には `.editjson` 拡張子を推奨します
 
-## 重要方針
+## 既存編集モードの重要方針
 
-- 全体 JSON の再出力は禁止です
+- 既存 project の全体 JSON 再出力は禁止です
 - 不明な値を推測して補完してはいけません
 - 未指定項目は変更しない前提です
 - 与えられた projection と rules の範囲を超えて変更してはいけません
@@ -54,8 +63,8 @@
 - `project_overview_view`: プロジェクト全体の構造、粒度、主要節目を把握するための要約ビュー
 - `phase_detail_view`: 特定フェーズの task 群、主要 milestone、依存の要点を把握するための詳細ビュー
 - `task_edit_view`: 個別 task を安全に編集するための作業ビュー
-- `project_draft_request`: 全く新規の project 草案を AI に生成させるための入力。現時点では設計メモ寄りです
 - `project_draft_view`: 新規 project 草案の全量出力。現時点では import 済みです
+- `project_draft_request`: 全く新規の project 草案を AI に生成させるための入力側補助形式です。返答としては返しません
 
 ## ファイル拡張子の運用
 
@@ -221,27 +230,9 @@
 }
 ```
 
-### `project_draft_request` の例
-
-これは新規生成プロンプト組み立て用の入力案です。現時点では主に設計用で、UI の主導線にはまだ載せていません。
-
-```json
-{
-  "view_type": "project_draft_request",
-  "project": {
-    "name": "新規基幹刷新",
-    "planned_start": "2026-04-01"
-  },
-  "requirements": {
-    "goal": "社内基幹システム刷新",
-    "team_count": 2,
-    "must_have_phases": ["要件定義", "設計", "実装", "テスト", "移行"],
-    "must_have_milestones": ["要件確定", "本番移行"]
-  }
-}
-```
-
 ### `project_draft_view` の例
+
+新規 project 草案として返す JSON です。依存関係は task ごとの `predecessor_uids` または `predecessors[].task_uid` に書いてください。
 
 ```json
 {
@@ -269,6 +260,16 @@
       "is_summary": true,
       "planned_start": "2026-04-01",
       "planned_finish": "2026-04-10"
+    },
+    {
+      "uid": "draft-2",
+      "name": "基本設計",
+      "parent_uid": null,
+      "position": 1,
+      "is_summary": true,
+      "planned_start": "2026-04-13",
+      "planned_finish": "2026-04-24",
+      "predecessor_uids": ["draft-1"]
     }
   ],
   "assignments": [
@@ -335,6 +336,11 @@
   - `SF`
 - `predecessors` だけでなく `successors` も見てください
 - `lag` は負値を取りうることがあります
+- 新規 project 草案の `project_draft_view` では、依存関係は各 task の `predecessor_uids` または `predecessors[].task_uid` に書いてください
+- `project_draft_view` import で取り込む依存情報は task 間の前後関係です。依存の `type` や `lag` / `lag_hours` を指定したい場合は、後続の Patch JSON で `link_tasks` を使ってください
+- `project_draft_view` のトップレベル `dependencies` は import 対象ではありません
+- Patch JSON の `link_tasks` / `unlink_tasks` では、`lag` と `lag_hours` を併記しないでください
+- Patch JSON で `lag` と `lag_hours` が併記された場合、`lag` を優先し、`lag_hours` は warning 付きで無視されます
 
 ### rules
 
@@ -369,14 +375,13 @@
 - 親子や順序の変更は `move_task` を使います
 - 依存関係の追加や解除は `link_tasks` / `unlink_tasks` を使います
 - `predecessors` は `update_task.fields` に含めません
-- 依存関係は task の属性更新ではなく task 間リンクの更新として扱い、将来の `type` / `lag` 拡張も `link_tasks` / `unlink_tasks` 側で表現します
+- 依存関係は task の属性更新ではなく task 間リンクの更新として扱い、`type` / `lag` も `link_tasks` / `unlink_tasks` 側で表現します
 
-### Patch JSON の MVP 方針
+### Patch JSON の現在対応範囲
 
-- 最初の import 実装では、既存 project 向け Patch JSON の最小対応として `update_task` から着手します
-- MVP では `operations` 配列を順に適用します
-- MVP では、少なくとも `uid` で対象 task を特定できることを前提にします
-- MVP で受ける `fields` は、まず次のような task の基本計画項目に絞る方針です
+- Patch JSON は `operations` 配列を順に適用します
+- 少なくとも `uid` で対象 task / resource / assignment / calendar を特定できることを前提にします
+- task の `fields` で受ける基本計画項目は次のとおりです
   - `name`
   - `notes`
   - `calendar_uid`
@@ -422,9 +427,9 @@
   - `minutes_per_week`
   - `days_per_month`
   - `schedule_from_start`
-- `add_task` / `add_resource` / `add_assignment` / `add_calendar` / `move_task` / `delete_resource` / `delete_assignment` / `delete_calendar` / `link_tasks` / `unlink_tasks` は first cut import を実装済みです
-- MVP では、既存 task の安全な部分更新を優先しつつ、構造変更は `add_task` / `move_task` の最小形に留めます
-- `add_task` の first cut は、単一 task の追加として `uid` / `name` / `new_parent_uid` / `new_index` を受けます
+- `add_task` / `add_resource` / `add_assignment` / `add_calendar` / `move_task` / `delete_resource` / `delete_assignment` / `delete_calendar` / `link_tasks` / `unlink_tasks` は import / 適用できます
+- 既存 task の安全な部分更新を優先しつつ、構造変更は `add_task` / `move_task` の最小形に留めます
+- `add_task` は、単一 task の追加として `uid` / `name` / `new_parent_uid` / `new_index` を受けます
 - `add_task` の root 追加では `new_parent_uid = null` を許容します
 - `add_task.new_parent_uid` が non-null の場合は summary task を指す前提で返してください
 - `add_task` では通常 task / milestone / summary task を明示的に追加できます
@@ -457,64 +462,64 @@
 - `update_calendar.is_base_calendar` は boolean で返してください
 - `update_calendar.base_calendar_uid` は文字列で返してください。空文字はクリアとして扱われます
 - `update_calendar.base_calendar_uid` は既存 calendar UID を指す必要があり、自身を指してはいけません
-- `add_calendar` の first cut は `uid` / `name` を必須とします
+- `add_calendar` は `uid` / `name` を必須とします
 - `add_calendar` では `is_base_calendar` / `base_calendar_uid` を任意で返せます
 - `add_calendar.base_calendar_uid` は既存 calendar UID を指す必要があり、自身を指してはいけません
-- `delete_calendar` の first cut は `uid` だけを受け、参照の残っていない calendar を 1 件削除します
-- `add_resource` の first cut は `uid` / `name` を必須とします
+- `delete_calendar` は `uid` だけを受け、参照の残っていない calendar を 1 件削除します
+- `add_resource` は `uid` / `name` を必須とします
 - `add_resource` では `initials` / `group` / `calendar_uid` / `max_units` / `standard_rate` / `overtime_rate` / `cost_per_use` / `percent_work_complete` を任意で返せます
 - `add_resource.calendar_uid` は既存 calendar UID を指す必要があります
 - `add_resource.max_units` は `0` 以上の数値で返してください
 - `add_resource.standard_rate` / `overtime_rate` は文字列で返してください
 - `add_resource.cost_per_use` は `0` 以上の数値で返してください
 - `add_resource.percent_work_complete` は `0..100` の数値で返してください
-- `delete_resource` の first cut は `uid` だけを受け、assignment が付いていない resource を 1 件削除します
-- `delete_resource` first cut では assignment が残っている resource は削除できません
+- `delete_resource` は `uid` だけを受け、assignment が付いていない resource を 1 件削除します
+- `delete_resource` では assignment が残っている resource は削除できません
 - `update_assignment` は既存 assignment を `uid` で特定して部分更新します
 - `update_assignment.start` / `finish` は date-only または date-time で返せます。date-only は project 既定勤務時間帯へ補完されます
 - `update_assignment.start > finish` になる変更は warning で無視されます
 - `update_assignment.units` は `0` 以上の数値で返してください
 - `update_assignment.work` は空でない文字列で返してください
 - `update_assignment.percent_work_complete` は `0..100` の数値で返してください
-- `add_assignment` の first cut は `uid` / `task_uid` / `resource_uid` を必須とします
+- `add_assignment` は `uid` / `task_uid` / `resource_uid` を必須とします
 - `add_assignment.task_uid` は既存 task、`resource_uid` は既存 resource を指す必要があります
 - `add_assignment` では `start` / `finish` / `units` / `work` / `percent_work_complete` を任意で返せます
 - `add_assignment.start` / `finish` は date-only または date-time で返せます。date-only は project 既定勤務時間帯へ補完されます
 - `add_assignment.start > finish`、`units < 0`、空 `work`、`percent_work_complete` の範囲外は warning で無視されます
-- `delete_assignment` の first cut は `uid` だけを受け、1 件の assignment を単純削除します
+- `delete_assignment` は `uid` だけを受け、1 件の assignment を単純削除します
 - summary task の追加は「空 summary を 1 件追加する」形で扱います
 - summary task 追加時に subtree をまとめて返さず、子 task は後続の `add_task` / `move_task` で段階的に入れてください
-- したがって summary task 追加の JSON は、first cut では `uid` / `name` / `is_summary=true` / `new_parent_uid` / `new_index` を基本とし、子 task 配列は直接持ちません
+- したがって summary task 追加の JSON は、`uid` / `name` / `is_summary=true` / `new_parent_uid` / `new_index` を基本とし、子 task 配列は直接持ちません
 - `add_task` では `is_summary=true` と `is_milestone=true` を同時に指定してはいけません
 - `add_task` では `planned_start` / `planned_finish` / `planned_duration` / `planned_duration_hours` を任意で返せます
 - `add_task.planned_start` / `planned_finish` の形式不正や、`planned_start > planned_finish` は warning で無視されます
 - `add_task.is_milestone=true` の場合は `planned_finish = planned_start`、`planned_duration = 0` へ正規化されます
 - `add_task` に未対応 key を含めるべきではありません。含まれた場合は warning で無視されます
-- `delete_task` の first cut は `uid` だけを受け、葉 task の削除に留めます
-- `delete_task` first cut では summary task や子 task を持つ task は削除できません
-- `delete_task` first cut では assignment が付いている task や、後続依存から参照されている task は削除できません
+- `delete_task` は `uid` だけを受け、葉 task の削除に留めます
+- `delete_task` では summary task や子 task を持つ task は削除できません
+- `delete_task` では assignment が付いている task や、後続依存から参照されている task は削除できません
 - `delete_task` が拒否される場合、warning には `children` / `assignments` / `successors` などの blocker 情報が含まれます
 - `delete_task` は cascade delete をしません。削除したい subtree がある場合も、まず葉 task を先に消してください
 - 親子関係や依存関係が blocker になる場合は、先に `unlink_tasks` や `move_task` で整理してから `delete_task` を返してください
-- MVP では、未対応 `op` は静かに無視せず、少なくとも warning または error として扱う方針です
-- MVP では、存在しない `uid`、不正日付、不正 field 名は validation 対象とします
-- MVP では、未指定 field は変更なしとして扱います
-- MVP では、`predecessors` の更新は `update_task.fields` では受けず、将来の `link_tasks` / `unlink_tasks` に分離する方針とします
-- `link_tasks` の first draft は、少なくとも `from_uid` / `to_uid` を必須とし、`type` は省略時に `FS` を既定としてよいです
-- `link_tasks` の `lag` は first draft では任意とし、指定する場合は `lag` または `lag_hours` のどちらか、または両方を返してよいです
-- `move_task` の first draft は、少なくとも `uid` / `new_parent_uid` / `new_index` を必須とし、`new_index` は `0-based` とします
+- 未対応 `op` は静かに無視せず、少なくとも warning または error として扱う方針です
+- 存在しない `uid`、不正日付、不正 field 名は validation 対象とします
+- 未指定 field は変更なしとして扱います
+- `predecessors` の更新は `update_task.fields` では受けず、`link_tasks` / `unlink_tasks` に分離します
+- `link_tasks` は、少なくとも `from_uid` / `to_uid` を必須とし、`type` は省略時に `FS` を既定としてよいです
+- `link_tasks` の `lag` は任意とし、指定する場合は `lag` または `lag_hours` のどちらか一方だけを返してください。両方を返した場合は `lag` を優先し、`lag_hours` は warning 付きで無視されます
+- `move_task` は、少なくとも `uid` / `new_parent_uid` / `new_index` を必須とし、`new_index` は `0-based` とします
 - `move_task` の root への移動では `new_parent_uid = null` を許容します
 - `move_task.new_parent_uid` が non-null の場合は summary task を指す前提で返してください
 - `move_task` で結果が変わらない no-op 移動は warning として無視されます
-- `unlink_tasks` の first draft は、少なくとも `from_uid` / `to_uid` を必須とし、必要なら `type` や `lag` / `lag_hours` まで含めて解除対象を特定できる形を許容します
+- `unlink_tasks` は、少なくとも `from_uid` / `to_uid` を必須とし、必要なら `type` や `lag` または `lag_hours` まで含めて解除対象を特定できる形を許容します
 - `unlink_tasks` で同じ条件に複数の依存関係が一致した場合は、その条件に一致した link をすべて解除する前提で扱います
-- first draft では、依存関係の変更は「追加」「解除」を明示 op で返し、task 全体の predecessor 一覧を丸ごと差し替える形は推奨しません
-- MVP では、Patch JSON は既存 project への部分適用であり、新規 project 草案の全量置換には使いません
-- MVP では、Patch JSON による `planned_start` / `planned_finish` の更新は、原則として非稼働日を避ける前提です
+- 依存関係の変更は「追加」「解除」を明示 op で返し、task 全体の predecessor 一覧を丸ごと差し替える形は使いません
+- Patch JSON は既存 project への部分適用であり、新規 project 草案の全量置換には使いません
+- Patch JSON による `planned_start` / `planned_finish` の更新は、原則として非稼働日を避ける前提です
 - ただし、人間が明示的に非稼働日での作業を指示した場合は、その指示を優先してよいです
 - 例外適用時は、説明文で「非稼働日ルールより人間指示を優先した」ことを明示してください
 
-### Patch JSON の MVP 例
+### Patch JSON の例
 
 ```json
 {
@@ -533,7 +538,7 @@
 
 ### 新規生成モードの原則
 
-- `project_draft_request` に対する返答は `project_draft_view` です
+- 新規 project 草案を求められた場合の返答は `project_draft_view` です
 - このとき `Patch JSON` は返しません
 - draft は正本ではなく草案です
 - draft 内の `uid` は `"draft-1"` のような仮 UID でよいです
@@ -593,8 +598,7 @@
       "from_uid": "110",
       "to_uid": "120",
       "type": "FS",
-      "lag": "PT0H",
-      "lag_hours": 0
+      "lag": "PT0H"
     }
   ]
 }
@@ -634,9 +638,3 @@
 - 不明な場合は変更を最小にしてください
 - 変更不要なら最後の `json` コードフェンスで空の `operations` を返してください
 - 与えられていない task や field を勝手に推測しないでください
-
-## 改善候補
-
-- 将来的には `suggest_only` のような提案専用モードを追加する余地があります
-- 現時点の spec は task / phase / dependency を優先しており、resource や工数配分の扱いは今後の検討対象です
-- phase 定義は当面 `top-level summary task` 固定ですが、将来的にはより柔軟な定義へ拡張する余地があります

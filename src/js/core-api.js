@@ -15,6 +15,10 @@
     if (!mikuprojectAiJsonSpec) {
         throw new Error("mikuproject AI JSON spec module is not loaded");
     }
+    const mikuprojectMainUtil = globalThis.__mikuprojectMainUtil;
+    if (!mikuprojectMainUtil) {
+        throw new Error("mikuproject main util module is not loaded");
+    }
     const mikuprojectProjectWorkbookJson = globalThis.__mikuprojectProjectWorkbookJson;
     if (!mikuprojectProjectWorkbookJson) {
         throw new Error("mikuproject Project Workbook JSON module is not loaded");
@@ -175,6 +179,39 @@
         }
         throw new Error(`未対応の import format です: ${source.format || "unknown"}`);
     }
+    function exportAllReportEntries(model, options = {}) {
+        const codec = new mikuprojectExcelIo.XlsxWorkbookCodec();
+        const monthlyArchive = mikuprojectNativeSvg.exportMonthlyWbsCalendarSvgArchive(model);
+        const entries = [
+            {
+                name: "wbs.xlsx",
+                data: codec.exportWorkbook(mikuprojectWbsXlsx.exportWbsWorkbook(model, options))
+            },
+            {
+                name: "wbs.md",
+                data: mikuprojectMainUtil.encodeUtf8(`${mikuprojectWbsMarkdown.exportWbsMarkdown(model, options)}\n`)
+            },
+            {
+                name: "mermaid.mmd",
+                data: mikuprojectMainUtil.encodeUtf8(`${mikuprojectXml.exportMermaidGantt(model)}\n`)
+            },
+            {
+                name: "daily.svg",
+                data: mikuprojectMainUtil.encodeUtf8(`${mikuprojectNativeSvg.exportNativeSvg(model, options)}\n`)
+            },
+            {
+                name: "weekly.svg",
+                data: mikuprojectMainUtil.encodeUtf8(`${mikuprojectNativeSvg.exportWeeklyNativeSvg(model, options)}\n`)
+            }
+        ];
+        for (const entry of monthlyArchive.entries) {
+            entries.push({
+                name: `monthly-calendar/${entry.fileName}`,
+                data: mikuprojectMainUtil.encodeUtf8(entry.svg)
+            });
+        }
+        return entries;
+    }
     globalThis.__mikuprojectCoreApi = {
         version: 1,
         getAiJsonSpecText,
@@ -224,6 +261,15 @@
             applyToProjectModel: mikuprojectProjectPatchJson.importProjectPatchJson
         },
         report: {
+            all: {
+                export: (model, options = {}) => {
+                    const entries = exportAllReportEntries(model, options);
+                    return {
+                        entries,
+                        zipBytes: mikuprojectMainUtil.packZipEntries(entries)
+                    };
+                }
+            },
             wbsXlsx: {
                 exportWorkbook: mikuprojectWbsXlsx.exportWbsWorkbook,
                 exportBytes: (model, options = {}) => new mikuprojectExcelIo.XlsxWorkbookCodec().exportWorkbook(mikuprojectWbsXlsx.exportWbsWorkbook(model, options))

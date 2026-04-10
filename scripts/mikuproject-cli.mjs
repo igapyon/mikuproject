@@ -138,6 +138,63 @@ async function runCommand(command, options, api) {
     }
   }
 
+  if (scope === "report" && subaction === undefined) {
+    const stateDocument = parsePlainJson(await readTextInput(options.in));
+    ensureWorkbookJson(api, stateDocument, `report ${action}`);
+    const model = api.workbookJson.importAsProjectModel(stateDocument).model;
+
+    if (action === "wbs-xlsx") {
+      return {
+        output: api.report.wbsXlsx.exportBytes(model),
+        diagnostics: []
+      };
+    }
+
+    if (action === "daily-svg") {
+      return {
+        output: `${api.report.svg.exportDaily(model)}\n`,
+        diagnostics: []
+      };
+    }
+
+    if (action === "weekly-svg") {
+      return {
+        output: `${api.report.svg.exportWeekly(model)}\n`,
+        diagnostics: []
+      };
+    }
+
+    if (action === "monthly-calendar-svg") {
+      const archive = api.report.svg.exportMonthlyCalendar(model);
+      return {
+        output: archive.zipBytes,
+        diagnostics: []
+      };
+    }
+
+    if (action === "all") {
+      const archive = api.report.all.export(model);
+      return {
+        output: archive.zipBytes,
+        diagnostics: []
+      };
+    }
+
+    if (action === "wbs-markdown") {
+      return {
+        output: `${api.report.wbsMarkdown.export(model)}\n`,
+        diagnostics: []
+      };
+    }
+
+    if (action === "mermaid") {
+      return {
+        output: `${api.report.mermaid.exportGantt(model)}\n`,
+        diagnostics: []
+      };
+    }
+  }
+
   throw new Error(`未対応のコマンドです: ${command.join(" ")}`);
 }
 
@@ -239,7 +296,14 @@ function writeHelp(stream) {
     "  mikuproject state apply-patch --state workbook.json [--in patch.json] [--out workbook.next.json]",
     "  mikuproject export workbook-json [--in workbook.json] [--out workbook.json]",
     "  mikuproject export xml [--in workbook.json] [--out project.xml]",
-    "  mikuproject export xlsx [--in workbook.json] [--out project.xlsx]"
+    "  mikuproject export xlsx [--in workbook.json] [--out project.xlsx]",
+    "  mikuproject report wbs-xlsx [--in workbook.json] [--out report.xlsx]",
+    "  mikuproject report daily-svg [--in workbook.json] [--out report.svg]",
+    "  mikuproject report weekly-svg [--in workbook.json] [--out report.svg]",
+    "  mikuproject report monthly-calendar-svg [--in workbook.json] [--out report.zip]",
+    "  mikuproject report all [--in workbook.json] [--out report-bundle.zip]",
+    "  mikuproject report wbs-markdown [--in workbook.json] [--out report.md]",
+    "  mikuproject report mermaid [--in workbook.json] [--out report.mmd]"
   ].join("\n"));
   stream.write("\n");
 }

@@ -31,8 +31,11 @@ describe("core api loader", () => {
       source: { format: "ms_project_xml", text: dependencyXml },
       mode: "replace"
     });
+    const reportBundle = loaded.api.report.all.export(result.model);
 
     expect(result.kind).toBe("ms_project_xml");
     expect(result.model.tasks.length).toBeGreaterThan(0);
+    expect(reportBundle.zipBytes).toBeInstanceOf(Uint8Array);
+    expect(reportBundle.entries.some((entry) => entry.name === "wbs.xlsx")).toBe(true);
   });
 });

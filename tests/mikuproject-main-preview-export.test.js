@@ -59,8 +59,6 @@ describe("mikuproject main preview export", () => {
     expect(JSON.parse(document.getElementById("workbookJsonOutput").value).format).toBe("mikuproject_workbook_json");
     document.getElementById("downloadWeeklySvgBtn").click();
     expect(HTMLAnchorElement.prototype.click.mock.instances.at(-1).download).toBe("mikuproject-wbs-weekly-202603162312.svg");
-    document.getElementById("exportMermaidMdBtn").click();
-    expect(HTMLAnchorElement.prototype.click.mock.instances.at(-1).download).toBe("mikuproject-wbs-mermaid-202603162312.md");
     document.getElementById("exportWbsMdBtn").click();
     expect(HTMLAnchorElement.prototype.click.mock.instances.at(-1).download).toBe("mikuproject-wbs-20260316.md");
     const OriginalBlob = Blob;
@@ -72,6 +70,13 @@ describe("mikuproject main preview export", () => {
     }
     globalThis.Blob = InspectableBlob;
     try {
+      document.getElementById("exportMermaidMdBtn").click();
+      expect(HTMLAnchorElement.prototype.click.mock.instances.at(-1).download).toBe("mikuproject-wbs-mermaid-202603162312.mmd");
+      const mermaidBlob = URL.createObjectURL.mock.calls.at(-1)?.[0];
+      expect(mermaidBlob.type).toBe("text/plain;charset=utf-8");
+      const mermaidText = String(mermaidBlob._parts?.[0] || "");
+      expect(mermaidText).toContain("gantt");
+      expect(mermaidText).not.toContain("```mermaid");
       document.getElementById("downloadSvgBtn").click();
       await flushAsyncWork();
       await flushAsyncWork();

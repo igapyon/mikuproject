@@ -248,7 +248,7 @@
             <div class="md-issues__section">
               <div class="md-issues__section-title">${sectionLabels[scope]}</div>
               <ul class="md-issues__list">
-                ${scopedIssues.map((issue) => `<li class="md-issues__item">[${issue.level}] ${issue.message}</li>`).join("")}
+                ${scopedIssues.map((issue) => `<li class="md-issues__item">[${issue.level}] ${escapeHtml(issue.message)}</li>`).join("")}
               </ul>
             </div>
           `;

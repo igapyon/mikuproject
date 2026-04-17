@@ -13,8 +13,84 @@ const typesCode = readFileSync(
   path.resolve(__dirname, "../src/js/types.js"),
   "utf8"
 );
+const excelIoUtilCode = readFileSync(
+  path.resolve(__dirname, "../src/js/excel-io-util.js"),
+  "utf8"
+);
 const excelIoCode = readFileSync(
   path.resolve(__dirname, "../src/js/excel-io.js"),
+  "utf8"
+);
+const excelIoZipCode = readFileSync(
+  path.resolve(__dirname, "../src/js/excel-io-zip.js"),
+  "utf8"
+);
+const excelIoNormalizeCode = readFileSync(
+  path.resolve(__dirname, "../src/js/excel-io-normalize.js"),
+  "utf8"
+);
+const excelIoPackageXmlCode = readFileSync(
+  path.resolve(__dirname, "../src/js/excel-io-package-xml.js"),
+  "utf8"
+);
+const excelIoWorksheetBuildCode = readFileSync(
+  path.resolve(__dirname, "../src/js/excel-io-worksheet-build.js"),
+  "utf8"
+);
+const excelIoWorksheetParseCode = readFileSync(
+  path.resolve(__dirname, "../src/js/excel-io-worksheet-parse.js"),
+  "utf8"
+);
+const excelIoWorkbookParseCode = readFileSync(
+  path.resolve(__dirname, "../src/js/excel-io-workbook-parse.js"),
+  "utf8"
+);
+const excelIoWorkbookBuildCode = readFileSync(
+  path.resolve(__dirname, "../src/js/excel-io-workbook-build.js"),
+  "utf8"
+);
+const excelIoStylesBuildCode = readFileSync(
+  path.resolve(__dirname, "../src/js/excel-io-styles-build.js"),
+  "utf8"
+);
+const excelIoStylesParseCode = readFileSync(
+  path.resolve(__dirname, "../src/js/excel-io-styles-parse.js"),
+  "utf8"
+);
+const msProjectAiViewsCode = readFileSync(
+  path.resolve(__dirname, "../src/js/msproject-ai-views.js"),
+  "utf8"
+);
+const msProjectCalendarCode = readFileSync(
+  path.resolve(__dirname, "../src/js/msproject-calendar.js"),
+  "utf8"
+);
+const msProjectSamplesCode = readFileSync(
+  path.resolve(__dirname, "../src/js/msproject-samples.js"),
+  "utf8"
+);
+const msProjectCsvCode = readFileSync(
+  path.resolve(__dirname, "../src/js/msproject-csv.js"),
+  "utf8"
+);
+const msProjectValidateHelpersCode = readFileSync(
+  path.resolve(__dirname, "../src/js/msproject-validate-helpers.js"),
+  "utf8"
+);
+const msProjectValidateCode = readFileSync(
+  path.resolve(__dirname, "../src/js/msproject-validate.js"),
+  "utf8"
+);
+const msProjectXmlDomCode = readFileSync(
+  path.resolve(__dirname, "../src/js/msproject-xml-dom.js"),
+  "utf8"
+);
+const msProjectCodecCode = readFileSync(
+  path.resolve(__dirname, "../src/js/msproject-codec.js"),
+  "utf8"
+);
+const msProjectMermaidCode = readFileSync(
+  path.resolve(__dirname, "../src/js/msproject-mermaid.js"),
   "utf8"
 );
 const msProjectXmlCode = readFileSync(
@@ -23,6 +99,46 @@ const msProjectXmlCode = readFileSync(
 );
 const projectWorkbookSchemaCode = readFileSync(
   path.resolve(__dirname, "../src/js/project-workbook-schema.js"),
+  "utf8"
+);
+const projectXlsxImportUtilCode = readFileSync(
+  path.resolve(__dirname, "../src/js/project-xlsx-import-util.js"),
+  "utf8"
+);
+const projectXlsxImportProjectCode = readFileSync(
+  path.resolve(__dirname, "../src/js/project-xlsx-import-project.js"),
+  "utf8"
+);
+const projectXlsxImportCalendarsCode = readFileSync(
+  path.resolve(__dirname, "../src/js/project-xlsx-import-calendars.js"),
+  "utf8"
+);
+const projectXlsxImportEntitiesCode = readFileSync(
+  path.resolve(__dirname, "../src/js/project-xlsx-import-entities.js"),
+  "utf8"
+);
+const projectXlsxImportCode = readFileSync(
+  path.resolve(__dirname, "../src/js/project-xlsx-import.js"),
+  "utf8"
+);
+const projectXlsxExportUtilCode = readFileSync(
+  path.resolve(__dirname, "../src/js/project-xlsx-export-util.js"),
+  "utf8"
+);
+const projectXlsxExportProjectCode = readFileSync(
+  path.resolve(__dirname, "../src/js/project-xlsx-export-project.js"),
+  "utf8"
+);
+const projectXlsxExportEntitiesCode = readFileSync(
+  path.resolve(__dirname, "../src/js/project-xlsx-export-entities.js"),
+  "utf8"
+);
+const projectXlsxExportCalendarsCode = readFileSync(
+  path.resolve(__dirname, "../src/js/project-xlsx-export-calendars.js"),
+  "utf8"
+);
+const projectXlsxExportCode = readFileSync(
+  path.resolve(__dirname, "../src/js/project-xlsx-export.js"),
   "utf8"
 );
 const projectXlsxCode = readFileSync(
@@ -35,7 +151,7 @@ const dependencyXml = readFileSync(
 );
 
 function bootModules() {
-  new Function(`${typesCode}\n${excelIoCode}\n${msProjectXmlCode}\n${projectWorkbookSchemaCode}\n${projectXlsxCode}`)();
+  new Function(`${typesCode}\n${excelIoUtilCode}\n${excelIoZipCode}\n${excelIoNormalizeCode}\n${excelIoPackageXmlCode}\n${excelIoWorksheetBuildCode}\n${excelIoWorksheetParseCode}\n${excelIoWorkbookParseCode}\n${excelIoWorkbookBuildCode}\n${excelIoStylesBuildCode}\n${excelIoStylesParseCode}\n${excelIoCode}\n${msProjectAiViewsCode}\n${msProjectCalendarCode}\n${msProjectSamplesCode}\n${msProjectCsvCode}\n${msProjectValidateHelpersCode}\n${msProjectValidateCode}\n${msProjectXmlDomCode}\n${msProjectCodecCode}\n${msProjectMermaidCode}\n${msProjectXmlCode}\n${projectWorkbookSchemaCode}\n${projectXlsxImportUtilCode}\n${projectXlsxImportProjectCode}\n${projectXlsxImportCalendarsCode}\n${projectXlsxImportEntitiesCode}\n${projectXlsxImportCode}\n${projectXlsxExportUtilCode}\n${projectXlsxExportProjectCode}\n${projectXlsxExportEntitiesCode}\n${projectXlsxExportCalendarsCode}\n${projectXlsxExportCode}\n${projectXlsxCode}`)();
   return {
     excelIo: globalThis.__mikuprojectExcelIo,
     xml: globalThis.__mikuprojectXml,
@@ -473,6 +589,27 @@ describe("mikuproject project xlsx", () => {
       { scope: "tasks", uid: "3", label: "初期実装（MS Project XML 調査・基軸フォーマット選定・内部モデルの概要確定）", field: "Predecessors", before: undefined, after: "2" },
       { scope: "tasks", uid: "3", label: "初期実装（MS Project XML 調査・基軸フォーマット選定・内部モデルの概要確定）", field: "Notes", before: undefined, after: "Updated Notes" }
     ]);
+  });
+
+  it("ignores non-editable task columns during workbook import", () => {
+    const { xml, projectXlsx } = bootModules();
+    const model = xml.importMsProjectXml(xml.SAMPLE_XML);
+    const workbook = projectXlsx.exportProjectWorkbook(model);
+    const tasksSheet = workbook.sheets.find((sheet) => sheet.name === "Tasks");
+
+    tasksSheet.rows[5].cells[1].value = "999";
+    tasksSheet.rows[5].cells[3].value = 9;
+    tasksSheet.rows[5].cells[4].value = "9.9";
+    tasksSheet.rows[5].cells[5].value = "WBS-999";
+
+    const result = projectXlsx.importProjectWorkbookDetailed(workbook, model);
+    const importedTask = result.model.tasks.find((task) => task.uid === "3");
+
+    expect(importedTask.id).toBe(model.tasks.find((task) => task.uid === "3").id);
+    expect(importedTask.outlineLevel).toBe(model.tasks.find((task) => task.uid === "3").outlineLevel);
+    expect(importedTask.outlineNumber).toBe(model.tasks.find((task) => task.uid === "3").outlineNumber);
+    expect(importedTask.wbs).toBe(model.tasks.find((task) => task.uid === "3").wbs);
+    expect(result.changes).toEqual([]);
   });
 
   it("reports project-level import changes", () => {

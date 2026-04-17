@@ -3,6 +3,7 @@ import { spawnSync } from "node:child_process";
 const FAST_SUITE = [
   "tests/mikuproject-ai-json-util.test.js",
   "tests/mikuproject-main-util.test.js",
+  "tests/mikuproject-main-render.test.js",
   "tests/mikuproject-excel-io.test.js",
   "tests/mikuproject-msproject-xml-roundtrip.test.js",
   "tests/mikuproject-project-workbook-json.test.js",
@@ -16,7 +17,8 @@ const FAST_SUITE = [
 
 const UI_SUITE = [
   "tests/mikuproject-main-file-input-wiring.test.js",
-  "tests/mikuproject-main.test.js"
+  "tests/mikuproject-main.test.js",
+  "tests/mikuproject-main-refactor-safety.test.js"
 ];
 
 const EXTENDED_SUITE = [

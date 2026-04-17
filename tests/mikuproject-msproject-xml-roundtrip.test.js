@@ -13,6 +13,42 @@ const typesCode = readFileSync(
   path.resolve(__dirname, "../src/js/types.js"),
   "utf8"
 );
+const msProjectAiViewsCode = readFileSync(
+  path.resolve(__dirname, "../src/js/msproject-ai-views.js"),
+  "utf8"
+);
+const msProjectCalendarCode = readFileSync(
+  path.resolve(__dirname, "../src/js/msproject-calendar.js"),
+  "utf8"
+);
+const msProjectSamplesCode = readFileSync(
+  path.resolve(__dirname, "../src/js/msproject-samples.js"),
+  "utf8"
+);
+const msProjectCsvCode = readFileSync(
+  path.resolve(__dirname, "../src/js/msproject-csv.js"),
+  "utf8"
+);
+const msProjectValidateHelpersCode = readFileSync(
+  path.resolve(__dirname, "../src/js/msproject-validate-helpers.js"),
+  "utf8"
+);
+const msProjectValidateCode = readFileSync(
+  path.resolve(__dirname, "../src/js/msproject-validate.js"),
+  "utf8"
+);
+const msProjectXmlDomCode = readFileSync(
+  path.resolve(__dirname, "../src/js/msproject-xml-dom.js"),
+  "utf8"
+);
+const msProjectCodecCode = readFileSync(
+  path.resolve(__dirname, "../src/js/msproject-codec.js"),
+  "utf8"
+);
+const msProjectMermaidCode = readFileSync(
+  path.resolve(__dirname, "../src/js/msproject-mermaid.js"),
+  "utf8"
+);
 const msProjectXmlCode = readFileSync(
   path.resolve(__dirname, "../src/js/msproject-xml.js"),
   "utf8"
@@ -31,7 +67,7 @@ const dependencyXml = readFileSync(
 );
 
 function bootXmlModule() {
-  new Function(`${typesCode}\n${msProjectXmlCode}`)();
+  new Function(`${typesCode}\n${msProjectAiViewsCode}\n${msProjectCalendarCode}\n${msProjectSamplesCode}\n${msProjectCsvCode}\n${msProjectValidateHelpersCode}\n${msProjectValidateCode}\n${msProjectXmlDomCode}\n${msProjectCodecCode}\n${msProjectMermaidCode}\n${msProjectXmlCode}`)();
   return globalThis.__mikuprojectXml;
 }
 
@@ -99,6 +135,225 @@ describe("mikuproject msproject xml round-trip", () => {
     expect(reparsedModel.tasks).toHaveLength(1);
     expect(reparsedModel.tasks[0].name).toBe("Single Task");
     expect(xmlTools.validateProjectModel(reparsedModel)).toHaveLength(0);
+  });
+
+  it("round-trips hierarchy through CSV + ParentID export and import", () => {
+    const xmlTools = bootXmlModule();
+    const model = xmlTools.importMsProjectXml(hierarchyXml);
+
+    const csv = xmlTools.exportCsvParentId(model);
+    const importedModel = xmlTools.importCsvParentId(csv);
+
+    expect(csv).toContain("ID,ParentID,WBS,Name");
+    expect(csv).toContain("Child A");
+    expect(csv).toContain("Child B");
+    expect(importedModel.project.name).toBe("CSV Imported Project");
+    expect(importedModel.project.title).toBe("CSV Imported Project");
+    expect(importedModel.tasks).toHaveLength(3);
+    expect(importedModel.tasks[0].name).toBe("Summary");
+    expect(importedModel.tasks[1].name).toBe("Child A");
+    expect(importedModel.tasks[2].name).toBe("Child B");
+    expect(importedModel.tasks[0].outlineNumber).toBe("1");
+    expect(importedModel.tasks[1].outlineNumber).toBe("1.1");
+    expect(importedModel.tasks[2].outlineNumber).toBe("1.2");
+    expect(importedModel.tasks[2].notes).toBe("Second child task");
+  });
+
+  it("exports project overview and default phase detail views from hierarchy", () => {
+    const xmlTools = bootXmlModule();
+    const model = xmlTools.importMsProjectXml(hierarchyXml);
+
+    const overview = xmlTools.exportProjectOverviewView(model);
+    const phaseDetail = xmlTools.exportPhaseDetailView(model);
+
+    expect(overview.view_type).toBe("project_overview_view");
+    expect(overview.project.name).toBe("Hierarchy Project");
+    expect(overview.summary.task_count).toBe(3);
+    expect(overview.summary.summary_task_count).toBe(1);
+    expect(overview.phases).toHaveLength(1);
+    expect(overview.phases[0].uid).toBe("1");
+    expect(overview.phases[0].name).toBe("Summary");
+    expect(overview.rules.allow_patch_ops).toContain("add_task");
+
+    expect(phaseDetail.view_type).toBe("phase_detail_view");
+    expect(phaseDetail.phase.uid).toBe("1");
+    expect(phaseDetail.scope).toEqual({ mode: "full", root_uid: null, max_depth: null });
+    expect(phaseDetail.tasks.map((task) => task.uid)).toEqual(["2", "3"]);
+    expect(phaseDetail.tasks.map((task) => task.name)).toContain("Child B");
+    expect(phaseDetail.rules.allow_patch_ops).toContain("link_tasks");
+  });
+
+  it("exports task_edit_view with predecessors, successors, and assignments", () => {
+    const xmlTools = bootXmlModule();
+    const model = xmlTools.importMsProjectXml(dependencyXml);
+
+    const taskEdit = xmlTools.exportTaskEditView(model, "2");
+
+    expect(taskEdit.view_type).toBe("task_edit_view");
+    expect(taskEdit.project.name).toBe("Dependency Project");
+    expect(taskEdit.phase).toBeNull();
+    expect(taskEdit.target_task.uid).toBe("2");
+    expect(taskEdit.target_task.name).toBe("Execute");
+    expect(taskEdit.parent_task).toBeNull();
+    expect(taskEdit.predecessors).toEqual([
+      {
+        task_uid: "1",
+        name: "Prepare",
+        type: "FS",
+        lag: "PT0H0M0S",
+        lag_hours: 0
+      }
+    ]);
+    expect(taskEdit.successors).toEqual([]);
+    expect(taskEdit.assignments).toEqual([
+      {
+        uid: "1",
+        resource_uid: "1",
+        resource_name: "Miku",
+        start: "2026-03-18T09:00:00",
+        finish: "2026-03-19T18:00:00",
+        units: 1,
+        work: "PT16H0M0S",
+        percent_work_complete: undefined
+      }
+    ]);
+    expect(taskEdit.rules.allow_patch_ops).toContain("update_assignment");
+    expect(taskEdit.rules.allowed_edit_fields).toContain("planned_duration_hours");
+  });
+
+  it("exports scoped phase detail with root_uid and max_depth", () => {
+    const xmlTools = bootXmlModule();
+    const model = xmlTools.importMsProjectXml(hierarchyXml);
+
+    const phaseDetail = xmlTools.exportPhaseDetailView(model, "1", {
+      mode: "scoped",
+      rootUid: "2",
+      maxDepth: 1
+    });
+
+    expect(phaseDetail.view_type).toBe("phase_detail_view");
+    expect(phaseDetail.scope).toEqual({ mode: "scoped", root_uid: "2", max_depth: 1 });
+    expect(phaseDetail.tasks.map((task) => task.uid)).toEqual(["2"]);
+    expect(phaseDetail.tasks[0].name).toBe("Child A");
+    expect(phaseDetail.dependency_summary).toEqual([]);
+  });
+
+  it("rejects scoped phase detail when root_uid is outside the phase", () => {
+    const xmlTools = bootXmlModule();
+    const model = xmlTools.importMsProjectXml(hierarchyXml);
+
+    expect(() => xmlTools.exportPhaseDetailView(model, "1", {
+      mode: "scoped",
+      rootUid: "999"
+    })).toThrow("root_uid");
+  });
+
+  it("builds project draft request and imports predecessor mapping from project_draft_view", () => {
+    const xmlTools = bootXmlModule();
+
+    const request = xmlTools.buildProjectDraftRequest({
+      name: "Draft Request Project",
+      plannedStart: "2026-04-01",
+      goal: "Goal text",
+      teamCount: 3,
+      mustHavePhases: ["Plan", "Build"],
+      mustHaveMilestones: ["Kickoff"]
+    });
+    const model = xmlTools.importProjectDraftView({
+      view_type: "project_draft_view",
+      project: {
+        name: "Draft Import Project",
+        planned_start: "2026-04-01"
+      },
+      tasks: [
+        {
+          uid: "draft-phase",
+          name: "Phase",
+          parent_uid: null,
+          position: 0,
+          is_summary: true,
+          planned_start: "2026-04-01",
+          planned_finish: "2026-04-03"
+        },
+        {
+          uid: "draft-task-1",
+          name: "Task A",
+          parent_uid: "draft-phase",
+          position: 0,
+          planned_start: "2026-04-01",
+          planned_finish: "2026-04-01"
+        },
+        {
+          uid: "draft-task-2",
+          name: "Task B",
+          parent_uid: "draft-phase",
+          position: 1,
+          planned_start: "2026-04-02",
+          planned_finish: "2026-04-03",
+          predecessors: ["draft-task-1"]
+        }
+      ],
+      resources: [
+        {
+          uid: "draft-res-1",
+          name: "Miku"
+        }
+      ],
+      assignments: [
+        {
+          uid: "draft-asg-1",
+          task_uid: "draft-task-2",
+          resource_uid: "draft-res-1",
+          units: 1
+        }
+      ]
+    });
+
+    expect(request.view_type).toBe("project_draft_request");
+    expect(request.project).toEqual({
+      name: "Draft Request Project",
+      planned_start: "2026-04-01"
+    });
+    expect(request.requirements.goal).toBe("Goal text");
+    expect(request.requirements.team_count).toBe(3);
+    expect(request.requirements.must_have_phases).toEqual(["Plan", "Build"]);
+    expect(request.requirements.must_have_milestones).toEqual(["Kickoff"]);
+
+    expect(model.project.name).toBe("Draft Import Project");
+    expect(model.tasks).toHaveLength(3);
+    expect(model.tasks[0].summary).toBe(true);
+    expect(model.tasks[1].name).toBe("Task A");
+    expect(model.tasks[2].name).toBe("Task B");
+    expect(model.tasks[2].predecessors).toEqual([{ predecessorUid: "2" }]);
+    expect(model.resources[0].uid).toBe("1");
+    expect(model.assignments[0].taskUid).toBe("3");
+    expect(model.assignments[0].resourceUid).toBe("1");
+  });
+
+  it("rejects invalid project_draft_view references", () => {
+    const xmlTools = bootXmlModule();
+
+    expect(() => xmlTools.importProjectDraftView({
+      view_type: "project_draft_view",
+      project: { name: "Broken Draft" },
+      tasks: [
+        { uid: "draft-task-1", name: "Task", parent_uid: "missing-parent" }
+      ]
+    })).toThrow("parent_uid");
+
+    expect(() => xmlTools.importProjectDraftView({
+      view_type: "project_draft_view",
+      project: { name: "Broken Draft" },
+      tasks: [
+        { uid: "draft-task-1", name: "Task", parent_uid: null }
+      ],
+      resources: [
+        { uid: "draft-res-1", name: "Miku" }
+      ],
+      assignments: [
+        { uid: "draft-asg-1", task_uid: "draft-task-1", resource_uid: "missing-resource" }
+      ]
+    })).toThrow("resource_uid");
   });
 
   it("round-trips project metadata fields", () => {

@@ -25,6 +25,90 @@ const mainUtilCode = readFileSync(
   path.resolve(__dirname, "../src/js/main-util.js"),
   "utf8"
 );
+const mainIoCode = readFileSync(
+  path.resolve(__dirname, "../src/js/main-io.js"),
+  "utf8"
+);
+const mainImportCode = readFileSync(
+  path.resolve(__dirname, "../src/js/main-import.js"),
+  "utf8"
+);
+const mainExportCode = readFileSync(
+  path.resolve(__dirname, "../src/js/main-export.js"),
+  "utf8"
+);
+const mainInputEventsCode = readFileSync(
+  path.resolve(__dirname, "../src/js/main-input-events.js"),
+  "utf8"
+);
+const mainButtonEventsCode = readFileSync(
+  path.resolve(__dirname, "../src/js/main-button-events.js"),
+  "utf8"
+);
+const mainEventsCode = readFileSync(
+  path.resolve(__dirname, "../src/js/main-events.js"),
+  "utf8"
+);
+const mainPreviewCode = readFileSync(
+  path.resolve(__dirname, "../src/js/main-preview.js"),
+  "utf8"
+);
+const mainUiCode = readFileSync(
+  path.resolve(__dirname, "../src/js/main-ui.js"),
+  "utf8"
+);
+const mainSupportCode = readFileSync(
+  path.resolve(__dirname, "../src/js/main-support.js"),
+  "utf8"
+);
+const mainSamplesCode = readFileSync(
+  path.resolve(__dirname, "../src/js/main-samples.js"),
+  "utf8"
+);
+const mainDownloadsCode = readFileSync(
+  path.resolve(__dirname, "../src/js/main-downloads.js"),
+  "utf8"
+);
+const mainOutputActionsCode = readFileSync(
+  path.resolve(__dirname, "../src/js/main-output-actions.js"),
+  "utf8"
+);
+const mainImportActionsCode = readFileSync(
+  path.resolve(__dirname, "../src/js/main-import-actions.js"),
+  "utf8"
+);
+const mainXmlActionsCode = readFileSync(
+  path.resolve(__dirname, "../src/js/main-xml-actions.js"),
+  "utf8"
+);
+const mainArchiveActionsCode = readFileSync(
+  path.resolve(__dirname, "../src/js/main-archive-actions.js"),
+  "utf8"
+);
+const mainSaveStateCode = readFileSync(
+  path.resolve(__dirname, "../src/js/main-save-state.js"),
+  "utf8"
+);
+const mainTabActionsCode = readFileSync(
+  path.resolve(__dirname, "../src/js/main-tab-actions.js"),
+  "utf8"
+);
+const mainPreviewActionsCode = readFileSync(
+  path.resolve(__dirname, "../src/js/main-preview-actions.js"),
+  "utf8"
+);
+const mainTransformCode = readFileSync(
+  path.resolve(__dirname, "../src/js/main-transform.js"),
+  "utf8"
+);
+const mainFlowCode = readFileSync(
+  path.resolve(__dirname, "../src/js/main-flow.js"),
+  "utf8"
+);
+const mainModelCode = readFileSync(
+  path.resolve(__dirname, "../src/js/main-model.js"),
+  "utf8"
+);
 const mainRenderCode = readFileSync(
   path.resolve(__dirname, "../src/js/main-render.js"),
   "utf8"
@@ -123,7 +207,7 @@ globalThis.__mikuprojectNativeSvg = {
 };
 `;
 
-const bootPageCode = `${typesCode}\n${markdownEscapeCode}\n${aiJsonUtilCode}\n${mainUtilCode}\n${msProjectXmlStubCode}\n${excelIoStubCode}\n${projectXlsxStubCode}\n${projectWorkbookJsonStubCode}\n${projectPatchJsonStubCode}\n${wbsXlsxStubCode}\n${wbsMarkdownStubCode}\n${nativeSvgStubCode}\n${mainRenderCode}\n${mainCode}`;
+const bootPageCode = `${typesCode}\n${markdownEscapeCode}\n${aiJsonUtilCode}\n${mainUtilCode}\n${msProjectXmlStubCode}\n${excelIoStubCode}\n${projectXlsxStubCode}\n${projectWorkbookJsonStubCode}\n${projectPatchJsonStubCode}\n${wbsXlsxStubCode}\n${wbsMarkdownStubCode}\n${nativeSvgStubCode}\n${mainIoCode}\n${mainImportCode}\n${mainExportCode}\n${mainInputEventsCode}\n${mainButtonEventsCode}\n${mainEventsCode}\n${mainPreviewCode}\n${mainUiCode}\n${mainSupportCode}\n${mainSamplesCode}\n${mainDownloadsCode}\n${mainOutputActionsCode}\n${mainImportActionsCode}\n${mainXmlActionsCode}\n${mainArchiveActionsCode}\n${mainSaveStateCode}\n${mainTabActionsCode}\n${mainPreviewActionsCode}\n${mainTransformCode}\n${mainFlowCode}\n${mainModelCode}\n${mainRenderCode}\n${mainCode}`;
 const bootPageRunner = new Function(bootPageCode);
 
 function mountDom() {

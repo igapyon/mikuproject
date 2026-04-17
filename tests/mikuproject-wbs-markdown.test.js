@@ -17,6 +17,42 @@ const markdownEscapeCode = readFileSync(
   path.resolve(__dirname, "../src/js/markdown-escape.js"),
   "utf8"
 );
+const msProjectAiViewsCode = readFileSync(
+  path.resolve(__dirname, "../src/js/msproject-ai-views.js"),
+  "utf8"
+);
+const msProjectCalendarCode = readFileSync(
+  path.resolve(__dirname, "../src/js/msproject-calendar.js"),
+  "utf8"
+);
+const msProjectSamplesCode = readFileSync(
+  path.resolve(__dirname, "../src/js/msproject-samples.js"),
+  "utf8"
+);
+const msProjectCsvCode = readFileSync(
+  path.resolve(__dirname, "../src/js/msproject-csv.js"),
+  "utf8"
+);
+const msProjectValidateHelpersCode = readFileSync(
+  path.resolve(__dirname, "../src/js/msproject-validate-helpers.js"),
+  "utf8"
+);
+const msProjectValidateCode = readFileSync(
+  path.resolve(__dirname, "../src/js/msproject-validate.js"),
+  "utf8"
+);
+const msProjectXmlDomCode = readFileSync(
+  path.resolve(__dirname, "../src/js/msproject-xml-dom.js"),
+  "utf8"
+);
+const msProjectCodecCode = readFileSync(
+  path.resolve(__dirname, "../src/js/msproject-codec.js"),
+  "utf8"
+);
+const msProjectMermaidCode = readFileSync(
+  path.resolve(__dirname, "../src/js/msproject-mermaid.js"),
+  "utf8"
+);
 const msProjectXmlCode = readFileSync(
   path.resolve(__dirname, "../src/js/msproject-xml.js"),
   "utf8"
@@ -27,7 +63,7 @@ const wbsMarkdownCode = readFileSync(
 );
 
 function bootModules() {
-  new Function(`${typesCode}\n${markdownEscapeCode}\n${msProjectXmlCode}\n${wbsMarkdownCode}`)();
+  new Function(`${typesCode}\n${markdownEscapeCode}\n${msProjectAiViewsCode}\n${msProjectCalendarCode}\n${msProjectSamplesCode}\n${msProjectCsvCode}\n${msProjectValidateHelpersCode}\n${msProjectValidateCode}\n${msProjectXmlDomCode}\n${msProjectCodecCode}\n${msProjectMermaidCode}\n${msProjectXmlCode}\n${wbsMarkdownCode}`)();
   return {
     xml: globalThis.__mikuprojectXml,
     wbsMarkdown: globalThis.__mikuprojectWbsMarkdown

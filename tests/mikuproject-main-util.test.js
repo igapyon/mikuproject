@@ -48,4 +48,17 @@ describe("mikuproject main util", () => {
     expect(view.getUint32(zipBytes.byteLength - 22, true)).toBe(0x06054b50);
     expect(util.computeZipCrc32(util.encodeUtf8("hello\n"))).toBe(0x363a3020);
   });
+
+  it("packs an empty zip archive with zero entry counts", () => {
+    const util = bootMainUtil();
+    const zipBytes = util.packZipEntries([]);
+    const view = new DataView(zipBytes.buffer, zipBytes.byteOffset, zipBytes.byteLength);
+
+    expect(zipBytes.byteLength).toBe(22);
+    expect(view.getUint32(0, true)).toBe(0x06054b50);
+    expect(view.getUint16(8, true)).toBe(0);
+    expect(view.getUint16(10, true)).toBe(0);
+    expect(view.getUint32(12, true)).toBe(0);
+    expect(view.getUint32(16, true)).toBe(0);
+  });
 });

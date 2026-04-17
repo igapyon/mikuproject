@@ -14,13 +14,53 @@ const typesCode = readFileSync(
   path.resolve(__dirname, "../src/js/types.js"),
   "utf8"
 );
+const excelIoUtilCode = readFileSync(
+  path.resolve(__dirname, "../src/js/excel-io-util.js"),
+  "utf8"
+);
 const excelIoCode = readFileSync(
   path.resolve(__dirname, "../src/js/excel-io.js"),
   "utf8"
 );
+const excelIoZipCode = readFileSync(
+  path.resolve(__dirname, "../src/js/excel-io-zip.js"),
+  "utf8"
+);
+const excelIoNormalizeCode = readFileSync(
+  path.resolve(__dirname, "../src/js/excel-io-normalize.js"),
+  "utf8"
+);
+const excelIoPackageXmlCode = readFileSync(
+  path.resolve(__dirname, "../src/js/excel-io-package-xml.js"),
+  "utf8"
+);
+const excelIoWorksheetBuildCode = readFileSync(
+  path.resolve(__dirname, "../src/js/excel-io-worksheet-build.js"),
+  "utf8"
+);
+const excelIoWorksheetParseCode = readFileSync(
+  path.resolve(__dirname, "../src/js/excel-io-worksheet-parse.js"),
+  "utf8"
+);
+const excelIoWorkbookParseCode = readFileSync(
+  path.resolve(__dirname, "../src/js/excel-io-workbook-parse.js"),
+  "utf8"
+);
+const excelIoWorkbookBuildCode = readFileSync(
+  path.resolve(__dirname, "../src/js/excel-io-workbook-build.js"),
+  "utf8"
+);
+const excelIoStylesBuildCode = readFileSync(
+  path.resolve(__dirname, "../src/js/excel-io-styles-build.js"),
+  "utf8"
+);
+const excelIoStylesParseCode = readFileSync(
+  path.resolve(__dirname, "../src/js/excel-io-styles-parse.js"),
+  "utf8"
+);
 
 function bootExcelIoModule() {
-  new Function(`${typesCode}\n${excelIoCode}`)();
+  new Function(`${typesCode}\n${excelIoUtilCode}\n${excelIoZipCode}\n${excelIoNormalizeCode}\n${excelIoPackageXmlCode}\n${excelIoWorksheetBuildCode}\n${excelIoWorksheetParseCode}\n${excelIoWorkbookParseCode}\n${excelIoWorkbookBuildCode}\n${excelIoStylesBuildCode}\n${excelIoStylesParseCode}\n${excelIoCode}`)();
   return globalThis.__mikuprojectExcelIo;
 }
 
@@ -526,6 +566,71 @@ describe("mikuproject excel io", () => {
         { name: "Bad/Name", rows: [] }
       ]
     })).toThrow(/sheet name/i);
+  });
+
+  it("rejects invalid workbook layout and data validation definitions", () => {
+    const excelIo = bootExcelIoModule();
+    const codec = new excelIo.XlsxWorkbookCodec();
+
+    expect(() => codec.exportWorkbook({ sheets: [] })).toThrow(/at least one sheet/i);
+    expect(() => codec.exportWorkbook({
+      sheets: [
+        {
+          name: "Sheet1",
+          freezePane: { rowSplit: -1 },
+          rows: []
+        }
+      ]
+    })).toThrow(/Freeze pane rowSplit/i);
+    expect(() => codec.exportWorkbook({
+      sheets: [
+        {
+          name: "Sheet1",
+          dataValidations: [{ type: "list", sqref: "A1", formula1: "" }],
+          rows: []
+        }
+      ]
+    })).toThrow(/formula1/i);
+    expect(() => codec.exportWorkbook({
+      sheets: [
+        {
+          name: "Sheet1",
+          dataValidations: [{ type: "whole", sqref: "A1", formula1: "1" }],
+          rows: []
+        }
+      ]
+    })).toThrow(/Unsupported data validation type/i);
+  });
+
+  it("matches async workbook helpers to their sync counterparts", async () => {
+    const excelIo = bootExcelIoModule();
+    const codec = new excelIo.XlsxWorkbookCodec();
+    const workbook = {
+      sheets: [
+        {
+          name: "Async",
+          rows: [
+            {
+              cells: [
+                { value: "hello" },
+                { value: 1 }
+              ]
+            }
+          ]
+        }
+      ]
+    };
+
+    const bytes = codec.exportWorkbook(workbook);
+    const syncWorkbook = codec.importWorkbook(bytes);
+    const syncEntries = codec.listEntries(bytes);
+    const asyncEntries = await codec.listEntriesAsync(bytes);
+    const asyncWorkbook = await codec.importWorkbookAsync(bytes);
+    const unpackedAsync = await codec.unpackEntriesAsync(bytes);
+
+    expect(asyncEntries).toEqual(syncEntries);
+    expect(asyncWorkbook).toEqual(syncWorkbook);
+    expect(Object.keys(unpackedAsync).sort()).toEqual(syncEntries);
   });
 
   it("exposes workbook xml for inspection after unzip", () => {

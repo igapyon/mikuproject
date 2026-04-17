@@ -1,0 +1,75 @@
+/*
+ * Copyright 2026 Toshiki Iga
+ * SPDX-License-Identifier: Apache-2.0
+ */
+(() => {
+    const mainPreview = {
+        createEmptyState() {
+            return {
+                currentNativeSvg: "",
+                currentWeeklyPreviewSvg: "",
+                currentMonthlyPreviewSvg: "",
+                currentSvgPreviewMode: "daily"
+            };
+        },
+        renderPreviewMarkup(state) {
+            if (state.currentSvgPreviewMode === "weekly") {
+                return state.currentWeeklyPreviewSvg || `<div class="md-preview-empty">Weekly SVG を生成すると、ここにプレビューを表示します。</div>`;
+            }
+            if (state.currentSvgPreviewMode === "monthly") {
+                return state.currentMonthlyPreviewSvg || `<div class="md-preview-empty">Monthly Calendar SVG を生成すると、ここにプレビューを表示します。</div>`;
+            }
+            return state.currentNativeSvg || `<div class="md-preview-empty">Daily SVG を生成すると、ここにプレビューを表示します。</div>`;
+        },
+        applyPreviewModeButtonClasses(doc, mode) {
+            const dailyButton = doc.getElementById("previewDailySvgBtn");
+            const weeklyButton = doc.getElementById("previewWeeklySvgBtn");
+            const monthlyButton = doc.getElementById("previewMonthlySvgBtn");
+            if (!(dailyButton instanceof HTMLButtonElement) || !(weeklyButton instanceof HTMLButtonElement) || !(monthlyButton instanceof HTMLButtonElement)) {
+                throw new Error("SVG preview mode buttons are not available");
+            }
+            dailyButton.classList.toggle("md-button--primary", mode === "daily");
+            dailyButton.classList.toggle("md-button--tonal", mode !== "daily");
+            weeklyButton.classList.toggle("md-button--primary", mode === "weekly");
+            weeklyButton.classList.toggle("md-button--tonal", mode !== "weekly");
+            monthlyButton.classList.toggle("md-button--primary", mode === "monthly");
+            monthlyButton.classList.toggle("md-button--tonal", mode !== "monthly");
+        },
+        updateDownloadButtons(doc, hasModel) {
+            const nativeSvgButton = doc.getElementById("downloadSvgBtn");
+            const weeklySvgButton = doc.getElementById("downloadWeeklySvgBtn");
+            const monthlyWbsButton = doc.getElementById("downloadMonthlyCalendarSvgBtn");
+            if (!(nativeSvgButton instanceof HTMLButtonElement) || !(weeklySvgButton instanceof HTMLButtonElement) || !(monthlyWbsButton instanceof HTMLButtonElement)) {
+                throw new Error("SVG download buttons are not available");
+            }
+            nativeSvgButton.disabled = !hasModel;
+            weeklySvgButton.disabled = !hasModel;
+            monthlyWbsButton.disabled = !hasModel;
+        },
+        buildRenderedState(input) {
+            if (!input.model) {
+                return {
+                    currentNativeSvg: "",
+                    currentWeeklyPreviewSvg: "",
+                    currentMonthlyPreviewSvg: "",
+                    currentSvgPreviewMode: input.previousState.currentSvgPreviewMode
+                };
+            }
+            const wbsOptions = input.buildWbsOptions(input.model);
+            const monthlyArchive = input.exportMonthlyWbsCalendarSvgArchive(input.model);
+            return {
+                currentNativeSvg: input.exportNativeSvg(input.model, wbsOptions),
+                currentWeeklyPreviewSvg: input.exportWeeklyNativeSvg(input.model, wbsOptions),
+                currentMonthlyPreviewSvg: monthlyArchive.entries.length > 0 ? monthlyArchive.entries.map((entry) => entry.svg).join("") : "",
+                currentSvgPreviewMode: input.previousState.currentSvgPreviewMode
+            };
+        },
+        setMode(state, mode) {
+            return {
+                ...state,
+                currentSvgPreviewMode: mode
+            };
+        }
+    };
+    globalThis.__mikuprojectMainPreview = mainPreview;
+})();

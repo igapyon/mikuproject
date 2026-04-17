@@ -45,6 +45,24 @@ describe("mikuproject ai json util", () => {
     expect(util.extractLastJsonBlock("  {\"a\":1}  ")).toBe("{\"a\":1}");
   });
 
+  it("extracts fenced json blocks even when prose surrounds the payload", () => {
+    const util = bootUtil();
+
+    const result = util.extractLastJsonBlock([
+      "前置き",
+      "```json",
+      "",
+      "  {",
+      "    \"nested\": true",
+      "  }",
+      "",
+      "```",
+      "後置き"
+    ].join("\n"));
+
+    expect(result).toBe('{\n    "nested": true\n  }');
+  });
+
   it("detects workbook json", () => {
     const util = bootUtil();
 
@@ -67,6 +85,7 @@ describe("mikuproject ai json util", () => {
     const util = bootUtil();
 
     expect(util.detectJsonDocumentKind({ foo: "bar" })).toBeUndefined();
+    expect(util.detectJsonDocumentKind({ operations: {} })).toBeUndefined();
     expect(util.detectJsonDocumentKind(null)).toBeUndefined();
     expect(util.detectJsonDocumentKind("text")).toBeUndefined();
   });

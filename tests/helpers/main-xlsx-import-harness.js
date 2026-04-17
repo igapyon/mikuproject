@@ -23,8 +23,84 @@ const mainUtilCode = readFileSync(
   path.resolve(__dirname, "../../src/js/main-util.js"),
   "utf8"
 );
+const excelIoUtilCode = readFileSync(
+  path.resolve(__dirname, "../../src/js/excel-io-util.js"),
+  "utf8"
+);
 const excelIoCode = readFileSync(
   path.resolve(__dirname, "../../src/js/excel-io.js"),
+  "utf8"
+);
+const excelIoZipCode = readFileSync(
+  path.resolve(__dirname, "../../src/js/excel-io-zip.js"),
+  "utf8"
+);
+const excelIoNormalizeCode = readFileSync(
+  path.resolve(__dirname, "../../src/js/excel-io-normalize.js"),
+  "utf8"
+);
+const excelIoPackageXmlCode = readFileSync(
+  path.resolve(__dirname, "../../src/js/excel-io-package-xml.js"),
+  "utf8"
+);
+const excelIoWorksheetBuildCode = readFileSync(
+  path.resolve(__dirname, "../../src/js/excel-io-worksheet-build.js"),
+  "utf8"
+);
+const excelIoWorksheetParseCode = readFileSync(
+  path.resolve(__dirname, "../../src/js/excel-io-worksheet-parse.js"),
+  "utf8"
+);
+const excelIoWorkbookParseCode = readFileSync(
+  path.resolve(__dirname, "../../src/js/excel-io-workbook-parse.js"),
+  "utf8"
+);
+const excelIoWorkbookBuildCode = readFileSync(
+  path.resolve(__dirname, "../../src/js/excel-io-workbook-build.js"),
+  "utf8"
+);
+const excelIoStylesBuildCode = readFileSync(
+  path.resolve(__dirname, "../../src/js/excel-io-styles-build.js"),
+  "utf8"
+);
+const excelIoStylesParseCode = readFileSync(
+  path.resolve(__dirname, "../../src/js/excel-io-styles-parse.js"),
+  "utf8"
+);
+const msProjectAiViewsCode = readFileSync(
+  path.resolve(__dirname, "../../src/js/msproject-ai-views.js"),
+  "utf8"
+);
+const msProjectCalendarCode = readFileSync(
+  path.resolve(__dirname, "../../src/js/msproject-calendar.js"),
+  "utf8"
+);
+const msProjectSamplesCode = readFileSync(
+  path.resolve(__dirname, "../../src/js/msproject-samples.js"),
+  "utf8"
+);
+const msProjectCsvCode = readFileSync(
+  path.resolve(__dirname, "../../src/js/msproject-csv.js"),
+  "utf8"
+);
+const msProjectValidateHelpersCode = readFileSync(
+  path.resolve(__dirname, "../../src/js/msproject-validate-helpers.js"),
+  "utf8"
+);
+const msProjectValidateCode = readFileSync(
+  path.resolve(__dirname, "../../src/js/msproject-validate.js"),
+  "utf8"
+);
+const msProjectXmlDomCode = readFileSync(
+  path.resolve(__dirname, "../../src/js/msproject-xml-dom.js"),
+  "utf8"
+);
+const msProjectCodecCode = readFileSync(
+  path.resolve(__dirname, "../../src/js/msproject-codec.js"),
+  "utf8"
+);
+const msProjectMermaidCode = readFileSync(
+  path.resolve(__dirname, "../../src/js/msproject-mermaid.js"),
   "utf8"
 );
 const msProjectXmlCode = readFileSync(
@@ -35,12 +111,148 @@ const projectWorkbookSchemaCode = readFileSync(
   path.resolve(__dirname, "../../src/js/project-workbook-schema.js"),
   "utf8"
 );
+const projectXlsxImportUtilCode = readFileSync(
+  path.resolve(__dirname, "../../src/js/project-xlsx-import-util.js"),
+  "utf8"
+);
+const projectXlsxImportProjectCode = readFileSync(
+  path.resolve(__dirname, "../../src/js/project-xlsx-import-project.js"),
+  "utf8"
+);
+const projectXlsxImportCalendarsCode = readFileSync(
+  path.resolve(__dirname, "../../src/js/project-xlsx-import-calendars.js"),
+  "utf8"
+);
+const projectXlsxImportEntitiesCode = readFileSync(
+  path.resolve(__dirname, "../../src/js/project-xlsx-import-entities.js"),
+  "utf8"
+);
+const projectXlsxImportCode = readFileSync(
+  path.resolve(__dirname, "../../src/js/project-xlsx-import.js"),
+  "utf8"
+);
+const projectXlsxExportUtilCode = readFileSync(
+  path.resolve(__dirname, "../../src/js/project-xlsx-export-util.js"),
+  "utf8"
+);
+const projectXlsxExportProjectCode = readFileSync(
+  path.resolve(__dirname, "../../src/js/project-xlsx-export-project.js"),
+  "utf8"
+);
+const projectXlsxExportEntitiesCode = readFileSync(
+  path.resolve(__dirname, "../../src/js/project-xlsx-export-entities.js"),
+  "utf8"
+);
+const projectXlsxExportCalendarsCode = readFileSync(
+  path.resolve(__dirname, "../../src/js/project-xlsx-export-calendars.js"),
+  "utf8"
+);
+const projectXlsxExportCode = readFileSync(
+  path.resolve(__dirname, "../../src/js/project-xlsx-export.js"),
+  "utf8"
+);
 const projectXlsxCode = readFileSync(
   path.resolve(__dirname, "../../src/js/project-xlsx.js"),
   "utf8"
 );
+const projectWorkbookJsonValidateCode = readFileSync(
+  path.resolve(__dirname, "../../src/js/project-workbook-json-validate.js"),
+  "utf8"
+);
+const projectWorkbookJsonImportCode = readFileSync(
+  path.resolve(__dirname, "../../src/js/project-workbook-json-import.js"),
+  "utf8"
+);
+const projectWorkbookJsonExportCode = readFileSync(
+  path.resolve(__dirname, "../../src/js/project-workbook-json-export.js"),
+  "utf8"
+);
 const projectWorkbookJsonCode = readFileSync(
   path.resolve(__dirname, "../../src/js/project-workbook-json.js"),
+  "utf8"
+);
+const mainIoCode = readFileSync(
+  path.resolve(__dirname, "../../src/js/main-io.js"),
+  "utf8"
+);
+const mainImportCode = readFileSync(
+  path.resolve(__dirname, "../../src/js/main-import.js"),
+  "utf8"
+);
+const mainExportCode = readFileSync(
+  path.resolve(__dirname, "../../src/js/main-export.js"),
+  "utf8"
+);
+const mainInputEventsCode = readFileSync(
+  path.resolve(__dirname, "../../src/js/main-input-events.js"),
+  "utf8"
+);
+const mainButtonEventsCode = readFileSync(
+  path.resolve(__dirname, "../../src/js/main-button-events.js"),
+  "utf8"
+);
+const mainEventsCode = readFileSync(
+  path.resolve(__dirname, "../../src/js/main-events.js"),
+  "utf8"
+);
+const mainPreviewCode = readFileSync(
+  path.resolve(__dirname, "../../src/js/main-preview.js"),
+  "utf8"
+);
+const mainUiCode = readFileSync(
+  path.resolve(__dirname, "../../src/js/main-ui.js"),
+  "utf8"
+);
+const mainSupportCode = readFileSync(
+  path.resolve(__dirname, "../../src/js/main-support.js"),
+  "utf8"
+);
+const mainSamplesCode = readFileSync(
+  path.resolve(__dirname, "../../src/js/main-samples.js"),
+  "utf8"
+);
+const mainDownloadsCode = readFileSync(
+  path.resolve(__dirname, "../../src/js/main-downloads.js"),
+  "utf8"
+);
+const mainOutputActionsCode = readFileSync(
+  path.resolve(__dirname, "../../src/js/main-output-actions.js"),
+  "utf8"
+);
+const mainImportActionsCode = readFileSync(
+  path.resolve(__dirname, "../../src/js/main-import-actions.js"),
+  "utf8"
+);
+const mainXmlActionsCode = readFileSync(
+  path.resolve(__dirname, "../../src/js/main-xml-actions.js"),
+  "utf8"
+);
+const mainArchiveActionsCode = readFileSync(
+  path.resolve(__dirname, "../../src/js/main-archive-actions.js"),
+  "utf8"
+);
+const mainSaveStateCode = readFileSync(
+  path.resolve(__dirname, "../../src/js/main-save-state.js"),
+  "utf8"
+);
+const mainTabActionsCode = readFileSync(
+  path.resolve(__dirname, "../../src/js/main-tab-actions.js"),
+  "utf8"
+);
+const mainPreviewActionsCode = readFileSync(
+  path.resolve(__dirname, "../../src/js/main-preview-actions.js"),
+  "utf8"
+);
+const mainTransformCode = readFileSync(
+  path.resolve(__dirname, "../../src/js/main-transform.js"),
+  "utf8"
+);
+const mainFlowCode = readFileSync(
+  path.resolve(__dirname, "../../src/js/main-flow.js"),
+  "utf8"
+);
+const mainModelCode = readFileSync(
+  path.resolve(__dirname, "../../src/js/main-model.js"),
   "utf8"
 );
 const mainRenderCode = readFileSync(
@@ -91,7 +303,7 @@ globalThis.__mikuprojectNativeSvg = {
 };
 `;
 
-const bootPageCode = `${typesCode}\n${markdownEscapeCode}\n${aiJsonUtilCode}\n${mainUtilCode}\n${excelIoCode}\n${msProjectXmlCode}\n${projectWorkbookSchemaCode}\n${projectXlsxCode}\n${projectWorkbookJsonCode}\n${projectPatchJsonStubCode}\n${wbsXlsxStubCode}\n${wbsMarkdownStubCode}\n${nativeSvgStubCode}\n${mainRenderCode}\n${mainCode}`;
+const bootPageCode = `${typesCode}\n${markdownEscapeCode}\n${aiJsonUtilCode}\n${mainUtilCode}\n${excelIoUtilCode}\n${excelIoZipCode}\n${excelIoNormalizeCode}\n${excelIoPackageXmlCode}\n${excelIoWorksheetBuildCode}\n${excelIoWorksheetParseCode}\n${excelIoWorkbookParseCode}\n${excelIoWorkbookBuildCode}\n${excelIoStylesBuildCode}\n${excelIoStylesParseCode}\n${excelIoCode}\n${msProjectAiViewsCode}\n${msProjectCalendarCode}\n${msProjectSamplesCode}\n${msProjectCsvCode}\n${msProjectValidateHelpersCode}\n${msProjectValidateCode}\n${msProjectXmlDomCode}\n${msProjectCodecCode}\n${msProjectMermaidCode}\n${msProjectXmlCode}\n${projectWorkbookSchemaCode}\n${projectXlsxImportUtilCode}\n${projectXlsxImportProjectCode}\n${projectXlsxImportCalendarsCode}\n${projectXlsxImportEntitiesCode}\n${projectXlsxImportCode}\n${projectXlsxExportUtilCode}\n${projectXlsxExportProjectCode}\n${projectXlsxExportEntitiesCode}\n${projectXlsxExportCalendarsCode}\n${projectXlsxExportCode}\n${projectXlsxCode}\n${projectWorkbookJsonValidateCode}\n${projectWorkbookJsonImportCode}\n${projectWorkbookJsonExportCode}\n${projectWorkbookJsonCode}\n${projectPatchJsonStubCode}\n${wbsXlsxStubCode}\n${wbsMarkdownStubCode}\n${nativeSvgStubCode}\n${mainIoCode}\n${mainImportCode}\n${mainExportCode}\n${mainInputEventsCode}\n${mainButtonEventsCode}\n${mainEventsCode}\n${mainPreviewCode}\n${mainUiCode}\n${mainSupportCode}\n${mainSamplesCode}\n${mainDownloadsCode}\n${mainOutputActionsCode}\n${mainImportActionsCode}\n${mainXmlActionsCode}\n${mainArchiveActionsCode}\n${mainSaveStateCode}\n${mainTabActionsCode}\n${mainPreviewActionsCode}\n${mainTransformCode}\n${mainFlowCode}\n${mainModelCode}\n${mainRenderCode}\n${mainCode}`;
 const bootPageRunner = new Function(bootPageCode);
 
 function mountDom() {

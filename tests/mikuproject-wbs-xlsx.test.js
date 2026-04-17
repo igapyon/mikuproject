@@ -13,12 +13,120 @@ const typesCode = readFileSync(
   path.resolve(__dirname, "../src/js/types.js"),
   "utf8"
 );
+const excelIoUtilCode = readFileSync(
+  path.resolve(__dirname, "../src/js/excel-io-util.js"),
+  "utf8"
+);
 const excelIoCode = readFileSync(
   path.resolve(__dirname, "../src/js/excel-io.js"),
   "utf8"
 );
+const excelIoZipCode = readFileSync(
+  path.resolve(__dirname, "../src/js/excel-io-zip.js"),
+  "utf8"
+);
+const excelIoNormalizeCode = readFileSync(
+  path.resolve(__dirname, "../src/js/excel-io-normalize.js"),
+  "utf8"
+);
+const excelIoPackageXmlCode = readFileSync(
+  path.resolve(__dirname, "../src/js/excel-io-package-xml.js"),
+  "utf8"
+);
+const excelIoWorksheetBuildCode = readFileSync(
+  path.resolve(__dirname, "../src/js/excel-io-worksheet-build.js"),
+  "utf8"
+);
+const excelIoWorksheetParseCode = readFileSync(
+  path.resolve(__dirname, "../src/js/excel-io-worksheet-parse.js"),
+  "utf8"
+);
+const excelIoWorkbookParseCode = readFileSync(
+  path.resolve(__dirname, "../src/js/excel-io-workbook-parse.js"),
+  "utf8"
+);
+const excelIoWorkbookBuildCode = readFileSync(
+  path.resolve(__dirname, "../src/js/excel-io-workbook-build.js"),
+  "utf8"
+);
+const excelIoStylesBuildCode = readFileSync(
+  path.resolve(__dirname, "../src/js/excel-io-styles-build.js"),
+  "utf8"
+);
+const excelIoStylesParseCode = readFileSync(
+  path.resolve(__dirname, "../src/js/excel-io-styles-parse.js"),
+  "utf8"
+);
+const msProjectAiViewsCode = readFileSync(
+  path.resolve(__dirname, "../src/js/msproject-ai-views.js"),
+  "utf8"
+);
+const msProjectCalendarCode = readFileSync(
+  path.resolve(__dirname, "../src/js/msproject-calendar.js"),
+  "utf8"
+);
+const msProjectSamplesCode = readFileSync(
+  path.resolve(__dirname, "../src/js/msproject-samples.js"),
+  "utf8"
+);
+const msProjectCsvCode = readFileSync(
+  path.resolve(__dirname, "../src/js/msproject-csv.js"),
+  "utf8"
+);
+const msProjectValidateHelpersCode = readFileSync(
+  path.resolve(__dirname, "../src/js/msproject-validate-helpers.js"),
+  "utf8"
+);
+const msProjectValidateCode = readFileSync(
+  path.resolve(__dirname, "../src/js/msproject-validate.js"),
+  "utf8"
+);
+const msProjectXmlDomCode = readFileSync(
+  path.resolve(__dirname, "../src/js/msproject-xml-dom.js"),
+  "utf8"
+);
+const msProjectCodecCode = readFileSync(
+  path.resolve(__dirname, "../src/js/msproject-codec.js"),
+  "utf8"
+);
+const msProjectMermaidCode = readFileSync(
+  path.resolve(__dirname, "../src/js/msproject-mermaid.js"),
+  "utf8"
+);
 const msProjectXmlCode = readFileSync(
   path.resolve(__dirname, "../src/js/msproject-xml.js"),
+  "utf8"
+);
+const wbsDatebandCode = readFileSync(
+  path.resolve(__dirname, "../src/js/wbs-dateband.js"),
+  "utf8"
+);
+const wbsXlsxBaseCode = readFileSync(
+  path.resolve(__dirname, "../src/js/wbs-xlsx-base.js"),
+  "utf8"
+);
+const wbsXlsxTaskmetaCode = readFileSync(
+  path.resolve(__dirname, "../src/js/wbs-xlsx-taskmeta.js"),
+  "utf8"
+);
+const wbsXlsxLayoutCode = readFileSync(
+  path.resolve(__dirname, "../src/js/wbs-xlsx-layout.js"),
+  "utf8"
+);
+const wbsXlsxSectionsCode = readFileSync(
+  path.resolve(__dirname, "../src/js/wbs-xlsx-sections.js"),
+  "utf8"
+);
+const wbsXlsxCellsCode = readFileSync(
+  path.resolve(__dirname, "../src/js/wbs-xlsx-cells.js"),
+  "utf8"
+);
+const wbsXlsxExportCode = readFileSync(
+  path.resolve(__dirname, "../src/js/wbs-xlsx-export.js"),
+  "utf8"
+);
+const wbsXlsxPublicCode = readFileSync(
+  path.resolve(__dirname, "../src/js/wbs-xlsx-public.js"),
   "utf8"
 );
 const wbsXlsxCode = readFileSync(
@@ -27,7 +135,7 @@ const wbsXlsxCode = readFileSync(
 );
 
 function bootModules() {
-  new Function(`${typesCode}\n${excelIoCode}\n${msProjectXmlCode}\n${wbsXlsxCode}`)();
+  new Function(`${typesCode}\n${excelIoUtilCode}\n${excelIoZipCode}\n${excelIoNormalizeCode}\n${excelIoPackageXmlCode}\n${excelIoWorksheetBuildCode}\n${excelIoWorksheetParseCode}\n${excelIoWorkbookParseCode}\n${excelIoWorkbookBuildCode}\n${excelIoStylesBuildCode}\n${excelIoStylesParseCode}\n${excelIoCode}\n${msProjectAiViewsCode}\n${msProjectCalendarCode}\n${msProjectSamplesCode}\n${msProjectCsvCode}\n${msProjectValidateHelpersCode}\n${msProjectValidateCode}\n${msProjectXmlDomCode}\n${msProjectCodecCode}\n${msProjectMermaidCode}\n${msProjectXmlCode}\n${wbsDatebandCode}\n${wbsXlsxBaseCode}\n${wbsXlsxTaskmetaCode}\n${wbsXlsxLayoutCode}\n${wbsXlsxSectionsCode}\n${wbsXlsxCellsCode}\n${wbsXlsxExportCode}\n${wbsXlsxPublicCode}\n${wbsXlsxCode}`)();
   return {
     excelIo: globalThis.__mikuprojectExcelIo,
     xml: globalThis.__mikuprojectXml,

@@ -25,6 +25,46 @@ const mainUtilCode = readFileSync(
   path.resolve(__dirname, "../src/js/main-util.js"),
   "utf8"
 );
+const excelIoUtilCode = readFileSync(
+  path.resolve(__dirname, "../src/js/excel-io-util.js"),
+  "utf8"
+);
+const msProjectAiViewsCode = readFileSync(
+  path.resolve(__dirname, "../src/js/msproject-ai-views.js"),
+  "utf8"
+);
+const msProjectCalendarCode = readFileSync(
+  path.resolve(__dirname, "../src/js/msproject-calendar.js"),
+  "utf8"
+);
+const msProjectSamplesCode = readFileSync(
+  path.resolve(__dirname, "../src/js/msproject-samples.js"),
+  "utf8"
+);
+const msProjectCsvCode = readFileSync(
+  path.resolve(__dirname, "../src/js/msproject-csv.js"),
+  "utf8"
+);
+const msProjectValidateHelpersCode = readFileSync(
+  path.resolve(__dirname, "../src/js/msproject-validate-helpers.js"),
+  "utf8"
+);
+const msProjectValidateCode = readFileSync(
+  path.resolve(__dirname, "../src/js/msproject-validate.js"),
+  "utf8"
+);
+const msProjectXmlDomCode = readFileSync(
+  path.resolve(__dirname, "../src/js/msproject-xml-dom.js"),
+  "utf8"
+);
+const msProjectCodecCode = readFileSync(
+  path.resolve(__dirname, "../src/js/msproject-codec.js"),
+  "utf8"
+);
+const msProjectMermaidCode = readFileSync(
+  path.resolve(__dirname, "../src/js/msproject-mermaid.js"),
+  "utf8"
+);
 const msProjectXmlCode = readFileSync(
   path.resolve(__dirname, "../src/js/msproject-xml.js"),
   "utf8"
@@ -37,24 +77,268 @@ const projectWorkbookSchemaCode = readFileSync(
   path.resolve(__dirname, "../src/js/project-workbook-schema.js"),
   "utf8"
 );
+const projectXlsxImportUtilCode = readFileSync(
+  path.resolve(__dirname, "../src/js/project-xlsx-import-util.js"),
+  "utf8"
+);
+const projectXlsxImportProjectCode = readFileSync(
+  path.resolve(__dirname, "../src/js/project-xlsx-import-project.js"),
+  "utf8"
+);
+const projectXlsxImportCalendarsCode = readFileSync(
+  path.resolve(__dirname, "../src/js/project-xlsx-import-calendars.js"),
+  "utf8"
+);
+const projectXlsxImportEntitiesCode = readFileSync(
+  path.resolve(__dirname, "../src/js/project-xlsx-import-entities.js"),
+  "utf8"
+);
+const projectXlsxImportCode = readFileSync(
+  path.resolve(__dirname, "../src/js/project-xlsx-import.js"),
+  "utf8"
+);
+const projectXlsxExportUtilCode = readFileSync(
+  path.resolve(__dirname, "../src/js/project-xlsx-export-util.js"),
+  "utf8"
+);
+const projectXlsxExportProjectCode = readFileSync(
+  path.resolve(__dirname, "../src/js/project-xlsx-export-project.js"),
+  "utf8"
+);
+const projectXlsxExportEntitiesCode = readFileSync(
+  path.resolve(__dirname, "../src/js/project-xlsx-export-entities.js"),
+  "utf8"
+);
+const projectXlsxExportCalendarsCode = readFileSync(
+  path.resolve(__dirname, "../src/js/project-xlsx-export-calendars.js"),
+  "utf8"
+);
+const projectXlsxExportCode = readFileSync(
+  path.resolve(__dirname, "../src/js/project-xlsx-export.js"),
+  "utf8"
+);
 const projectXlsxCode = readFileSync(
   path.resolve(__dirname, "../src/js/project-xlsx.js"),
+  "utf8"
+);
+const projectWorkbookJsonValidateCode = readFileSync(
+  path.resolve(__dirname, "../src/js/project-workbook-json-validate.js"),
+  "utf8"
+);
+const projectWorkbookJsonImportCode = readFileSync(
+  path.resolve(__dirname, "../src/js/project-workbook-json-import.js"),
+  "utf8"
+);
+const projectWorkbookJsonExportCode = readFileSync(
+  path.resolve(__dirname, "../src/js/project-workbook-json-export.js"),
   "utf8"
 );
 const excelIoCode = readFileSync(
   path.resolve(__dirname, "../src/js/excel-io.js"),
   "utf8"
 );
+const excelIoZipCode = readFileSync(
+  path.resolve(__dirname, "../src/js/excel-io-zip.js"),
+  "utf8"
+);
+const excelIoNormalizeCode = readFileSync(
+  path.resolve(__dirname, "../src/js/excel-io-normalize.js"),
+  "utf8"
+);
+const excelIoPackageXmlCode = readFileSync(
+  path.resolve(__dirname, "../src/js/excel-io-package-xml.js"),
+  "utf8"
+);
+const excelIoWorksheetBuildCode = readFileSync(
+  path.resolve(__dirname, "../src/js/excel-io-worksheet-build.js"),
+  "utf8"
+);
+const excelIoWorksheetParseCode = readFileSync(
+  path.resolve(__dirname, "../src/js/excel-io-worksheet-parse.js"),
+  "utf8"
+);
+const excelIoWorkbookParseCode = readFileSync(
+  path.resolve(__dirname, "../src/js/excel-io-workbook-parse.js"),
+  "utf8"
+);
+const excelIoWorkbookBuildCode = readFileSync(
+  path.resolve(__dirname, "../src/js/excel-io-workbook-build.js"),
+  "utf8"
+);
+const excelIoStylesBuildCode = readFileSync(
+  path.resolve(__dirname, "../src/js/excel-io-styles-build.js"),
+  "utf8"
+);
+const excelIoStylesParseCode = readFileSync(
+  path.resolve(__dirname, "../src/js/excel-io-styles-parse.js"),
+  "utf8"
+);
 const projectWorkbookJsonCode = readFileSync(
   path.resolve(__dirname, "../src/js/project-workbook-json.js"),
+  "utf8"
+);
+const projectPatchJsonUtilCode = readFileSync(
+  path.resolve(__dirname, "../src/js/project-patch-json-util.js"),
+  "utf8"
+);
+const projectPatchJsonLinksCode = readFileSync(
+  path.resolve(__dirname, "../src/js/project-patch-json-links.js"),
+  "utf8"
+);
+const projectPatchJsonTasksCode = readFileSync(
+  path.resolve(__dirname, "../src/js/project-patch-json-tasks.js"),
+  "utf8"
+);
+const projectPatchJsonEntitiesCode = readFileSync(
+  path.resolve(__dirname, "../src/js/project-patch-json-entities.js"),
+  "utf8"
+);
+const projectPatchJsonUpdatesCode = readFileSync(
+  path.resolve(__dirname, "../src/js/project-patch-json-updates.js"),
+  "utf8"
+);
+const projectPatchJsonCoreCode = readFileSync(
+  path.resolve(__dirname, "../src/js/project-patch-json-core.js"),
   "utf8"
 );
 const projectPatchJsonCode = readFileSync(
   path.resolve(__dirname, "../src/js/project-patch-json.js"),
   "utf8"
 );
+const coreApiMsprojectAiCode = readFileSync(
+  path.resolve(__dirname, "../src/js/core-api-msproject-ai.js"),
+  "utf8"
+);
+const coreApiMsprojectCode = readFileSync(
+  path.resolve(__dirname, "../src/js/core-api-msproject.js"),
+  "utf8"
+);
+const coreApiWorkbookXlsxCode = readFileSync(
+  path.resolve(__dirname, "../src/js/core-api-workbook-xlsx.js"),
+  "utf8"
+);
+const coreApiWorkbookCode = readFileSync(
+  path.resolve(__dirname, "../src/js/core-api-workbook.js"),
+  "utf8"
+);
+const coreApiAiJsonImportCode = readFileSync(
+  path.resolve(__dirname, "../src/js/core-api-ai-json-import.js"),
+  "utf8"
+);
+const coreApiAiJsonCode = readFileSync(
+  path.resolve(__dirname, "../src/js/core-api-ai-json.js"),
+  "utf8"
+);
+const coreApiExternalBinaryCode = readFileSync(
+  path.resolve(__dirname, "../src/js/core-api-external-binary.js"),
+  "utf8"
+);
+const coreApiExternalDocumentCode = readFileSync(
+  path.resolve(__dirname, "../src/js/core-api-external-document.js"),
+  "utf8"
+);
+const coreApiExternalImportCode = readFileSync(
+  path.resolve(__dirname, "../src/js/core-api-external-import.js"),
+  "utf8"
+);
+const coreApiImportCode = readFileSync(
+  path.resolve(__dirname, "../src/js/core-api-import.js"),
+  "utf8"
+);
+const coreApiReportCode = readFileSync(
+  path.resolve(__dirname, "../src/js/core-api-report.js"),
+  "utf8"
+);
+const coreApiReportAdaptersCode = readFileSync(
+  path.resolve(__dirname, "../src/js/core-api-report-adapters.js"),
+  "utf8"
+);
+const coreApiReportPublicCode = readFileSync(
+  path.resolve(__dirname, "../src/js/core-api-report-public.js"),
+  "utf8"
+);
+const coreApiRegistryCode = readFileSync(
+  path.resolve(__dirname, "../src/js/core-api-registry.js"),
+  "utf8"
+);
+const coreApiPublicCode = readFileSync(
+  path.resolve(__dirname, "../src/js/core-api-public.js"),
+  "utf8"
+);
+const wbsDatebandCode = readFileSync(
+  path.resolve(__dirname, "../src/js/wbs-dateband.js"),
+  "utf8"
+);
+const wbsXlsxBaseCode = readFileSync(
+  path.resolve(__dirname, "../src/js/wbs-xlsx-base.js"),
+  "utf8"
+);
+const wbsXlsxTaskmetaCode = readFileSync(
+  path.resolve(__dirname, "../src/js/wbs-xlsx-taskmeta.js"),
+  "utf8"
+);
+const wbsXlsxLayoutCode = readFileSync(
+  path.resolve(__dirname, "../src/js/wbs-xlsx-layout.js"),
+  "utf8"
+);
+const wbsXlsxSectionsCode = readFileSync(
+  path.resolve(__dirname, "../src/js/wbs-xlsx-sections.js"),
+  "utf8"
+);
+const wbsXlsxCellsCode = readFileSync(
+  path.resolve(__dirname, "../src/js/wbs-xlsx-cells.js"),
+  "utf8"
+);
+const wbsXlsxExportCode = readFileSync(
+  path.resolve(__dirname, "../src/js/wbs-xlsx-export.js"),
+  "utf8"
+);
+const wbsXlsxPublicCode = readFileSync(
+  path.resolve(__dirname, "../src/js/wbs-xlsx-public.js"),
+  "utf8"
+);
 const wbsXlsxCode = readFileSync(
   path.resolve(__dirname, "../src/js/wbs-xlsx.js"),
+  "utf8"
+);
+const wbsSvgZipCode = readFileSync(
+  path.resolve(__dirname, "../src/js/wbs-svg-zip.js"),
+  "utf8"
+);
+const wbsSvgBarsCode = readFileSync(
+  path.resolve(__dirname, "../src/js/wbs-svg-bars.js"),
+  "utf8"
+);
+const wbsSvgViewportCode = readFileSync(
+  path.resolve(__dirname, "../src/js/wbs-svg-viewport.js"),
+  "utf8"
+);
+const wbsSvgAxisCode = readFileSync(
+  path.resolve(__dirname, "../src/js/wbs-svg-axis.js"),
+  "utf8"
+);
+const wbsSvgScaffoldCode = readFileSync(
+  path.resolve(__dirname, "../src/js/wbs-svg-scaffold.js"),
+  "utf8"
+);
+const wbsSvgLabelsCode = readFileSync(
+  path.resolve(__dirname, "../src/js/wbs-svg-labels.js"),
+  "utf8"
+);
+const wbsSvgCalendarCode = readFileSync(
+  path.resolve(__dirname, "../src/js/wbs-svg-calendar.js"),
+  "utf8"
+);
+const wbsSvgTimelineCode = readFileSync(
+  path.resolve(__dirname, "../src/js/wbs-svg-timeline.js"),
+  "utf8"
+);
+const wbsSvgRenderCode = readFileSync(
+  path.resolve(__dirname, "../src/js/wbs-svg-render.js"),
+  "utf8"
+);
+const wbsSvgPublicCode = readFileSync(
+  path.resolve(__dirname, "../src/js/wbs-svg-public.js"),
   "utf8"
 );
 const wbsSvgCode = readFileSync(
@@ -80,16 +364,87 @@ function bootModules() {
     aiJsonUtilCode,
     aiJsonSpecCode,
     mainUtilCode,
+    excelIoUtilCode,
+    msProjectAiViewsCode,
+    msProjectCalendarCode,
+    msProjectSamplesCode,
+    msProjectCsvCode,
+    msProjectValidateHelpersCode,
+    msProjectValidateCode,
+    msProjectXmlDomCode,
+    msProjectCodecCode,
+    msProjectMermaidCode,
     msProjectXmlCode,
     markdownEscapeCode,
     projectWorkbookSchemaCode,
+    excelIoZipCode,
+    excelIoNormalizeCode,
+    excelIoPackageXmlCode,
+    excelIoWorksheetBuildCode,
+    excelIoWorksheetParseCode,
+    excelIoWorkbookParseCode,
+    excelIoWorkbookBuildCode,
+    excelIoStylesBuildCode,
+    excelIoStylesParseCode,
     excelIoCode,
+    projectXlsxImportUtilCode,
+    projectXlsxImportProjectCode,
+    projectXlsxImportCalendarsCode,
+    projectXlsxImportEntitiesCode,
+    projectXlsxImportCode,
+    projectXlsxExportUtilCode,
+    projectXlsxExportProjectCode,
+    projectXlsxExportEntitiesCode,
+    projectXlsxExportCalendarsCode,
+    projectXlsxExportCode,
     projectXlsxCode,
+    projectWorkbookJsonValidateCode,
+    projectWorkbookJsonImportCode,
+    projectWorkbookJsonExportCode,
     projectWorkbookJsonCode,
+    projectPatchJsonUtilCode,
+    projectPatchJsonLinksCode,
+    projectPatchJsonTasksCode,
+    projectPatchJsonEntitiesCode,
+    projectPatchJsonUpdatesCode,
+    projectPatchJsonCoreCode,
     projectPatchJsonCode,
+    coreApiMsprojectAiCode,
+    coreApiMsprojectCode,
+    coreApiWorkbookXlsxCode,
+    coreApiWorkbookCode,
+    coreApiAiJsonImportCode,
+    coreApiAiJsonCode,
+    coreApiExternalBinaryCode,
+    coreApiExternalDocumentCode,
+    coreApiExternalImportCode,
+    coreApiImportCode,
+    wbsDatebandCode,
+    wbsXlsxBaseCode,
+    wbsXlsxTaskmetaCode,
+    wbsXlsxLayoutCode,
+    wbsXlsxSectionsCode,
+    wbsXlsxCellsCode,
+    wbsXlsxExportCode,
+    wbsXlsxPublicCode,
     wbsXlsxCode,
+    wbsSvgZipCode,
+    wbsSvgBarsCode,
+    wbsSvgViewportCode,
+    wbsSvgAxisCode,
+    wbsSvgScaffoldCode,
+    wbsSvgLabelsCode,
+    wbsSvgCalendarCode,
+    wbsSvgTimelineCode,
+    wbsSvgRenderCode,
+    wbsSvgPublicCode,
     wbsSvgCode,
     wbsMarkdownCode,
+    coreApiReportCode,
+    coreApiReportAdaptersCode,
+    coreApiReportPublicCode,
+    coreApiRegistryCode,
+    coreApiPublicCode,
     coreApiCode
   ].join("\n"))();
   return globalThis.__mikuprojectCoreApi;
@@ -104,9 +459,37 @@ describe("mikuproject core api", () => {
     delete globalThis.__mikuprojectMarkdownEscape;
     delete globalThis.__mikuprojectProjectWorkbookSchema;
     delete globalThis.__mikuprojectExcelIo;
+    delete globalThis.__mikuprojectProjectXlsxImportUtil;
+    delete globalThis.__mikuprojectProjectXlsxImportProject;
+    delete globalThis.__mikuprojectProjectXlsxImportCalendars;
+    delete globalThis.__mikuprojectProjectXlsxImportEntities;
+    delete globalThis.__mikuprojectProjectXlsxImport;
+    delete globalThis.__mikuprojectProjectXlsxExportUtil;
+    delete globalThis.__mikuprojectProjectXlsxExportProject;
+    delete globalThis.__mikuprojectProjectXlsxExportEntities;
+    delete globalThis.__mikuprojectProjectXlsxExportCalendars;
+    delete globalThis.__mikuprojectProjectXlsxExport;
     delete globalThis.__mikuprojectProjectXlsx;
+    delete globalThis.__mikuprojectProjectWorkbookJsonValidate;
+    delete globalThis.__mikuprojectProjectWorkbookJsonImport;
+    delete globalThis.__mikuprojectProjectWorkbookJsonExport;
     delete globalThis.__mikuprojectProjectWorkbookJson;
     delete globalThis.__mikuprojectProjectPatchJson;
+    delete globalThis.__mikuprojectCoreApiMsprojectAi;
+    delete globalThis.__mikuprojectCoreApiMsproject;
+    delete globalThis.__mikuprojectCoreApiWorkbookXlsx;
+    delete globalThis.__mikuprojectCoreApiWorkbook;
+    delete globalThis.__mikuprojectCoreApiAiJsonImport;
+    delete globalThis.__mikuprojectCoreApiAiJson;
+    delete globalThis.__mikuprojectCoreApiExternalBinary;
+    delete globalThis.__mikuprojectCoreApiExternalDocument;
+    delete globalThis.__mikuprojectCoreApiExternalImport;
+    delete globalThis.__mikuprojectCoreApiImport;
+    delete globalThis.__mikuprojectCoreApiReport;
+    delete globalThis.__mikuprojectCoreApiReportAdapters;
+    delete globalThis.__mikuprojectCoreApiReportPublic;
+    delete globalThis.__mikuprojectCoreApiRegistry;
+    delete globalThis.__mikuprojectCoreApiPublic;
     delete globalThis.__mikuprojectWbsXlsx;
     delete globalThis.__mikuprojectNativeSvg;
     delete globalThis.__mikuprojectWbsMarkdown;
@@ -119,9 +502,23 @@ describe("mikuproject core api", () => {
     const spec = api.getAiJsonSpec();
 
     expect(spec.id).toBe("mikuproject-ai-json-spec");
-    expect(spec.version).toBe("v20260403");
+    expect(spec.version).toBe("v20260410");
     expect(spec.text).toContain("# mikuproject AI JSON Prompt / Spec");
     expect(api.getAiJsonSpecText()).toBe(spec.text);
+  });
+
+  it("exposes stable sample getters", () => {
+    const api = bootModules();
+
+    const sampleXml = api.samples.getSampleXml();
+    const sampleDraft = api.samples.getSampleProjectDraftView();
+
+    expect(sampleXml).toContain("<Project");
+    expect(sampleXml).toContain("<Name>mikuproject開発</Name>");
+    expect(sampleDraft.view_type).toBe("project_draft_view");
+    expect(sampleDraft.project.name).toBe("mikuproject開発");
+    expect(Array.isArray(sampleDraft.tasks)).toBe(true);
+    expect(sampleDraft.tasks.length).toBeGreaterThan(0);
   });
 
   it("parses fenced ai json text and detects the kind", () => {
@@ -160,6 +557,38 @@ describe("mikuproject core api", () => {
     expect(result.model.tasks).toHaveLength(1);
   });
 
+  it("exposes ai view helpers through the unified entrypoint", () => {
+    const api = bootModules();
+    const hierarchyModel = api.msProject.importFromXml(readFileSync(
+      path.resolve(__dirname, "../testdata/hierarchy.xml"),
+      "utf8"
+    ));
+
+    const request = api.aiViews.buildProjectDraftRequest({
+      name: "Core API draft request",
+      plannedStart: "2026-04-01",
+      goal: "Stabilize wrappers",
+      teamCount: 2,
+      mustHavePhases: ["Plan"],
+      mustHaveMilestones: ["Release"]
+    });
+    const overview = api.aiViews.exportProjectOverviewView(hierarchyModel);
+    const phaseDetail = api.aiViews.exportPhaseDetailView(hierarchyModel, "1", { mode: "scoped", rootUid: "2", maxDepth: 1 });
+    const taskEdit = api.aiViews.exportTaskEditView(hierarchyModel, "3");
+
+    expect(request.view_type).toBe("project_draft_request");
+    expect(request.project.name).toBe("Core API draft request");
+    expect(request.requirements.team_count).toBe(2);
+    expect(overview.view_type).toBe("project_overview_view");
+    expect(overview.phases[0].uid).toBe("1");
+    expect(phaseDetail.view_type).toBe("phase_detail_view");
+    expect(phaseDetail.scope).toEqual({ mode: "scoped", root_uid: "2", max_depth: 1 });
+    expect(phaseDetail.tasks.map((task) => task.uid)).toEqual(["2"]);
+    expect(taskEdit.view_type).toBe("task_edit_view");
+    expect(taskEdit.target_task.uid).toBe("3");
+    expect(Array.isArray(taskEdit.predecessors)).toBe(true);
+  });
+
   it("imports workbook json with and without a base model", () => {
     const api = bootModules();
     const baseModel = api.msProject.importFromXml(dependencyXml);
@@ -176,6 +605,29 @@ describe("mikuproject core api", () => {
     expect(mergeResult.mode).toBe("merge");
     expect(mergeResult.model.project.name).toBe("Core API workbook import");
     expect(Array.isArray(mergeResult.changes)).toBe(true);
+  });
+
+  it("imports ai json text and validates workbook json through the unified entrypoint", () => {
+    const api = bootModules();
+    const baseModel = api.msProject.importFromXml(dependencyXml);
+    const documentLike = api.workbookJson.exportDocument(baseModel);
+    documentLike.sheets.Project.find((row) => row.Field === "Name").Value = "Core API text import";
+    documentLike.sheets.UnknownSheet = [];
+
+    const parsedImport = api.importAiJsonText([
+      "説明",
+      "```json",
+      JSON.stringify(documentLike, null, 2),
+      "```"
+    ].join("\n"), { baseModel });
+    const validation = api.workbookJson.validateDocument(documentLike);
+
+    expect(parsedImport.kind).toBe("workbook_json");
+    expect(parsedImport.result.kind).toBe("workbook_json");
+    expect(parsedImport.result.mode).toBe("merge");
+    expect(parsedImport.result.model.project.name).toBe("Core API text import");
+    expect(validation.document.format).toBe("mikuproject_workbook_json");
+    expect(validation.warnings.map((item) => item.message)).toContain("未知の sheet は無視します: UnknownSheet");
   });
 
   it("exposes xlsx encode/decode and workbook import/export through the unified entrypoint", () => {
@@ -343,5 +795,38 @@ describe("mikuproject core api", () => {
       mode: "patch",
       baseModel
     })).toThrow("patch import");
+  });
+
+  it("rejects merge imports when baseModel is missing", () => {
+    const api = bootModules();
+    const baseModel = api.msProject.importFromXml(dependencyXml);
+    const workbook = api.xlsx.exportWorkbook(baseModel);
+    const xlsxBytes = api.xlsx.encodeWorkbook(workbook);
+    const workbookJson = api.workbookJson.exportDocument(baseModel);
+
+    expect(() => api.importExternal({
+      source: { format: "xlsx", bytes: xlsxBytes },
+      mode: "merge"
+    })).toThrow("baseModel");
+    expect(() => api.importExternal({
+      source: { format: "workbook_json", document: workbookJson },
+      mode: "merge"
+    })).toThrow("baseModel");
+  });
+
+  it("validates patch documents through the unified entrypoint", () => {
+    const api = bootModules();
+
+    const valid = api.patchJson.validateDocument({
+      operations: [
+        { op: "update_project", fields: { name: "Validated Patch" } }
+      ]
+    });
+
+    expect(valid.document.operations).toHaveLength(1);
+    expect(valid.warnings).toEqual([]);
+    expect(() => api.patchJson.validateDocument(null)).toThrow("オブジェクト");
+    expect(() => api.patchJson.validateDocument({})).toThrow("operations");
+    expect(() => api.patchJson.validateDocument({ operations: [null] })).toThrow("operations[0]");
   });
 });

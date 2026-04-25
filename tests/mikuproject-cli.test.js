@@ -887,19 +887,18 @@ describe("mikuproject cli", () => {
     expect(typeof diagnostics.output_length).toBe("number");
   });
 
-  it("builds a self-contained cli bundle that runs outside the repo", () => {
-    const bundleRoot = path.join(createTempDir("mikuproject-cli-bundle-test-"), "bundle");
-    const buildResult = spawnSync(process.execPath, [cliBundleBuildPath, "--out", bundleRoot], {
+  it("builds a single-file cli runtime artifact that runs outside the repo", () => {
+    const bundlePath = path.join(createTempDir("mikuproject-cli-bundle-test-"), "mikuproject.mjs");
+    const buildResult = spawnSync(process.execPath, [cliBundleBuildPath, "--out", bundlePath], {
       cwd: repoRoot,
       encoding: "utf8"
     });
 
     expect(buildResult.status).toBe(0);
-    expect(existsSync(path.join(bundleRoot, "node_modules", "jsdom", "package.json"))).toBe(true);
+    expect(existsSync(bundlePath)).toBe(true);
 
     const workbookPath = writeTempJson("bundle-workbook.json", buildWorkbookState("Bundled CLI export xml"));
-    const bundledCliPath = path.join(bundleRoot, "scripts", "mikuproject-cli.mjs");
-    const result = spawnSync(process.execPath, [bundledCliPath, "export", "xml", "--in", workbookPath], {
+    const result = spawnSync(process.execPath, [bundlePath, "export", "xml", "--in", workbookPath], {
       cwd: path.dirname(workbookPath),
       encoding: "utf8"
     });

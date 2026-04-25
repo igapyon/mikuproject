@@ -192,3 +192,17 @@ first cut の候補は次とする。
 - 異常系の `io` でも、コマンド形から `stdin_implicit` を推定して返す
 - `scripts/cli-ai-workflow-example.mjs` で、CLI を使った局所 projection 取得から patch validate / apply / diff までの最小例を示す
 - `scripts/cli-ai-stdio-example.mjs` で、`--in -` / `--out -` を使った stdio ベースの最小例を示す
+
+## Node.js CLI runtime artifact
+
+`npm run build:cli-bundle` は、下流 Agent Skills に渡す Node.js CLI runtime artifact として、単一 `MJS` ファイルを生成する。
+
+既定の出力先は次のとおり。
+
+```text
+bundle/mikuproject.mjs
+```
+
+この artifact は、`scripts/mikuproject-cli.mjs` 相当の CLI entrypoint、`core API` 実行に必要な `src/js` runtime、XML DOM 実装を 1 ファイルに埋め込む。生成後の実行時には、従来の `bundle/mikuproject-cli-bundle/` ディレクトリや `node_modules` を同梱しない。
+
+`mikuproject-skills` 側では、この artifact を `skills/mikuproject/runtime/mikuproject.mjs` のような skill-local runtime path に配置して呼び出す想定である。

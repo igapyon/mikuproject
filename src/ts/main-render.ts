@@ -193,7 +193,7 @@
 
   function formatImportSummaryHint(sourceLabel?: string): string {
     if (sourceLabel === "Patch JSON") {
-      return "Patch JSON の patch 適用結果です。反映後の XML は更新済みで、必要なら XML Export で保存できます。";
+      return "Patch JSON の部分適用結果です。反映後の XML は更新済みで、必要なら XML Export で保存できます。";
     }
     if (sourceLabel === "JSON Replace") {
       return "workbook JSON の replace 結果です。差分表示は取込前の project との差を示します。";

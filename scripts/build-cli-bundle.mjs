@@ -1,40 +1,28 @@
 import fs from "node:fs";
 import path from "node:path";
-import { createRequire } from "node:module";
-
-import { CORE_API_MODULE_RELATIVE_PATHS } from "./lib/core-api-loader.mjs";
 
 const ROOT = process.cwd();
-const requireFromRoot = createRequire(path.resolve(ROOT, "package.json"));
-
 const args = parseArgs(process.argv.slice(2));
-const outDir = path.resolve(
-  args.out || path.join(ROOT, "bundle", "mikuproject-cli-bundle")
-);
-const bundleName = path.basename(outDir);
+const outFile = path.resolve(args.out || path.join(ROOT, "bundle", "mikuproject.mjs"));
+const CORE_API_MODULE_RELATIVE_PATHS = readCoreApiModuleRelativePaths();
 
-const rootPackageJson = readJson(path.resolve(ROOT, "package.json"));
-const jsdomPackageJsonPath = resolveInstalledPackageJson("jsdom", requireFromRoot);
-const jsdomPackageJson = readJson(jsdomPackageJsonPath);
-const xmldomPackageJsonPath = resolveInstalledPackageJson("@xmldom/xmldom", requireFromRoot);
-const xmldomPackageJson = readJson(xmldomPackageJsonPath);
-const CLI_RUNTIME_DEPENDENCIES = ["jsdom", "@xmldom/xmldom"];
+const XMLDOM_MODULE_RELATIVE_PATHS = [
+  "node_modules/@xmldom/xmldom/lib/conventions.js",
+  "node_modules/@xmldom/xmldom/lib/dom.js",
+  "node_modules/@xmldom/xmldom/lib/entities.js",
+  "node_modules/@xmldom/xmldom/lib/sax.js",
+  "node_modules/@xmldom/xmldom/lib/dom-parser.js",
+  "node_modules/@xmldom/xmldom/lib/index.js"
+];
 
 buildCliBundle();
 
 function buildCliBundle() {
-  fs.rmSync(outDir, { recursive: true, force: true });
-  fs.mkdirSync(outDir, { recursive: true });
-
-  for (const relativePath of getRuntimeFileRelativePaths()) {
-    copyRepoFile(relativePath);
-  }
-
-  writeBundlePackageJson();
-  writeBundleReadme();
-  copyRuntimeNodeModules();
-
-  console.log(`[build:cli-bundle] generated ${path.relative(ROOT, outDir)}`);
+  assertRequiredFilesExist();
+  fs.mkdirSync(path.dirname(outFile), { recursive: true });
+  fs.writeFileSync(outFile, buildSingleMjsRuntime(), "utf8");
+  fs.chmodSync(outFile, 0o755);
+  console.log(`[build:cli-bundle] generated ${path.relative(ROOT, outFile)}`);
 }
 
 function parseArgs(argv) {
@@ -56,151 +44,228 @@ function parseArgs(argv) {
   return options;
 }
 
-function getRuntimeFileRelativePaths() {
-  const files = new Set([
+function assertRequiredFilesExist() {
+  const requiredFiles = [
     "scripts/mikuproject-cli.mjs",
-    "scripts/lib/core-api-loader.mjs",
-    ...CORE_API_MODULE_RELATIVE_PATHS
-  ]);
-  return Array.from(files).sort();
+    ...CORE_API_MODULE_RELATIVE_PATHS,
+    ...XMLDOM_MODULE_RELATIVE_PATHS
+  ];
+  for (const relativePath of requiredFiles) {
+    if (!fs.existsSync(path.resolve(ROOT, relativePath))) {
+      throw new Error(`CLI bundle に必要なファイルが見つかりません: ${relativePath}`);
+    }
+  }
 }
 
-function copyRepoFile(relativePath) {
-  const sourcePath = path.resolve(ROOT, relativePath);
-  const destinationPath = path.resolve(outDir, relativePath);
-  fs.mkdirSync(path.dirname(destinationPath), { recursive: true });
-  fs.copyFileSync(sourcePath, destinationPath);
-}
+function buildSingleMjsRuntime() {
+  const cliSource = stripCliImports(readRepoFile("scripts/mikuproject-cli.mjs"));
+  const coreModuleSources = Object.fromEntries(
+    CORE_API_MODULE_RELATIVE_PATHS.map((relativePath) => [relativePath, readRepoFile(relativePath)])
+  );
+  const xmldomModuleSources = Object.fromEntries(
+    XMLDOM_MODULE_RELATIVE_PATHS.map((relativePath) => [
+      toXmldomModuleId(relativePath),
+      readRepoFile(relativePath)
+    ])
+  );
 
-function writeBundlePackageJson() {
-  const document = {
-    name: `${rootPackageJson.name}-cli-bundle`,
-    version: rootPackageJson.version,
-    private: true,
-    description: "Self-contained mikuproject CLI bundle.",
-    license: rootPackageJson.license,
-    type: "module",
-    bin: {
-      mikuproject: "scripts/mikuproject-cli.mjs"
-    },
-    engines: {
-      node: ">=18"
-    },
-    dependencies: {
-      jsdom: jsdomPackageJson.version,
-      "@xmldom/xmldom": xmldomPackageJson.version
+  return [
+    "#!/usr/bin/env node",
+    "",
+    "import fs from \"node:fs\";",
+    "import path from \"node:path\";",
+    "import { fileURLToPath } from \"node:url\";",
+    "import { Blob as NodeBlob, File as NodeFile } from \"node:buffer\";",
+    "",
+    "const BUNDLED_CORE_API_MODULE_RELATIVE_PATHS = Object.freeze(",
+    `${JSON.stringify(CORE_API_MODULE_RELATIVE_PATHS, null, 2)});`,
+    "",
+    "const BUNDLED_CORE_API_MODULE_SOURCES = Object.freeze(",
+    `${JSON.stringify(coreModuleSources, null, 2)});`,
+    "",
+    "const BUNDLED_XMLDOM_MODULE_SOURCES = Object.freeze(",
+    `${JSON.stringify(xmldomModuleSources, null, 2)});`,
+    "",
+    String.raw`function normalizeBundledXmldomModuleId(parentId, request) {
+  if (request === "@xmldom/xmldom") {
+    return "/node_modules/@xmldom/xmldom/lib/index.js";
+  }
+  if (request.startsWith("./") || request.startsWith("../")) {
+    const resolved = path.posix.normalize(path.posix.join(path.posix.dirname(parentId), request));
+    return resolved.endsWith(".js") ? resolved : resolved + ".js";
+  }
+  throw new Error("Unsupported bundled require: " + request);
+}`,
+    "",
+    String.raw`const BUNDLED_XMLDOM_MODULE_CACHE = new Map();
+
+function requireBundledXmldom(request, parentId = "/node_modules/@xmldom/xmldom/lib/index.js") {
+  const moduleId = normalizeBundledXmldomModuleId(parentId, request);
+  if (BUNDLED_XMLDOM_MODULE_CACHE.has(moduleId)) {
+    return BUNDLED_XMLDOM_MODULE_CACHE.get(moduleId).exports;
+  }
+  const source = BUNDLED_XMLDOM_MODULE_SOURCES[moduleId];
+  if (source === undefined) {
+    throw new Error("Bundled xmldom module not found: " + moduleId);
+  }
+  const module = { exports: {} };
+  BUNDLED_XMLDOM_MODULE_CACHE.set(moduleId, module);
+  const localRequire = (nextRequest) => requireBundledXmldom(nextRequest, moduleId);
+  new Function("require", "module", "exports", source)(localRequire, module, module.exports);
+  return module.exports;
+}`,
+    "",
+    String.raw`function createBundledXmlDomGlobals() {
+  const xmldom = requireBundledXmldom("@xmldom/xmldom");
+  const parser = new xmldom.DOMParser();
+  const xmlDocument = parser.parseFromString("<root/>", "application/xml");
+  return {
+    DOMParser: xmldom.DOMParser,
+    XMLSerializer: xmldom.XMLSerializer,
+    XMLDocument: xmlDocument.constructor,
+    createDocument(rootName) {
+      return new xmldom.DOMImplementation().createDocument("", rootName, null);
     }
   };
-
-  const packageJsonPath = path.resolve(outDir, "package.json");
-  fs.writeFileSync(packageJsonPath, `${JSON.stringify(document, null, 2)}\n`, "utf8");
-}
-
-function writeBundleReadme() {
-  const readmePath = path.resolve(outDir, "README.md");
-  const lines = [
-    `# ${bundleName}`,
+}`,
     "",
-    "この bundle は `mikuproject` CLI を追加の `npm install` なしで実行するための配布物です。",
-    "",
-    "## 使い方",
-    "",
-    "```bash",
-    "node scripts/mikuproject-cli.mjs ai spec",
-    "```",
-    "",
-    "または `npm link` / `npm install -g <展開先>` 相当で `mikuproject` を PATH に出せます。"
-  ];
-  fs.writeFileSync(readmePath, `${lines.join("\n")}\n`, "utf8");
-}
-
-function copyRuntimeNodeModules() {
-  const sourceNodeModulesDir = path.resolve(ROOT, "node_modules");
-  const destinationNodeModulesDir = path.resolve(outDir, "node_modules");
-  fs.mkdirSync(destinationNodeModulesDir, { recursive: true });
-
-  const visitedPackageJsonPaths = new Set();
-  const queue = CLI_RUNTIME_DEPENDENCIES.map((name) => ({ name, requireFn: requireFromRoot }));
-
-  while (queue.length > 0) {
-    const current = queue.shift();
-    const packageJsonPath = resolveInstalledPackageJson(current.name, current.requireFn);
-    if (visitedPackageJsonPaths.has(packageJsonPath)) {
-      continue;
+    String.raw`function installBundledWindowGlobals(xmlDomGlobals) {
+  const previous = new Map();
+  const fakeDocument = {
+    implementation: {
+      createDocument(_namespace, rootName) {
+        return xmlDomGlobals.createDocument(rootName);
+      }
     }
-    visitedPackageJsonPaths.add(packageJsonPath);
+  };
+  const fakeWindow = {
+    document: fakeDocument,
+    DOMParser: xmlDomGlobals.DOMParser,
+    XMLSerializer: xmlDomGlobals.XMLSerializer,
+    XMLDocument: xmlDomGlobals.XMLDocument,
+    Blob: globalThis.Blob || NodeBlob,
+    File: globalThis.File || NodeFile,
+    Node: globalThis.Node || { ELEMENT_NODE: 1, TEXT_NODE: 3 },
+    Element: globalThis.Element || class Element {},
+    HTMLElement: globalThis.HTMLElement || class HTMLElement {},
+    navigator: globalThis.navigator || {},
+    setTimeout: globalThis.setTimeout,
+    clearTimeout: globalThis.clearTimeout
+  };
+  const values = {
+    window: fakeWindow,
+    document: fakeDocument,
+    navigator: fakeWindow.navigator,
+    Node: fakeWindow.Node,
+    Element: fakeWindow.Element,
+    HTMLElement: fakeWindow.HTMLElement,
+    DOMParser: xmlDomGlobals.DOMParser,
+    XMLSerializer: xmlDomGlobals.XMLSerializer,
+    XMLDocument: xmlDomGlobals.XMLDocument,
+    Blob: fakeWindow.Blob,
+    File: fakeWindow.File
+  };
 
-    const packageJson = readJson(packageJsonPath);
-    const packageDir = path.dirname(packageJsonPath);
-    const relativePackageDir = path.relative(sourceNodeModulesDir, packageDir);
-    if (relativePackageDir.startsWith("..")) {
-      throw new Error(`node_modules 配下でない package を検出しました: ${packageDir}`);
-    }
-
-    const destinationPackageDir = path.resolve(destinationNodeModulesDir, relativePackageDir);
-    fs.mkdirSync(path.dirname(destinationPackageDir), { recursive: true });
-    fs.cpSync(packageDir, destinationPackageDir, {
-      recursive: true,
-      force: true,
-      dereference: true
+  for (const [key, value] of Object.entries(values)) {
+    previous.set(key, globalThis[key]);
+    Object.defineProperty(globalThis, key, {
+      configurable: true,
+      writable: true,
+      value
     });
+  }
 
-    const packageRequire = createRequire(packageJsonPath);
-    for (const dependencyName of Object.keys(packageJson.dependencies || {})) {
-      queue.push({ name: dependencyName, requireFn: packageRequire });
-    }
-    for (const dependencyName of Object.keys(packageJson.optionalDependencies || {})) {
-      if (!isPackageInstalled(dependencyName, packageRequire)) {
+  return () => {
+    for (const [key, value] of previous.entries()) {
+      if (value === undefined) {
+        delete globalThis[key];
         continue;
       }
-      queue.push({ name: dependencyName, requireFn: packageRequire });
+      Object.defineProperty(globalThis, key, {
+        configurable: true,
+        writable: true,
+        value
+      });
     }
+  };
+}`,
+    "",
+    buildClearGlobalsFunctionSource(),
+    "",
+    String.raw`function loadMikuprojectCoreApi() {
+  const xmlDomGlobals = createBundledXmlDomGlobals();
+  const restoreWindowGlobals = installBundledWindowGlobals(xmlDomGlobals);
+  clearMikuprojectGlobals();
+  Object.assign(globalThis, {
+    DOMParser: xmlDomGlobals.DOMParser,
+    XMLSerializer: xmlDomGlobals.XMLSerializer,
+    XMLDocument: xmlDomGlobals.XMLDocument,
+    __mikuprojectXmlDom: {
+      DOMParser: xmlDomGlobals.DOMParser,
+      XMLSerializer: xmlDomGlobals.XMLSerializer,
+      createDocument: xmlDomGlobals.createDocument
+    }
+  });
+
+  const combinedCode = BUNDLED_CORE_API_MODULE_RELATIVE_PATHS
+    .map((relativePath) => BUNDLED_CORE_API_MODULE_SOURCES[relativePath])
+    .join("\n");
+  new Function(combinedCode)();
+
+  const api = globalThis.__mikuprojectCoreApi;
+  if (!api) {
+    restoreWindowGlobals();
+    throw new Error("Failed to boot __mikuprojectCoreApi");
   }
+
+  return {
+    api,
+    dispose() {
+      clearMikuprojectGlobals();
+      restoreWindowGlobals();
+    }
+  };
+}`,
+    "",
+    cliSource
+  ].join("\n");
 }
 
-function resolveInstalledPackageJson(packageName, requireFn) {
-  try {
-    return requireFn.resolve(`${packageName}/package.json`);
-  } catch (_error) {
-    try {
-      const resolvedEntryPath = requireFn.resolve(packageName);
-      return findNearestPackageJson(resolvedEntryPath, packageName);
-    } catch (_innerError) {
-      throw new Error(
-        `${packageName} が見つかりません。先に repo root で npm install を実行してください`
-      );
-    }
+function buildClearGlobalsFunctionSource() {
+  const loaderSource = readRepoFile("scripts/lib/core-api-loader.mjs");
+  const match = loaderSource.match(/function clearMikuprojectGlobals\(\) \{[\s\S]*?\n\}/);
+  if (!match) {
+    throw new Error("core-api-loader.mjs から clearMikuprojectGlobals を抽出できませんでした");
   }
+  return match[0];
 }
 
-function isPackageInstalled(packageName, requireFn) {
-  try {
-    requireFn.resolve(`${packageName}/package.json`);
-    return true;
-  } catch (_error) {
-    return false;
+function readCoreApiModuleRelativePaths() {
+  const loaderSource = readRepoFile("scripts/lib/core-api-loader.mjs");
+  const match = loaderSource.match(/export const CORE_API_MODULE_RELATIVE_PATHS = (\[[\s\S]*?\n\]);/);
+  if (!match) {
+    throw new Error("core-api-loader.mjs から CORE_API_MODULE_RELATIVE_PATHS を抽出できませんでした");
   }
+  return Function(`"use strict"; return ${match[1]};`)();
 }
 
-function readJson(filePath) {
-  return JSON.parse(fs.readFileSync(filePath, "utf8"));
+function stripCliImports(source) {
+  return source
+    .replace(/^#!.*\n/, "")
+    .split("\n")
+    .filter((line) => !line.startsWith("import "))
+    .join("\n")
+    .trimStart();
 }
 
-function findNearestPackageJson(startPath, expectedPackageName) {
-  let currentDir = path.dirname(startPath);
-  while (true) {
-    const packageJsonPath = path.join(currentDir, "package.json");
-    if (fs.existsSync(packageJsonPath)) {
-      const document = readJson(packageJsonPath);
-      if (document.name === expectedPackageName) {
-        return packageJsonPath;
-      }
-    }
-
-    const parentDir = path.dirname(currentDir);
-    if (parentDir === currentDir) {
-      throw new Error(`package.json が見つかりません: ${expectedPackageName}`);
-    }
-    currentDir = parentDir;
+function toXmldomModuleId(relativePath) {
+  const prefix = "node_modules/@xmldom/xmldom/";
+  if (!relativePath.startsWith(prefix)) {
+    throw new Error(`Unexpected xmldom path: ${relativePath}`);
   }
+  return `/node_modules/@xmldom/xmldom/${relativePath.slice(prefix.length)}`;
+}
+
+function readRepoFile(relativePath) {
+  return fs.readFileSync(path.resolve(ROOT, relativePath), "utf8");
 }

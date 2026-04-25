@@ -2243,7 +2243,7 @@ md-outlined-select.md-outlined-field:focus-within::part(container) {
         <span class="ms-hero-icon" aria-hidden="true">📋</span>
         <span>mikuproject</span>
         <lht-help-tooltip label="mikuproject の説明" wide>
-          `MS Project XML` を基軸に、変換・可視化・限定編集を行うローカル HTML ツールです。`XLSX`、`WBS Report`、`Daily / Weekly / Monthly Calendar` preview、生成AI向け `.editjson` を扱えます。
+          `MS Project XML` を基軸に、変換・可視化・限定編集を行うローカル HTML ツールです。`XLSX`、`WBS Report`、`Daily / Weekly / Monthly Calendar` preview、生成AI向け projection / patch 用 `.editjson` を扱えます。
         </lht-help-tooltip>
         <a
           href="https://github.com/igapyon/mikuproject"
@@ -2284,7 +2284,7 @@ md-outlined-select.md-outlined-field:focus-within::part(container) {
             <span class="md-flow-section__step">1</span>
             <span>Input</span>
             <lht-help-tooltip label="Input の説明" wide>
-              `MS Project XML`、`XLSX`、`mikuproject_workbook_json (.json)`、生成AI 向け編集用 JSON (`.editjson`)、`CSV` を読み込みます。
+              `MS Project XML`、`XLSX`、`mikuproject_workbook_json (.json)`、生成AI 向け projection / patch 用 JSON (`.editjson`)、`CSV` を読み込みます。
             </lht-help-tooltip>
           </h2>
         </div>
@@ -2306,7 +2306,7 @@ md-outlined-select.md-outlined-field:focus-within::part(container) {
                   `.xlsx` と `mikuproject_workbook_json (.json)` は `MS Project XML` の代替正本ではなく、確認と限定編集のための周辺表現として扱います。
                 </p>
                 <p class="md-note-card__text">
-                  `project_draft_view (.editjson)` と Patch JSON は生成AI 向けの編集用 JSON として扱います。反映結果は、`Project / Tasks / Resources / Assignments / Calendars` ごとの件数と、`UID` 単位の差分要約として画面上に表示します。
+                  `project_draft_view (.editjson)` と `patch_json` は生成AI 向けの JSON として扱います。`patch_json` は既存 project への部分適用、`project_draft_view` は新規生成寄りの入力です。反映結果は、`Project / Tasks / Resources / Assignments / Calendars` ごとの件数と、`UID` 単位の差分要約として画面上に表示します。
                 </p>
                 <p class="md-note-card__text"><strong>反映対象</strong></p>
                 <ul class="md-note-list">
@@ -2350,7 +2350,7 @@ md-outlined-select.md-outlined-field:focus-within::part(container) {
 
 この文書は、`mikuproject AI JSON Prompt / Spec` の定義である。
 
-- Version: `v20260410`
+- Version: `v20260417`
 
 私たちは、これから取り組むプロジェクトの内容を理解し、WBS の観点から必要なマイルストーン / フェーズ / タスクを整理し、`mikuproject` に設定するための JSON へ落とし込んでいきます。
 
@@ -2380,6 +2380,8 @@ md-outlined-select.md-outlined-field:focus-within::part(container) {
 - 実装済み: `project_overview_view` の export
 - 実装済み: `phase_detail_view` の export
 - 実装済み: `task_edit_view` の export
+- 実装済み: CLI から `task_edit_view` export
+- 実装済み: CLI から `phase_detail_view scoped` export
 - 実装済み: `full bundle` には `project_overview_view` / `phase_detail_views_full` / `task_edit_views_full` を含める
 - 実装済み: `project_draft_view` の import
 - 実装済み: Patch JSON の `update_project` / `update_task` / `update_resource` / `update_assignment` / `update_calendar` / `link_tasks` / `unlink_tasks` import / 適用
@@ -2397,6 +2399,8 @@ md-outlined-select.md-outlined-field:focus-within::part(container) {
 ## 既存編集モードの重要方針
 
 - 既存 project の全体 JSON 再出力は禁止です
+- 既存 project の修正では、可能な限り workbook 全体ではなく局所 projection を入力に使ってください
+- 個別 task の修正では `task_edit_view` を優先し、phase 単位の文脈確認や subtree 切り出しでは `phase_detail_view scoped` を優先してください
 - 不明な値を推測して補完してはいけません
 - 未指定項目は変更しない前提です
 - 与えられた projection と rules の範囲を超えて変更してはいけません
@@ -2426,6 +2430,36 @@ md-outlined-select.md-outlined-field:focus-within::part(container) {
 `phase_detail_view` は、安全な変更候補の抽出や、次に必要な `task_edit_view` の特定にも使えます。
 `phase_detail_view` には、phase 全体をそのまま渡す `full` モードと、対象を絞る `scoped` モードの両方がありえます。
 必要に応じて、`root_uid` と `max_depth` で対象範囲を絞って渡してよいです。
+既存 project では、projection JSON は Web UI から保存しても、CLI から取得してもかまいません。
+repo には `scripts/cli-ai-workflow-example.mjs` と `scripts/cli-ai-stdio-example.mjs` があり、file-based / stdio-based の両方の最小 CLI 連携例を参照できます。
+
+CLI 例:
+
+- `mikuproject ai export project-overview --in workbook.json`
+- `mikuproject ai export task-edit --in workbook.json --task-uid 123`
+- `mikuproject ai export phase-detail --in workbook.json --phase-uid 100 --mode scoped --root-task-uid 123 --max-depth 2`
+- `mikuproject ai export bundle --in workbook.json`
+
+`export task-edit` は `--task-uid` 省略時に既定選択の `task_edit_view` を返します。
+`export task-edit` は `--select auto|first-task|uid` を受けます。
+`export phase-detail` は `--mode scoped|full` を受けます。
+`export phase-detail` は `--select auto|first-phase|uid` を受けます。
+`ai export`、`detect-kind`、`validate-patch`、`state summarize`、`state diff`、`state apply-patch`、`export`、`report` は `--diagnostics text|json` を受けることがあります。
+CLI では `--in -` / `--out -` を使って標準入力 / 標準出力を明示指定できます。
+同一コマンドで標準入力を読める入力オプションは 1 つだけです。
+`--in path` があればそのファイルを優先し、`--in -` は明示 stdin、`--in` 省略時だけ暗黙 stdin を使います。
+`--out path` があればそのファイルへ書き、`--out -` または `--out` 省略時は stdout を使います。
+`json` diagnostics には少なくとも `diagnostics_version` / `ok` / `command` / `context` / `status` / `exit_code` / `warning_count` / `error_count` / `io` / `warnings` / `errors` が含まれることがあります。
+`--diagnostics json` を指定した場合、usage error や処理失敗でも stderr に JSON diagnostics が返ることがあります。
+異常系 diagnostics には `error_type=usage_error|processing_error` が含まれることがあります。
+異常系 diagnostics には `error_code` が含まれることがあります。
+異常系 diagnostics には top-level の `error_details` が含まれることがあります。
+異常系 diagnostics の `errors[]` 要素にも `code` が含まれることがあります。
+異常系 diagnostics の `errors[]` 要素には `details` が含まれることがあります。
+主要な usage error では、`error_code` は文言推定ではなく CLI 側の安定識別子として返ることがあります。
+代表的な processing error でも、`error_code` は CLI 側の安定識別子として返ることがあります。
+JSON parse failure では、`error_code=invalid_json_input` と `error_details.context` が返ることがあります。
+異常系 diagnostics にも `io` が含まれ、入力元と出力先を追えることがあります。
 
 新規生成モードでは、既存 project の編集は行わず、全く新しい project の草案だけを返します。
 
@@ -2505,6 +2539,7 @@ md-outlined-select.md-outlined-field:focus-within::part(container) {
 - `root_uid` を指定すると、その task を起点にした subtree を対象にできます
 - `max_depth` を指定すると、`root_uid` から何階層下まで含めるかを制御できます
 - `mode = "full"` では `root_uid = null` かつ `max_depth = null` です
+- CLI の `mikuproject ai export phase-detail` は `mode = "scoped"` と `mode = "full"` を受けます
 
 ### `task_edit_view` の例
 
@@ -2988,7 +3023,7 @@ md-outlined-select.md-outlined-field:focus-within::part(container) {
 - 与えられていない task や field を勝手に推測しないでください
 </template>
               <div class="md-form-grid">
-                <lht-text-field-help field-id="projectDraftImportInput" label="生成AIが返した JSON" rows="14" help-text="生成AIが返した `project_draft_view` または Patch JSON のテキストを貼り付けます。最後に json フェンスを持つ応答全体でもかまいません。"></lht-text-field-help>
+                <lht-text-field-help field-id="projectDraftImportInput" label="生成AIが返した JSON" rows="14" help-text="生成AIが返した `project_draft_view` または `patch_json` のテキストを貼り付けます。最後に json フェンスを持つ応答全体でもかまいません。"></lht-text-field-help>
               </div>
             </section>
           </div>
@@ -3111,7 +3146,7 @@ md-outlined-select.md-outlined-field:focus-within::part(container) {
             <span class="md-flow-section__step">3</span>
             <span>Output</span>
             <lht-help-tooltip label="Output の説明" wide>
-              このページでは、内部モデルから各種成果物を保存します。`MS Project XML`、workbook、`CSV`、`WBS Report`、生成AI 向け `.editjson` をここから出力できます。
+              このページでは、内部モデルから各種成果物を保存します。`MS Project XML`、workbook、`CSV`、`WBS Report`、生成AI 向け projection / bundle 用 `.editjson` をここから出力できます。
             </lht-help-tooltip>
           </h2>
         </div>
@@ -3210,35 +3245,35 @@ md-outlined-select.md-outlined-field:focus-within::part(container) {
           <div class="md-note-accordion__body">
             <section class="md-note-card md-note-card--accent" aria-label="AI integration exports">
               <div class="md-panel-actions">
-                <button id="exportAiBundleBtn" type="button" class="md-button md-button--tonal">full bundle</button>
+                <button id="exportAiBundleBtn" type="button" class="md-button md-button--tonal">bundle</button>
                 <lht-help-tooltip label="生成AI連携の説明" wide>
-                  既存 project を生成AIへ渡すための projection JSON をここから生成します。
+                  既存 project を生成AIへ渡すための projection JSON をここから生成します。通常は `project overview` から入り、必要に応じて `task edit` または `phase detail` を使います。`bundle` は調査や比較確認向けの重い出力です。
                 </lht-help-tooltip>
-                <button id="exportProjectOverviewBtn" type="button" class="md-button md-button--tonal">project_overview_view</button>
-                <button id="exportTaskEditBtn" type="button" class="md-button md-button--tonal">task_edit_view</button>
-                <button id="exportPhaseDetailFullBtn" type="button" class="md-button md-button--tonal">phase_detail_view full</button>
+                <button id="exportProjectOverviewBtn" type="button" class="md-button md-button--tonal">project overview</button>
+                <button id="exportTaskEditBtn" type="button" class="md-button md-button--tonal">task edit</button>
+                <button id="exportPhaseDetailFullBtn" type="button" class="md-button md-button--tonal">phase detail full</button>
               </div>
               <section class="md-note-card md-note-card--subtle" aria-label="AI task edit">
-                <h4 class="md-note-card__title">task_edit_view</h4>
+                <h4 class="md-note-card__title">task edit</h4>
                 <p class="md-note-card__text">
-                  個別 task を生成AIへ渡して、局所文脈つきで安全な Patch JSON を返させたい時に使います。
+                  個別 task を生成AIへ渡して、局所文脈つきで安全な `patch_json` を返させたい時に使います。JSON の `view_type` は `task_edit_view` です。
                 </p>
                 <div class="md-form-grid md-form-grid--one">
                   <lht-text-field-help field-id="taskEditUidInput" label="対象 task UID" rows="1" placeholder="空欄なら先頭の通常 task" help-text="編集対象にしたい task UID を指定します。空欄の場合は先頭の通常 task を使います。"></lht-text-field-help>
                 </div>
               </section>
               <section class="md-note-card md-note-card--subtle" aria-label="AI scoped phase detail">
-                <h4 class="md-note-card__title">phase_detail_view scoped</h4>
+                <h4 class="md-note-card__title">phase detail scoped</h4>
                 <p class="md-note-card__text">
-                  phase の一部だけを生成AIへ渡したい時に使います。
+                  phase の一部だけを生成AIへ渡したい時に使います。JSON の `view_type` は `phase_detail_view`、`scope.mode` は `scoped` です。
                 </p>
                 <div class="md-form-grid md-form-grid--three">
                   <lht-text-field-help field-id="phaseDetailUidInput" label="対象 phase UID" rows="1" placeholder="空欄なら先頭 phase" help-text="どの phase を対象にするかを指定します。"></lht-text-field-help>
-                  <lht-text-field-help field-id="phaseDetailRootUidInput" label="部分木の起点 task UID" rows="1" placeholder="空欄なら phase 全体" help-text="phase_detail_view scoped で切り出したい task UID を指定します。まず full を出して UID を確認してください。"></lht-text-field-help>
+                  <lht-text-field-help field-id="phaseDetailRootUidInput" label="部分木の起点 task UID" rows="1" placeholder="空欄なら phase 全体" help-text="phase detail scoped で切り出したい task UID を指定します。まず phase detail full を出して UID を確認してください。"></lht-text-field-help>
                   <lht-text-field-help field-id="phaseDetailMaxDepthInput" label="何階層下まで含めるか" rows="1" placeholder="空欄なら全階層" help-text="起点 task から何階層下まで含めるかを指定します。0 は起点 task のみです。"></lht-text-field-help>
                 </div>
                 <div class="md-panel-actions">
-                  <button id="exportPhaseDetailBtn" type="button" class="md-button md-button--tonal">phase_detail_view scoped</button>
+                  <button id="exportPhaseDetailBtn" type="button" class="md-button md-button--tonal">phase detail scoped</button>
                 </div>
               </section>
             </section>
@@ -14712,20 +14747,50 @@ if (!customElements.get("lht-page-menu")) {
     if (!mikuprojectCoreApiExternalDocument) {
         throw new Error("mikuproject core api external document module is not loaded");
     }
+    function formatAllowedModes(modes) {
+        return modes.map((mode) => `mode=${mode}`).join(" / ");
+    }
+    function assertImportMode(sourceFormat, mode, allowedModes) {
+        if (allowedModes.includes(mode)) {
+            return;
+        }
+        throw new Error(`importExternal: format=${sourceFormat} は ${formatAllowedModes(allowedModes)} のみ対応です (received: mode=${mode})`);
+    }
+    function assertBaseModelRequired(sourceFormat, mode, baseModel) {
+        if (baseModel) {
+            return;
+        }
+        throw new Error(`importExternal: format=${sourceFormat} mode=${mode} には baseModel が必要です`);
+    }
     function importExternal(input) {
         const { source, mode, baseModel } = input;
         if (source.format === "ms_project_xml") {
+            assertImportMode(source.format, mode, ["replace"]);
             return mikuprojectCoreApiExternalBinary.importMsProjectXml(source.text, mode);
         }
         if (source.format === "xlsx") {
-            if (mode === "patch") {
-                throw new Error("XLSX は replace または merge import のみ対応です");
+            assertImportMode(source.format, mode, ["replace", "merge"]);
+            if (mode === "merge") {
+                assertBaseModelRequired(source.format, mode, baseModel);
             }
             return mikuprojectCoreApiExternalBinary.importXlsx(source.bytes, mode, baseModel);
         }
         if (source.format === "workbook_json" ||
             source.format === "project_draft_view" ||
             source.format === "patch_json") {
+            if (source.format === "workbook_json") {
+                assertImportMode(source.format, mode, ["replace", "merge"]);
+                if (mode === "merge") {
+                    assertBaseModelRequired(source.format, mode, baseModel);
+                }
+            }
+            if (source.format === "project_draft_view") {
+                assertImportMode(source.format, mode, ["replace"]);
+            }
+            if (source.format === "patch_json") {
+                assertImportMode(source.format, mode, ["patch"]);
+                assertBaseModelRequired(source.format, mode, baseModel);
+            }
             return mikuprojectCoreApiExternalDocument.importDocument(source.format, source.document, mode, baseModel);
         }
         throw new Error(`未対応の import format です: ${source.format || "unknown"}`);
@@ -18814,14 +18879,14 @@ if (!customElements.get("lht-page-menu")) {
             bindClick("downloadMonthlyCalendarSvgBtn", deps.downloadCurrentMonthlyWbsSvgZip, "月別 WBS カレンダー SVG 保存に失敗しました", "[mikuproject] monthly WBS SVG download failed");
             bindClick("exportMermaidMdBtn", deps.downloadCurrentMermaidMmd, "Mermaid 保存に失敗しました");
             bindClick("exportCsvBtn", deps.exportCurrentCsv, "CSV 生成に失敗しました");
-            bindClick("exportProjectOverviewBtn", deps.exportCurrentProjectOverviewView, "project_overview_view 生成に失敗しました");
-            bindClick("exportTaskEditBtn", deps.exportCurrentTaskEditView, "task_edit_view 生成に失敗しました");
-            bindClick("exportAiBundleBtn", deps.exportCurrentAiProjectionBundle, "AI 連携用まとめ JSON 生成に失敗しました");
+            bindClick("exportProjectOverviewBtn", deps.exportCurrentProjectOverviewView, "project overview 生成に失敗しました");
+            bindClick("exportTaskEditBtn", deps.exportCurrentTaskEditView, "task edit 生成に失敗しました");
+            bindClick("exportAiBundleBtn", deps.exportCurrentAiProjectionBundle, "AI 連携用 bundle 生成に失敗しました");
             getButton(deps.document, "loadProjectDraftSampleBtn").addEventListener("click", deps.loadProjectDraftSample);
             bindAsyncClick("copyAiPromptBtn", deps.copyAiPrompt, "生成AIプロンプトのコピーに失敗しました");
             bindAsyncClick("importProjectDraftBtn", deps.importAiEditJsonFromText, "編集用 JSON 取り込みに失敗しました");
-            bindClick("exportPhaseDetailBtn", () => deps.exportCurrentPhaseDetailView("scoped"), "phase_detail_view 生成に失敗しました");
-            bindClick("exportPhaseDetailFullBtn", () => deps.exportCurrentPhaseDetailView("full"), "phase_detail_view 生成に失敗しました");
+            bindClick("exportPhaseDetailBtn", () => deps.exportCurrentPhaseDetailView("scoped"), "phase detail 生成に失敗しました");
+            bindClick("exportPhaseDetailFullBtn", () => deps.exportCurrentPhaseDetailView("full"), "phase detail 生成に失敗しました");
             bindClick("exportXlsxBtn", deps.exportCurrentXlsx, "XLSX エクスポートに失敗しました");
             bindClick("exportWorkbookJsonBtn", deps.exportCurrentWorkbookJson, "JSON エクスポートに失敗しました");
             bindClick("exportWbsXlsxBtn", deps.exportCurrentWbsXlsx, "WBS XLSX エクスポートに失敗しました");
@@ -19190,7 +19255,7 @@ if (!customElements.get("lht-page-menu")) {
             });
             input.setOutputText(exported.text.trimEnd());
             input.downloadBlob(new Blob([exported.text], { type: "application/json;charset=utf-8" }), exported.fileName);
-            input.completeOutput("project_overview_view を生成して保存しました", "project_overview_view を保存しました");
+            input.completeOutput("project overview (`project_overview_view`) を生成して保存しました", "project overview を保存しました");
         },
         exportTaskEdit(input) {
             input.syncXmlTextFromModel(input.model);
@@ -19204,7 +19269,7 @@ if (!customElements.get("lht-page-menu")) {
             }
             input.setOutputText(exported.text.trimEnd());
             input.downloadBlob(new Blob([exported.text], { type: "application/json;charset=utf-8" }), exported.fileName);
-            input.completeOutput("task_edit_view を生成して保存しました", "task_edit_view を保存しました");
+            input.completeOutput("task edit (`task_edit_view`) を生成して保存しました", "task edit を保存しました");
         },
         exportAiProjectionBundle(input) {
             input.syncXmlTextFromModel(input.model);
@@ -19216,7 +19281,7 @@ if (!customElements.get("lht-page-menu")) {
             });
             input.setOutputText(exported.text.trimEnd());
             input.downloadBlob(new Blob([exported.text], { type: "application/json;charset=utf-8" }), exported.fileName);
-            input.completeOutput(`AI 連携用まとめ JSON を生成して保存しました (phase_detail_view full ${exported.phaseCount} 件 / task_edit_view ${exported.taskCount} 件)`, "AI 連携用まとめ JSON を保存しました");
+            input.completeOutput(`AI 連携用 bundle (\`ai_projection_bundle\`) を生成して保存しました (phase detail full ${exported.phaseCount} 件 / task edit ${exported.taskCount} 件)`, "AI 連携用 bundle を保存しました");
         },
         exportPhaseDetail(input) {
             input.syncXmlTextFromModel(input.model);
@@ -19235,7 +19300,7 @@ if (!customElements.get("lht-page-menu")) {
             input.setResolvedMaxDepth(exported.resolvedMaxDepth);
             input.setOutputText(exported.text.trimEnd());
             input.downloadBlob(new Blob([exported.text], { type: "application/json;charset=utf-8" }), exported.fileName);
-            input.completeOutput(`phase_detail_view (${exported.resolvedMode}) を生成して保存しました`, `phase_detail_view (${exported.resolvedMode}) を保存しました`);
+            input.completeOutput(`phase detail (${exported.resolvedMode}) / \`phase_detail_view\` を生成して保存しました`, `phase detail (${exported.resolvedMode}) を保存しました`);
         },
         exportXlsx(input) {
             input.syncXmlTextFromModel(input.model);
@@ -19255,7 +19320,7 @@ if (!customElements.get("lht-page-menu")) {
             });
             input.setOutputText(exported.text);
             input.downloadBlob(new Blob([`${exported.text}\n`], { type: "application/json;charset=utf-8" }), exported.fileName);
-            input.completeOutput("XLSX 相当の workbook JSON を生成して保存しました", "JSON を保存しました");
+            input.completeOutput("workbook JSON (`mikuproject_workbook_json`) を生成して保存しました", "workbook JSON を保存しました");
         },
         exportWbsXlsx(input) {
             input.syncXmlTextFromModel(input.model);
@@ -19968,16 +20033,16 @@ if (!customElements.get("lht-page-menu")) {
             return "Patch JSON の部分適用結果です。反映後の XML は更新済みで、必要なら XML Export で保存できます。";
         }
         if (sourceLabel === "JSON Replace") {
-            return "workbook JSON による全置換結果です。差分表示は取込前の project との差を示します。";
+            return "workbook JSON の replace 結果です。差分表示は取込前の project との差を示します。";
         }
         if (sourceLabel === "JSON Import") {
-            return "workbook JSON の取込結果です。反映後の XML は更新済みで、必要なら XML Export で保存できます。";
+            return "workbook JSON の merge 結果です。反映後の XML は更新済みで、必要なら XML Export で保存できます。";
         }
         if (sourceLabel === "XLSX Replace") {
-            return "XLSX による全置換結果です。差分表示は取込前の project との差を示します。";
+            return "XLSX の replace 結果です。差分表示は取込前の project との差を示します。";
         }
         if (sourceLabel === "XLSX Import") {
-            return "Excel 編集結果の取込内容です。反映後の XML は更新済みで、必要なら XML Export で保存できます。";
+            return "XLSX の merge 結果です。反映後の XML は更新済みで、必要なら XML Export で保存できます。";
         }
         return "反映後の XML は更新済みです。必要なら XML Export で保存できます。";
     }

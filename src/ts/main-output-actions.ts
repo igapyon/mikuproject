@@ -121,7 +121,7 @@
         exported.fileName
       );
       input.completeOutput(
-        `AI 連携用 bundle (`ai_projection_bundle`) を生成して保存しました (phase detail full ${exported.phaseCount} 件 / task edit ${exported.taskCount} 件)`,
+        `AI 連携用 bundle (\`ai_projection_bundle\`) を生成して保存しました (phase detail full ${exported.phaseCount} 件 / task edit ${exported.taskCount} 件)`,
         "AI 連携用 bundle を保存しました"
       );
     },

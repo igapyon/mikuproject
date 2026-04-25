@@ -195,14 +195,16 @@ first cut の候補は次とする。
 
 ## Node.js CLI runtime artifact
 
-`npm run build:cli-bundle` は、下流 Agent Skills に渡す Node.js CLI runtime artifact として、単一 `MJS` ファイルを生成する。
+`npm run build:cli-bundle` は、下流 Agent Skills に渡す Node.js CLI runtime artifact として、単一 `MJS` ファイルと source archive を生成する。
 
 既定の出力先は次のとおり。
 
 ```text
 bundle/mikuproject.mjs
+bundle/mikuproject-sources.tgz
 ```
 
 この artifact は、`scripts/mikuproject-cli.mjs` 相当の CLI entrypoint、`core API` 実行に必要な `src/js` runtime、XML DOM 実装を 1 ファイルに埋め込む。生成後の実行時には、従来の `bundle/mikuproject-cli-bundle/` ディレクトリや `node_modules` を同梱しない。
+`mikuproject-sources.tgz` は実行には不要だが、受け取り側が source / docs / tests を確認し、必要に応じて再ビルドや監査を行うための補助 artifact として扱う。
 
 `mikuproject-skills` 側では、この artifact を `skills/mikuproject/runtime/mikuproject.mjs` のような skill-local runtime path に配置して呼び出す想定である。

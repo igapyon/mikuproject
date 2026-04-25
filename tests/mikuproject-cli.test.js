@@ -3,6 +3,7 @@ import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { spawnSync } from "node:child_process";
+import { gunzipSync } from "node:zlib";
 
 import { afterEach, describe, expect, it } from "vitest";
 
@@ -15,6 +16,7 @@ const cliPath = path.resolve(repoRoot, "scripts/mikuproject-cli.mjs");
 const cliBundleBuildPath = path.resolve(repoRoot, "scripts/build-cli-bundle.mjs");
 const cliAiWorkflowExamplePath = path.resolve(repoRoot, "scripts/cli-ai-workflow-example.mjs");
 const cliAiStdioExamplePath = path.resolve(repoRoot, "scripts/cli-ai-stdio-example.mjs");
+const packageVersion = JSON.parse(readFileSync(path.resolve(repoRoot, "package.json"), "utf8")).version;
 
 const tempDirs = [];
 const disposers = [];
@@ -41,6 +43,7 @@ describe("mikuproject cli", () => {
     const result = runCli(["--help"]);
 
     expect(result.status).toBe(0);
+    expect(result.stdout).toContain("mikuproject --version");
     expect(result.stdout).toContain("mikuproject ai export project-overview");
     expect(result.stdout).toContain("mikuproject ai export task-edit");
     expect(result.stdout).toContain("mikuproject ai export phase-detail");
@@ -51,6 +54,14 @@ describe("mikuproject cli", () => {
     expect(result.stdout).toContain("mikuproject ai validate-patch");
     expect(result.stdout).toContain("mikuproject state summarize");
     expect(result.stdout).toContain("mikuproject state diff");
+  });
+
+  it("prints the cli version", () => {
+    const result = runCli(["--version"]);
+
+    expect(result.status).toBe(0);
+    expect(result.stdout).toBe(`mikuproject ${packageVersion}\n`);
+    expect(result.stderr).toBe("");
   });
 
   it("creates workbook json from project_draft_view", () => {
@@ -889,6 +900,7 @@ describe("mikuproject cli", () => {
 
   it("builds a single-file cli runtime artifact that runs outside the repo", () => {
     const bundlePath = path.join(createTempDir("mikuproject-cli-bundle-test-"), "mikuproject.mjs");
+    const sourcesPath = path.join(path.dirname(bundlePath), "mikuproject-sources.tgz");
     const buildResult = spawnSync(process.execPath, [cliBundleBuildPath, "--out", bundlePath], {
       cwd: repoRoot,
       encoding: "utf8"
@@ -896,6 +908,18 @@ describe("mikuproject cli", () => {
 
     expect(buildResult.status).toBe(0);
     expect(existsSync(bundlePath)).toBe(true);
+    expect(existsSync(sourcesPath)).toBe(true);
+    expect(listTarGzEntries(sourcesPath)).toEqual(expect.arrayContaining([
+      "mikuproject-sources/package.json",
+      "mikuproject-sources/README.md",
+      "mikuproject-sources/scripts/build-cli-bundle.mjs",
+      "mikuproject-sources/scripts/mikuproject-cli.mjs",
+      "mikuproject-sources/scripts/lib/core-api-loader.mjs",
+      "mikuproject-sources/src/ts/core-api.ts",
+      "mikuproject-sources/src/js/core-api.js",
+      "mikuproject-sources/docs/miku-soft-40-agentskills-design-v20260425.md",
+      "mikuproject-sources/tests/mikuproject-cli.test.js"
+    ]));
 
     const workbookPath = writeTempJson("bundle-workbook.json", buildWorkbookState("Bundled CLI export xml"));
     const result = spawnSync(process.execPath, [bundlePath, "export", "xml", "--in", workbookPath], {
@@ -906,6 +930,25 @@ describe("mikuproject cli", () => {
     expect(result.status).toBe(0);
     expect(result.stdout).toContain("<Project");
     expect(result.stdout).toContain("<Name>Bundled CLI export xml</Name>");
+  });
+
+  it("prints the version from a single-file cli runtime artifact outside the repo", () => {
+    const bundlePath = path.join(createTempDir("mikuproject-cli-version-bundle-test-"), "mikuproject.mjs");
+    const buildResult = spawnSync(process.execPath, [cliBundleBuildPath, "--out", bundlePath], {
+      cwd: repoRoot,
+      encoding: "utf8"
+    });
+
+    expect(buildResult.status).toBe(0);
+
+    const result = spawnSync(process.execPath, [bundlePath, "--version"], {
+      cwd: path.dirname(bundlePath),
+      encoding: "utf8"
+    });
+
+    expect(result.status).toBe(0);
+    expect(result.stdout).toBe(`mikuproject ${packageVersion}\n`);
+    expect(result.stderr).toBe("");
   });
 
   it("provides a runnable CLI AI workflow example script", () => {
@@ -973,6 +1016,30 @@ function createTempDir(prefix) {
   const dir = mkdtempSync(path.join(os.tmpdir(), prefix));
   tempDirs.push(dir);
   return dir;
+}
+
+function listTarGzEntries(filePath) {
+  const tar = gunzipSync(readFileSync(filePath));
+  const entries = [];
+  for (let offset = 0; offset + 512 <= tar.length;) {
+    const header = tar.subarray(offset, offset + 512);
+    if (header.every((byte) => byte === 0)) {
+      break;
+    }
+    const name = readTarString(header, 0, 100);
+    const prefix = readTarString(header, 345, 155);
+    const sizeText = readTarString(header, 124, 12).trim();
+    const size = sizeText ? Number.parseInt(sizeText, 8) : 0;
+    entries.push(prefix ? `${prefix}/${name}` : name);
+    offset += 512 + Math.ceil(size / 512) * 512;
+  }
+  return entries;
+}
+
+function readTarString(buffer, offset, length) {
+  const slice = buffer.subarray(offset, offset + length);
+  const end = slice.indexOf(0);
+  return slice.subarray(0, end === -1 ? slice.length : end).toString("utf8");
 }
 
 function buildWorkbookState(projectName) {

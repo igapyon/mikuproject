@@ -1,9 +1,11 @@
 import fs from "node:fs";
 import path from "node:path";
+import zlib from "node:zlib";
 
 const ROOT = process.cwd();
 const args = parseArgs(process.argv.slice(2));
 const outFile = path.resolve(args.out || path.join(ROOT, "bundle", "mikuproject.mjs"));
+const sourcesOutFile = path.resolve(args["sources-out"] || path.join(path.dirname(outFile), "mikuproject-sources.tgz"));
 const CORE_API_MODULE_RELATIVE_PATHS = readCoreApiModuleRelativePaths();
 
 const XMLDOM_MODULE_RELATIVE_PATHS = [
@@ -15,6 +17,26 @@ const XMLDOM_MODULE_RELATIVE_PATHS = [
   "node_modules/@xmldom/xmldom/lib/index.js"
 ];
 
+const SOURCE_ARCHIVE_ROOT = "mikuproject-sources";
+const SOURCE_ARCHIVE_PATHS = [
+  "package.json",
+  "package-lock.json",
+  "README.md",
+  "LICENSE",
+  "THIRD-PARTY-NOTICES.md",
+  "CONTRIBUTING.md",
+  "CONTRIBUTORS.md",
+  "CODE_OF_CONDUCT.md",
+  "index-src.html",
+  "mikuproject-src.html",
+  "docs",
+  "lht-cmn",
+  "scripts",
+  "src",
+  "testdata",
+  "tests"
+];
+
 buildCliBundle();
 
 function buildCliBundle() {
@@ -23,6 +45,9 @@ function buildCliBundle() {
   fs.writeFileSync(outFile, buildSingleMjsRuntime(), "utf8");
   fs.chmodSync(outFile, 0o755);
   console.log(`[build:cli-bundle] generated ${path.relative(ROOT, outFile)}`);
+  fs.mkdirSync(path.dirname(sourcesOutFile), { recursive: true });
+  fs.writeFileSync(sourcesOutFile, buildSourcesTgz());
+  console.log(`[build:cli-bundle] generated ${path.relative(ROOT, sourcesOutFile)}`);
 }
 
 function parseArgs(argv) {
@@ -55,9 +80,15 @@ function assertRequiredFilesExist() {
       throw new Error(`CLI bundle に必要なファイルが見つかりません: ${relativePath}`);
     }
   }
+  for (const relativePath of SOURCE_ARCHIVE_PATHS) {
+    if (!fs.existsSync(path.resolve(ROOT, relativePath))) {
+      throw new Error(`source archive に必要なパスが見つかりません: ${relativePath}`);
+    }
+  }
 }
 
 function buildSingleMjsRuntime() {
+  const packageJson = JSON.parse(readRepoFile("package.json"));
   const cliSource = stripCliImports(readRepoFile("scripts/mikuproject-cli.mjs"));
   const coreModuleSources = Object.fromEntries(
     CORE_API_MODULE_RELATIVE_PATHS.map((relativePath) => [relativePath, readRepoFile(relativePath)])
@@ -76,6 +107,8 @@ function buildSingleMjsRuntime() {
     "import path from \"node:path\";",
     "import { fileURLToPath } from \"node:url\";",
     "import { Blob as NodeBlob, File as NodeFile } from \"node:buffer\";",
+    "",
+    `const BUNDLED_PACKAGE_VERSION = ${JSON.stringify(packageJson.version || "unknown")};`,
     "",
     "const BUNDLED_CORE_API_MODULE_RELATIVE_PATHS = Object.freeze(",
     `${JSON.stringify(CORE_API_MODULE_RELATIVE_PATHS, null, 2)});`,
@@ -264,6 +297,126 @@ function toXmldomModuleId(relativePath) {
     throw new Error(`Unexpected xmldom path: ${relativePath}`);
   }
   return `/node_modules/@xmldom/xmldom/${relativePath.slice(prefix.length)}`;
+}
+
+function buildSourcesTgz() {
+  const tarParts = [];
+  for (const sourcePath of collectSourceArchiveFiles()) {
+    const absolutePath = path.resolve(ROOT, sourcePath);
+    const archivePath = path.posix.join(SOURCE_ARCHIVE_ROOT, toPosixPath(sourcePath));
+    const data = fs.readFileSync(absolutePath);
+    tarParts.push(buildTarFileEntry(archivePath, data, getArchiveMode(absolutePath)));
+  }
+  tarParts.push(Buffer.alloc(1024));
+  return zlib.gzipSync(Buffer.concat(tarParts), { level: 9, mtime: 0 });
+}
+
+function collectSourceArchiveFiles() {
+  const files = [];
+  for (const relativePath of SOURCE_ARCHIVE_PATHS) {
+    const absolutePath = path.resolve(ROOT, relativePath);
+    const stat = fs.statSync(absolutePath);
+    if (stat.isDirectory()) {
+      collectFilesRecursive(relativePath, files);
+      continue;
+    }
+    if (stat.isFile()) {
+      files.push(relativePath);
+    }
+  }
+  return files.sort((a, b) => a.localeCompare(b));
+}
+
+function collectFilesRecursive(relativeDir, files) {
+  const absoluteDir = path.resolve(ROOT, relativeDir);
+  const entries = fs.readdirSync(absoluteDir, { withFileTypes: true })
+    .sort((a, b) => a.name.localeCompare(b.name));
+  for (const entry of entries) {
+    const relativePath = path.join(relativeDir, entry.name);
+    if (entry.name === ".DS_Store") {
+      continue;
+    }
+    if (entry.isDirectory()) {
+      collectFilesRecursive(relativePath, files);
+      continue;
+    }
+    if (entry.isFile()) {
+      files.push(relativePath);
+    }
+  }
+}
+
+function buildTarFileEntry(name, data, mode) {
+  const header = Buffer.alloc(512);
+  const { namePart, prefixPart } = splitTarPath(name);
+  writeTarString(header, namePart, 0, 100);
+  writeTarOctal(header, mode, 100, 8);
+  writeTarOctal(header, 0, 108, 8);
+  writeTarOctal(header, 0, 116, 8);
+  writeTarOctal(header, data.length, 124, 12);
+  writeTarOctal(header, 0, 136, 12);
+  header.fill(0x20, 148, 156);
+  header[156] = "0".charCodeAt(0);
+  writeTarString(header, "ustar", 257, 6);
+  writeTarString(header, "00", 263, 2);
+  writeTarString(header, "mikuproject", 265, 32);
+  writeTarString(header, "mikuproject", 297, 32);
+  writeTarString(header, prefixPart, 345, 155);
+
+  let checksum = 0;
+  for (const byte of header) {
+    checksum += byte;
+  }
+  writeTarChecksum(header, checksum);
+
+  const paddingLength = (512 - (data.length % 512)) % 512;
+  return Buffer.concat([header, data, Buffer.alloc(paddingLength)]);
+}
+
+function splitTarPath(name) {
+  const nameBytes = Buffer.byteLength(name);
+  if (nameBytes <= 100) {
+    return { namePart: name, prefixPart: "" };
+  }
+
+  const parts = name.split("/");
+  for (let index = 1; index < parts.length; index += 1) {
+    const prefixPart = parts.slice(0, index).join("/");
+    const namePart = parts.slice(index).join("/");
+    if (Buffer.byteLength(prefixPart) <= 155 && Buffer.byteLength(namePart) <= 100) {
+      return { namePart, prefixPart };
+    }
+  }
+  throw new Error(`tar path が長すぎます: ${name}`);
+}
+
+function writeTarString(buffer, value, offset, length) {
+  const written = buffer.write(value, offset, length, "utf8");
+  if (written < length) {
+    buffer[offset + written] = 0;
+  }
+}
+
+function writeTarOctal(buffer, value, offset, length) {
+  const text = value.toString(8).padStart(length - 1, "0");
+  buffer.write(text.slice(-length + 1), offset, length - 1, "ascii");
+  buffer[offset + length - 1] = 0;
+}
+
+function writeTarChecksum(buffer, checksum) {
+  const text = checksum.toString(8).padStart(6, "0");
+  buffer.write(text.slice(-6), 148, 6, "ascii");
+  buffer[154] = 0;
+  buffer[155] = 0x20;
+}
+
+function getArchiveMode(absolutePath) {
+  const stat = fs.statSync(absolutePath);
+  return stat.mode & 0o111 ? 0o755 : 0o644;
+}
+
+function toPosixPath(relativePath) {
+  return relativePath.split(path.sep).join("/");
 }
 
 function readRepoFile(relativePath) {

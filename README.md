@@ -234,34 +234,27 @@ mikuproject report mermaid --in workbook.json --out project.mmd
 `report monthly-calendar-svg` は月別 SVG 一式をまとめた ZIP を出力する。
 `report all` は `wbs.xlsx` / `wbs.md` / `mermaid.mmd` / `daily.svg` / `weekly.svg` / `monthly-calendar/YYYY-MM.svg` をまとめた ZIP を出力する。
 
-## CLI bundle first cut
+## CLI runtime artifact
 
-`mikuproject` 側で CLI 実行に必要な runtime をまとめた自己完結ディレクトリ bundle を出力できるようにしている。
+`mikuproject` 側で、Agent Skills など下流から受け取って実行できる単一 `MJS` CLI runtime artifact を生成できる。
 
 ```bash
 npm run build:cli-bundle
 ```
 
-既定の出力先は `bundle/mikuproject-cli-bundle/` で、主に次を含む。
+既定の出力先は `bundle/mikuproject.mjs` である。
+この artifact には、CLI entrypoint、`core API` 実行に必要な `src/js` runtime、XML DOM 実装を含めている。
 
-```text
-bundle/
-  mikuproject-cli-bundle/
-    README.md
-    package.json
-    scripts/
-    src/
-    node_modules/
-```
-
-この bundle は追加の `npm install` なしで、そのまま CLI 実行に使える first cut を狙っている。たとえば次で動く。
+生成後は追加の `npm install` なしで、そのまま CLI 実行に使える。たとえば次で動く。
 
 ```bash
-node bundle/mikuproject-cli-bundle/scripts/mikuproject-cli.mjs ai spec
-node bundle/mikuproject-cli-bundle/scripts/mikuproject-cli.mjs export xml --in workbook.json --out project.xml
+node bundle/mikuproject.mjs ai spec
+node bundle/mikuproject.mjs export xml --in workbook.json --out project.xml
 ```
 
-bundle 生成時は、repo root の `node_modules` にある CLI runtime 依存を取り込む。現時点では `@xmldom/xmldom` を CLI の優先 XML DOM 実装として使い、`jsdom` は HTML / Blob / File など XML 以外の Web API 補完のために同梱する。そのため、bundle 生成前には一度 `npm install` 済みであることを前提とする。
+`mikuproject-skills` などの下流 Agent Skills では、この Node.js runtime artifact を `skills/mikuproject/runtime/mikuproject.mjs` のような skill-local runtime path に配置して使う想定である。
+
+生成時は repo root の `node_modules/@xmldom/xmldom` から XML DOM 実装を artifact 内へ埋め込む。そのため、artifact 生成前には一度 `npm install` 済みであることを前提とする。生成後の実行時には、`@xmldom/xmldom` や `jsdom` の `node_modules` は不要である。
 
 ## 関連ドキュメント
 

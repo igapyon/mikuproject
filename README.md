@@ -181,6 +181,7 @@ Node 側から `core API` を起動する最小 helper は [`scripts/lib/core-ap
 Node 側から `core API` を薄く包む最小 CLI first cut として、次の入口を追加している。
 
 - `mikuproject ai spec`
+- `mikuproject --version`
 - `mikuproject ai export project-overview`
 - `mikuproject ai export task-edit`
 - `mikuproject ai export phase-detail`
@@ -210,6 +211,7 @@ Node 側から `core API` を薄く包む最小 CLI first cut として、次の
 例:
 
 ```bash
+mikuproject --version
 mikuproject ai spec
 mikuproject ai export project-overview --in workbook.json --out overview.editjson
 mikuproject ai export task-edit --in workbook.json --task-uid 123 --out task.editjson
@@ -242,8 +244,9 @@ mikuproject report mermaid --in workbook.json --out project.mmd
 npm run build:cli-bundle
 ```
 
-既定の出力先は `bundle/mikuproject.mjs` である。
+既定の出力先は `bundle/mikuproject.mjs` と `bundle/mikuproject-sources.tgz` である。
 この artifact には、CLI entrypoint、`core API` 実行に必要な `src/js` runtime、XML DOM 実装を含めている。
+`mikuproject-sources.tgz` には、再ビルド・監査・下流確認用の source / docs / tests をまとめて格納する。
 
 生成後は追加の `npm install` なしで、そのまま CLI 実行に使える。たとえば次で動く。
 

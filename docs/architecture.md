@@ -189,7 +189,7 @@ npm run build:full
 - `npm run build:js`: `src/ts/` から `src/js/` を生成する
 - `npm run build:html`: `index-src.html` と `mikuproject-src.html` から `index.html` と `mikuproject.html` を生成する
 - `npm run build:web`: JavaScript 生成と HTML 生成をまとめて行う
-- `npm run build:cli-bundle`: 下流 Agent Skills に渡す単一 `MJS` CLI runtime artifact を `bundle/mikuproject.mjs` へ生成する
+- `npm run build:cli-bundle`: 下流 Agent Skills に渡す単一 `MJS` CLI runtime artifact を `bundle/mikuproject.mjs` へ生成し、再ビルド・監査用 source archive を `bundle/mikuproject-sources.tgz` へ生成する
 - `npm run build:xlsx-sample`: `local-data/` 配下へサンプル XLSX / Markdown を生成する
 - `npm run build:app`: `build:web` と `build:xlsx-sample` を順に実行する
 - `npm run build:full`: `build:web`、`build:cli-bundle`、`test:full` を順に実行する

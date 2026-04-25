@@ -20,7 +20,7 @@ npm test
 ```
 
 - `npm run build` は日常開発向けの標準 build で、`build:web`、`build:cli-bundle`、`test:fast` を順に実行する
-- `build:cli-bundle` は、下流 Agent Skills に渡す単一 `MJS` CLI runtime artifact を `bundle/mikuproject.mjs` に生成する
+- `build:cli-bundle` は、下流 Agent Skills に渡す単一 `MJS` CLI runtime artifact を `bundle/mikuproject.mjs` に生成し、再ビルド・監査用 source archive を `bundle/mikuproject-sources.tgz` に生成する
 - `npm run build:app` は `build:web` と `build:xlsx-sample` を順に実行する
 - `npm run build:full` は `build:web`、`build:cli-bundle`、`test:full` を順に実行し、日常で見たい core UI smoke suite までを確認する
 - `build:xlsx-sample` は必要なときだけ `build:app` か `npm run build:xlsx-sample` で明示実行する

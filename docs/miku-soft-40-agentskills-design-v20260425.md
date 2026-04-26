@@ -637,6 +637,7 @@ Important design points:
 - AI JSON spec retrieval is exposed through upstream core API functions and the `mikuproject ai spec` CLI path, so the skill should prefer those contracts over file search
 - declared `mikuproject` runtime artifacts are checked before broad repository exploration
 - the upstream Node.js CLI runtime artifact is produced by `mikuproject` as a single `bundle/mikuproject.mjs` file and should be received by `mikuproject-skills` as `skills/mikuproject/runtime/mikuproject.mjs`
+- the upstream Java CLI runtime artifact is produced by `mikuproject-java` as `target/mikuproject.jar` and should be received by `mikuproject-skills` as `skills/mikuproject/runtime/mikuproject.jar`
 
 This skill does not aim to replace the `mikuproject` browser UI. Its center is structured AI-agent operation over the upstream product's core APIs and artifacts.
 

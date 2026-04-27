@@ -19,7 +19,7 @@ The series is not organized around a single UI, runtime, or protocol. It is orga
 - Provide Node.js CLI surfaces as normal main-application surfaces
 - Provide Java 1.8 CLI runtimes through straight conversion as a normal follow-up deliverable
 - Package Agent Skills with instructions, operation maps, references, and executable CLI runtime artifacts
-- Provide MCP servers when there is no product-specific reason to avoid them
+- Provide MCP servers in Node.js / TypeScript when there is no product-specific reason to avoid them
 - Keep Java versions, Agent Skills, and MCP servers downstream of the upstream product semantics
 - Preserve artifact roles, diagnostics, local execution, and runtime traceability across layers
 
@@ -48,7 +48,7 @@ The detailed documents are organized by layer and concern.
 - `docs/miku-soft-40-agentskills-design-v*.md`
   - describes Agent Skills packages, including local instructions, operation maps, references, and bundled CLI runtime artifacts for AI agents
 - `docs/miku-soft-50-mcp-design-v*.md`
-  - describes MCP server versions that expose product operations to MCP clients through tools, resources, and prompts
+  - describes Node.js / TypeScript MCP server versions that expose product operations to MCP clients through tools, resources, and prompts
 
 ## Layered Product Shape
 
@@ -144,11 +144,13 @@ The agent-facing layer should especially preserve:
 
 The MCP-facing layer is a normal extension target, not a replacement for Agent Skills.
 
-When there is no product-specific reason to avoid it, a miku product should provide an MCP server for MCP clients.
+When there is no product-specific reason to avoid it, a miku product should provide an MCP server for MCP clients. The standard implementation choice for miku MCP servers is Node.js / TypeScript, using the MCP SDK and keeping the server as a thin protocol adapter.
 
 The MCP server exposes product operations through tools, resources, and prompts. It should remain a protocol adapter over the product runtime, not a replacement implementation.
 
-The MCP server may use the TypeScript / Node.js runtime, the Java runtime, or both. When both runtime artifacts are available, the MCP server should treat runtime choice as an execution policy, not as a change in product semantics.
+The MCP server may execute the TypeScript / Node.js runtime, the Java runtime, or both as product runtime artifacts. This runtime choice is separate from the MCP server implementation language. When both runtime artifacts are available, the MCP server should treat runtime choice as an execution policy, not as a change in product semantics.
+
+Java should not be treated as a default second MCP server implementation. A Java-side directory in an MCP repository may exist as a placeholder, but it should remain a placeholder unless a concrete future distribution or runtime constraint justifies maintaining a Java MCP server.
 
 The MCP-facing layer should keep the following properties.
 
@@ -172,7 +174,7 @@ The usual product flow for the miku software series is as follows.
 4. Produce a single-file Node.js CLI runtime artifact for downstream use.
 5. Create the Java 1.8 CLI runtime through straight conversion unless there is a clear reason not to.
 6. Package Agent Skills with instructions, operation maps, references, and bundled runtime artifacts.
-7. Provide an MCP server when there is no product-specific reason to avoid it.
+7. Provide a Node.js / TypeScript MCP server when there is no product-specific reason to avoid it.
 
 This flow is a default direction, not a reason to blur responsibilities. Each layer must keep the upstream product boundary visible.
 
@@ -190,6 +192,7 @@ The preferred responsibility split is as follows.
   - owns agent-facing instructions, activation rules, workflow maps, local file discipline, runtime lookup, and bundled runtime artifact wiring
 - MCP server
   - owns MCP tools, resources, prompts, transport handling, session or workspace policy, and protocol result formatting
+  - is normally implemented in Node.js / TypeScript; Java runtime artifacts remain runtime inputs, not a default second MCP server
 
 The semantic center should remain with the upstream main application. Runtime, skill, and protocol layers should expose or adapt that center rather than redefining it.
 
@@ -219,6 +222,6 @@ Keeping artifact roles visible makes UI, CLI, Java runtime, Agent Skills, and MC
 
 The miku software series starts from small local products, usually implemented in TypeScript / Node.js, and then exposes the same product meaning through multiple surfaces.
 
-The main application provides the upstream semantic center and normally exposes both a Single-file Web App and a Node.js CLI. Java versions provide Java 1.8 CLI runtimes through straight conversion. Agent Skills package instructions and executable runtime artifacts for AI agents. MCP servers expose product operations through a standard protocol for MCP clients.
+The main application provides the upstream semantic center and normally exposes both a Single-file Web App and a Node.js CLI. Java versions provide Java 1.8 CLI runtimes through straight conversion. Agent Skills package instructions and executable runtime artifacts for AI agents. MCP servers expose product operations through a standard protocol for MCP clients and are normally implemented in Node.js / TypeScript.
 
-The important point is not to multiply implementations. It is to keep one product meaning usable from human UI, local CLI, Java runtime, agent package, and MCP protocol without losing traceability, diagnostics, or artifact discipline.
+The important point is not to multiply implementations. It is to keep one product meaning usable from human UI, local CLI, Java runtime, agent package, and MCP protocol without losing traceability, diagnostics, or artifact discipline. In particular, a Java runtime artifact does not imply that a Java MCP server should also be implemented.

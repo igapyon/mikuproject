@@ -31,11 +31,11 @@ Use the shared design documents together as follows.
 
 - `docs/miku-soft-10-mainapp-design-v20260425.md`
   - describes the upstream product design and semantic center
-- `docs/miku-soft-20-javaapp-design-v20260425.md`
+- `docs/miku-soft-20-javaapp-design-v20260426.md`
   - describes Java runtime versions when they exist
 - `docs/miku-soft-30-straight-conversion-v20260425.md`
   - describes how Java versions are created from upstream main applications
-- `docs/miku-soft-40-agentskills-design-v20260425.md`
+- `docs/miku-soft-40-agentskills-design-v20260429.md`
   - describes how Agent Skills versions should expose miku workflows to AI agents
 
 This document separates the following levels.
@@ -140,6 +140,7 @@ miku Agent Skills emphasize the following cross-cutting principles.
 6. Distinguish canonical source, conversation state, primary output, reports, and temporary handoff data.
 7. Use small projections, patches, validation, and diffs for AI-assisted edits where practical.
 8. Make installation, bundling, smoke testing, and upstream synchronization explainable.
+9. Keep workflow guidance separate from execution backend selection so CLI, MCP, and handoff execution can follow explicit policy.
 
 ### Basic Philosophy of Agent Skills
 
@@ -173,6 +174,7 @@ Agent Skills use the following principles as defaults.
 - Treat the Node.js CLI runtime artifact as a single JavaScript file
 - Use bundled upstream runtime artifacts when local, reproducible execution and bundling need them
 - Prefer upstream public APIs, stable global APIs, or documented CLI commands
+- Allow execution backend policy to choose CLI, MCP, or handoff behavior without changing the skill name or workflow vocabulary
 - Package distributable bundles with scripts that can be tested
 - Keep repository-level README user-facing and developer details under `docs/`
 - Use `workplace/` for local scratch data, upstream checks, generated outputs, and verification files
@@ -219,6 +221,36 @@ Do not create a separate skill product line only because an additional runtime p
 When both Java CLI and Node.js CLI runtime artifacts are bundled, the skill may prefer the Java CLI first for local execution. A single jar is easy to locate, smoke-test, and run in automation environments. If the Java CLI artifact is missing, cannot be invoked, or does not support the requested operation, the skill may fall back to the Node.js CLI runtime.
 
 This runtime preference is an execution policy, not a semantic priority. The upstream main application remains the semantic center. Runtime differences should be reported as capability or compatibility diagnostics.
+
+### Execution Backend Policy Principles
+
+Agent Skills should remain the workflow layer even when the execution backend changes.
+
+The skill owns activation rules, operation selection, artifact roles, file placement guidance, diagnostics policy, and handoff expectations. The execution backend owns how an operation is actually carried out in a particular environment.
+
+Common backend categories are:
+
+- CLI backend: run bundled or configured upstream CLI artifacts, usually through Java or Node.js commands
+- MCP backend: call a product-specific MCP server that exposes aligned tools and resources
+- handoff backend: do not execute the product operation directly; return the spec, structured JSON, prompt, or step-by-step handoff material visibly
+
+The default policy for mature miku Agent Skills should be `cli-preferred`: try the declared local CLI backend first, and fall back to MCP only when that fallback is allowed by the active environment and repository policy.
+
+Supported policy values should be interpreted as follows.
+
+- `cli-only`: use only the CLI backend; do not inspect or call MCP as an automatic fallback
+- `cli-preferred`: use CLI first; use MCP only when CLI is unavailable or unsuitable and fallback is allowed
+- `mcp-only`: use only the MCP backend; do not inspect or run CLI artifacts as an automatic fallback
+- `mcp-preferred`: use MCP first; use CLI only when MCP is unavailable or unsuitable and fallback is allowed
+- `handoff-only`: do not execute backend operations; provide visible handoff material and instructions
+
+Execution backend policy is subordinate to the user's explicit instruction and the active environment policy. If an environment disallows CLI execution, a skill must not run CLI commands merely because `cli-preferred` is the repository default. If an environment disallows MCP access, a skill must not call MCP tools merely because CLI failed.
+
+Strict policies are intentionally strict. Under `cli-only` or `mcp-only`, failure of the selected backend should be reported as a hard execution-path error instead of silently switching to another backend. Under `handoff-only`, backend execution should not occur even when CLI or MCP is available.
+
+When fallback is allowed and happens, diagnostics should state the source backend, target backend, and concise reason. For example, a result may say that CLI was unavailable and execution continued through MCP, or that MCP lacked a required tool and execution continued through CLI.
+
+An MCP backend should use the MCP server layer described by the miku MCP design documents. The Agent Skill should not become the MCP server implementation and should not redefine MCP tool names, resource roles, or protocol contracts locally. It should describe how its operation vocabulary maps to the MCP tools and resources exposed by the product-specific MCP server.
 
 ### AI-Facing Spec Retrieval Principles
 
@@ -438,6 +470,7 @@ Test coverage should include:
 - skill smoke tests
 - upstream runtime availability checks
 - runtime selection checks, including Java CLI available, Java CLI unavailable with Node.js fallback, unsupported Java CLI operation with Node.js fallback, and all runtimes missing as a hard error
+- execution backend policy checks, including strict `cli-only`, strict `mcp-only`, preferred fallback behavior, and `handoff-only` no-execution behavior when the repository supports those modes
 - representative import / export operations
 - draft / patch / validate / apply operations where applicable
 - diagnostics and hard-error behavior
@@ -636,6 +669,8 @@ Important design points:
 - report outputs such as `WBS XLSX`, `SVG`, `Markdown`, `Mermaid`, and ZIP are derived outputs
 - AI JSON spec retrieval is exposed through upstream core API functions and the `mikuproject ai spec` CLI path, so the skill should prefer those contracts over file search
 - declared `mikuproject` runtime artifacts are checked before broad repository exploration
+- execution backend policy defaults to `cli-preferred`, while still allowing `cli-only`, `mcp-only`, `mcp-preferred`, and `handoff-only` when the user, environment, or repository configuration requires them
+- MCP backend support should use the `mikuproject-mcp` server layer and aligned MCP tools; `mikuproject-skills` remains the Agent Skill workflow layer, not the MCP server implementation
 - the upstream Node.js CLI runtime artifact is produced by `mikuproject` as a single `bundle/mikuproject.mjs` file and should be received by `mikuproject-skills` as `skills/mikuproject/runtime/mikuproject.mjs`
 - the upstream Java CLI runtime artifact is produced by `mikuproject-java` as `target/mikuproject.jar` and should be received by `mikuproject-skills` as `skills/mikuproject/runtime/mikuproject.jar`
 

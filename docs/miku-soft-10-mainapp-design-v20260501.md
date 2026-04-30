@@ -531,7 +531,8 @@ CLI emphasizes the following.
 
 - Keep commands and options few
 - Make input and output files explicit
-- Output artifacts to stdout or specified files
+- Output text artifacts to stdout or specified files
+- Write binary artifacts such as XLSX and ZIP to specified files by default; use an explicit binary-safe mode such as Base64 when stdout is supported
 - Treat warnings and diagnostics as stderr or structured diagnostics
 - For long-running processing or processing where progress matters, make progress and timing output available through `--verbose` or similar options
 - Make success and failure judgeable by exit code
@@ -541,7 +542,7 @@ CLI is not a helper for UI. It is a formal entry point for AI agent workflows an
 
 As in `miku-indexgen --verbose`, target, output destination, current scan location, discovered files, and timing breakdowns are emitted incrementally when useful, rather than only summarized at the end. This lets humans and AI agents notice stalls, incorrect target ranges, or unexpected input earlier during processing.
 
-This kind of progress / timing output is not confused with primary output or structured diagnostics. Artifacts remain stable through file or stdout contracts; incremental logs use an easy-to-identify prefix such as `verbose:`, and representative lines are fixed in tests.
+This kind of progress / timing output is not confused with primary output or structured diagnostics. Text artifacts remain stable through file or stdout contracts, while binary artifacts remain stable through explicit file-output or documented binary-safe stdout contracts. Incremental logs use an easy-to-identify prefix such as `verbose:`, and representative lines are fixed in tests.
 
 ## Common Patterns Observed Across the Series
 

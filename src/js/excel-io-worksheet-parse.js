@@ -64,7 +64,7 @@
     }
     function parseWorksheetRowCells(rowElement, styleBook, sharedStrings, helpers) {
         const cells = [];
-        const cellElements = Array.from(rowElement.getElementsByTagNameNS("http://schemas.openxmlformats.org/spreadsheetml/2006/main", "c")).filter((element) => element.parentElement === rowElement);
+        const cellElements = Array.from(rowElement.getElementsByTagNameNS("http://schemas.openxmlformats.org/spreadsheetml/2006/main", "c")).filter((element) => element.parentNode === rowElement);
         for (const cellElement of cellElements) {
             const reference = cellElement.getAttribute("r") || "";
             const columnIndex = decodeColumnReference(reference);

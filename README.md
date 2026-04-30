@@ -192,6 +192,7 @@ Node 側から `core API` を薄く包む最小 CLI first cut として、次の
 - `mikuproject state summarize`
 - `mikuproject state diff`
 - `mikuproject state apply-patch`
+- `mikuproject import xlsx`
 - `mikuproject export workbook-json`
 - `mikuproject export xml`
 - `mikuproject export xlsx`
@@ -203,7 +204,8 @@ Node 側から `core API` を薄く包む最小 CLI first cut として、次の
 - `mikuproject report wbs-markdown`
 - `mikuproject report mermaid`
 
-主成果物は `stdout`、warning / diagnostics は `stderr` を基本とする。
+text 系の主成果物は `stdout` または `--out <path>`、warning / diagnostics は `stderr` を基本とする。
+XLSX / ZIP などの binary artifact は `--out <path>` へ出力する。stream-friendly な binary 入出力が必要な場合は、明示的に `--in-base64 -` / `--out-base64 -` を使う。
 `--diagnostics text|json` を受けるコマンドでは、構造化 diagnostics を扱える。
 
 既存WBSの安全な局所修正フローは、まず `ai export project-overview` で全体を見て、`task-edit` または `phase-detail` を AI に渡し、返ってきた `patch_json` を `validate-patch` してから `state apply-patch` / `state diff` へ進む形を基本とする。導線全体は [docs/import-export-workflows.md](docs/import-export-workflows.md) を参照。
@@ -222,8 +224,11 @@ mikuproject state from-draft --in draft.json --out workbook.json
 mikuproject state summarize --in workbook.json --diagnostics json
 mikuproject state diff --before workbook.before.json --after workbook.after.json --diagnostics json
 mikuproject state apply-patch --state workbook.json --in patch.json --out workbook.next.json
+mikuproject import xlsx --in project.xlsx --out workbook.json
+base64 < project.xlsx | mikuproject import xlsx --in-base64 - --out -
 mikuproject export xml --in workbook.json --out project.xml
 mikuproject export xlsx --in workbook.json --out project.xlsx
+mikuproject export xlsx --in workbook.json --out-base64 -
 mikuproject report wbs-xlsx --in workbook.json --out project-wbs.xlsx
 mikuproject report daily-svg --in workbook.json --out project-daily.svg
 mikuproject report weekly-svg --in workbook.json --out project-weekly.svg

@@ -43,7 +43,7 @@ describe("mikuproject main xlsx import replace", () => {
     expect(document.getElementById("modelOutput").value).toContain("\"name\": \"初期実装 Imported From JSON\"");
     expect(document.getElementById("statusMessage").textContent).toContain("JSON を読み込んで project 全体を置き換えました");
     expect(document.getElementById("xlsxImportSummary").textContent).toContain("JSON Replace 反映結果");
-    expect(document.getElementById("xlsxImportSummary").textContent).toContain("workbook JSON による全置換結果です");
+    expect(document.getElementById("xlsxImportSummary").textContent).toContain("workbook JSON の replace 結果です");
     expect(document.getElementById("xlsxImportSummary").textContent).toContain("PercentComplete");
     expect(document.getElementById("xlsxImportSummary").textContent).toContain("100");
     expect(document.getElementById("xlsxImportSummary").textContent).toContain("66");
@@ -128,7 +128,7 @@ describe("mikuproject main xlsx import replace", () => {
     expect(document.getElementById("modelOutput").value).toContain("\"minutesPerDay\": 420");
     expect(document.getElementById("statusMessage").textContent).toContain("XLSX を読み込んで project 全体を置き換えました");
     expect(document.getElementById("xlsxImportSummary").textContent).toContain("XLSX Replace 反映結果");
-    expect(document.getElementById("xlsxImportSummary").textContent).toContain("XLSX による全置換結果です");
+    expect(document.getElementById("xlsxImportSummary").textContent).toContain("XLSX の replace 結果です");
     expect(document.getElementById("xlsxImportSummary").textContent).toContain("Project 1");
     expect(document.getElementById("xlsxImportSummary").textContent).toContain("MinutesPerDay");
     expect(document.getElementById("xlsxImportSummary").textContent).toContain("480");

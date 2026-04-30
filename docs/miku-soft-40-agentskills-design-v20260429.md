@@ -29,7 +29,7 @@ This document is not a detailed specification for one skill repository. Reposito
 
 Use the shared design documents together as follows.
 
-- `docs/miku-soft-10-mainapp-design-v20260425.md`
+- `docs/miku-soft-10-mainapp-design-v20260501.md`
   - describes the upstream product design and semantic center
 - `docs/miku-soft-20-javaapp-design-v20260426.md`
   - describes Java runtime versions when they exist

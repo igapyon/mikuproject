@@ -500,7 +500,9 @@ preview / validation の現状メモ:
 - CLI では `--in -` / `--out -` により標準入力 / 標準出力を明示指定できる
 - 同一コマンドで標準入力を読める入力オプションは 1 つだけとする
 - `--in path` があればそのファイルを優先し、`--in -` は明示 stdin、`--in` 省略時だけ暗黙 stdin を使う
-- `--out path` があればそのファイルへ書き、`--out -` または `--out` 省略時は stdout を使う
+- XLSX などの binary input は `--in-base64 -` により標準入力の Base64 text から読める
+- text output は `--out path` があればそのファイルへ書き、`--out -` または `--out` 省略時は stdout を使う
+- XLSX / ZIP などの binary artifact は `--out path` に file output するか、`--out-base64 -` で Base64 text を stdout へ書ける
 - CLI では `ai export` / `detect-kind` / `validate-patch` / `state summarize` / `state diff` / `state apply-patch` / `export` / `report` が `--diagnostics text|json` を受け、stderr に構造化メタ情報を出せる
 - `json` diagnostics は少なくとも `diagnostics_version` / `ok` / `command` / `context` / `status` / `exit_code` / `warning_count` / `error_count` / `io` / `warnings` / `errors` を共通キーとする
 - 異常系 diagnostics では `error_type=usage_error|processing_error` を持てる

@@ -49,7 +49,7 @@ async function main() {
     } else if (result.diagnostics && !Array.isArray(result.diagnostics)) {
       writeDiagnostics(process.stderr, result.diagnostics);
     }
-    writeOutput(result.output, options.out);
+    writeOutput(result.output, options);
     if (typeof result.exitCode === "number") {
       process.exitCode = result.exitCode;
     }
@@ -409,6 +409,7 @@ async function runCommand(command, options, api) {
     }
 
     if (action === "xlsx") {
+      ensureBinaryOutputTarget(options, "export xlsx");
       const stateDocument = parsePlainJson(await readTextInput(options.in), "export xlsx");
       ensureWorkbookJson(api, stateDocument, "export xlsx");
       const model = api.workbookJson.importAsProjectModel(stateDocument).model;
@@ -420,10 +421,39 @@ async function runCommand(command, options, api) {
           ? buildCommandDiagnostics("export xlsx", {
             io: buildIoDiagnostics({
               inputs: [{ optionName: "--in", value: options.in, allowImplicitStdin: true }],
-              output: options.out
+              output: options.out,
+              outputBase64: options["out-base64"]
             }),
             output_kind: "xlsx",
             byte_length: output.length
+          })
+          : []
+      };
+    }
+  }
+
+  if (scope === "import" && subject === undefined) {
+    const diagnosticsFormat = parseDiagnosticsFormat(options.diagnostics);
+    if (action === "xlsx") {
+      ensureBinaryInputSource(options, "import xlsx");
+      const sourceBytes = await readBinaryInput(options, "import xlsx");
+      const imported = api.importExternal({
+        source: { format: "xlsx", bytes: sourceBytes },
+        mode: "replace"
+      });
+      const workbookDocument = api.workbookJson.exportDocument(imported.model);
+      return {
+        output: `${JSON.stringify(workbookDocument, null, 2)}\n`,
+        diagnostics: diagnosticsFormat === "json"
+          ? buildCommandDiagnostics("import xlsx", {
+            io: buildIoDiagnostics({
+              inputs: [describeBinaryInputForDiagnostics(options, "import xlsx")],
+              output: options.out
+            }),
+            input_kind: "xlsx",
+            output_kind: "workbook_json",
+            byte_length: sourceBytes.length,
+            sheet_count: Object.keys(workbookDocument.sheets || {}).length
           })
           : []
       };
@@ -440,6 +470,7 @@ async function runCommand(command, options, api) {
     const model = api.workbookJson.importAsProjectModel(stateDocument).model;
 
     if (action === "wbs-xlsx") {
+      ensureBinaryOutputTarget(options, "report wbs-xlsx");
       const output = api.report.wbsXlsx.exportBytes(model);
       return {
         output,
@@ -447,7 +478,8 @@ async function runCommand(command, options, api) {
           ? buildCommandDiagnostics("report wbs-xlsx", {
             io: buildIoDiagnostics({
               inputs: [{ optionName: "--in", value: options.in, allowImplicitStdin: true }],
-              output: options.out
+              output: options.out,
+              outputBase64: options["out-base64"]
             }),
             output_kind: "wbs_xlsx",
             byte_length: output.length
@@ -491,6 +523,7 @@ async function runCommand(command, options, api) {
     }
 
     if (action === "monthly-calendar-svg") {
+      ensureBinaryOutputTarget(options, "report monthly-calendar-svg");
       const archive = api.report.svg.exportMonthlyCalendar(model);
       return {
         output: archive.zipBytes,
@@ -498,7 +531,8 @@ async function runCommand(command, options, api) {
           ? buildCommandDiagnostics("report monthly-calendar-svg", {
             io: buildIoDiagnostics({
               inputs: [{ optionName: "--in", value: options.in, allowImplicitStdin: true }],
-              output: options.out
+              output: options.out,
+              outputBase64: options["out-base64"]
             }),
             output_kind: "monthly_calendar_svg_zip",
             byte_length: archive.zipBytes.length
@@ -508,6 +542,7 @@ async function runCommand(command, options, api) {
     }
 
     if (action === "all") {
+      ensureBinaryOutputTarget(options, "report all");
       const archive = api.report.all.export(model);
       return {
         output: archive.zipBytes,
@@ -515,7 +550,8 @@ async function runCommand(command, options, api) {
           ? buildCommandDiagnostics("report all", {
             io: buildIoDiagnostics({
               inputs: [{ optionName: "--in", value: options.in, allowImplicitStdin: true }],
-              output: options.out
+              output: options.out,
+              outputBase64: options["out-base64"]
             }),
             output_kind: "report_bundle_zip",
             byte_length: archive.zipBytes.length
@@ -579,6 +615,49 @@ async function readTextInput(inputPath) {
   return Buffer.concat(chunks).toString("utf8");
 }
 
+async function readStdinBytes() {
+  const chunks = [];
+  for await (const chunk of process.stdin) {
+    chunks.push(typeof chunk === "string" ? Buffer.from(chunk) : chunk);
+  }
+  if (chunks.length === 0) {
+    throw new CliUsageError("入力が必要です。--in を指定するか標準入力を渡してください", "missing_input", {
+      option: "--in"
+    });
+  }
+  return Buffer.concat(chunks);
+}
+
+function decodeBase64Input(sourceText, context) {
+  const normalized = sourceText.replace(/\s+/g, "");
+  if (!normalized) {
+    throw new CliUsageError(`${context} の Base64 入力が空です`, "invalid_base64_input", {
+      context
+    });
+  }
+  if (!/^[A-Za-z0-9+/]*={0,2}$/.test(normalized) || normalized.length % 4 !== 0) {
+    throw new CliUsageError(`${context} の Base64 入力を解析できませんでした`, "invalid_base64_input", {
+      context
+    });
+  }
+  return Buffer.from(normalized, "base64");
+}
+
+async function readBinaryInput(options, context) {
+  if (options["in-base64"]) {
+    if (options["in-base64"] === "-") {
+      return decodeBase64Input((await readStdinBytes()).toString("utf8"), context);
+    }
+    return decodeBase64Input(fs.readFileSync(path.resolve(options["in-base64"]), "utf8"), context);
+  }
+  if (options.in && options.in !== "-") {
+    return fs.readFileSync(path.resolve(options.in));
+  }
+  throw new CliUsageError(`${context} には --in <path> または --in-base64 - が必要です`, "missing_binary_input", {
+    required_options: ["--in", "--in-base64"]
+  });
+}
+
 function parsePlainJson(sourceText, context = "input") {
   try {
     return JSON.parse(sourceText);
@@ -613,6 +692,56 @@ function ensureSingleStdinSource(inputs) {
       options: stdinOptions
     });
   }
+}
+
+function ensureBinaryInputSource(options, commandLabel) {
+  if (options.in && options["in-base64"]) {
+    throw new CliUsageError(`${commandLabel} では --in と --in-base64 を同時に指定できません`, "multiple_input_sources", {
+      options: ["--in", "--in-base64"]
+    });
+  }
+  if (options.in === "-") {
+    throw new CliUsageError(`${commandLabel} の binary stdin には --in-base64 - を指定してください`, "binary_stdin_requires_base64", {
+      option: "--in-base64"
+    });
+  }
+  if (options["in-base64"] && options["in-base64"] !== "-") {
+    return;
+  }
+  if (options.in && options.in !== "-") {
+    return;
+  }
+  if (options["in-base64"] === "-") {
+    return;
+  }
+  throw new CliUsageError(`${commandLabel} には --in <path> または --in-base64 - が必要です`, "missing_binary_input", {
+    required_options: ["--in", "--in-base64"]
+  });
+}
+
+function ensureBinaryOutputTarget(options, commandLabel) {
+  if (options.out && options["out-base64"]) {
+    throw new CliUsageError(`${commandLabel} では --out と --out-base64 を同時に指定できません`, "multiple_output_targets", {
+      options: ["--out", "--out-base64"]
+    });
+  }
+  if (options["out-base64"] && options["out-base64"] !== "-") {
+    throw new CliUsageError(`${commandLabel} の --out-base64 は - のみ対応です`, "invalid_base64_output_target", {
+      option: "--out-base64",
+      expected: "-"
+    });
+  }
+  if (options["out-base64"] === "-") {
+    return;
+  }
+  if (options.out && options.out !== "-") {
+    return;
+  }
+  throw new CliUsageError(`${commandLabel} は binary artifact のため --out <path> が必要です`, "binary_stdout_not_supported", {
+    option: "--out",
+    command: commandLabel,
+    expected: "file_or_base64_stdout"
+  });
 }
 
 async function loadWorkbookModel(api, inputPath, context) {
@@ -768,14 +897,27 @@ function buildPatchDiagnosticsJson(result, contextLabel, io) {
   });
 }
 
-function buildIoDiagnostics({ inputs, output }) {
+function buildIoDiagnostics({ inputs, output, outputBase64 }) {
   return {
     inputs: (inputs || []).map((input) => describeInputSource(input)),
-    output: describeOutputTarget(output)
+    output: describeOutputTarget(output, outputBase64)
   };
 }
 
 function describeInputSource(input) {
+  if (input.base64 && input.value === "-") {
+    return {
+      option: input.optionName,
+      mode: "stdin_base64"
+    };
+  }
+  if (input.base64) {
+    return {
+      option: input.optionName,
+      mode: "file_base64",
+      path: input.value
+    };
+  }
   if (input.value === "-") {
     return {
       option: input.optionName,
@@ -795,7 +937,27 @@ function describeInputSource(input) {
   };
 }
 
-function describeOutputTarget(outPath) {
+function describeBinaryInputForDiagnostics(options, _context) {
+  if (options["in-base64"]) {
+    return {
+      optionName: "--in-base64",
+      value: options["in-base64"],
+      base64: true
+    };
+  }
+  return {
+    optionName: "--in",
+    value: options.in,
+    allowImplicitStdin: false
+  };
+}
+
+function describeOutputTarget(outPath, outBase64Path) {
+  if (outBase64Path === "-") {
+    return {
+      mode: "stdout_base64"
+    };
+  }
   if (!outPath || outPath === "-") {
     return {
       mode: "stdout"
@@ -827,8 +989,22 @@ function buildIoDiagnosticsFromArgv(argv) {
       index += 1;
       continue;
     }
+    if (token === "--in-base64") {
+      inputs.push({
+        option: token,
+        mode: value === "-" ? "stdin_base64" : "file_base64",
+        ...(value && value !== "-" ? { path: value } : {})
+      });
+      index += 1;
+      continue;
+    }
     if (token === "--out") {
       output = value === "-" ? { mode: "stdout" } : { mode: "file", path: value };
+      index += 1;
+      continue;
+    }
+    if (token === "--out-base64") {
+      output = value === "-" ? { mode: "stdout_base64" } : { mode: "file_base64", path: value };
       index += 1;
       continue;
     }
@@ -863,6 +1039,7 @@ function inferImplicitInputOptions(command, existingInputs) {
     "state from-draft": ["--in"],
     "state summarize": ["--in"],
     "state apply-patch": ["--in"],
+    "import xlsx": [],
     "export workbook-json": ["--in"],
     "export xml": ["--in"],
     "export xlsx": ["--in"],
@@ -1148,7 +1325,25 @@ function writeDiagnostics(stream, diagnostics) {
   }
 }
 
-function writeOutput(output, outPath) {
+function writeOutput(output, options) {
+  const outPath = options.out;
+  const outBase64Path = options["out-base64"];
+  if (outBase64Path) {
+    if (outBase64Path !== "-") {
+      throw new CliUsageError("--out-base64 は - のみ対応です", "invalid_base64_output_target", {
+        option: "--out-base64",
+        expected: "-"
+      });
+    }
+    if (!(output instanceof Uint8Array)) {
+      throw new CliUsageError("--out-base64 は binary output 専用です", "base64_output_requires_binary", {
+        option: "--out-base64"
+      });
+    }
+    process.stdout.write(`${Buffer.from(output).toString("base64")}\n`);
+    return;
+  }
+
   if (outPath && outPath !== "-") {
     if (output instanceof Uint8Array) {
       fs.writeFileSync(path.resolve(outPath), output);
@@ -1180,14 +1375,15 @@ function writeHelp(stream) {
     "  mikuproject state summarize [--in workbook.json|-] [--diagnostics text|json]",
     "  mikuproject state diff --before workbook.before.json --after workbook.after.json [--diagnostics text|json]",
     "  mikuproject state apply-patch --state workbook.json|- [--in patch.json|-] [--diagnostics text|json] [--out workbook.next.json|-]",
+    "  mikuproject import xlsx (--in workbook.xlsx|--in-base64 -) [--diagnostics text|json] [--out workbook.json|-]",
     "  mikuproject export workbook-json [--in workbook.json|-] [--diagnostics text|json] [--out workbook.json|-]",
     "  mikuproject export xml [--in workbook.json|-] [--diagnostics text|json] [--out project.xml|-]",
-    "  mikuproject export xlsx [--in workbook.json|-] [--diagnostics text|json] [--out project.xlsx|-]",
-    "  mikuproject report wbs-xlsx [--in workbook.json|-] [--diagnostics text|json] [--out report.xlsx|-]",
+    "  mikuproject export xlsx [--in workbook.json|-] [--diagnostics text|json] (--out project.xlsx|--out-base64 -)",
+    "  mikuproject report wbs-xlsx [--in workbook.json|-] [--diagnostics text|json] (--out report.xlsx|--out-base64 -)",
     "  mikuproject report daily-svg [--in workbook.json|-] [--diagnostics text|json] [--out report.svg|-]",
     "  mikuproject report weekly-svg [--in workbook.json|-] [--diagnostics text|json] [--out report.svg|-]",
-    "  mikuproject report monthly-calendar-svg [--in workbook.json|-] [--diagnostics text|json] [--out report.zip|-]",
-    "  mikuproject report all [--in workbook.json|-] [--diagnostics text|json] [--out report-bundle.zip|-]",
+    "  mikuproject report monthly-calendar-svg [--in workbook.json|-] [--diagnostics text|json] (--out report.zip|--out-base64 -)",
+    "  mikuproject report all [--in workbook.json|-] [--diagnostics text|json] (--out report-bundle.zip|--out-base64 -)",
     "  mikuproject report wbs-markdown [--in workbook.json|-] [--diagnostics text|json] [--out report.md|-]",
     "  mikuproject report mermaid [--in workbook.json|-] [--diagnostics text|json] [--out report.mmd|-]"
   ].join("\n"));
@@ -1287,6 +1483,30 @@ function inferErrorCode(error, context) {
   }
   if (message.includes("state diff には --before と --after が必要です")) {
     return "missing_diff_inputs";
+  }
+  if (message.includes("--in と --in-base64 を同時に指定できません")) {
+    return "multiple_input_sources";
+  }
+  if (message.includes("--out と --out-base64 を同時に指定できません")) {
+    return "multiple_output_targets";
+  }
+  if (message.includes("binary stdin には --in-base64 -")) {
+    return "binary_stdin_requires_base64";
+  }
+  if (message.includes("には --in <path> または --in-base64 - が必要です")) {
+    return "missing_binary_input";
+  }
+  if (message.includes("Base64 入力")) {
+    return "invalid_base64_input";
+  }
+  if (message.includes("--out-base64 は - のみ対応")) {
+    return "invalid_base64_output_target";
+  }
+  if (message.includes("--out-base64 は binary output 専用")) {
+    return "base64_output_requires_binary";
+  }
+  if (message.includes("binary artifact のため --out <path> が必要です")) {
+    return "binary_stdout_not_supported";
   }
   if (message.includes("--select uid には --task-uid が必要です")) {
     return "missing_task_uid";

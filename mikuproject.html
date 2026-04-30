@@ -2445,10 +2445,12 @@ CLI 例:
 `export phase-detail` は `--mode scoped|full` を受けます。
 `export phase-detail` は `--select auto|first-phase|uid` を受けます。
 `ai export`、`detect-kind`、`validate-patch`、`state summarize`、`state diff`、`state apply-patch`、`export`、`report` は `--diagnostics text|json` を受けることがあります。
-CLI では `--in -` / `--out -` を使って標準入力 / 標準出力を明示指定できます。
+CLI では `--in -` と text output の `--out -` を使って標準入力 / 標準出力を明示指定できます。
 同一コマンドで標準入力を読める入力オプションは 1 つだけです。
 `--in path` があればそのファイルを優先し、`--in -` は明示 stdin、`--in` 省略時だけ暗黙 stdin を使います。
-`--out path` があればそのファイルへ書き、`--out -` または `--out` 省略時は stdout を使います。
+XLSX などの binary input は `--in-base64 -` により標準入力の Base64 text から読めます。
+text output は `--out path` があればそのファイルへ書き、`--out -` または `--out` 省略時は stdout を使います。
+XLSX / ZIP などの binary artifact は `--out path` に file output するか、`--out-base64 -` で Base64 text を stdout へ書けます。
 `json` diagnostics には少なくとも `diagnostics_version` / `ok` / `command` / `context` / `status` / `exit_code` / `warning_count` / `error_count` / `io` / `warnings` / `errors` が含まれることがあります。
 `--diagnostics json` を指定した場合、usage error や処理失敗でも stderr に JSON diagnostics が返ることがあります。
 異常系 diagnostics には `error_type=usage_error|processing_error` が含まれることがあります。
@@ -9597,7 +9599,7 @@ if (!customElements.get("lht-page-menu")) {
     }
     function parseWorksheetRowCells(rowElement, styleBook, sharedStrings, helpers) {
         const cells = [];
-        const cellElements = Array.from(rowElement.getElementsByTagNameNS("http://schemas.openxmlformats.org/spreadsheetml/2006/main", "c")).filter((element) => element.parentElement === rowElement);
+        const cellElements = Array.from(rowElement.getElementsByTagNameNS("http://schemas.openxmlformats.org/spreadsheetml/2006/main", "c")).filter((element) => element.parentNode === rowElement);
         for (const cellElement of cellElements) {
             const reference = cellElement.getAttribute("r") || "";
             const columnIndex = decodeColumnReference(reference);
@@ -18509,9 +18511,6 @@ if (!customElements.get("lht-page-menu")) {
             const exportedXml = input.exportMsProjectXml(input.currentModel);
             const reparsedModel = input.importMsProjectXml(exportedXml);
             const validationIssues = input.validateProjectModel(reparsedModel);
-            if (validationIssues.some((issue) => issue.level === "error")) {
-                throw new Error(validationIssues.map((issue) => issue.message).join("\n"));
-            }
             const normalizedLeft = JSON.stringify(input.normalizeProjectModel(input.currentModel));
             const normalizedRight = JSON.stringify(input.normalizeProjectModel(reparsedModel));
             if (normalizedLeft !== normalizedRight) {
@@ -19527,6 +19526,12 @@ if (!customElements.get("lht-page-menu")) {
                 normalizeProjectModel: input.normalizeProjectModel
             });
             input.renderValidationIssues(validationIssues);
+            const errorCount = validationIssues.filter((issue) => issue.level === "error").length;
+            if (errorCount > 0) {
+                input.setStatus(`再読込テストで ${errorCount} 件の validation error が見つかりました`);
+                input.setActiveTab();
+                return;
+            }
             input.setStatus("再読込テストに成功しました");
             input.showToast("再読込テスト成功");
             input.setActiveTab();

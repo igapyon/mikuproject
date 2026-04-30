@@ -6,6 +6,7 @@
 
 - 最優先: サンプルデータを更新し、利用者の好みに合う題材・構造・見た目へ見直す
 - `mikuproject-skills` 側で、上流 `bundle/mikuproject.mjs` を `skills/mikuproject/runtime/mikuproject.mjs` として受け取る手順と smoke test 観点を反映する
+- 再読込テストで validation error が見つかった場合の UI 表示について、status / toast / validation 詳細導線の最終仕様を整理する
 - WBS workbook と `mikuproject-sample.xlsx` のタイトル行で、フォントサイズ指定をどこまで使うか整理する
 - `Mermaid` 出力は Markdown / 設計資料向けに残しつつ、見た目を制御しやすい `WBS SVG` 描画を別系統で追加するか検討する
 - `WBS SVG` について、今の既定である `近接ラベル` 表示だけを残し、左側にテキストを描画する `一覧ラベル` モードは将来的に廃止したい

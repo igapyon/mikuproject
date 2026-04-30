@@ -112,7 +112,9 @@ state 系の候補は次とする。
 共通:
 
 - `--in`: 入力 JSON ファイル。`-` なら標準入力
-- `--out`: 出力ファイル。`-` なら標準出力
+- `--in-base64`: binary 入力。`-` なら標準入力の Base64 text を読む
+- `--out`: 出力ファイル。text output では `-` なら標準出力。binary artifact では file path を指定する
+- `--out-base64`: binary 出力。`-` なら Base64 text を標準出力へ書く
 - `--diagnostics text|json`: diagnostics の出力形式
 - 同一コマンドで標準入力を読める入力オプションは 1 つだけにする
 
@@ -121,8 +123,10 @@ state 系の候補は次とする。
 - `--in path` が指定された場合は、そのファイルを読む
 - `--in -` が指定された場合は、標準入力を読む
 - `--in` 省略時に限り、対応コマンドでは標準入力を暗黙入力として読む
-- `--out path` が指定された場合は、そのファイルへ書く
-- `--out -` または `--out` 省略時は、標準出力へ書く
+- binary input では `--in-base64 -` により標準入力の Base64 text を読む
+- text output で `--out path` が指定された場合は、そのファイルへ書く
+- text output で `--out -` または `--out` 省略時は、標準出力へ書く
+- binary artifact では `--out path` に file output するか、`--out-base64 -` で Base64 text を標準出力へ書く
 
 exit code:
 
@@ -381,8 +385,12 @@ CLI は file-based だけでなく、標準入出力も扱いやすくする。
 
 方針:
 
-- `--in` 未指定時は stdin を読む
-- `--out` 未指定時は stdout へ出す
+- `--in` 未指定時は、対応コマンドでは stdin を読む
+- text output は `--out` 未指定時に stdout へ出す
+- text output は `--out -` で明示的に stdout へ出す
+- XLSX / ZIP などの binary artifact は `--out <path>` へ file output する
+- binary stdout が必要な場合は、`--out-base64 -` で Base64 text を出す
+- XLSX などの binary input を stdin から読む場合は、`--in-base64 -` で Base64 text を渡す
 - agent 利用では一時ファイルを減らせることを重視する
 
 ## 典型フロー例

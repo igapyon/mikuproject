@@ -139,6 +139,12 @@
         normalizeProjectModel: input.normalizeProjectModel
       });
       input.renderValidationIssues(validationIssues);
+      const errorCount = validationIssues.filter((issue) => issue.level === "error").length;
+      if (errorCount > 0) {
+        input.setStatus(`再読込テストで ${errorCount} 件の validation error が見つかりました`);
+        input.setActiveTab();
+        return;
+      }
       input.setStatus("再読込テストに成功しました");
       input.showToast("再読込テスト成功");
       input.setActiveTab();

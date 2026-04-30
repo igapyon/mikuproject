@@ -97,10 +97,12 @@ CLI 例:
 `export phase-detail` は `--mode scoped|full` を受けます。
 `export phase-detail` は `--select auto|first-phase|uid` を受けます。
 `ai export`、`detect-kind`、`validate-patch`、`state summarize`、`state diff`、`state apply-patch`、`export`、`report` は `--diagnostics text|json` を受けることがあります。
-CLI では `--in -` / `--out -` を使って標準入力 / 標準出力を明示指定できます。
+CLI では `--in -` と text output の `--out -` を使って標準入力 / 標準出力を明示指定できます。
 同一コマンドで標準入力を読める入力オプションは 1 つだけです。
 `--in path` があればそのファイルを優先し、`--in -` は明示 stdin、`--in` 省略時だけ暗黙 stdin を使います。
-`--out path` があればそのファイルへ書き、`--out -` または `--out` 省略時は stdout を使います。
+XLSX などの binary input は `--in-base64 -` により標準入力の Base64 text から読めます。
+text output は `--out path` があればそのファイルへ書き、`--out -` または `--out` 省略時は stdout を使います。
+XLSX / ZIP などの binary artifact は `--out path` に file output するか、`--out-base64 -` で Base64 text を stdout へ書けます。
 `json` diagnostics には少なくとも `diagnostics_version` / `ok` / `command` / `context` / `status` / `exit_code` / `warning_count` / `error_count` / `io` / `warnings` / `errors` が含まれることがあります。
 `--diagnostics json` を指定した場合、usage error や処理失敗でも stderr に JSON diagnostics が返ることがあります。
 異常系 diagnostics には `error_type=usage_error|processing_error` が含まれることがあります。

@@ -173,7 +173,9 @@ first cut の候補は次とする。
 - `--in -` と `--out -` を受け、標準入力 / 標準出力を明示的に指定できる
 - 同一コマンドで標準入力を読む入力オプションは 1 つだけとする
 - `--in path` が最優先、`--in -` は明示 stdin、`--in` 省略時だけ暗黙 stdin を使う
-- `--out path` が最優先、`--out -` または `--out` 省略時は stdout を使う
+- binary input は `--in-base64 -` で標準入力の Base64 text を読む
+- text output は `--out path` があればそのファイルへ書き、`--out -` または `--out` 省略時は stdout を使う
+- binary artifact は `--out path` に file output するか、`--out-base64 -` で Base64 text を stdout へ書く
 - `ai export` / `detect-kind` / `validate-patch` / `state summarize` / `state diff` / `state apply-patch` / `export` / `report` は `--diagnostics text|json` を受けられる
 - `json` diagnostics は少なくとも `diagnostics_version` / `ok` / `command` / `context` / `status` / `exit_code` / `warning_count` / `error_count` / `io` / `warnings` / `errors` を共通キーとして持ち、追加メタ情報をコマンド別に載せる
 - `json` diagnostics は `status` も共通キーとし、少なくとも `success` / `warning` / `noop` / `error` を使う

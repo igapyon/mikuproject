@@ -792,22 +792,88 @@ describe("mikuproject cli", () => {
 
   it("exports xlsx bytes from workbook state", () => {
     const workbookPath = writeTempJson("workbook.json", buildWorkbookState("CLI export xlsx"));
+    const outputPath = path.join(createTempDir("mikuproject-cli-out-"), "project.xlsx");
 
-    const result = runCli(["export", "xlsx", "--in", workbookPath], { encoding: "buffer" });
+    const result = runCli(["export", "xlsx", "--in", workbookPath, "--out", outputPath], { encoding: "buffer" });
+    const output = readFileSync(outputPath);
 
     expect(result.status).toBe(0);
-    expect(Buffer.isBuffer(result.stdout)).toBe(true);
-    expect(result.stdout.subarray(0, 2).toString("utf8")).toBe("PK");
+    expect(result.stdout.length).toBe(0);
+    expect(output.subarray(0, 2).toString("utf8")).toBe("PK");
+  });
+
+  it("rejects binary stdout output for xlsx export", () => {
+    const workbookPath = writeTempJson("workbook.json", buildWorkbookState("CLI export xlsx stdout"));
+
+    const result = runCli(["export", "xlsx", "--in", workbookPath, "--out", "-", "--diagnostics", "json"]);
+
+    expect(result.status).toBe(2);
+    expect(result.stdout).toBe("");
+    const diagnostics = JSON.parse(result.stderr);
+    expect(diagnostics.error_code).toBe("binary_stdout_not_supported");
+    expect(diagnostics.errors[0].code).toBe("binary_stdout_not_supported");
+  });
+
+  it("exports xlsx bytes as base64 when --out-base64 - is specified", () => {
+    const workbookPath = writeTempJson("workbook.json", buildWorkbookState("CLI export xlsx base64"));
+
+    const result = runCli(["export", "xlsx", "--in", workbookPath, "--out-base64", "-"]);
+    const output = Buffer.from(result.stdout.trim(), "base64");
+
+    expect(result.status).toBe(0);
+    expect(output.subarray(0, 2).toString("utf8")).toBe("PK");
+    expect(result.stderr).toBe("");
+  });
+
+  it("imports xlsx bytes from base64 stdin as workbook json", () => {
+    const loaded = loadMikuprojectCoreApi({ rootDir: repoRoot });
+    disposers.push(() => loaded.dispose());
+    const model = loaded.api.workbookJson.importAsProjectModel(buildWorkbookState("CLI import xlsx base64 base")).model;
+    const xlsxWorkbook = loaded.api.xlsx.exportWorkbook(model);
+    xlsxWorkbook.sheets
+      .find((sheet) => sheet.name === "Project")
+      .rows.find((row) => row.cells[0]?.value === "Name")
+      .cells[1].value = "CLI import xlsx base64";
+    const bytes = loaded.api.xlsx.encodeWorkbook(xlsxWorkbook);
+
+    const result = runCli(["import", "xlsx", "--in-base64", "-", "--out", "-"], {
+      input: `${Buffer.from(bytes).toString("base64")}\n`
+    });
+
+    expect(result.status).toBe(0);
+    const workbook = JSON.parse(result.stdout);
+    expect(workbook.format).toBe("mikuproject_workbook_json");
+    expect(workbook.sheets.Project.find((row) => row.Field === "Name").Value).toBe("CLI import xlsx base64");
+    expect(result.stderr).toBe("");
   });
 
   it("exports report wbs-xlsx bytes from workbook state", () => {
     const workbookPath = writeTempJson("workbook.json", buildWorkbookState("CLI report wbs-xlsx"));
+    const outputPath = path.join(createTempDir("mikuproject-cli-out-"), "wbs.xlsx");
 
-    const result = runCli(["report", "wbs-xlsx", "--in", workbookPath], { encoding: "buffer" });
+    const result = runCli(["report", "wbs-xlsx", "--in", workbookPath, "--out", outputPath], { encoding: "buffer" });
+    const output = readFileSync(outputPath);
 
     expect(result.status).toBe(0);
-    expect(Buffer.isBuffer(result.stdout)).toBe(true);
-    expect(result.stdout.subarray(0, 2).toString("utf8")).toBe("PK");
+    expect(result.stdout.length).toBe(0);
+    expect(output.subarray(0, 2).toString("utf8")).toBe("PK");
+  });
+
+  it("exports report all as base64 when --out-base64 - is specified", () => {
+    const workbookPath = writeTempJson("workbook.json", buildWorkbookState("CLI report all base64"));
+    const loaded = loadMikuprojectCoreApi({ rootDir: repoRoot });
+    disposers.push(() => loaded.dispose());
+
+    const result = runCli(["report", "all", "--in", workbookPath, "--out-base64", "-"]);
+    const output = Buffer.from(result.stdout.trim(), "base64");
+    const entryNames = new globalThis.__mikuprojectExcelIo.XlsxWorkbookCodec().listEntries(output);
+
+    expect(result.status).toBe(0);
+    expect(output.subarray(0, 2).toString("utf8")).toBe("PK");
+    expect(entryNames).toContain("wbs.xlsx");
+    expect(entryNames).toContain("wbs.md");
+    expect(entryNames).toContain("mermaid.mmd");
+    expect(result.stderr).toBe("");
   });
 
   it("exports report daily-svg from workbook state", () => {
@@ -832,25 +898,29 @@ describe("mikuproject cli", () => {
 
   it("exports report monthly-calendar-svg as zip bytes from workbook state", () => {
     const workbookPath = writeTempJson("workbook.json", buildWorkbookState("CLI report monthly-calendar-svg"));
+    const outputPath = path.join(createTempDir("mikuproject-cli-out-"), "monthly.zip");
 
-    const result = runCli(["report", "monthly-calendar-svg", "--in", workbookPath], { encoding: "buffer" });
+    const result = runCli(["report", "monthly-calendar-svg", "--in", workbookPath, "--out", outputPath], { encoding: "buffer" });
+    const output = readFileSync(outputPath);
 
     expect(result.status).toBe(0);
-    expect(Buffer.isBuffer(result.stdout)).toBe(true);
-    expect(result.stdout.subarray(0, 2).toString("utf8")).toBe("PK");
+    expect(result.stdout.length).toBe(0);
+    expect(output.subarray(0, 2).toString("utf8")).toBe("PK");
   });
 
   it("exports report all as a zip bundle from workbook state", () => {
     const workbookPath = writeTempJson("workbook.json", buildWorkbookState("CLI report all"));
     const loaded = loadMikuprojectCoreApi({ rootDir: repoRoot });
     disposers.push(() => loaded.dispose());
+    const outputPath = path.join(createTempDir("mikuproject-cli-out-"), "report-bundle.zip");
 
-    const result = runCli(["report", "all", "--in", workbookPath], { encoding: "buffer" });
-    const entryNames = new globalThis.__mikuprojectExcelIo.XlsxWorkbookCodec().listEntries(result.stdout);
+    const result = runCli(["report", "all", "--in", workbookPath, "--out", outputPath], { encoding: "buffer" });
+    const output = readFileSync(outputPath);
+    const entryNames = new globalThis.__mikuprojectExcelIo.XlsxWorkbookCodec().listEntries(output);
 
     expect(result.status).toBe(0);
-    expect(Buffer.isBuffer(result.stdout)).toBe(true);
-    expect(result.stdout.subarray(0, 2).toString("utf8")).toBe("PK");
+    expect(result.stdout.length).toBe(0);
+    expect(output.subarray(0, 2).toString("utf8")).toBe("PK");
     expect(entryNames).toContain("wbs.xlsx");
     expect(entryNames).toContain("wbs.md");
     expect(entryNames).toContain("mermaid.mmd");
@@ -917,7 +987,7 @@ describe("mikuproject cli", () => {
       "mikuproject-sources/scripts/lib/core-api-loader.mjs",
       "mikuproject-sources/src/ts/core-api.ts",
       "mikuproject-sources/src/js/core-api.js",
-      "mikuproject-sources/docs/miku-soft-40-agentskills-design-v20260425.md",
+      "mikuproject-sources/docs/miku-soft-40-agentskills-design-v20260429.md",
       "mikuproject-sources/tests/mikuproject-cli.test.js"
     ]));
 

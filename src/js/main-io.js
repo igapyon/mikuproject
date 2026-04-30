@@ -113,9 +113,6 @@
             const exportedXml = input.exportMsProjectXml(input.currentModel);
             const reparsedModel = input.importMsProjectXml(exportedXml);
             const validationIssues = input.validateProjectModel(reparsedModel);
-            if (validationIssues.some((issue) => issue.level === "error")) {
-                throw new Error(validationIssues.map((issue) => issue.message).join("\n"));
-            }
             const normalizedLeft = JSON.stringify(input.normalizeProjectModel(input.currentModel));
             const normalizedRight = JSON.stringify(input.normalizeProjectModel(reparsedModel));
             if (normalizedLeft !== normalizedRight) {

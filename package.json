@@ -1,6 +1,6 @@
 {
   "name": "mikuproject",
-  "version": "0.8.0",
+  "version": "0.8.3",
   "private": true,
   "description": "Local HTML tool for MS Project XML round-trip experiments.",
   "license": "Apache-2.0",

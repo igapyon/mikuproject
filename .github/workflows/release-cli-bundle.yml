@@ -47,10 +47,13 @@ jobs:
           set -euo pipefail
           VERSION="${TAG_NAME#v}"
           PACKAGE_VERSION="$(node -p "require('./package.json').version")"
-          if [ "${VERSION}" != "${PACKAGE_VERSION}" ]; then
-            echo "Release tag version (${VERSION}) does not match package.json version (${PACKAGE_VERSION})." >&2
-            exit 1
-          fi
+          case "${VERSION}" in
+            "${PACKAGE_VERSION}"|"${PACKAGE_VERSION}".*) ;;
+            *)
+              echo "Release tag version (${VERSION}) must match package.json version (${PACKAGE_VERSION}) or add a dot suffix such as ${PACKAGE_VERSION}.2." >&2
+              exit 1
+              ;;
+          esac
 
           mkdir -p release-assets
           cp bundle/mikuproject.mjs "release-assets/mikuproject-${VERSION}.mjs"

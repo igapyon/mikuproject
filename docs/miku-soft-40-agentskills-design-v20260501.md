@@ -31,11 +31,11 @@ Use the shared design documents together as follows.
 
 - `docs/miku-soft-10-mainapp-design-v20260501.md`
   - describes the upstream product design and semantic center
-- `docs/miku-soft-20-javaapp-design-v20260426.md`
+- `docs/miku-soft-20-javaapp-design-v20260425.md`
   - describes Java runtime versions when they exist
 - `docs/miku-soft-30-straight-conversion-v20260425.md`
   - describes how Java versions are created from upstream main applications
-- `docs/miku-soft-40-agentskills-design-v20260429.md`
+- `docs/miku-soft-40-agentskills-design-v20260501.md`
   - describes how Agent Skills versions should expose miku workflows to AI agents
 
 This document separates the following levels.
@@ -214,7 +214,7 @@ The preferred order is as follows.
 
 This keeps agent behavior predictable. It also prevents the skill from accidentally using stale generated files, unrelated scripts, or partial local experiments.
 
-Runtime artifact lookup should be simple and fixed. Place the single jar and single JavaScript CLI file under the skill directory, such as `skills/<skill-name>/runtime/`, and let the skill use those declared paths.
+Runtime artifact lookup should be simple and fixed. Place the single jar and single JavaScript CLI file under the skill directory, such as `skills/<skill-name>/runtime/`, and let the skill resolve the declared versioned artifacts there.
 
 Do not create a separate skill product line only because an additional runtime path exists. When both Java CLI and Node.js CLI runtimes are available, treat them as runtime artifacts of the same normal `-skills` package. The skill name, activation rules, workflow vocabulary, artifact roles, and product boundary should remain tied to the upstream main application, not to the runtime implementation.
 
@@ -535,8 +535,8 @@ repository root
       SKILL.md
       references/
       runtime/
-        <product>.jar
-        <product>.mjs
+        <product>-<version>.jar
+        <product>-<version>.mjs
   tests/
   workplace/.gitkeep
 ```
@@ -551,11 +551,11 @@ skills/
     SKILL.md
     references/
     runtime/
-      mikuproject.jar
-      mikuproject.mjs
+      mikuproject-<version>.jar
+      mikuproject-<version>.mjs
 ```
 
-The Java jar and Node.js CLI file are peer runtime artifacts. Their presence should not change the skill name or split the workflow vocabulary into runtime-specific skill products.
+The Java jar and Node.js CLI file are peer runtime artifacts. Use versioned file names for received artifacts, and resolve the actual file under `runtime/` at execution time. Their presence should not change the skill name or split the workflow vocabulary into runtime-specific skill products.
 
 `vendor/` directories are transition-only locations for repositories that still depend on copied upstream source trees or broader runtime trees. New normal operation should not add new runtime lookup through `vendor/`. As upstream Java and Node.js CLI artifacts become available as single files, repositories should move those artifacts into `skills/<skill-name>/runtime/` and remove the vendored runtime tree.
 
@@ -671,8 +671,8 @@ Important design points:
 - declared `mikuproject` runtime artifacts are checked before broad repository exploration
 - execution backend policy defaults to `cli-preferred`, while still allowing `cli-only`, `mcp-only`, `mcp-preferred`, and `handoff-only` when the user, environment, or repository configuration requires them
 - MCP backend support should use the `mikuproject-mcp` server layer and aligned MCP tools; `mikuproject-skills` remains the Agent Skill workflow layer, not the MCP server implementation
-- the upstream Node.js CLI runtime artifact is produced by `mikuproject` as a single `bundle/mikuproject.mjs` file and should be received by `mikuproject-skills` as `skills/mikuproject/runtime/mikuproject.mjs`
-- the upstream Java CLI runtime artifact is produced by `mikuproject-java` as `target/mikuproject.jar` and should be received by `mikuproject-skills` as `skills/mikuproject/runtime/mikuproject.jar`
+- the upstream Node.js CLI runtime artifact is produced by `mikuproject` as a single `bundle/mikuproject.mjs` file and should be received by `mikuproject-skills` as `skills/mikuproject/runtime/mikuproject-<version>.mjs`
+- the upstream Java CLI runtime artifact is produced by `mikuproject-java` as `target/mikuproject.jar` and should be received by `mikuproject-skills` as `skills/mikuproject/runtime/mikuproject-<version>.jar`
 
 This skill does not aim to replace the `mikuproject` browser UI. Its center is structured AI-agent operation over the upstream product's core APIs and artifacts.
 

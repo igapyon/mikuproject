@@ -987,7 +987,7 @@ describe("mikuproject cli", () => {
       "mikuproject-sources/scripts/lib/core-api-loader.mjs",
       "mikuproject-sources/src/ts/core-api.ts",
       "mikuproject-sources/src/js/core-api.js",
-      "mikuproject-sources/docs/miku-soft-40-agentskills-design-v20260429.md",
+      "mikuproject-sources/docs/miku-soft-40-agentskills-design-v20260501.md",
       "mikuproject-sources/tests/mikuproject-cli.test.js"
     ]));
 

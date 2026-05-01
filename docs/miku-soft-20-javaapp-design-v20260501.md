@@ -330,16 +330,16 @@ The CLI is a formal entrypoint for humans, scripts, build tools, and AI agents.
 
 CLI design emphasizes the following.
 
-- Keep options understandable and close to upstream where applicable
+- Keep command groups, subcommands, option names, and argument combinations close to upstream where applicable
 - Use explicit input and output paths
-- Use stdout for normal textual output or declared artifact output
+- Use stdout for normal textual output or explicitly declared stream-friendly output
 - Use stderr for diagnostics, usage errors, progress, and verbose logs
 - Make success and failure judgeable by exit code
 - Keep verbose output available for progress and timing when useful
-- Keep binary output file-based by default
+- Keep binary output file-based by default, and use an explicit Base64 stdout option when stream-friendly binary exchange is needed
 - Test stdout, stderr, exit code, and generated files
 
-When the upstream has a CLI, the Java CLI should respect its interface as far as practical. Differences caused by Java runtime needs should be documented.
+When the upstream has a CLI, the Java CLI should respect its interface as far as practical. This includes the command group structure, subcommand names, option names, stdin / stdout conventions, diagnostics options, and usage-error boundaries. Differences caused by Java runtime needs or Java-side automation extensions should be documented.
 
 CLI help, README usage, and tests should be synchronized closely enough that option descriptions do not drift.
 
@@ -596,7 +596,7 @@ CLI tests should check:
 - output files
 - no-overwrite or failure behavior where relevant
 
-For normal usage, output files are preferred for generated artifacts. Stdout should be used only when the command contract clearly states it.
+For normal usage, output files are preferred for generated artifacts. Stdout should be used only when the command contract clearly states it. For binary artifacts, prefer `--out <path>` and use an explicit Base64 stdout option such as `--out-base64 -` when the upstream CLI defines that stream-friendly contract.
 
 ### Maven Plugin Conventions
 
@@ -786,7 +786,6 @@ The upstream product treats `MS Project XML` as the semantic base and uses `Proj
 The Java version currently emphasizes the following execution paths.
 
 - runtime jar / CLI
-- Java-side multi-input batch commands
 - public core API facades
 - deterministic report and exchange artifact generation
 - distribution zip for runtime users
@@ -814,21 +813,23 @@ These facades are Java-side aggregation points. They should remain traceable to 
 Important design points:
 
 - preserve the upstream goal of bridging `MS Project XML`, WBS reports, workbook exchange, and AI workflows
+- keep Java CLI command groups, subcommands, option names, stdin / stdout behavior, diagnostics options, and usage-error boundaries aligned with the Node.js upstream where practical
 - keep `MS Project XML` and `ProjectModel` as the semantic center
 - treat workbook JSON, `.xlsx`, AI JSON, patch JSON, Markdown, SVG, Mermaid, and WBS XLSX as exchange, editing, report, or inspection surfaces around that center
 - keep browser Web UI behavior out of scope
 - keep AI-facing workflows artifact-based, such as project overview, phase detail, task edit, draft request, patch JSON, validate, apply, and diff-oriented outputs
 - keep report outputs such as WBS Markdown, daily / weekly / monthly SVG, Mermaid, WBS XLSX, report directory, and report bundle as derived artifacts, not canonical project state
+- keep XLSX / ZIP and other binary CLI artifacts file-based by default; when stream-friendly exchange is needed, follow the upstream `--in-base64 -` / `--out-base64 -` convention rather than writing raw binary to stdout
 - make report bundle and report directory outputs deterministic enough for byte-level comparison where practical
 - keep CLI help, README command lists, mapping documents, and focused tests synchronized
 
-#### Batch Commands in `mikuproject-java`
+#### Java-Side CLI Extensions in `mikuproject-java`
 
-`mikuproject-java` has many Java-side `*-batch` CLI commands.
+`mikuproject-java` may add Java-side CLI extensions for local automation when they have clear operational value.
 
-These commands are operational extensions for local automation. They are useful because project report and import/export workflows often need to process several XML, workbook, JSON, or patch files in one JVM invocation.
+These commands are operational extensions for local automation. They can be useful when project report and import/export workflows need to process several XML, workbook, JSON, or patch files in one JVM invocation.
 
-This batch surface should be read as a Java-side extension, not as a change to the upstream `mikuproject` single-operation product contract.
+This extension surface should be read as Java-side behavior, not as a change to the upstream `mikuproject` single-operation product contract.
 
 The current direction is:
 

@@ -1,0 +1,68 @@
+name: Release CLI bundle
+
+on:
+  release:
+    types:
+      - published
+  workflow_dispatch:
+    inputs:
+      tag_name:
+        description: "GitHub Release tag to attach the CLI bundle to"
+        required: true
+        type: string
+
+permissions:
+  contents: write
+
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: "true"
+
+jobs:
+  release-cli-bundle:
+    runs-on: ubuntu-latest
+    if: startsWith(github.event.release.tag_name || github.event.inputs.tag_name, 'v')
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.inputs.tag_name || github.event.release.tag_name || github.ref }}
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build
+        run: npm run build
+
+      - name: Prepare release assets
+        env:
+          TAG_NAME: ${{ github.event.inputs.tag_name || github.event.release.tag_name || github.ref_name }}
+        run: |
+          set -euo pipefail
+          VERSION="${TAG_NAME#v}"
+          PACKAGE_VERSION="$(node -p "require('./package.json').version")"
+          if [ "${VERSION}" != "${PACKAGE_VERSION}" ]; then
+            echo "Release tag version (${VERSION}) does not match package.json version (${PACKAGE_VERSION})." >&2
+            exit 1
+          fi
+
+          mkdir -p release-assets
+          cp bundle/mikuproject.mjs "release-assets/mikuproject-${VERSION}.mjs"
+          cp bundle/mikuproject-sources.tgz "release-assets/mikuproject-sources-${VERSION}.tgz"
+
+      - name: Verify CLI bundle asset
+        run: node release-assets/mikuproject-*.mjs --version
+
+      - name: Upload CLI bundle to GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ github.event.inputs.tag_name || github.event.release.tag_name || github.ref_name }}
+          files: release-assets/*
+          draft: false
+          prerelease: false

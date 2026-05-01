@@ -61,7 +61,11 @@ vitestArgs.push(...SUITES[requestedSuite]);
 
 const result = spawnSync(process.execPath, vitestArgs, {
   stdio: "inherit",
-  cwd: process.cwd()
+  cwd: process.cwd(),
+  env: {
+    ...process.env,
+    TZ: "Asia/Tokyo"
+  }
 });
 
 process.exit(result.status ?? 1);

@@ -124,6 +124,8 @@ npm test
 
 `npm run build` には `build:web`、`build:cli-bundle`、`test:fast` が含まれる。開発用コマンドの詳細、テスト運用、`local-data/` の扱いは [docs/development.md](docs/development.md) を参照してください。
 
+`workplace/` は外部リポジトリの一時 clone、展開物、検証成果物などを置くローカル作業領域として扱い、`workplace/.gitkeep` 以外は Git 管理しません。
+
 ## 再利用 API
 
 single-file web app 向けの既存 `globalThis.__mikuproject*` 群は維持しつつ、Agent Skills / CLI / MCP から使いやすい集約入口として `globalThis.__mikuprojectCoreApi` を公開しています。

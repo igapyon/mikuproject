@@ -6,6 +6,7 @@
     const TEXT_ENCODER = new TextEncoder();
     const TEXT_DECODER = new TextDecoder();
     const CRC32_TABLE = buildCrc32Table();
+    const MS_OFFICE_CORE = globalThis.__mikuprojectMsOfficeCore;
     function packZip(entries) {
         const localParts = [];
         const centralParts = [];
@@ -104,45 +105,27 @@
         return entries;
     }
     async function unpackZipAsync(bytes) {
-        const view = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength);
-        const endOffset = findEndOfCentralDirectoryOffset(bytes);
-        const totalEntries = view.getUint16(endOffset + 10, true);
-        const centralDirectoryOffset = view.getUint32(endOffset + 16, true);
-        const entries = {};
-        let pointer = centralDirectoryOffset;
-        for (let index = 0; index < totalEntries; index += 1) {
-            if (view.getUint32(pointer, true) !== 0x02014b50) {
-                throw new Error("Invalid ZIP central directory header");
-            }
-            const compressionMethod = view.getUint16(pointer + 10, true);
-            const compressedSize = view.getUint32(pointer + 20, true);
-            const uncompressedSize = view.getUint32(pointer + 24, true);
-            const fileNameLength = view.getUint16(pointer + 28, true);
-            const extraLength = view.getUint16(pointer + 30, true);
-            const commentLength = view.getUint16(pointer + 32, true);
-            const localHeaderOffset = view.getUint32(pointer + 42, true);
-            const fileName = decodeUtf8(bytes.subarray(pointer + 46, pointer + 46 + fileNameLength));
-            const localView = new DataView(bytes.buffer, bytes.byteOffset + localHeaderOffset, bytes.byteLength - localHeaderOffset);
-            if (localView.getUint32(0, true) !== 0x04034b50) {
-                throw new Error(`Invalid ZIP local header for entry: ${fileName}`);
-            }
-            const localFileNameLength = localView.getUint16(26, true);
-            const localExtraLength = localView.getUint16(28, true);
-            const dataOffset = localHeaderOffset + 30 + localFileNameLength + localExtraLength;
-            const data = bytes.slice(dataOffset, dataOffset + compressedSize);
-            if (compressionMethod === 0) {
-                if (compressedSize !== uncompressedSize) {
-                    throw new Error(`Stored ZIP entry size mismatch: ${fileName}`);
+        if (!MS_OFFICE_CORE) {
+            throw new Error("miku-ms-office-core module is not loaded");
+        }
+        const result = await MS_OFFICE_CORE.readZipPackageAsync(bytes, {
+            inflateRaw: inflateDeflateRaw
+        });
+        const errors = result.diagnostics.filter((diagnostic) => diagnostic.severity === "error");
+        if (errors.length > 0) {
+            throw new Error(errors.map((diagnostic) => {
+                if (diagnostic.code === "zip.eocd.missing") {
+                    return "ZIP end of central directory not found";
                 }
-                entries[fileName] = data;
-            }
-            else if (compressionMethod === 8) {
-                entries[fileName] = await inflateDeflateRaw(data, uncompressedSize, fileName);
-            }
-            else {
-                throw new Error(`Unsupported ZIP compression method for entry ${fileName}: ${compressionMethod}`);
-            }
-            pointer += 46 + fileNameLength + extraLength + commentLength;
+                if (diagnostic.code === "zip.central_directory.invalid") {
+                    return "Invalid ZIP central directory header";
+                }
+                return diagnostic.path ? `${diagnostic.path}: ${diagnostic.message}` : diagnostic.message;
+            }).join("\n"));
+        }
+        const entries = {};
+        for (const entry of result.entries) {
+            entries[entry.path] = entry.data;
         }
         return entries;
     }

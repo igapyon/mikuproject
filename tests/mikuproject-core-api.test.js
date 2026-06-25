@@ -137,6 +137,10 @@ const excelIoCode = readFileSync(
   path.resolve(__dirname, "../src/js/excel-io.js"),
   "utf8"
 );
+const msOfficeCoreCode = readFileSync(
+  path.resolve(__dirname, "../src/js/ms-office-core.js"),
+  "utf8"
+);
 const excelIoZipCode = readFileSync(
   path.resolve(__dirname, "../src/js/excel-io-zip.js"),
   "utf8"
@@ -377,6 +381,7 @@ function bootModules() {
     msProjectXmlCode,
     markdownEscapeCode,
     projectWorkbookSchemaCode,
+    msOfficeCoreCode,
     excelIoZipCode,
     excelIoNormalizeCode,
     excelIoPackageXmlCode,

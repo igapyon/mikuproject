@@ -4,10 +4,10 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>mikuproject</title>
-  
-  
-  
-  
+
+
+
+
   <style>
 /*
  * lht-cmn components.css
@@ -3330,54 +3330,6 @@ JSON parse failure では、`error_code=invalid_json_input` と `error_details.c
     <lht-toast id="toast"></lht-toast>
   </div>
   </main>
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
 
 
 
@@ -3389,56 +3341,104 @@ JSON parse failure では、`error_code=invalid_json_input` と `error_details.c
 
 
 
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
   <script>
 (()=>{function s(o,e,t,r){var i=arguments.length,n=i<3?e:r===null?r=Object.getOwnPropertyDescriptor(e,t):r,a;if(typeof Reflect=="object"&&typeof Reflect.decorate=="function")n=Reflect.decorate(o,e,t,r);else for(var d=o.length-1;d>=0;d--)(a=o[d])&&(n=(i<3?a(n):i>3?a(e,t,n):a(e,t))||n);return i>3&&n&&Object.defineProperty(e,t,n),n}var E=o=>(e,t)=>{t!==void 0?t.addInitializer(()=>{customElements.define(o,e)}):customElements.define(o,e)};var Qe=globalThis,et=Qe.ShadowRoot&&(Qe.ShadyCSS===void 0||Qe.ShadyCSS.nativeShadow)&&"adoptedStyleSheets"in Document.prototype&&"replace"in CSSStyleSheet.prototype,Bt=Symbol(),$r=new WeakMap,Ne=class{constructor(e,t,r){if(this._$cssResult$=!0,r!==Bt)throw Error("CSSResult is not constructable. Use `unsafeCSS` or `css` instead.");this.cssText=e,this.t=t}get styleSheet(){let e=this.o,t=this.t;if(et&&e===void 0){let r=t!==void 0&&t.length===1;r&&(e=$r.get(t)),e===void 0&&((this.o=e=new CSSStyleSheet).replaceSync(this.cssText),r&&$r.set(t,e))}return e}toString(){return this.cssText}},Tr=o=>new Ne(typeof o=="string"?o:o+"",void 0,Bt),g=(o,...e)=>{let t=o.length===1?o[0]:e.reduce((r,i,n)=>r+(a=>{if(a._$cssResult$===!0)return a.cssText;if(typeof a=="number")return a;throw Error("Value passed to 'css' function must be a 'css' function result: "+a+". Use 'unsafeCSS' to pass non-literal values, but take care to ensure page security.")})(i)+o[n+1],o[0]);return new Ne(t,o,Bt)},Sr=(o,e)=>{if(et)o.adoptedStyleSheets=e.map(t=>t instanceof CSSStyleSheet?t:t.styleSheet);else for(let t of e){let r=document.createElement("style"),i=Qe.litNonce;i!==void 0&&r.setAttribute("nonce",i),r.textContent=t.cssText,o.appendChild(r)}},Ft=et?o=>o:o=>o instanceof CSSStyleSheet?(e=>{let t="";for(let r of e.cssRules)t+=r.cssText;return Tr(t)})(o):o;var{is:Io,defineProperty:ko,getOwnPropertyDescriptor:Oo,getOwnPropertyNames:Ro,getOwnPropertySymbols:Po,getPrototypeOf:Lo}=Object,ce=globalThis,Ir=ce.trustedTypes,Do=Ir?Ir.emptyScript:"",zo=ce.reactiveElementPolyfillSupport,Be=(o,e)=>o,Fe={toAttribute(o,e){switch(e){case Boolean:o=o?Do:null;break;case Object:case Array:o=o==null?o:JSON.stringify(o)}return o},fromAttribute(o,e){let t=o;switch(e){case Boolean:t=o!==null;break;case Number:t=o===null?null:Number(o);break;case Object:case Array:try{t=JSON.parse(o)}catch{t=null}}return t}},tt=(o,e)=>!Io(o,e),kr={attribute:!0,type:String,converter:Fe,reflect:!1,useDefault:!1,hasChanged:tt};Symbol.metadata??(Symbol.metadata=Symbol("metadata")),ce.litPropertyMetadata??(ce.litPropertyMetadata=new WeakMap);var re=class extends HTMLElement{static addInitializer(e){this._$Ei(),(this.l??(this.l=[])).push(e)}static get observedAttributes(){return this.finalize(),this._$Eh&&[...this._$Eh.keys()]}static createProperty(e,t=kr){if(t.state&&(t.attribute=!1),this._$Ei(),this.prototype.hasOwnProperty(e)&&((t=Object.create(t)).wrapped=!0),this.elementProperties.set(e,t),!t.noAccessor){let r=Symbol(),i=this.getPropertyDescriptor(e,r,t);i!==void 0&&ko(this.prototype,e,i)}}static getPropertyDescriptor(e,t,r){let{get:i,set:n}=Oo(this.prototype,e)??{get(){return this[t]},set(a){this[t]=a}};return{get:i,set(a){let d=i?.call(this);n?.call(this,a),this.requestUpdate(e,d,r)},configurable:!0,enumerable:!0}}static getPropertyOptions(e){return this.elementProperties.get(e)??kr}static _$Ei(){if(this.hasOwnProperty(Be("elementProperties")))return;let e=Lo(this);e.finalize(),e.l!==void 0&&(this.l=[...e.l]),this.elementProperties=new Map(e.elementProperties)}static finalize(){if(this.hasOwnProperty(Be("finalized")))return;if(this.finalized=!0,this._$Ei(),this.hasOwnProperty(Be("properties"))){let t=this.properties,r=[...Ro(t),...Po(t)];for(let i of r)this.createProperty(i,t[i])}let e=this[Symbol.metadata];if(e!==null){let t=litPropertyMetadata.get(e);if(t!==void 0)for(let[r,i]of t)this.elementProperties.set(r,i)}this._$Eh=new Map;for(let[t,r]of this.elementProperties){let i=this._$Eu(t,r);i!==void 0&&this._$Eh.set(i,t)}this.elementStyles=this.finalizeStyles(this.styles)}static finalizeStyles(e){let t=[];if(Array.isArray(e)){let r=new Set(e.flat(1/0).reverse());for(let i of r)t.unshift(Ft(i))}else e!==void 0&&t.push(Ft(e));return t}static _$Eu(e,t){let r=t.attribute;return r===!1?void 0:typeof r=="string"?r:typeof e=="string"?e.toLowerCase():void 0}constructor(){super(),this._$Ep=void 0,this.isUpdatePending=!1,this.hasUpdated=!1,this._$Em=null,this._$Ev()}_$Ev(){this._$ES=new Promise(e=>this.enableUpdating=e),this._$AL=new Map,this._$E_(),this.requestUpdate(),this.constructor.l?.forEach(e=>e(this))}addController(e){(this._$EO??(this._$EO=new Set)).add(e),this.renderRoot!==void 0&&this.isConnected&&e.hostConnected?.()}removeController(e){this._$EO?.delete(e)}_$E_(){let e=new Map,t=this.constructor.elementProperties;for(let r of t.keys())this.hasOwnProperty(r)&&(e.set(r,this[r]),delete this[r]);e.size>0&&(this._$Ep=e)}createRenderRoot(){let e=this.shadowRoot??this.attachShadow(this.constructor.shadowRootOptions);return Sr(e,this.constructor.elementStyles),e}connectedCallback(){this.renderRoot??(this.renderRoot=this.createRenderRoot()),this.enableUpdating(!0),this._$EO?.forEach(e=>e.hostConnected?.())}enableUpdating(e){}disconnectedCallback(){this._$EO?.forEach(e=>e.hostDisconnected?.())}attributeChangedCallback(e,t,r){this._$AK(e,r)}_$ET(e,t){let r=this.constructor.elementProperties.get(e),i=this.constructor._$Eu(e,r);if(i!==void 0&&r.reflect===!0){let n=(r.converter?.toAttribute!==void 0?r.converter:Fe).toAttribute(t,r.type);this._$Em=e,n==null?this.removeAttribute(i):this.setAttribute(i,n),this._$Em=null}}_$AK(e,t){let r=this.constructor,i=r._$Eh.get(e);if(i!==void 0&&this._$Em!==i){let n=r.getPropertyOptions(i),a=typeof n.converter=="function"?{fromAttribute:n.converter}:n.converter?.fromAttribute!==void 0?n.converter:Fe;this._$Em=i;let d=a.fromAttribute(t,n.type);this[i]=d??this._$Ej?.get(i)??d,this._$Em=null}}requestUpdate(e,t,r,i=!1,n){if(e!==void 0){let a=this.constructor;if(i===!1&&(n=this[e]),r??(r=a.getPropertyOptions(e)),!((r.hasChanged??tt)(n,t)||r.useDefault&&r.reflect&&n===this._$Ej?.get(e)&&!this.hasAttribute(a._$Eu(e,r))))return;this.C(e,t,r)}this.isUpdatePending===!1&&(this._$ES=this._$EP())}C(e,t,{useDefault:r,reflect:i,wrapped:n},a){r&&!(this._$Ej??(this._$Ej=new Map)).has(e)&&(this._$Ej.set(e,a??t??this[e]),n!==!0||a!==void 0)||(this._$AL.has(e)||(this.hasUpdated||r||(t=void 0),this._$AL.set(e,t)),i===!0&&this._$Em!==e&&(this._$Eq??(this._$Eq=new Set)).add(e))}async _$EP(){this.isUpdatePending=!0;try{await this._$ES}catch(t){Promise.reject(t)}let e=this.scheduleUpdate();return e!=null&&await e,!this.isUpdatePending}scheduleUpdate(){return this.performUpdate()}performUpdate(){if(!this.isUpdatePending)return;if(!this.hasUpdated){if(this.renderRoot??(this.renderRoot=this.createRenderRoot()),this._$Ep){for(let[i,n]of this._$Ep)this[i]=n;this._$Ep=void 0}let r=this.constructor.elementProperties;if(r.size>0)for(let[i,n]of r){let{wrapped:a}=n,d=this[i];a!==!0||this._$AL.has(i)||d===void 0||this.C(i,void 0,n,d)}}let e=!1,t=this._$AL;try{e=this.shouldUpdate(t),e?(this.willUpdate(t),this._$EO?.forEach(r=>r.hostUpdate?.()),this.update(t)):this._$EM()}catch(r){throw e=!1,this._$EM(),r}e&&this._$AE(t)}willUpdate(e){}_$AE(e){this._$EO?.forEach(t=>t.hostUpdated?.()),this.hasUpdated||(this.hasUpdated=!0,this.firstUpdated(e)),this.updated(e)}_$EM(){this._$AL=new Map,this.isUpdatePending=!1}get updateComplete(){return this.getUpdateComplete()}getUpdateComplete(){return this._$ES}shouldUpdate(e){return!0}update(e){this._$Eq&&(this._$Eq=this._$Eq.forEach(t=>this._$ET(t,this[t]))),this._$EM()}updated(e){}firstUpdated(e){}};re.elementStyles=[],re.shadowRootOptions={mode:"open"},re[Be("elementProperties")]=new Map,re[Be("finalized")]=new Map,zo?.({ReactiveElement:re}),(ce.reactiveElementVersions??(ce.reactiveElementVersions=[])).push("2.1.2");var Mo={attribute:!0,type:String,converter:Fe,reflect:!1,hasChanged:tt},No=(o=Mo,e,t)=>{let{kind:r,metadata:i}=t,n=globalThis.litPropertyMetadata.get(i);if(n===void 0&&globalThis.litPropertyMetadata.set(i,n=new Map),r==="setter"&&((o=Object.create(o)).wrapped=!0),n.set(t.name,o),r==="accessor"){let{name:a}=t;return{set(d){let c=e.get.call(this);e.set.call(this,d),this.requestUpdate(a,c,o,!0,d)},init(d){return d!==void 0&&this.C(a,void 0,o,d),d}}}if(r==="setter"){let{name:a}=t;return function(d){let c=this[a];e.call(this,d),this.requestUpdate(a,c,o,!0,d)}}throw Error("Unsupported decorator location: "+r)};function l(o){return(e,t)=>typeof t=="object"?No(o,e,t):((r,i,n)=>{let a=i.hasOwnProperty(n);return i.constructor.createProperty(n,r),a?Object.getOwnPropertyDescriptor(i,n):void 0})(o,e,t)}function k(o){return l({...o,state:!0,attribute:!1})}var Q=(o,e,t)=>(t.configurable=!0,t.enumerable=!0,Reflect.decorate&&typeof e!="object"&&Object.defineProperty(o,e,t),t);function S(o,e){return(t,r,i)=>{let n=a=>a.renderRoot?.querySelector(o)??null;if(e){let{get:a,set:d}=typeof r=="object"?t:i??(()=>{let c=Symbol();return{get(){return this[c]},set(h){this[c]=h}}})();return Q(t,r,{get(){let c=a.call(this);return c===void 0&&(c=n(this),(c!==null||this.hasUpdated)&&d.call(this,c)),c}})}return Q(t,r,{get(){return n(this)}})}}var Bo;function Or(o){return(e,t)=>Q(e,t,{get(){return(this.renderRoot??Bo??(Bo=document.createDocumentFragment())).querySelectorAll(o)}})}function N(o){return(e,t)=>{let{slot:r,selector:i}=o??{},n="slot"+(r?`[name=${r}]`:":not([name])");return Q(e,t,{get(){let a=this.renderRoot?.querySelector(n),d=a?.assignedElements(o)??[];return i===void 0?d:d.filter(c=>c.matches(i))}})}}function rt(o){return(e,t)=>{let{slot:r}=o??{},i="slot"+(r?`[name=${r}]`:":not([name])");return Q(e,t,{get(){return this.renderRoot?.querySelector(i)?.assignedNodes(o)??[]}})}}var qe=globalThis,Rr=o=>o,ot=qe.trustedTypes,Pr=ot?ot.createPolicy("lit-html",{createHTML:o=>o}):void 0,qt="$lit$",oe=`lit$${Math.random().toFixed(9).slice(2)}$`,Vt="?"+oe,Fo=`<${Vt}>`,_e=document,Ve=()=>_e.createComment(""),He=o=>o===null||typeof o!="object"&&typeof o!="function",Ht=Array.isArray,Br=o=>Ht(o)||typeof o?.[Symbol.iterator]=="function",Ut=`[ 	
 \f\r]`,Ue=/<(?:(!--|\/[^a-zA-Z])|(\/?[a-zA-Z][^>\s]*)|(\/?$))/g,Lr=/-->/g,Dr=/>/g,ye=RegExp(`>|${Ut}(?:([^\\s"'>=/]+)(${Ut}*=${Ut}*(?:[^ 	
@@ -6063,7 +6063,19 @@ if (!customElements.get("lht-page-menu")) {
                 byParent.set(task.parentUid, siblings);
             }
             for (const siblings of byParent.values()) {
-                siblings.sort((left, right) => left.position - right.position || left.uid.localeCompare(right.uid));
+                siblings.sort((left, right) => {
+                    const positionOrder = left.position - right.position;
+                    if (positionOrder !== 0) {
+                        return positionOrder;
+                    }
+                    if (left.uid < right.uid) {
+                        return -1;
+                    }
+                    if (left.uid > right.uid) {
+                        return 1;
+                    }
+                    return 0;
+                });
             }
             const orderedTasks = [];
             function walk(parentUid, outlinePath) {
@@ -6513,7 +6525,15 @@ if (!customElements.get("lht-page-menu")) {
             }
             holidays.set(betweenText, "休日");
         }
-        return new Map(Array.from(holidays.entries()).sort((left, right) => left[0].localeCompare(right[0])));
+        return new Map(Array.from(holidays.entries()).sort((left, right) => {
+            if (left[0] < right[0]) {
+                return -1;
+            }
+            if (left[0] > right[0]) {
+                return 1;
+            }
+            return 0;
+        }));
     }
     function buildDefaultWorkingTimes(project) {
         const start = project.defaultStartTime || "09:00:00";
@@ -8807,7 +8827,7 @@ if (!customElements.get("lht-page-menu")) {
             .replace(/'/g, "&apos;");
     }
     function sanitizeXmlText(value) {
-        return value.replace(/[^\u0009\u000A\u000D\u0020-\uD7FF\uE000-\uFFFD]/g, "");
+        return value.replace(/[^\u0009\u000A\u000D\u0020-\uD7FF\uE000-\uFFFD\u{10000}-\u{10FFFF}]/gu, "");
     }
     function encodeColumnName(columnIndex) {
         let current = columnIndex + 1;
@@ -10038,7 +10058,7 @@ var __mikuMsOfficeCoreRelease = (() => {
         return `<t${attribute}>${escapeXml(sanitizeXmlText(value))}</t>`;
     }
     function sanitizeXmlText(value) {
-        return value.replace(/[\u0000-\u0008\u000B\u000C\u000E-\u001F]/g, "");
+        return value.replace(/[^\u0009\u000A\u000D\u0020-\uD7FF\uE000-\uFFFD\u{10000}-\u{10FFFF}]/gu, "");
     }
     function encodeColumnName(columnIndex) {
         let current = columnIndex + 1;

@@ -93,7 +93,15 @@
       holidays.set(betweenText, "休日");
     }
 
-    return new Map(Array.from(holidays.entries()).sort((left, right) => left[0].localeCompare(right[0])));
+    return new Map(Array.from(holidays.entries()).sort((left, right) => {
+      if (left[0] < right[0]) {
+        return -1;
+      }
+      if (left[0] > right[0]) {
+        return 1;
+      }
+      return 0;
+    }));
   }
 
   function buildDefaultWorkingTimes(project: ProjectInfo): WorkingTimeModel[] {

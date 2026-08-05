@@ -324,13 +324,13 @@ function collectSourceArchiveFiles() {
       files.push(relativePath);
     }
   }
-  return files.sort((a, b) => a.localeCompare(b));
+  return files.sort(compareNormalizedRelativePaths);
 }
 
 function collectFilesRecursive(relativeDir, files) {
   const absoluteDir = path.resolve(ROOT, relativeDir);
   const entries = fs.readdirSync(absoluteDir, { withFileTypes: true })
-    .sort((a, b) => a.name.localeCompare(b.name));
+    .sort((a, b) => compareUtf16CodeUnits(toPosixPath(a.name), toPosixPath(b.name)));
   for (const entry of entries) {
     const relativePath = path.join(relativeDir, entry.name);
     if (entry.name === ".DS_Store") {
@@ -417,6 +417,20 @@ function getArchiveMode(absolutePath) {
 
 function toPosixPath(relativePath) {
   return relativePath.split(path.sep).join("/");
+}
+
+function compareNormalizedRelativePaths(left, right) {
+  return compareUtf16CodeUnits(toPosixPath(left), toPosixPath(right));
+}
+
+function compareUtf16CodeUnits(left, right) {
+  if (left < right) {
+    return -1;
+  }
+  if (left > right) {
+    return 1;
+  }
+  return 0;
 }
 
 function readRepoFile(relativePath) {

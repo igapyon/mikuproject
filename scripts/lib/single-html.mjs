@@ -53,6 +53,10 @@ export function buildSingleHtmlFromSource(sourceHtml, srcHtmlPath) {
     return "";
   });
 
+  // Removing an indented local asset tag leaves a whitespace-only line in the
+  // generated HTML. Keep generated artifacts free of trailing whitespace.
+  output = output.replace(/^[ \t]+(?=\r?$)/gm, "");
+
   // Inline scripts written directly in -src HTML can also contain literal
   // "</script>" inside JS strings (e.g. HTML template builders), which breaks
   // the final single-file HTML parser. Escape those safely.

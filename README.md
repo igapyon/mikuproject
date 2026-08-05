@@ -126,6 +126,10 @@ npm test
 
 `workplace/` は外部リポジトリの一時 clone、展開物、検証成果物などを置くローカル作業領域として扱い、`workplace/.gitkeep` 以外は Git 管理しません。
 
+`src/js/`、`index.html`、`mikuproject.html` は、ブラウザ実行と配布のために Git 管理する生成物です。手編集はせず、対応する `src/ts/` や HTML source を更新して `npm run build:web` で再生成します。一方、`node_modules/`、`.npm-cache/`、`coverage/`、`bundle/`、`local-data/`、`workplace/` と個人用の `.vscode/mcp.json` はローカル作業用であり、Git 管理しません。
+
+miku-soft の共有標準と、このリポジトリの追従状況は [docs/miku-soft-reference.md](docs/miku-soft-reference.md) と [docs/migration-worklog.md](docs/migration-worklog.md) を参照してください。
+
 ## 再利用 API
 
 single-file web app 向けの既存 `globalThis.__mikuproject*` 群は維持しつつ、Agent Skills / CLI / MCP から使いやすい集約入口として `globalThis.__mikuprojectCoreApi` を公開しています。

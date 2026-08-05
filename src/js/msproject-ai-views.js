@@ -306,7 +306,19 @@
                 byParent.set(task.parentUid, siblings);
             }
             for (const siblings of byParent.values()) {
-                siblings.sort((left, right) => left.position - right.position || left.uid.localeCompare(right.uid));
+                siblings.sort((left, right) => {
+                    const positionOrder = left.position - right.position;
+                    if (positionOrder !== 0) {
+                        return positionOrder;
+                    }
+                    if (left.uid < right.uid) {
+                        return -1;
+                    }
+                    if (left.uid > right.uid) {
+                        return 1;
+                    }
+                    return 0;
+                });
             }
             const orderedTasks = [];
             function walk(parentUid, outlinePath) {

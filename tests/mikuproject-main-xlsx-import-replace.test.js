@@ -13,7 +13,7 @@ import {
   workbookImportSampleJson
 } from "./helpers/main-xlsx-import-harness.js";
 
-describe("mikuproject main xlsx import replace", () => {
+describe("miku-project main xlsx import replace", () => {
   beforeEach(() => {
     setupMainXlsxImportDom();
   });
@@ -139,9 +139,9 @@ describe("mikuproject main xlsx import replace", () => {
     bootPage();
 
     getMainHooks().renderXlsxImportSummary([
-      { scope: "project", uid: "project", label: "mikuproject開発", field: "CalendarUID", before: "1", after: "2" },
-      { scope: "project", uid: "project", label: "mikuproject開発", field: "ScheduleFromStart", before: true, after: false },
-      { scope: "project", uid: "project", label: "mikuproject開発", field: "Author", before: undefined, after: "Author From XLSX" }
+      { scope: "project", uid: "project", label: "miku-project開発", field: "CalendarUID", before: "1", after: "2" },
+      { scope: "project", uid: "project", label: "miku-project開発", field: "ScheduleFromStart", before: true, after: false },
+      { scope: "project", uid: "project", label: "miku-project開発", field: "Author", before: undefined, after: "Author From XLSX" }
     ]);
 
     expect(document.getElementById("xlsxImportSummary").textContent).toContain("Project 1");

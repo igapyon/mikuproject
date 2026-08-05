@@ -2,12 +2,12 @@
 
 この文書には、未完了の作業だけを書く。概要説明や仕様判断は `README.md` と `docs/spec.md` に寄せる。
 
-## mikuproject
+## miku-project
 
 - 最優先: サンプルデータを更新し、利用者の好みに合う題材・構造・見た目へ見直す
-- `mikuproject-skills` 側で、上流 `bundle/mikuproject.mjs` を `skills/mikuproject/runtime/mikuproject.mjs` として受け取る手順と smoke test 観点を反映する
+- `miku-project-skills` 側で、上流 `bundle/miku-project.mjs` を `skills/miku-project/runtime/miku-project.mjs` として受け取る手順と smoke test 観点を反映する
 - 再読込テストで validation error が見つかった場合の UI 表示について、status / toast / validation 詳細導線の最終仕様を整理する
-- WBS workbook と `mikuproject-sample.xlsx` のタイトル行で、フォントサイズ指定をどこまで使うか整理する
+- WBS workbook と `miku-project-sample.xlsx` のタイトル行で、フォントサイズ指定をどこまで使うか整理する
 - `Mermaid` 出力は Markdown / 設計資料向けに残しつつ、見た目を制御しやすい `WBS SVG` 描画を別系統で追加するか検討する
 - `WBS SVG` について、今の既定である `近接ラベル` 表示だけを残し、左側にテキストを描画する `一覧ラベル` モードは将来的に廃止したい
 - リファクタリングを再開する場合は、まず `main.ts` を controller としてここで止めるか再確認する
@@ -16,7 +16,7 @@
 - 完了済みの大分割領域を再度触る前に、本当に新しい責務混在があるか確認する
   - `core-api*`、`msproject-*`、`project-patch-json*`、`project-xlsx*`、`project-workbook-json*`
   - `excel-io*`、`wbs-svg*`、`wbs-xlsx*`
-- 構造変更を再開するときは、区切りごとに `npm run build:full` を回し、`tests/mikuproject-cli.test.js` の実行時間も継続確認する
+- 構造変更を再開するときは、区切りごとに `npm run build:full` を回し、`tests/miku-project-cli.test.js` の実行時間も継続確認する
 - 作成するテキストファイルについて、BOM 付き / なしを切り替えるスイッチを追加する
 - `local-data/` 配下のファイルを、参照用・検証用・生成物で整理する
 - `local-data/` に置くべきでない生成物や一時ファイルがないか見直す
@@ -55,15 +55,15 @@
 - 将来検討: Earned Value (`PV / EV / AC / SPI / CPI` など) をどこまで扱うか整理し、必要なら対応する
 - 実績・Earned Value 系は、いきなり広く対応せず、まず最小整理と小さな仕様を作って MVP から段階的に進める
 - WBS 用の `ステータス` は `Task.ExtendedAttribute` で扱う前提で、`FieldID / FieldName / 値候補` を設計する
-- `TaskStatus` 用 `ExtendedAttribute` を `mikuproject-sample.xlsx` と `WBS workbook` のどちらまで見せるか決める
+- `TaskStatus` 用 `ExtendedAttribute` を `miku-project-sample.xlsx` と `WBS workbook` のどちらまで見せるか決める
 - `TaskStatus` 用 `ExtendedAttribute` の値候補と、`PercentComplete` / `Active` との関係を整理する
 - 画面検索ではなく、条件指定にもとづく task の部分 export / scoped export を強化できるか整理する
 - `phase_detail_view scoped` の延長として、phase 単位の入出力をうまく取り回す方法を整理し、使い勝手のよい導線を検討する
 - 画面では `Calendars / Exceptions` を read-only 確認に留める前提で、`XLSX Import` 側の `WeekDays / Exceptions / WorkWeeks` 編集導線をどこまで整えるか整理する
 - `Calendar / Baseline / TimephasedData / ExtendedAttributes` をどの順で扱うか優先順位を決める
 - validation について、warning の重要度分け、修正候補のヒント、入力由来別の注意をどこまで出すか整理する
-- `mikuproject-sample.xlsx` の `Project` シートで、構造忠実方針を崩さない範囲の見た目調整を続ける
-- `mikuproject-sample.xlsx` の `Resources / Assignments / NonWorkingDays` で、強調色が過剰にならない最終バランスを調整する
+- `miku-project-sample.xlsx` の `Project` シートで、構造忠実方針を崩さない範囲の見た目調整を続ける
+- `miku-project-sample.xlsx` の `Resources / Assignments / NonWorkingDays` で、強調色が過剰にならない最終バランスを調整する
 - `WBS` の `プロジェクト情報` / `凡例` などと、`Project` シートの `Basic Info` に入っているドット編みかけ表現を除去する
 - WBS workbook の表示改善を継続する
 - SVG 出力について、プロジェクト名の位置を少し上にできるか調整する

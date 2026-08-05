@@ -136,7 +136,7 @@ function buildDeflatedZipWithSingleEntry(name, text) {
   return bytes;
 }
 
-describe("mikuproject excel io", () => {
+describe("miku-project excel io", () => {
   it("exports a minimal xlsx package with required workbook entries", () => {
     const excelIo = bootExcelIoModule();
     const codec = new excelIo.XlsxWorkbookCodec();

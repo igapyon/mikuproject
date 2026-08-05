@@ -8,7 +8,7 @@
             const entries = input.buildOutputArchiveEntries();
             const stamp = input.formatTimestampCompact(new Date());
             return {
-                fileName: `mikuproject-all-${stamp}.zip`,
+                fileName: `miku-project-all-${stamp}.zip`,
                 zipBytes: input.packZipEntries(entries),
                 entryCount: entries.length
             };

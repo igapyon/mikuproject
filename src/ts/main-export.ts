@@ -28,7 +28,7 @@
     }): { fileName: string; text: string } {
       const stamp = mainExport.buildTimestamp(new Date());
       return {
-        fileName: `mikuproject-export-${stamp}.csv`,
+        fileName: `miku-project-export-${stamp}.csv`,
         text: `${input.exportCsvParentId(input.model)}\n`
       };
     },
@@ -38,7 +38,7 @@
       exportProjectOverviewView: (model: ProjectModel) => unknown;
     }): { fileName: string; text: string } {
       return {
-        fileName: "mikuproject-project-overview-view.editjson",
+        fileName: "miku-project-project-overview-view.editjson",
         text: `${JSON.stringify(input.exportProjectOverviewView(input.model), null, 2)}\n`
       };
     },
@@ -58,7 +58,7 @@
       const resolvedTaskUid = view.target_task?.uid;
       const taskSuffix = resolvedTaskUid ? `-${resolvedTaskUid}` : "";
       return {
-        fileName: `mikuproject-task-edit-view${taskSuffix}.editjson`,
+        fileName: `miku-project-task-edit-view${taskSuffix}.editjson`,
         text: `${JSON.stringify(view, null, 2)}\n`,
         resolvedTaskUid
       };
@@ -91,7 +91,7 @@
         task_edit_views_full: taskEditViewsFull
       };
       return {
-        fileName: "mikuproject-full-bundle.editjson",
+        fileName: "miku-project-full-bundle.editjson",
         text: `${JSON.stringify(bundle, null, 2)}\n`,
         phaseCount: phaseDetailViewsFull.length,
         taskCount: taskEditViewsFull.length
@@ -134,7 +134,7 @@
       const rootSuffix = resolvedRootUid ? `-root-${resolvedRootUid}` : "";
       const depthSuffix = typeof resolvedMaxDepth === "number" ? `-depth-${resolvedMaxDepth}` : "";
       return {
-        fileName: `mikuproject-phase-detail-view${phaseSuffix}${modeSuffix}${rootSuffix}${depthSuffix}.editjson`,
+        fileName: `miku-project-phase-detail-view${phaseSuffix}${modeSuffix}${rootSuffix}${depthSuffix}.editjson`,
         text: `${JSON.stringify(view, null, 2)}\n`,
         resolvedPhaseUid,
         resolvedRootUid,
@@ -151,7 +151,7 @@
       const stamp = mainExport.buildTimestamp(new Date());
       const codec = input.createWorkbookCodec();
       return {
-        fileName: `mikuproject-export-${stamp}.xlsx`,
+        fileName: `miku-project-export-${stamp}.xlsx`,
         bytes: codec.exportWorkbook(input.exportProjectWorkbook(input.model))
       };
     },
@@ -162,7 +162,7 @@
     }): { fileName: string; text: string } {
       const stamp = mainExport.buildTimestamp(new Date());
       return {
-        fileName: `mikuproject-workbook-${stamp}.json`,
+        fileName: `miku-project-workbook-${stamp}.json`,
         text: JSON.stringify(input.exportProjectWorkbookJson(input.model), null, 2)
       };
     },
@@ -191,7 +191,7 @@
       const stamp = mainExport.buildTimestamp(new Date());
       const codec = input.createWorkbookCodec();
       return {
-        fileName: `mikuproject-wbs-${stamp}.xlsx`,
+        fileName: `miku-project-wbs-${stamp}.xlsx`,
         bytes: codec.exportWorkbook(input.exportWbsWorkbook(input.model, input.options))
       };
     },
@@ -201,7 +201,7 @@
     }): { fileName: string; text: string } {
       const stamp = mainExport.buildTimestamp(new Date());
       return {
-        fileName: `mikuproject-export-${stamp}.xml`,
+        fileName: `miku-project-export-${stamp}.xml`,
         text: `${input.xmlText}\n`
       };
     },
@@ -211,7 +211,7 @@
     }): { fileName: string; text: string } {
       const stamp = mainExport.buildTimestamp(new Date());
       return {
-        fileName: `mikuproject-wbs-daily-${stamp}.svg`,
+        fileName: `miku-project-wbs-daily-${stamp}.svg`,
         text: input.svg
       };
     },
@@ -221,7 +221,7 @@
     }): { fileName: string; text: string } {
       const stamp = mainExport.buildTimestamp(new Date());
       return {
-        fileName: `mikuproject-wbs-weekly-${stamp}.svg`,
+        fileName: `miku-project-wbs-weekly-${stamp}.svg`,
         text: input.svg
       };
     },
@@ -231,7 +231,7 @@
     }): { fileName: string; bytes: Uint8Array } {
       const stamp = mainExport.buildTimestamp(new Date());
       return {
-        fileName: `mikuproject-monthly-wbs-calendar-${stamp}.zip`,
+        fileName: `miku-project-monthly-wbs-calendar-${stamp}.zip`,
         bytes: input.zipBytes
       };
     },
@@ -241,7 +241,7 @@
     }): { fileName: string; text: string } {
       const stamp = mainExport.buildTimestamp(new Date());
       return {
-        fileName: `mikuproject-wbs-mermaid-${stamp}.mmd`,
+        fileName: `miku-project-wbs-mermaid-${stamp}.mmd`,
         text: `${input.mermaidText}\n`
       };
     },
@@ -251,7 +251,7 @@
     }): { fileName: string; text: string } {
       const stamp = mainExport.buildDateStamp(new Date());
       return {
-        fileName: `mikuproject-wbs-${stamp}.md`,
+        fileName: `miku-project-wbs-${stamp}.md`,
         text: input.markdownText
       };
     }

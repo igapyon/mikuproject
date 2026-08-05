@@ -178,7 +178,7 @@ function bootModules() {
   };
 }
 
-describe("mikuproject project workbook json", () => {
+describe("miku-project project workbook json", () => {
   it("exports workbook json with fixed format and sheets", () => {
     const { xml, projectWorkbookJson } = bootModules();
     const model = xml.importMsProjectXml(xml.SAMPLE_XML);
@@ -195,7 +195,7 @@ describe("mikuproject project workbook json", () => {
       "Calendars",
       "NonWorkingDays"
     ]);
-    expect(documentLike.sheets.Project[0]).toEqual({ Field: "Name", Value: "mikuproject開発" });
+    expect(documentLike.sheets.Project[0]).toEqual({ Field: "Name", Value: "miku-project開発" });
     expect(documentLike.sheets.Tasks[0].UID).toBe("1");
     expect(documentLike.sheets.Tasks[0].Name).toBe("基盤整備");
     expect(documentLike.sheets.Resources[0].Name).toBe("Mikuku");

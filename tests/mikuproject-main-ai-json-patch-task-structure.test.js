@@ -10,7 +10,7 @@ import {
   setupMainAiJsonTestDom
 } from "./helpers/main-ai-json-harness.js";
 
-describe("mikuproject main ai json patch task structure", () => {
+describe("miku-project main ai json patch task structure", () => {
   beforeEach(() => {
     setupMainAiJsonTestDom();
   });

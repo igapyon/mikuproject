@@ -67,8 +67,21 @@ The repository currently has a release-only workflow using GitHub Release public
 
 Do not silently adopt Node 22/24 or change the release trigger until that policy is approved. After approval, align `package.json` runtime metadata, normal CI, release workflow, staged-asset checks, and runtime smoke checks as one compatibility change.
 
+### Main Application Rename
+
+The canonical Main Application name is `miku-project`. The package name, canonical CLI command, generated single-file app, CLI runtime/source archive, release asset names, repository URL, and current maintenance documents use that name.
+
+The migration keeps these intentionally bounded compatibility contracts:
+
+- `mikuproject` remains an npm CLI alias for `miku-project`.
+- `mikuproject.html` is a lightweight redirect to `miku-project.html`.
+- `globalThis.__mikuprojectCoreApi` remains an alias of the canonical `globalThis.__mikuProjectCoreApi`.
+- `mikuproject_workbook_json` remains the existing JSON format identifier; changing a persisted data format is out of scope for a product-name migration.
+
+Internal module globals and test file identifiers continue to use their established `__mikuproject...` / `mikuproject-...` names where they are not published contracts. Historical articles and imported miku-soft standard documents are retained as historical records rather than mass-renamed.
+
 ### Web Separation
 
-Issue [#123](https://github.com/igapyon/mikuproject/issues/123) establishes `miku-project` as the canonical Main Application name and explicitly excludes Web separation from the same rename change. After the rename is complete, Web separation requires a human-created `miku-project-web` repository and GitHub Pages / Release decisions. Establish and verify that repository first, using the renamed main application's core API or a documented runtime artifact. Only then may the renamed main application repository relinquish Web-only source, generated HTML, `lht-cmn`, browser tests, and tracked generated browser JavaScript.
+Issue [#123](https://github.com/igapyon/miku-project/issues/123) establishes `miku-project` as the canonical Main Application name and explicitly excludes Web separation from the same rename change. The GitHub repository has been renamed to `igapyon/miku-project`; this repository retains the current combined layout until the follow-up Web migration begins. Web separation requires a human-created `miku-project-web` repository and GitHub Pages / Release decisions. Establish and verify that repository first, using the renamed main application's core API or a documented runtime artifact. Only then may the renamed main application repository relinquish Web-only source, generated HTML, `lht-cmn`, browser tests, and tracked generated browser JavaScript.
 
-The current combined layout is retained until the rename is complete and that separate migration is approved and complete.
+The current combined layout is retained until that separate migration is approved and complete.

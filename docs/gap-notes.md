@@ -1,6 +1,6 @@
-# mikuproject gap notes
+# miku-project gap notes
 
-`mikuproject` の次段を考えるための、実例 XML ベースの棚卸しメモ。
+`miku-project` の次段を考えるための、実例 XML ベースの棚卸しメモ。
 
 前提:
 

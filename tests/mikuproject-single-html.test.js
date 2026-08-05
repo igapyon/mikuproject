@@ -10,9 +10,9 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const ROOT = path.resolve(__dirname, "..");
 
-describe("mikuproject single html build", () => {
+describe("miku-project single html build", () => {
   it("inlines local app assets and does not reference removed mermaid runtime", () => {
-    const srcHtmlPath = path.resolve(ROOT, "mikuproject-src.html");
+    const srcHtmlPath = path.resolve(ROOT, "miku-project-src.html");
     const sourceHtml = readFileSync(srcHtmlPath, "utf8");
     const builtHtml = buildSingleHtmlFromSource(sourceHtml, srcHtmlPath);
 

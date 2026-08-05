@@ -6,7 +6,7 @@
   <meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate, max-age=0" />
   <meta http-equiv="Pragma" content="no-cache" />
   <meta http-equiv="Expires" content="0" />
-  <title>mikuproject</title>
+  <title>miku-project</title>
   <style>
     :root {
       --bg: #f4f8fb;
@@ -213,19 +213,19 @@
 <body>
   <main class="card">
     <div class="eyebrow">Local Browser Tool</div>
-    <h1>mikuproject</h1>
+    <h1>miku-project</h1>
     <div class="md-app-meta">Updated: {{BUILD_DATE}}</div>
 
     <section aria-label="What is this">
       <h2>What is this?</h2>
       <p class="lead">
-        <code>mikuproject</code> は、<code>MS Project XML</code> を意味の基軸に、生成AIとの往復を支えるために設計されたローカル HTML ツールです。WBS の草案作成から再編集・再取込、人向けの可視化・帳票化までを、ひとつの流れとして扱えます。
+        <code>miku-project</code> は、<code>MS Project XML</code> を意味の基軸に、生成AIとの往復を支えるために設計されたローカル HTML ツールです。WBS の草案作成から再編集・再取込、人向けの可視化・帳票化までを、ひとつの流れとして扱えます。
       </p>
       <ul>
         <li>WBS の草案作成から再編集・再取込、人向けの可視化・帳票化までを、ひとつの流れとして扱えます。</li>
         <li><code>MS Project XML</code> を意味の基軸として保ちます。</li>
         <li>生成AIと人の往復に適した表現変換 / 再取込 / 介在を支えます。</li>
-        <li><a href="https://github.com/igapyon/mikuproject-skills">mikuproject-skills</a> から Agent Skills 版も利用できます。</li>
+        <li><a href="https://github.com/igapyon/miku-project-skills">miku-project-skills</a> から Agent Skills 版も利用できます。</li>
         <li>人が読むための可視化と、WBS 帳票・SVG を含む成果物出力を提供します。</li>
         <li>Web ブラウザさえあればインストール不要・ネットワーク不要で利用できます。</li>
       </ul>
@@ -260,9 +260,9 @@
     <section aria-label="Use cases">
       <h2>Use Cases</h2>
       <ul>
-        <li>生成AIとの対話で WBS 草案を作成し、<code>mikuproject</code> に取り込んで、人と生成AIが確認・修正しながら、帳票や可視化成果物として仕上げたい。</li>
-        <li>既存の <code>MS Project XML</code> を <code>mikuproject</code> に取り込み、内容を確認しながら、<code>WBS Excel ブック (.xlsx)</code> や日次・週次のガント表現や月次カレンダーの <code>SVG</code>、<code>Markdown</code> などの人向け成果物へ展開したい。</li>
-        <li><code>mikuproject</code> で扱う WBS やプロジェクト情報を生成AI向けに表現変換し、生成AIが返した結果を再び取り込みながら、人と生成AIがレビュー・調整・再利用しやすい形へ整えたい。</li>
+        <li>生成AIとの対話で WBS 草案を作成し、<code>miku-project</code> に取り込んで、人と生成AIが確認・修正しながら、帳票や可視化成果物として仕上げたい。</li>
+        <li>既存の <code>MS Project XML</code> を <code>miku-project</code> に取り込み、内容を確認しながら、<code>WBS Excel ブック (.xlsx)</code> や日次・週次のガント表現や月次カレンダーの <code>SVG</code>、<code>Markdown</code> などの人向け成果物へ展開したい。</li>
+        <li><code>miku-project</code> で扱う WBS やプロジェクト情報を生成AI向けに表現変換し、生成AIが返した結果を再び取り込みながら、人と生成AIがレビュー・調整・再利用しやすい形へ整えたい。</li>
       </ul>
     </section>
 
@@ -271,15 +271,15 @@
     <section aria-label="How to use">
       <h2>How to use</h2>
       <ol>
-        <li>Web ブラウザで <code>mikuproject.html</code> を開きます。</li>
+        <li>Web ブラウザで <code>miku-project.html</code> を開きます。</li>
         <li><code>Load from file</code>、<code>サンプル</code>、<code>生成AI連携</code> から <code>MS Project XML / XLSX / workbook JSON / .editjson / CSV + ParentID</code> を入力します。</li>
         <li>内部モデル、validation、<code>Daily / Weekly / Monthly Calendar</code> preview を確認します。</li>
         <li>必要に応じて <code>MS Project XML / XLSX / WBS XLSX / WBS Markdown / workbook JSON / CSV + ParentID / Daily SVG / Weekly SVG / Monthly Calendar SVG / Mermaid / .editjson / ALL ZIP</code> を保存します。</li>
       </ol>
       <div class="link-row">
-        <a class="link-btn" href="./mikuproject.html">Open mikuproject</a>
+        <a class="link-btn" href="./miku-project.html">Open miku-project</a>
         <a class="link-btn-secondary" href="./README.md">README</a>
-        <a class="link-btn-secondary" href="https://github.com/igapyon/mikuproject-skills">Agent Skills</a>
+        <a class="link-btn-secondary" href="https://github.com/igapyon/miku-project-skills">Agent Skills</a>
         <a class="link-btn-secondary" href="./docs/architecture.md">Architecture</a>
         <a class="link-btn-secondary" href="./docs/spec.md">Spec</a>
       </div>
@@ -292,7 +292,7 @@
       <div class="gallery">
         <figure class="shot-card">
           <div class="shot-frame">
-            <img src="./docs/screenshots/screen01.png" alt="mikuproject Input screen" />
+            <img src="./docs/screenshots/screen01.png" alt="miku-project Input screen" />
           </div>
           <figcaption>
             Input 画面。<code>Load from file</code>、<code>サンプル</code>、<code>生成AI連携</code> から入力を受け付けます。
@@ -300,7 +300,7 @@
         </figure>
         <figure class="shot-card">
           <div class="shot-frame">
-            <img src="./docs/screenshots/screen02.png" alt="mikuproject Overview screen" />
+            <img src="./docs/screenshots/screen02.png" alt="miku-project Overview screen" />
           </div>
           <figcaption>
             Overview 画面。<code>Daily / Weekly / Monthly Calendar</code> preview を確認します。
@@ -308,7 +308,7 @@
         </figure>
         <figure class="shot-card">
           <div class="shot-frame">
-            <img src="./docs/screenshots/screen02c.png" alt="mikuproject Overview monthly calendar screen" />
+            <img src="./docs/screenshots/screen02c.png" alt="miku-project Overview monthly calendar screen" />
           </div>
           <figcaption>
             Overview 画面。<code>Monthly Calendar</code> preview で月間カレンダー表示を確認できます。
@@ -316,7 +316,7 @@
         </figure>
         <figure class="shot-card">
           <div class="shot-frame">
-            <img src="./docs/screenshots/screen03.png" alt="mikuproject Output screen" />
+            <img src="./docs/screenshots/screen03.png" alt="miku-project Output screen" />
           </div>
           <figcaption>
             Output 画面。<code>MS Project XML</code>、<code>XLSX</code>、<code>JSON</code>、<code>CSV</code>、<code>WBS XLSX</code>、<code>WBS Markdown</code>、Mermaid、<code>SVG</code>、<code>.editjson</code>、<code>ALL</code> ZIP を保存できます。
@@ -344,7 +344,7 @@
 
   <script>
     (() => {
-      const selector = 'a[href^="./mikuproject.html"]';
+      const selector = 'a[href^="./miku-project.html"]';
       const buildVersionStamp = () => {
         const d = new Date();
         return (

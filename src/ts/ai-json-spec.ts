@@ -16,12 +16,12 @@
   }
 
   function getAiJsonSpec(): {
-    id: "mikuproject-ai-json-spec";
+    id: "miku-project-ai-json-spec";
     version: string;
     text: string;
   } {
     return {
-      id: "mikuproject-ai-json-spec",
+      id: "miku-project-ai-json-spec",
       version: AI_JSON_SPEC_VERSION,
       text: AI_JSON_SPEC_TEXT
     };
@@ -31,7 +31,7 @@
     __mikuprojectAiJsonSpec?: {
       getAiJsonSpecText: () => string;
       getAiJsonSpec: () => {
-        id: "mikuproject-ai-json-spec";
+        id: "miku-project-ai-json-spec";
         version: string;
         text: string;
       };

@@ -2,7 +2,7 @@
 
 ## 概要
 
-`mikuproject` は、`MS Project XML` を意味の基軸として扱い、内部モデル `ProjectModel` を経由して複数の表現へ出し分ける構成を採る。
+`miku-project` は、`MS Project XML` を意味の基軸として扱い、内部モデル `ProjectModel` を経由して複数の表現へ出し分ける構成を採る。
 
 重視しているのは次の 3 点である。
 
@@ -31,29 +31,29 @@
 
 `XLSX Import` と workbook JSON import は、自由編集をそのまま受け入れるのではなく、限定列の部分更新として扱う。
 
-`mikuproject-sample.xlsx` は `MS Project XML` との対応関係を確認するための構造忠実 workbook として扱う。列やシートの対応関係は崩さず、見た目改善は可読性補助に留める。これに対して `mikuproject-wbs-sample.xlsx` は人が読むための表示重視 workbook として扱う。
+`miku-project-sample.xlsx` は `MS Project XML` との対応関係を確認するための構造忠実 workbook として扱う。列やシートの対応関係は崩さず、見た目改善は可読性補助に留める。これに対して `miku-project-wbs-sample.xlsx` は人が読むための表示重視 workbook として扱う。
 
 ## Single-file Web App
 
-配布物は `mikuproject.html` ひとつの single-file web app である。Web ブラウザさえあればインストール不要・ネットワーク不要で利用できる。
+配布物は `miku-project.html` ひとつの single-file web app である。Web ブラウザさえあればインストール不要・ネットワーク不要で利用できる。
 
 開発用 source は分割して管理するが、配布物としては single-file web app を維持する。
 
-- HTML source: `mikuproject-src.html`
+- HTML source: `miku-project-src.html`
 - TypeScript source: `src/ts/`
 - generated JavaScript: `src/js/`
 - CSS: `src/css/`
 
-`mikuproject.html` は `mikuproject-src.html` をもとに、ローカル CSS / JS を単一 HTML へインライン展開して生成する。
+`miku-project.html` は `miku-project-src.html` をもとに、ローカル CSS / JS を単一 HTML へインライン展開して生成する。
 
 ## Reusable Entry Points
 
 single-file web app としての配布を維持しつつ、外部再利用向けには UI 非依存の公開入口も持つ。
 
-- `globalThis.__mikuprojectAiJsonSpec`: `mikuproject-ai-json-spec` を安定取得するための小さな公開面
-- `globalThis.__mikuprojectCoreApi`: Agent Skills / CLI / MCP から再利用するための集約 entrypoint
+- `globalThis.__mikuprojectAiJsonSpec`: `miku-project-ai-json-spec` を安定取得するための小さな公開面
+- `globalThis.__mikuProjectCoreApi`: Agent Skills / CLI / MCP から再利用するための集約 entrypoint
 
-`__mikuprojectCoreApi` は少なくとも次をまとめる。
+`__mikuProjectCoreApi` は少なくとも次をまとめる。
 
 - `getAiJsonSpec()` / `getAiJsonSpecText()`
 - `parseAiJsonText()` / `importAiJsonDocument()` / `importAiJsonText()`
@@ -83,8 +83,8 @@ XML の parse / serialize は、ブラウザ DOM 直依存ではなく `globalTh
 
 ## リポジトリ構成
 
-- `mikuproject.html`: 生成済みの単一 HTML アプリ
-- `mikuproject-src.html`: HTML ソース
+- `miku-project.html`: 生成済みの単一 HTML アプリ
+- `miku-project-src.html`: HTML ソース
 - `package.json`: Node.js ベースの開発設定
 - `src/ts/`: TypeScript ソース
 - `src/js/`: `src/ts/` から生成し、Git 管理も行うブラウザ実行用 JavaScript
@@ -124,19 +124,19 @@ XML の parse / serialize は、ブラウザ DOM 直依存ではなく `globalTh
 
 ## 生成AI連携
 
-`mikuproject` は、生成AIとの直接連携に `MS Project XML` ではなく `JSON` を使う。
+`miku-project` は、生成AIとの直接連携に `MS Project XML` ではなく `JSON` を使う。
 
 - 既存 project 向けには `project_overview_view` と `phase_detail_view` と `task_edit_view` を出力する
-- CLI では `mikuproject ai export project-overview|task-edit|phase-detail` から projection を出力できる
-- CLI では `mikuproject ai export bundle` から full bundle を出力できる
-- CLI では `mikuproject ai validate-patch` / `ai detect-kind` / `state summarize` / `state diff` も使える
+- CLI では `miku-project ai export project-overview|task-edit|phase-detail` から projection を出力できる
+- CLI では `miku-project ai export bundle` から full bundle を出力できる
+- CLI では `miku-project ai validate-patch` / `ai detect-kind` / `state summarize` / `state diff` も使える
 - 既存 project 向けには `full bundle` も出力でき、少なくとも `project_overview_view` / `phase_detail_views_full` / `task_edit_views_full` を含む
 - 新規生成向けには、生成AIが返した `project_draft_view` を取り込める
 - 既存 project 向けには、Patch JSON の `add_task` / `add_resource` / `add_assignment` / `add_calendar` / `update_project` / `update_task` / `update_resource` / `update_assignment` / `update_calendar` / `move_task` / `delete_task` / `delete_resource` / `delete_assignment` / `delete_calendar` / `link_tasks` / `unlink_tasks` first cut を取り込める
 - `mikuproject_workbook_json` は `.json`、生成AI 向け編集用 JSON は `.editjson` を推奨拡張子とする
 - 現時点で UI / CLI から実装済みなのは `project_overview_view` / `phase_detail_view` / `task_edit_view` / `full bundle` の出力、`project_draft_view` の取込、Patch JSON の `add_task` / `add_resource` / `add_assignment` / `add_calendar` / `update_project` / `update_task` / `update_resource` / `update_assignment` / `update_calendar` / `move_task` / `delete_task` / `delete_resource` / `delete_assignment` / `delete_calendar` / `link_tasks` / `unlink_tasks` first cut の取込である
 
-詳細な考え方は `docs/mikuproject-ai-json-spec.md` と `docs/msprojectxml-ai-integration.md` に置く。
+詳細な考え方は `docs/miku-project-ai-json-spec.md` と `docs/msprojectxml-ai-integration.md` に置く。
 
 ## 開発
 
@@ -187,9 +187,9 @@ npm run build:full
 スクリプトの役割は次のとおり。
 
 - `npm run build:js`: `src/ts/` から `src/js/` を生成する
-- `npm run build:html`: `index-src.html` と `mikuproject-src.html` から `index.html` と `mikuproject.html` を生成する
+- `npm run build:html`: `index-src.html` と `miku-project-src.html` から `index.html` と `miku-project.html` を生成する
 - `npm run build:web`: JavaScript 生成と HTML 生成をまとめて行う
-- `npm run build:cli-bundle`: 下流 Agent Skills に渡す単一 `MJS` CLI runtime artifact を `bundle/mikuproject.mjs` へ生成し、再ビルド・監査用 source archive を `bundle/mikuproject-sources.tgz` へ生成する
+- `npm run build:cli-bundle`: 下流 Agent Skills に渡す単一 `MJS` CLI runtime artifact を `bundle/miku-project.mjs` へ生成し、再ビルド・監査用 source archive を `bundle/miku-project-sources.tgz` へ生成する
 - `npm run build:xlsx-sample`: `local-data/` 配下へサンプル XLSX / Markdown を生成する
 - `npm run build:app`: `build:web` と `build:xlsx-sample` を順に実行する
 - `npm run build:full`: `build:web`、`build:cli-bundle`、`test:full` を順に実行する

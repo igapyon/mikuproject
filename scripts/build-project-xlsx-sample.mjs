@@ -65,19 +65,19 @@ const projectXlsx = globalThis.__mikuprojectProjectXlsx;
 const wbsXlsx = globalThis.__mikuprojectWbsXlsx;
 const wbsMarkdown = globalThis.__mikuprojectWbsMarkdown;
 if (!excelIo?.XlsxWorkbookCodec) {
-  throw new Error("mikuproject excel io module is not loaded");
+  throw new Error("miku-project excel io module is not loaded");
 }
 if (!xml?.SAMPLE_XML || typeof xml.importMsProjectXml !== "function") {
-  throw new Error("mikuproject xml module is not loaded");
+  throw new Error("miku-project xml module is not loaded");
 }
 if (typeof projectXlsx?.exportProjectWorkbook !== "function") {
-  throw new Error("mikuproject project xlsx module is not loaded");
+  throw new Error("miku-project project xlsx module is not loaded");
 }
 if (typeof wbsXlsx?.exportWbsWorkbook !== "function") {
-  throw new Error("mikuproject wbs xlsx module is not loaded");
+  throw new Error("miku-project wbs xlsx module is not loaded");
 }
 if (typeof wbsMarkdown?.exportWbsMarkdown !== "function") {
-  throw new Error("mikuproject wbs markdown module is not loaded");
+  throw new Error("miku-project wbs markdown module is not loaded");
 }
 
 const codec = new excelIo.XlsxWorkbookCodec();
@@ -100,10 +100,10 @@ const richWbsMarkdownText = wbsMarkdown.exportWbsMarkdown(richMarkdownModel, {
 
 const bytes = codec.exportWorkbook(workbook);
 const wbsBytes = codec.exportWorkbook(wbsWorkbook);
-const outputPath = path.resolve(ROOT, "local-data/mikuproject-sample.xlsx");
-const wbsOutputPath = path.resolve(ROOT, "local-data/mikuproject-wbs-sample.xlsx");
-const wbsMarkdownOutputPath = path.resolve(ROOT, "local-data/mikuproject-wbs-sample.md");
-const richWbsMarkdownOutputPath = path.resolve(ROOT, "local-data/mikuproject-wbs-sample-rich.md");
+const outputPath = path.resolve(ROOT, "local-data/miku-project-sample.xlsx");
+const wbsOutputPath = path.resolve(ROOT, "local-data/miku-project-wbs-sample.xlsx");
+const wbsMarkdownOutputPath = path.resolve(ROOT, "local-data/miku-project-wbs-sample.md");
+const richWbsMarkdownOutputPath = path.resolve(ROOT, "local-data/miku-project-wbs-sample-rich.md");
 fs.mkdirSync(path.dirname(outputPath), { recursive: true });
 fs.writeFileSync(outputPath, Buffer.from(bytes));
 fs.writeFileSync(wbsOutputPath, Buffer.from(wbsBytes));

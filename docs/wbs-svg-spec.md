@@ -1,6 +1,6 @@
 # WBS SVG spec
 
-この文書は、`mikuproject` における自前 `SVG` 描画の最小仕様メモである。
+この文書は、`miku-project` における自前 `SVG` 描画の最小仕様メモである。
 
 ## 位置づけ
 
@@ -12,7 +12,7 @@
 
 - `WBS` を、`Mermaid` よりも見た目を制御しやすい `SVG` として描画する
 - 同じ描画結果を、画面内 preview と `SVG` download の両方で使う
-- `mikuproject` 内の他出力と表示解釈がぶれないようにする
+- `miku-project` 内の他出力と表示解釈がぶれないようにする
 
 ## 入力
 
@@ -74,7 +74,7 @@ MVP では、少なくとも次を描画対象とする。
   - 軽量テキスト表現
 - `WBS SVG`
   - 見た目重視の preview / download 向け
-  - 形状、色、配置を `mikuproject` 側で制御するための描画
+  - 形状、色、配置を `miku-project` 側で制御するための描画
 
 ## 非目標
 

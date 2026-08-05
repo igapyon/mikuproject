@@ -23,9 +23,12 @@ afterEach(() => {
 });
 
 describe("core api loader", () => {
-  it("boots __mikuprojectCoreApi for node-side reuse", () => {
+  it("boots __mikuProjectCoreApi for node-side reuse", () => {
     const loaded = loadMikuprojectCoreApi({ rootDir: repoRoot });
     disposers.push(() => loaded.dispose());
+
+    expect(globalThis.__mikuProjectCoreApi).toBe(loaded.api);
+    expect(globalThis.__mikuprojectCoreApi).toBe(loaded.api);
 
     const result = loaded.api.importExternal({
       source: { format: "ms_project_xml", text: dependencyXml },

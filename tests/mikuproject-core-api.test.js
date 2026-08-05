@@ -452,10 +452,11 @@ function bootModules() {
     coreApiPublicCode,
     coreApiCode
   ].join("\n"))();
-  return globalThis.__mikuprojectCoreApi;
+  expect(globalThis.__mikuProjectCoreApi).toBe(globalThis.__mikuprojectCoreApi);
+  return globalThis.__mikuProjectCoreApi;
 }
 
-describe("mikuproject core api", () => {
+describe("miku-project core api", () => {
   beforeEach(() => {
     delete globalThis.__mikuprojectAiJsonUtil;
     delete globalThis.__mikuprojectAiJsonSpec;
@@ -498,6 +499,7 @@ describe("mikuproject core api", () => {
     delete globalThis.__mikuprojectWbsXlsx;
     delete globalThis.__mikuprojectNativeSvg;
     delete globalThis.__mikuprojectWbsMarkdown;
+    delete globalThis.__mikuProjectCoreApi;
     delete globalThis.__mikuprojectCoreApi;
   });
 
@@ -506,9 +508,9 @@ describe("mikuproject core api", () => {
 
     const spec = api.getAiJsonSpec();
 
-    expect(spec.id).toBe("mikuproject-ai-json-spec");
-    expect(spec.version).toBe("v20260410");
-    expect(spec.text).toContain("# mikuproject AI JSON Prompt / Spec");
+    expect(spec.id).toBe("miku-project-ai-json-spec");
+    expect(spec.version).toBe("v20260417");
+    expect(spec.text).toContain("# miku-project AI JSON Prompt / Spec");
     expect(api.getAiJsonSpecText()).toBe(spec.text);
   });
 
@@ -519,9 +521,9 @@ describe("mikuproject core api", () => {
     const sampleDraft = api.samples.getSampleProjectDraftView();
 
     expect(sampleXml).toContain("<Project");
-    expect(sampleXml).toContain("<Name>mikuproject開発</Name>");
+    expect(sampleXml).toContain("<Name>miku-project開発</Name>");
     expect(sampleDraft.view_type).toBe("project_draft_view");
-    expect(sampleDraft.project.name).toBe("mikuproject開発");
+    expect(sampleDraft.project.name).toBe("miku-project開発");
     expect(Array.isArray(sampleDraft.tasks)).toBe(true);
     expect(sampleDraft.tasks.length).toBeGreaterThan(0);
   });

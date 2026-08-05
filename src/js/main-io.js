@@ -40,38 +40,38 @@
             };
             const phaseDetailFull = deps.exportPhaseDetailView(deps.model, undefined, { mode: "full" });
             const allReadmeText = [
-                "mikuproject ALL ZIP",
+                "miku-project ALL ZIP",
                 "",
-                "GitHub: https://github.com/igapyon/mikuproject",
-                "Agent Skills: https://github.com/igapyon/mikuproject-skills",
-                "mikuproject is a local single-file web app that converts MS Project XML into XLSX, Markdown, SVG, Mermaid, and AI-facing JSON exports.",
+                "GitHub: https://github.com/igapyon/miku-project",
+                "Agent Skills: https://github.com/igapyon/miku-project-skills",
+                "miku-project is a local single-file web app that converts MS Project XML into XLSX, Markdown, SVG, Mermaid, and AI-facing JSON exports.",
                 "",
                 "This archive contains the main outputs generated from the current model.",
                 "",
                 "Files:",
-                "- mikuproject-export-*.xml: regenerated MS Project XML",
-                "- mikuproject-export-*.xlsx: workbook XLSX export",
-                "- mikuproject-workbook-*.json: workbook JSON export",
-                "- mikuproject-export-*.csv: CSV + ParentID export",
-                "- mikuproject-wbs-*.xlsx: WBS workbook export",
-                "- mikuproject-wbs-*.md: WBS Markdown export",
-                "- mikuproject-wbs-daily-*.svg: daily WBS SVG export",
-                "- mikuproject-wbs-weekly-*.svg: weekly WBS SVG export",
-                "- mikuproject-wbs-mermaid-*.mmd: Mermaid gantt export",
+                "- miku-project-export-*.xml: regenerated MS Project XML",
+                "- miku-project-export-*.xlsx: workbook XLSX export",
+                "- miku-project-workbook-*.json: workbook JSON export",
+                "- miku-project-export-*.csv: CSV + ParentID export",
+                "- miku-project-wbs-*.xlsx: WBS workbook export",
+                "- miku-project-wbs-*.md: WBS Markdown export",
+                "- miku-project-wbs-daily-*.svg: daily WBS SVG export",
+                "- miku-project-wbs-weekly-*.svg: weekly WBS SVG export",
+                "- miku-project-wbs-mermaid-*.mmd: Mermaid gantt export",
                 "- monthly-calendar/YYYY-MM.svg: month-by-month calendar SVG export",
                 "- *.editjson: AI-facing projection exports"
             ].join("\n");
             const entries = [
                 { name: "README.txt", data: deps.encodeUtf8(`${allReadmeText}\n`) },
-                { name: `mikuproject-export-${stamp}.xml`, data: deps.encodeUtf8(`${xmlText}\n`) },
-                { name: `mikuproject-export-${stamp}.xlsx`, data: codec.exportWorkbook(workbook) },
-                { name: `mikuproject-workbook-${stamp}.json`, data: deps.encodeUtf8(`${workbookJsonText}\n`) },
-                { name: `mikuproject-export-${stamp}.csv`, data: deps.encodeUtf8(`${csvText}\n`) },
-                { name: `mikuproject-wbs-${stamp}.xlsx`, data: codec.exportWorkbook(wbsWorkbook) },
-                { name: `mikuproject-wbs-${dateOnlyStamp}.md`, data: deps.encodeUtf8(`${wbsMarkdown}\n`) },
-                { name: `mikuproject-wbs-daily-${stamp}.svg`, data: deps.encodeUtf8(dailySvg) },
-                { name: `mikuproject-wbs-weekly-${stamp}.svg`, data: deps.encodeUtf8(weeklySvg) },
-                { name: `mikuproject-wbs-mermaid-${stamp}.mmd`, data: deps.encodeUtf8(`${mermaidText}\n`) }
+                { name: `miku-project-export-${stamp}.xml`, data: deps.encodeUtf8(`${xmlText}\n`) },
+                { name: `miku-project-export-${stamp}.xlsx`, data: codec.exportWorkbook(workbook) },
+                { name: `miku-project-workbook-${stamp}.json`, data: deps.encodeUtf8(`${workbookJsonText}\n`) },
+                { name: `miku-project-export-${stamp}.csv`, data: deps.encodeUtf8(`${csvText}\n`) },
+                { name: `miku-project-wbs-${stamp}.xlsx`, data: codec.exportWorkbook(wbsWorkbook) },
+                { name: `miku-project-wbs-${dateOnlyStamp}.md`, data: deps.encodeUtf8(`${wbsMarkdown}\n`) },
+                { name: `miku-project-wbs-daily-${stamp}.svg`, data: deps.encodeUtf8(dailySvg) },
+                { name: `miku-project-wbs-weekly-${stamp}.svg`, data: deps.encodeUtf8(weeklySvg) },
+                { name: `miku-project-wbs-mermaid-${stamp}.mmd`, data: deps.encodeUtf8(`${mermaidText}\n`) }
             ];
             for (const entry of monthlyArchive.entries) {
                 entries.push({
@@ -79,7 +79,7 @@
                     data: deps.encodeUtf8(entry.svg)
                 });
             }
-            entries.push({ name: "mikuproject-project-overview-view.editjson", data: deps.encodeUtf8(`${JSON.stringify(projectOverview, null, 2)}\n`) }, { name: "mikuproject-full-bundle.editjson", data: deps.encodeUtf8(`${JSON.stringify(aiBundle, null, 2)}\n`) }, { name: "mikuproject-phase-detail-view-full.editjson", data: deps.encodeUtf8(`${JSON.stringify(phaseDetailFull, null, 2)}\n`) });
+            entries.push({ name: "miku-project-project-overview-view.editjson", data: deps.encodeUtf8(`${JSON.stringify(projectOverview, null, 2)}\n`) }, { name: "miku-project-full-bundle.editjson", data: deps.encodeUtf8(`${JSON.stringify(aiBundle, null, 2)}\n`) }, { name: "miku-project-phase-detail-view-full.editjson", data: deps.encodeUtf8(`${JSON.stringify(phaseDetailFull, null, 2)}\n`) });
             return entries;
         },
         detectImportKind(input) {

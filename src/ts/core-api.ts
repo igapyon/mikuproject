@@ -11,7 +11,14 @@
     throw new Error("mikuproject core api public module is not loaded");
   }
 
-  (globalThis as typeof globalThis & {
+  const coreApi = mikuprojectCoreApiPublic;
+  const globals = globalThis as typeof globalThis & {
+    __mikuProjectCoreApi?: unknown;
     __mikuprojectCoreApi?: unknown;
-  }).__mikuprojectCoreApi = mikuprojectCoreApiPublic;
+  };
+
+  // Canonical public API name. Keep the former name as a compatibility alias
+  // for embedders that evaluate the single-file application directly.
+  globals.__mikuProjectCoreApi = coreApi;
+  globals.__mikuprojectCoreApi = coreApi;
 })();

@@ -9,11 +9,11 @@ import { loadMikuprojectCoreApi } from "./lib/core-api-loader.mjs";
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const repoRoot = path.resolve(__dirname, "..");
-const cliPath = path.resolve(repoRoot, "scripts/mikuproject-cli.mjs");
+const cliPath = path.resolve(repoRoot, "scripts/miku-project-cli.mjs");
 const dependencyXmlPath = path.resolve(repoRoot, "testdata/dependency.xml");
 
 const loaded = loadMikuprojectCoreApi({ rootDir: repoRoot });
-const tempDir = mkdtempSync(path.join(os.tmpdir(), "mikuproject-cli-ai-workflow-"));
+const tempDir = mkdtempSync(path.join(os.tmpdir(), "miku-project-cli-ai-workflow-"));
 
 try {
   const model = loaded.api.msProject.importFromXml(readFileSync(dependencyXmlPath, "utf8"));

@@ -56,11 +56,11 @@ jobs:
           esac
 
           mkdir -p release-assets
-          cp bundle/mikuproject.mjs "release-assets/mikuproject-${VERSION}.mjs"
-          cp bundle/mikuproject-sources.tgz "release-assets/mikuproject-sources-${VERSION}.tgz"
+          cp bundle/miku-project.mjs "release-assets/miku-project-${VERSION}.mjs"
+          cp bundle/miku-project-sources.tgz "release-assets/miku-project-sources-${VERSION}.tgz"
 
       - name: Verify CLI bundle asset
-        run: node release-assets/mikuproject-*.mjs --version
+        run: node release-assets/miku-project-*.mjs --version
 
       - name: Upload CLI bundle to GitHub Release
         uses: softprops/action-gh-release@v2

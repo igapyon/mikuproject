@@ -290,9 +290,9 @@ function mountDom() {
     </div>
     <section id="tabPanelInput" class="md-tab-panel" data-tab-panel="input">
       <textarea id="xmlInput"></textarea>
-      <template id="aiPromptTemplate"># mikuproject AI JSON Spec
+      <template id="aiPromptTemplate"># miku-project AI JSON Spec
 
-あなたはこれから mikuproject とやりとりします。</template>
+あなたはこれから miku-project とやりとりします。</template>
       <textarea id="projectDraftImportInput"></textarea>
       <div id="xmlSaveState"></div>
     </section>

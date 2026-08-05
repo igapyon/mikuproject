@@ -52,7 +52,7 @@ function mountSummaryDom() {
   `;
 }
 
-describe("mikuproject main render", () => {
+describe("miku-project main render", () => {
   beforeEach(() => {
     document.body.innerHTML = "";
   });

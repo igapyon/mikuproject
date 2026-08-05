@@ -10,7 +10,7 @@ import {
   setupMainAiJsonTestDom
 } from "./helpers/main-ai-json-harness.js";
 
-describe("mikuproject main ai json", () => {
+describe("miku-project main ai json", () => {
   beforeEach(() => {
     setupMainAiJsonTestDom();
   });
@@ -39,8 +39,8 @@ describe("mikuproject main ai json", () => {
     const downloads = HTMLAnchorElement.prototype.click.mock.instances
       .slice(anchorClickCalls)
       .map((anchor) => anchor.download);
-    expect(downloads).toContain("mikuproject-project-overview-view.editjson");
-    expect(downloads).toContain(`mikuproject-phase-detail-view-${phaseDetail.phase.uid}-full.editjson`);
+    expect(downloads).toContain("miku-project-project-overview-view.editjson");
+    expect(downloads).toContain(`miku-project-phase-detail-view-${phaseDetail.phase.uid}-full.editjson`);
     expect(URL.createObjectURL.mock.calls.length - createObjectUrlCalls).toBeGreaterThanOrEqual(2);
     expect(HTMLAnchorElement.prototype.click.mock.calls.length - anchorClickCalls).toBeGreaterThanOrEqual(2);
   });
@@ -65,7 +65,7 @@ describe("mikuproject main ai json", () => {
     expect(taskEdit.rules.allow_patch_ops).toContain("update_task");
     expect(taskEdit.rules.allow_patch_ops).toContain("update_assignment");
     const clickedAnchor = HTMLAnchorElement.prototype.click.mock.instances.at(-1);
-    expect(clickedAnchor.download).toBe("mikuproject-task-edit-view-3.editjson");
+    expect(clickedAnchor.download).toBe("miku-project-task-edit-view-3.editjson");
   });
 
   it("exports ai projection bundle", () => {
@@ -90,7 +90,7 @@ describe("mikuproject main ai json", () => {
     expect(bundle.task_edit_views_full.length).toBeGreaterThan(0);
     expect(bundle.task_edit_views_full.every((item) => item.view_type === "task_edit_view")).toBe(true);
     const clickedAnchor = HTMLAnchorElement.prototype.click.mock.instances.at(-1);
-    expect(clickedAnchor.download).toBe("mikuproject-full-bundle.editjson");
+    expect(clickedAnchor.download).toBe("miku-project-full-bundle.editjson");
     expect(URL.createObjectURL.mock.calls.length - createObjectUrlCalls).toBeGreaterThanOrEqual(1);
     expect(HTMLAnchorElement.prototype.click.mock.calls.length - anchorClickCalls).toBeGreaterThanOrEqual(1);
   });
@@ -111,7 +111,7 @@ describe("mikuproject main ai json", () => {
     expect(phaseDetail.tasks.every((task) => ["2", "3", "4", "5", "18"].includes(task.uid))).toBe(true);
     expect(phaseDetail.tasks.some((task) => task.uid === "19")).toBe(false);
     const clickedAnchor = HTMLAnchorElement.prototype.click.mock.instances.at(-1);
-    expect(clickedAnchor.download).toBe("mikuproject-phase-detail-view-1-scoped-root-2-depth-1.editjson");
+    expect(clickedAnchor.download).toBe("miku-project-phase-detail-view-1-scoped-root-2-depth-1.editjson");
   });
 
   it("imports project_draft_view", async () => {
@@ -224,7 +224,7 @@ describe("mikuproject main ai json", () => {
 
     const draftText = document.getElementById("projectDraftImportInput").value;
     expect(draftText).toContain("\"view_type\": \"project_draft_view\"");
-    expect(draftText).toContain("\"name\": \"mikuproject開発\"");
+    expect(draftText).toContain("\"name\": \"miku-project開発\"");
     expect(draftText).toContain("架空検討フェーズ【架空】");
     expect(draftText).toContain("\"resources\"");
     expect(draftText).toContain("\"Mikuku\"");
@@ -239,7 +239,7 @@ describe("mikuproject main ai json", () => {
     await flushAsyncWork();
 
     expect(globalThis.navigator.clipboard.writeText.mock.calls.length).toBeGreaterThan(0);
-    expect(globalThis.navigator.clipboard.writeText.mock.calls.at(-1)[0]).toContain("# mikuproject AI JSON Spec");
+    expect(globalThis.navigator.clipboard.writeText.mock.calls.at(-1)[0]).toContain("# miku-project AI JSON Spec");
     expect(document.getElementById("statusMessage").textContent).toContain("生成AIプロンプトをクリップボードにコピーしました");
   });
 });

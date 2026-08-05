@@ -18,7 +18,7 @@ function createTextFile(contents, name, type = "application/json") {
   return file;
 }
 
-describe("mikuproject main refactor safety", () => {
+describe("miku-project main refactor safety", () => {
   beforeEach(() => {
     setupMainPreviewExportDom();
   });
@@ -29,18 +29,18 @@ describe("mikuproject main refactor safety", () => {
     const entries = getMainHooks().buildCurrentOutputArchiveEntries();
     const names = entries.map((entry) => entry.name);
     const readmeText = new TextDecoder().decode(entries.find((entry) => entry.name === "README.txt").data);
-    const bundleText = new TextDecoder().decode(entries.find((entry) => entry.name === "mikuproject-full-bundle.editjson").data);
+    const bundleText = new TextDecoder().decode(entries.find((entry) => entry.name === "miku-project-full-bundle.editjson").data);
 
     expect(names).toContain("README.txt");
-    expect(names.some((name) => /^mikuproject-export-\d{12}\.xml$/.test(name))).toBe(true);
-    expect(names.some((name) => /^mikuproject-export-\d{12}\.xlsx$/.test(name))).toBe(true);
-    expect(names.some((name) => /^mikuproject-workbook-\d{12}\.json$/.test(name))).toBe(true);
-    expect(names.some((name) => /^mikuproject-wbs-\d{8}\.md$/.test(name))).toBe(true);
-    expect(names).toContain("mikuproject-project-overview-view.editjson");
-    expect(names).toContain("mikuproject-full-bundle.editjson");
-    expect(names).toContain("mikuproject-phase-detail-view-full.editjson");
+    expect(names.some((name) => /^miku-project-export-\d{12}\.xml$/.test(name))).toBe(true);
+    expect(names.some((name) => /^miku-project-export-\d{12}\.xlsx$/.test(name))).toBe(true);
+    expect(names.some((name) => /^miku-project-workbook-\d{12}\.json$/.test(name))).toBe(true);
+    expect(names.some((name) => /^miku-project-wbs-\d{8}\.md$/.test(name))).toBe(true);
+    expect(names).toContain("miku-project-project-overview-view.editjson");
+    expect(names).toContain("miku-project-full-bundle.editjson");
+    expect(names).toContain("miku-project-phase-detail-view-full.editjson");
     expect(names.some((name) => name.startsWith("monthly-calendar/"))).toBe(true);
-    expect(readmeText).toContain("mikuproject ALL ZIP");
+    expect(readmeText).toContain("miku-project ALL ZIP");
     expect(readmeText).toContain("monthly-calendar/YYYY-MM.svg");
 
     const bundle = JSON.parse(bundleText);

@@ -2,7 +2,7 @@
 
 ## 目的
 
-この文書は、`mikuproject` でリファクタリングを進めるときの実務手順をまとめたものである。
+この文書は、`miku-project` でリファクタリングを進めるときの実務手順をまとめたものである。
 
 このリポジトリでは、単に file を分けること自体を目的にせず、次を同時に満たすことを重視する。
 
@@ -91,11 +91,11 @@
 
 - `scripts/build-project.mjs`
 - `scripts/lib/core-api-loader.mjs`
-- `mikuproject-src.html`
+- `miku-project-src.html`
 - `scripts/build-project-xlsx-sample.mjs`
 - `tests/` 配下の harness
 - `src/js` 生成物
-- `mikuproject.html`
+- `miku-project.html`
 - `index.html`
 
 `globalThis.__mikuproject...` を使う module は、読み込み順が 1 つずれるだけで壊れることがある。
@@ -114,7 +114,7 @@ npm run build:full
 - build / test が通ること
 - 実行時間が不自然に悪化していないこと
 
-特に `tests/mikuproject-cli.test.js` は最長になりやすいので、継続監視対象とする。
+特に `tests/miku-project-cli.test.js` は最長になりやすいので、継続監視対象とする。
 
 ## 止めどきの判断
 

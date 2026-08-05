@@ -71,7 +71,7 @@ function bootXmlModule() {
   return globalThis.__mikuprojectXml;
 }
 
-describe("mikuproject msproject xml round-trip", () => {
+describe("miku-project msproject xml round-trip", () => {
   it("limits default calendar holiday exceptions to the project date range", () => {
     const xmlTools = bootXmlModule();
 

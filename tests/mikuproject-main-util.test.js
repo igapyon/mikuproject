@@ -17,7 +17,7 @@ function bootMainUtil() {
   return globalThis.__mikuprojectMainUtil;
 }
 
-describe("mikuproject main util", () => {
+describe("miku-project main util", () => {
   it("parses optional non-negative integer values", () => {
     const util = bootMainUtil();
 

@@ -1,6 +1,6 @@
 # CLI AI Projections And Validation Notes
 
-この文書は、`mikuproject` の CLI から生成AI向け projection と patch 検査を扱うための仕様メモである。
+この文書は、`miku-project` の CLI から生成AI向け projection と patch 検査を扱うための仕様メモである。
 
 現時点では実装タスクではなく、CLI の責務、コマンド体系、引数設計、first cut の範囲を整理することを目的とする。
 
@@ -84,16 +84,16 @@ CLI は責務ごとに整理する。
 
 AI 向け CLI では、階層型 subcommand を正規形とする。
 
-- `mikuproject ai export project-overview`
-- `mikuproject ai export task-edit`
-- `mikuproject ai export phase-detail`
-- `mikuproject ai detect-kind`
-- `mikuproject ai validate-patch`
+- `miku-project ai export project-overview`
+- `miku-project ai export task-edit`
+- `miku-project ai export phase-detail`
+- `miku-project ai detect-kind`
+- `miku-project ai validate-patch`
 
 state 系の候補は次とする。
 
-- `mikuproject state summarize`
-- `mikuproject state diff`
+- `miku-project state summarize`
+- `miku-project state diff`
 
 ## CLI Naming 方針
 
@@ -398,13 +398,13 @@ CLI は file-based だけでなく、標準入出力も扱いやすくする。
 全体把握:
 
 ```sh
-mikuproject ai export project-overview --in workbook.json
+miku-project ai export project-overview --in workbook.json
 ```
 
 局所 phase の切り出し:
 
 ```sh
-mikuproject ai export phase-detail \
+miku-project ai export phase-detail \
   --in workbook.json \
   --phase-uid 100 \
   --mode scoped \
@@ -415,25 +415,25 @@ mikuproject ai export phase-detail \
 個別 task の取得:
 
 ```sh
-mikuproject ai export task-edit --in workbook.json --task-uid 123
+miku-project ai export task-edit --in workbook.json --task-uid 123
 ```
 
 patch の事前確認:
 
 ```sh
-mikuproject ai validate-patch --state workbook.json --in patch.json
+miku-project ai validate-patch --state workbook.json --in patch.json
 ```
 
 patch の適用:
 
 ```sh
-mikuproject state apply-patch --state workbook.json --in patch.json --out workbook.next.json
+miku-project state apply-patch --state workbook.json --in patch.json --out workbook.next.json
 ```
 
 state 差分の確認:
 
 ```sh
-mikuproject state diff --before workbook.json --after workbook.next.json
+miku-project state diff --before workbook.json --after workbook.next.json
 ```
 
 ## まとめ

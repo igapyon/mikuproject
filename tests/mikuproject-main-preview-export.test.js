@@ -12,7 +12,7 @@ import {
   setupMainPreviewExportDom
 } from "./helpers/main-preview-export-harness.js";
 
-describe("mikuproject main preview export", () => {
+describe("miku-project main preview export", () => {
   beforeEach(() => {
     setupMainPreviewExportDom();
   });
@@ -23,7 +23,7 @@ describe("mikuproject main preview export", () => {
     document.getElementById("downloadXmlBtn").click();
     const xmlText = document.getElementById("xmlInput").value;
     expect(xmlText).toContain("<?xml version=\"1.0\" encoding=\"UTF-8\"?>");
-    expect(xmlText).toContain("<Name>mikuproject開発</Name>");
+    expect(xmlText).toContain("<Name>miku-project開発</Name>");
     expect(xmlText).toContain("<StartDate>2026-03-16</StartDate>");
     expect(xmlText).toContain("<FinishDate>2026-04-01</FinishDate>");
     expect(xmlText).toContain("<CalendarUID>1</CalendarUID>");
@@ -48,19 +48,19 @@ describe("mikuproject main preview export", () => {
     bootPage();
     parseXmlViaHook();
     document.getElementById("downloadXmlBtn").click();
-    expect(HTMLAnchorElement.prototype.click.mock.instances.at(-1).download).toBe("mikuproject-export-202603162312.xml");
+    expect(HTMLAnchorElement.prototype.click.mock.instances.at(-1).download).toBe("miku-project-export-202603162312.xml");
     const xmlInput = document.getElementById("xmlInput");
     xmlInput.value = `${xmlInput.value}\n<!-- edited -->`;
     xmlInput.dispatchEvent(new Event("input"));
     document.getElementById("exportXlsxBtn").click();
-    expect(HTMLAnchorElement.prototype.click.mock.instances.at(-1).download).toBe("mikuproject-export-202603162312.xlsx");
+    expect(HTMLAnchorElement.prototype.click.mock.instances.at(-1).download).toBe("miku-project-export-202603162312.xlsx");
     document.getElementById("exportWorkbookJsonBtn").click();
-    expect(HTMLAnchorElement.prototype.click.mock.instances.at(-1).download).toBe("mikuproject-workbook-202603162312.json");
+    expect(HTMLAnchorElement.prototype.click.mock.instances.at(-1).download).toBe("miku-project-workbook-202603162312.json");
     expect(JSON.parse(document.getElementById("workbookJsonOutput").value).format).toBe("mikuproject_workbook_json");
     document.getElementById("downloadWeeklySvgBtn").click();
-    expect(HTMLAnchorElement.prototype.click.mock.instances.at(-1).download).toBe("mikuproject-wbs-weekly-202603162312.svg");
+    expect(HTMLAnchorElement.prototype.click.mock.instances.at(-1).download).toBe("miku-project-wbs-weekly-202603162312.svg");
     document.getElementById("exportWbsMdBtn").click();
-    expect(HTMLAnchorElement.prototype.click.mock.instances.at(-1).download).toBe("mikuproject-wbs-20260316.md");
+    expect(HTMLAnchorElement.prototype.click.mock.instances.at(-1).download).toBe("miku-project-wbs-20260316.md");
     const OriginalBlob = Blob;
     class InspectableBlob extends OriginalBlob {
       constructor(parts = [], options = {}) {
@@ -71,7 +71,7 @@ describe("mikuproject main preview export", () => {
     globalThis.Blob = InspectableBlob;
     try {
       document.getElementById("exportMermaidMdBtn").click();
-      expect(HTMLAnchorElement.prototype.click.mock.instances.at(-1).download).toBe("mikuproject-wbs-mermaid-202603162312.mmd");
+      expect(HTMLAnchorElement.prototype.click.mock.instances.at(-1).download).toBe("miku-project-wbs-mermaid-202603162312.mmd");
       const mermaidBlob = URL.createObjectURL.mock.calls.at(-1)?.[0];
       expect(mermaidBlob.type).toBe("text/plain;charset=utf-8");
       const mermaidText = String(mermaidBlob._parts?.[0] || "");
@@ -80,7 +80,7 @@ describe("mikuproject main preview export", () => {
       document.getElementById("downloadSvgBtn").click();
       await flushAsyncWork();
       await flushAsyncWork();
-      expect(HTMLAnchorElement.prototype.click.mock.instances.at(-1).download).toBe("mikuproject-wbs-daily-202603162312.svg");
+      expect(HTMLAnchorElement.prototype.click.mock.instances.at(-1).download).toBe("miku-project-wbs-daily-202603162312.svg");
       const svgBlob = URL.createObjectURL.mock.calls.at(-1)?.[0];
       const svgText = String(svgBlob._parts?.[0] || "");
       expect(svgText).not.toContain("data-chart-origin-x");
@@ -96,7 +96,7 @@ describe("mikuproject main preview export", () => {
     const defaultHolidayDates = getDefaultSampleHolidayDates();
     document.getElementById("downloadXmlBtn").click();
     document.getElementById("exportWbsXlsxBtn").click();
-    expect(HTMLAnchorElement.prototype.click.mock.instances.at(-1).download).toBe("mikuproject-wbs-202603162312.xlsx");
+    expect(HTMLAnchorElement.prototype.click.mock.instances.at(-1).download).toBe("miku-project-wbs-202603162312.xlsx");
     expect(exportSpy.mock.calls.at(-1)?.[1]).toEqual({
       holidayDates: defaultHolidayDates,
       displayDaysBeforeBaseDate: undefined,
@@ -150,14 +150,14 @@ describe("mikuproject main preview export", () => {
     parseXmlViaHook();
     document.getElementById("downloadMonthlyCalendarSvgBtn").click();
     await flushAsyncWork();
-    expect(HTMLAnchorElement.prototype.click.mock.instances.at(-1).download).toBe("mikuproject-monthly-wbs-calendar-202603162312.zip");
+    expect(HTMLAnchorElement.prototype.click.mock.instances.at(-1).download).toBe("miku-project-monthly-wbs-calendar-202603162312.zip");
   });
 
   it("downloads all outputs as zip", () => {
     bootPage();
     parseXmlViaHook();
     document.getElementById("downloadAllOutputsBtn").click();
-    expect(HTMLAnchorElement.prototype.click.mock.instances.at(-1).download).toBe("mikuproject-all-202603162312.zip");
+    expect(HTMLAnchorElement.prototype.click.mock.instances.at(-1).download).toBe("miku-project-all-202603162312.zip");
   });
 
   it("imports xml from a file into the textarea", async () => {

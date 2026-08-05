@@ -5,7 +5,7 @@
     const SAMPLE_PROJECT_DRAFT_VIEW = {
         view_type: "project_draft_view",
         project: {
-            name: "mikuproject開発",
+            name: "miku-project開発",
             planned_start: "2026-03-16",
             planned_finish: "2026-04-01",
             schedule_from_start: true,

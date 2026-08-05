@@ -1,12 +1,12 @@
-# mikuproject AI JSON Prompt / Spec
+# miku-project AI JSON Prompt / Spec
 
-この文書は、`mikuproject AI JSON Prompt / Spec` の定義である。
+この文書は、`miku-project AI JSON Prompt / Spec` の定義である。
 
 - Version: `v20260417`
 
-私たちは、これから取り組むプロジェクトの内容を理解し、WBS の観点から必要なマイルストーン / フェーズ / タスクを整理し、`mikuproject` に設定するための JSON へ落とし込んでいきます。
+私たちは、これから取り組むプロジェクトの内容を理解し、WBS の観点から必要なマイルストーン / フェーズ / タスクを整理し、`miku-project` に設定するための JSON へ落とし込んでいきます。
 
-`mikuproject` は、`MS Project XML` を基軸に、変換・可視化・限定編集を行う single-file web app です。
+`miku-project` は、`MS Project XML` を基軸に、変換・可視化・限定編集を行う single-file web app です。
 
 特に、次の 3 つを重視して設計しています。
 
@@ -14,7 +14,7 @@
 - 生成AI 連携を意識した projection / 再取込
 - 人が読むための `WBS Excel ブック (.xlsx)` 帳票出力
 
-`mikuproject` と私たち（生成AIを含む）の間のやり取りは、XML ではなく JSON ベースで行います。
+`miku-project` と私たち（生成AIを含む）の間のやり取りは、XML ではなく JSON ベースで行います。
 
 このプロンプトを読んだ直後は、内容を受け取ったことを示すために `OK` とだけ回答してください。
 
@@ -24,7 +24,7 @@
 - 既存 project を修正する場合は、最後の `json` コードフェンスで Patch JSON を返してください
 - 既存 project の修正では、project 全体 JSON や workbook JSON を再出力してはいけません
 - `project_draft_request` は入力側の補助形式であり、返答として返してはいけません
-- 返答に説明文を含めてもかまいませんが、`mikuproject` が処理する JSON は最後の `json` コードフェンス 1 個だけです
+- 返答に説明文を含めてもかまいませんが、`miku-project` が処理する JSON は最後の `json` コードフェンス 1 個だけです
 - 不明な値を勝手に補完してはいけません。ただし新規 project 草案では、ユーザーが粗い草案や仮日付を求めている場合に限り、草案としての仮日付を入れてよいです
 
 ## 現時点の実装状況
@@ -87,10 +87,10 @@ repo には `scripts/cli-ai-workflow-example.mjs` と `scripts/cli-ai-stdio-exam
 
 CLI 例:
 
-- `mikuproject ai export project-overview --in workbook.json`
-- `mikuproject ai export task-edit --in workbook.json --task-uid 123`
-- `mikuproject ai export phase-detail --in workbook.json --phase-uid 100 --mode scoped --root-task-uid 123 --max-depth 2`
-- `mikuproject ai export bundle --in workbook.json`
+- `miku-project ai export project-overview --in workbook.json`
+- `miku-project ai export task-edit --in workbook.json --task-uid 123`
+- `miku-project ai export phase-detail --in workbook.json --phase-uid 100 --mode scoped --root-task-uid 123 --max-depth 2`
+- `miku-project ai export bundle --in workbook.json`
 
 `export task-edit` は `--task-uid` 省略時に既定選択の `task_edit_view` を返します。
 `export task-edit` は `--select auto|first-task|uid` を受けます。
@@ -193,7 +193,7 @@ JSON parse failure では、`error_code=invalid_json_input` と `error_details.c
 - `root_uid` を指定すると、その task を起点にした subtree を対象にできます
 - `max_depth` を指定すると、`root_uid` から何階層下まで含めるかを制御できます
 - `mode = "full"` では `root_uid = null` かつ `max_depth = null` です
-- CLI の `mikuproject ai export phase-detail` は `mode = "scoped"` と `mode = "full"` を受けます
+- CLI の `miku-project ai export phase-detail` は `mode = "scoped"` と `mode = "full"` を受けます
 
 ### `task_edit_view` の例
 
@@ -588,7 +588,7 @@ JSON parse failure では、`error_code=invalid_json_input` と `error_details.c
 - 人間が「とりあえずえいやで日付を入れてよい」と指示している場合は、細かい整合よりもまず日付を埋めることを優先してよいです
 - 新規生成後の稼働日・祝日を考慮した再計画は、後続の Patch JSON で行う想定です
 - `percent_complete` を含めてよいです
-- task が通常 task で、`planned_start` / `planned_finish` が日付だけの場合、`mikuproject` 側では勤務時間帯を補完して扱うことがあります
+- task が通常 task で、`planned_start` / `planned_finish` が日付だけの場合、`miku-project` 側では勤務時間帯を補完して扱うことがあります
 - 同日 task の date-only 指定は、通常 task なら `09:00:00` 開始 / `18:00:00` 終了へ補完されることがあります
 - 複数日 task の date-only 指定でも、通常 task なら開始日は `09:00:00`、終了日は `18:00:00` を補完して扱うことがあります
 - `planned_finish` だけが与えられた通常 task は、まず同日の `planned_start` を補完したうえで、上記の勤務時間帯補完を適用することがあります
@@ -671,7 +671,7 @@ JSON parse failure では、`error_code=invalid_json_input` と `error_details.c
 - ただし、最終的な機械処理対象 JSON は必ず最後に 1 個の `json` コードフェンスで囲って返してください
 - 既存編集モードでは、その最後の `json` コードフェンス内は `Patch JSON` です
 - 新規生成モードでは、その最後の `json` コードフェンス内は `project_draft_view` です
-- `mikuproject` が処理対象にするのは、その最後の `json` コードフェンス内の JSON のみです
+- `miku-project` が処理対象にするのは、その最後の `json` コードフェンス内の JSON のみです
 - 不明な場合は変更を最小にしてください
 - 変更不要なら最後の `json` コードフェンスで空の `operations` を返してください
 - 与えられていない task や field を勝手に推測しないでください

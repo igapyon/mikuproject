@@ -1,6 +1,6 @@
 # Import / Export Workflows
 
-この文書は、`mikuproject` の import / export と生成AI連携を、機能一覧ではなく「何をしたいか」から辿れるように整理するための導線メモである。
+この文書は、`miku-project` の import / export と生成AI連携を、機能一覧ではなく「何をしたいか」から辿れるように整理するための導線メモである。
 
 詳細仕様は `docs/spec.md`、CLI の AI projection / patch 検査仕様は `docs/cli-ai-projections-and-validation.md`、`core API` の補助メモは `docs/core-api-import-export-notes.md` を参照する。
 
@@ -79,9 +79,9 @@ export は、誰が読むかで分けて考えると分かりやすい。
 
 主なコマンド:
 
-- `mikuproject export workbook-json`
-- `mikuproject export xml`
-- `mikuproject export xlsx`
+- `miku-project export workbook-json`
+- `miku-project export xml`
+- `miku-project export xlsx`
 
 用途:
 
@@ -93,10 +93,10 @@ export は、誰が読むかで分けて考えると分かりやすい。
 
 主なコマンド:
 
-- `mikuproject ai export project-overview`
-- `mikuproject ai export task-edit`
-- `mikuproject ai export phase-detail`
-- `mikuproject ai export bundle`
+- `miku-project ai export project-overview`
+- `miku-project ai export task-edit`
+- `miku-project ai export phase-detail`
+- `miku-project ai export bundle`
 
 用途:
 
@@ -113,12 +113,12 @@ export は、誰が読むかで分けて考えると分かりやすい。
 
 主なコマンド:
 
-- `mikuproject report wbs-xlsx`
-- `mikuproject report wbs-markdown`
-- `mikuproject report mermaid`
-- `mikuproject report daily-svg`
-- `mikuproject report weekly-svg`
-- `mikuproject report monthly-calendar-svg`
+- `miku-project report wbs-xlsx`
+- `miku-project report wbs-markdown`
+- `miku-project report mermaid`
+- `miku-project report daily-svg`
+- `miku-project report weekly-svg`
+- `miku-project report monthly-calendar-svg`
 
 用途:
 
@@ -130,14 +130,14 @@ export は、誰が読むかで分けて考えると分かりやすい。
 
 ### 既存WBSを安全に少し直す
 
-これは今の `mikuproject` で最も推奨しやすい AI 連携フローである。
+これは今の `miku-project` で最も推奨しやすい AI 連携フローである。
 
-1. `mikuproject ai export project-overview`
-2. `mikuproject ai export task-edit` または `mikuproject ai export phase-detail`
+1. `miku-project ai export project-overview`
+2. `miku-project ai export task-edit` または `miku-project ai export phase-detail`
 3. AI が `patch_json` を返す
-4. `mikuproject ai validate-patch`
-5. `mikuproject state apply-patch`
-6. `mikuproject state diff`
+4. `miku-project ai validate-patch`
+5. `miku-project state apply-patch`
+6. `miku-project state diff`
 
 方針:
 
@@ -161,7 +161,7 @@ export は、誰が読むかで分けて考えると分かりやすい。
 
 1. `project_draft_request` を作る
 2. AI が `project_draft_view` を返す
-3. `mikuproject state from-draft`
+3. `miku-project state from-draft`
 
 方針:
 

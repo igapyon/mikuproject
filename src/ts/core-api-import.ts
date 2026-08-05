@@ -9,7 +9,7 @@
     __mikuprojectCoreApiAiJson?: {
       getAiJsonSpecText: () => string;
       getAiJsonSpec: () => {
-        id: "mikuproject-ai-json-spec";
+        id: "miku-project-ai-json-spec";
         version: string;
         text: string;
       };

@@ -157,7 +157,7 @@ function findRowIndexByPredicate(sheet, predicate) {
 
 const SAMPLE_HOLIDAY_COUNT = 1;
 
-describe("mikuproject wbs xlsx", () => {
+describe("miku-project wbs xlsx", () => {
   it("provides Excel-style layout references for WBS worksheet tuning", () => {
     const { wbsXlsx } = bootModules();
 
@@ -241,7 +241,7 @@ describe("mikuproject wbs xlsx", () => {
     expect(projectInfoHeaderIndex).toBe(0);
     expect(sheet.rows[projectInfoHeaderIndex].cells[0].fontSize).toBe(14);
     expect(sheet.rows[projectInfoHeaderIndex + 1].cells[0].value).toBe("プロジェクト名");
-    expect(sheet.rows[projectInfoHeaderIndex + 1].cells[2].value).toBe("mikuproject開発");
+    expect(sheet.rows[projectInfoHeaderIndex + 1].cells[2].value).toBe("miku-project開発");
     expect(sheet.rows[1].cells[9].value).toBe("出力日時 2026-03-29 22:49");
     expect(sheet.rows[projectInfoHeaderIndex + 2].cells[0].value).toBe("カレンダ");
     expect(sheet.rows[projectInfoHeaderIndex + 2].cells[2].value).toBe("1 Standard");

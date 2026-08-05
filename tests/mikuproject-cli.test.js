@@ -12,7 +12,7 @@ import { loadMikuprojectCoreApi } from "../scripts/lib/core-api-loader.mjs";
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const repoRoot = path.resolve(__dirname, "..");
-const cliPath = path.resolve(repoRoot, "scripts/mikuproject-cli.mjs");
+const cliPath = path.resolve(repoRoot, "scripts/miku-project-cli.mjs");
 const cliBundleBuildPath = path.resolve(repoRoot, "scripts/build-cli-bundle.mjs");
 const cliAiWorkflowExamplePath = path.resolve(repoRoot, "scripts/cli-ai-workflow-example.mjs");
 const cliAiStdioExamplePath = path.resolve(repoRoot, "scripts/cli-ai-stdio-example.mjs");
@@ -30,12 +30,12 @@ afterEach(() => {
   }
 });
 
-describe("mikuproject cli", () => {
+describe("miku-project cli", () => {
   it("prints the AI spec", () => {
     const result = runCli(["ai", "spec"]);
 
     expect(result.status).toBe(0);
-    expect(result.stdout).toContain("# mikuproject AI JSON Prompt / Spec");
+    expect(result.stdout).toContain("# miku-project AI JSON Prompt / Spec");
     expect(result.stderr).toBe("");
   });
 
@@ -53,24 +53,24 @@ describe("mikuproject cli", () => {
     expect(result.stdout).toContain("Diagnostics / warnings:");
     expect(result.stdout).toContain("Exit codes:");
     expect(result.stdout).toContain("References:");
-    expect(result.stdout).toContain("mikuproject --version");
-    expect(result.stdout).toContain("mikuproject ai export project-overview");
-    expect(result.stdout).toContain("mikuproject ai export task-edit");
-    expect(result.stdout).toContain("mikuproject ai export phase-detail");
-    expect(result.stdout).toContain("mikuproject ai export bundle");
+    expect(result.stdout).toContain("miku-project --version");
+    expect(result.stdout).toContain("miku-project ai export project-overview");
+    expect(result.stdout).toContain("miku-project ai export task-edit");
+    expect(result.stdout).toContain("miku-project ai export phase-detail");
+    expect(result.stdout).toContain("miku-project ai export bundle");
     expect(result.stdout).toContain("--select auto|first-task|uid");
     expect(result.stdout).toContain("--select auto|first-phase|uid");
-    expect(result.stdout).toContain("mikuproject ai detect-kind");
-    expect(result.stdout).toContain("mikuproject ai validate-patch");
-    expect(result.stdout).toContain("mikuproject state summarize");
-    expect(result.stdout).toContain("mikuproject state diff");
+    expect(result.stdout).toContain("miku-project ai detect-kind");
+    expect(result.stdout).toContain("miku-project ai validate-patch");
+    expect(result.stdout).toContain("miku-project state summarize");
+    expect(result.stdout).toContain("miku-project state diff");
   });
 
   it("prints the cli version", () => {
     const result = runCli(["--version"]);
 
     expect(result.status).toBe(0);
-    expect(result.stdout).toBe(`mikuproject ${packageVersion}\n`);
+    expect(result.stdout).toBe(`miku-project ${packageVersion}\n`);
     expect(result.stderr).toBe("");
   });
 
@@ -802,7 +802,7 @@ describe("mikuproject cli", () => {
 
   it("exports xlsx bytes from workbook state", () => {
     const workbookPath = writeTempJson("workbook.json", buildWorkbookState("CLI export xlsx"));
-    const outputPath = path.join(createTempDir("mikuproject-cli-out-"), "project.xlsx");
+    const outputPath = path.join(createTempDir("miku-project-cli-out-"), "project.xlsx");
 
     const result = runCli(["export", "xlsx", "--in", workbookPath, "--out", outputPath], { encoding: "buffer" });
     const output = readFileSync(outputPath);
@@ -859,7 +859,7 @@ describe("mikuproject cli", () => {
 
   it("exports report wbs-xlsx bytes from workbook state", () => {
     const workbookPath = writeTempJson("workbook.json", buildWorkbookState("CLI report wbs-xlsx"));
-    const outputPath = path.join(createTempDir("mikuproject-cli-out-"), "wbs.xlsx");
+    const outputPath = path.join(createTempDir("miku-project-cli-out-"), "wbs.xlsx");
 
     const result = runCli(["report", "wbs-xlsx", "--in", workbookPath, "--out", outputPath], { encoding: "buffer" });
     const output = readFileSync(outputPath);
@@ -908,7 +908,7 @@ describe("mikuproject cli", () => {
 
   it("exports report monthly-calendar-svg as zip bytes from workbook state", () => {
     const workbookPath = writeTempJson("workbook.json", buildWorkbookState("CLI report monthly-calendar-svg"));
-    const outputPath = path.join(createTempDir("mikuproject-cli-out-"), "monthly.zip");
+    const outputPath = path.join(createTempDir("miku-project-cli-out-"), "monthly.zip");
 
     const result = runCli(["report", "monthly-calendar-svg", "--in", workbookPath, "--out", outputPath], { encoding: "buffer" });
     const output = readFileSync(outputPath);
@@ -922,7 +922,7 @@ describe("mikuproject cli", () => {
     const workbookPath = writeTempJson("workbook.json", buildWorkbookState("CLI report all"));
     const loaded = loadMikuprojectCoreApi({ rootDir: repoRoot });
     disposers.push(() => loaded.dispose());
-    const outputPath = path.join(createTempDir("mikuproject-cli-out-"), "report-bundle.zip");
+    const outputPath = path.join(createTempDir("miku-project-cli-out-"), "report-bundle.zip");
 
     const result = runCli(["report", "all", "--in", workbookPath, "--out", outputPath], { encoding: "buffer" });
     const output = readFileSync(outputPath);
@@ -979,8 +979,8 @@ describe("mikuproject cli", () => {
   });
 
   it("builds a single-file cli runtime artifact that runs outside the repo", () => {
-    const bundlePath = path.join(createTempDir("mikuproject-cli-bundle-test-"), "mikuproject.mjs");
-    const sourcesPath = path.join(path.dirname(bundlePath), "mikuproject-sources.tgz");
+    const bundlePath = path.join(createTempDir("miku-project-cli-bundle-test-"), "miku-project.mjs");
+    const sourcesPath = path.join(path.dirname(bundlePath), "miku-project-sources.tgz");
     const buildResult = spawnSync(process.execPath, [cliBundleBuildPath, "--out", bundlePath], {
       cwd: repoRoot,
       encoding: "utf8"
@@ -992,15 +992,15 @@ describe("mikuproject cli", () => {
     const sourceEntries = listTarGzEntries(sourcesPath);
     expect(sourceEntries).toEqual([...sourceEntries].sort());
     expect(sourceEntries).toEqual(expect.arrayContaining([
-      "mikuproject-sources/package.json",
-      "mikuproject-sources/README.md",
-      "mikuproject-sources/scripts/build-cli-bundle.mjs",
-      "mikuproject-sources/scripts/mikuproject-cli.mjs",
-      "mikuproject-sources/scripts/lib/core-api-loader.mjs",
-      "mikuproject-sources/src/ts/core-api.ts",
-      "mikuproject-sources/src/js/core-api.js",
-      "mikuproject-sources/docs/miku-soft-40-agentskills-design-v20260501.md",
-      "mikuproject-sources/tests/mikuproject-cli.test.js"
+      "miku-project-sources/package.json",
+      "miku-project-sources/README.md",
+      "miku-project-sources/scripts/build-cli-bundle.mjs",
+      "miku-project-sources/scripts/miku-project-cli.mjs",
+      "miku-project-sources/scripts/lib/core-api-loader.mjs",
+      "miku-project-sources/src/ts/core-api.ts",
+      "miku-project-sources/src/js/core-api.js",
+      "miku-project-sources/docs/miku-soft-40-agentskills-design-v20260501.md",
+      "miku-project-sources/tests/mikuproject-cli.test.js"
     ]));
 
     const workbookPath = writeTempJson("bundle-workbook.json", buildWorkbookState("Bundled CLI export xml"));
@@ -1015,7 +1015,7 @@ describe("mikuproject cli", () => {
   });
 
   it("prints the version from a single-file cli runtime artifact outside the repo", () => {
-    const bundlePath = path.join(createTempDir("mikuproject-cli-version-bundle-test-"), "mikuproject.mjs");
+    const bundlePath = path.join(createTempDir("miku-project-cli-version-bundle-test-"), "miku-project.mjs");
     const buildResult = spawnSync(process.execPath, [cliBundleBuildPath, "--out", bundlePath], {
       cwd: repoRoot,
       encoding: "utf8"
@@ -1029,7 +1029,7 @@ describe("mikuproject cli", () => {
     });
 
     expect(result.status).toBe(0);
-    expect(result.stdout).toBe(`mikuproject ${packageVersion}\n`);
+    expect(result.stdout).toBe(`miku-project ${packageVersion}\n`);
     expect(result.stderr).toBe("");
   });
 
@@ -1088,7 +1088,7 @@ function runCli(args, options = {}) {
 }
 
 function writeTempJson(fileName, documentLike) {
-  const dir = createTempDir("mikuproject-cli-test-");
+  const dir = createTempDir("miku-project-cli-test-");
   const filePath = path.join(dir, fileName);
   writeFileSync(filePath, `${JSON.stringify(documentLike, null, 2)}\n`, "utf8");
   return filePath;

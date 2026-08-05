@@ -1,6 +1,6 @@
 # MS Project XML x 生成AI 連携設計メモ
 
-この文書は、`mikuproject` における `MS Project XML` と生成AIの連携方針を整理するための設計メモである。
+この文書は、`miku-project` における `MS Project XML` と生成AIの連携方針を整理するための設計メモである。
 
 現時点では実装仕様の確定版ではなく、アーキテクチャ判断と今後の仕様化ポイントを明確にすることを目的とする。
 
@@ -28,7 +28,7 @@
 
 ## 目的
 
-`mikuproject` は `MS Project XML` を忠実に扱う編集ソフトとして設計する。
+`miku-project` は `MS Project XML` を忠実に扱う編集ソフトとして設計する。
 
 すでに `.xlsx` の import/export は実装済みであり、次の課題として生成AIとの安全な連携を検討する。
 
@@ -70,7 +70,7 @@
 ### 2. 内部モデル
 
 - 正規化された `Project / Task / Resource / Assignment / Calendar` モデル
-- `mikuproject` 内部で意味を保って扱う canonical representation
+- `miku-project` 内部で意味を保って扱う canonical representation
 
 ### 3. AI 入出力形式
 
@@ -152,7 +152,7 @@ AI 向け JSON は、業界標準に完全準拠している必要はない。
 - 型が安定している
 - 暗黙ルールが少ない
 
-そのため、`OpenProject` など既存製品の JSON を参考にしつつ、`mikuproject` に必要な範囲で自作する方針が現実的である。
+そのため、`OpenProject` など既存製品の JSON を参考にしつつ、`miku-project` に必要な範囲で自作する方針が現実的である。
 
 ## 標準との距離感
 
@@ -276,10 +276,10 @@ AI 入力は 1 種類の簡約 JSON で統一するより、用途別 projection
 
 CLI では、既存 project の局所 projection を次で扱える。
 
-- `mikuproject ai export project-overview --in workbook.json`
-- `mikuproject ai export task-edit --in workbook.json --task-uid 123`
-- `mikuproject ai export phase-detail --in workbook.json --phase-uid 100 --mode scoped --root-task-uid 123 --max-depth 2`
-- `mikuproject ai export bundle --in workbook.json`
+- `miku-project ai export project-overview --in workbook.json`
+- `miku-project ai export task-edit --in workbook.json --task-uid 123`
+- `miku-project ai export phase-detail --in workbook.json --phase-uid 100 --mode scoped --root-task-uid 123 --max-depth 2`
+- `miku-project ai export bundle --in workbook.json`
 
 `export task-edit` は `--task-uid` 省略時に UI と同様の既定選択で `task_edit_view` を返す。
 
@@ -296,7 +296,7 @@ CLI では、既存 project の局所 projection を次で扱える。
 
 この新規生成モードでは、AI は既存 project を変更しない。許されるのは、新しい project の全量草案を返すことだけである。
 
-現行 UI では、この新規生成モードは `Input` タブ内の `生成AI連携` から扱う。生成AIとの会話自体は外部で行い、`mikuproject` 側では `project_draft_view` を
+現行 UI では、この新規生成モードは `Input` タブ内の `生成AI連携` から扱う。生成AIとの会話自体は外部で行い、`miku-project` 側では `project_draft_view` を
 
 - `Load from file` から `.editjson` として開く
 - JSON テキストを貼り付けて取り込む
@@ -308,7 +308,7 @@ CLI では、既存 project の局所 projection を次で扱える。
 - 既存 project の編集には使わない
 - 出力は `Patch` ではなく全量の draft JSON とする
 - draft は正本ではなく草案として扱う
-- `mikuproject` 側で validation を通してから内部モデルへ取り込む
+- `miku-project` 側で validation を通してから内部モデルへ取り込む
 - 既存 UID と混同しないよう、仮 UID を使ってよい
 
 ### `project_draft_request` の例
@@ -1362,7 +1362,7 @@ Patch 適用失敗時は、単なる失敗ではなく理由を分類して返�
 
 ## 現時点の暫定結論
 
-`mikuproject` における生成AI連携の基本方針は次のとおりとする。
+`miku-project` における生成AI連携の基本方針は次のとおりとする。
 
 - 外部互換と保存は `MS Project XML`
 - 内部処理と AI 連携は正規化 JSON

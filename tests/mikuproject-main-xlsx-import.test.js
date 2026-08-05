@@ -13,7 +13,7 @@ import {
   workbookImportSampleJson
 } from "./helpers/main-xlsx-import-harness.js";
 
-describe("mikuproject main xlsx import", () => {
+describe("miku-project main xlsx import", () => {
   beforeEach(() => {
     setupMainXlsxImportDom();
   });

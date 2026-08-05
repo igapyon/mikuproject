@@ -16,9 +16,9 @@ const TARGETS = [
     outHtml: "index.html"
   },
   {
-    id: "mikuproject",
-    srcHtml: "mikuproject-src.html",
-    outHtml: "mikuproject.html",
+    id: "miku-project",
+    srcHtml: "miku-project-src.html",
+    outHtml: "miku-project.html",
     tsOrder: [
       "src/ts/types.ts",
       "src/ts/markdown-escape.ts",
@@ -239,7 +239,7 @@ function formatBuildDate(date) {
 }
 
 function loadAiPromptText() {
-  const promptPath = path.resolve(ROOT, "docs/mikuproject-ai-json-spec.md");
+  const promptPath = path.resolve(ROOT, "docs/miku-project-ai-json-spec.md");
   return fs.readFileSync(promptPath, "utf8");
 }
 

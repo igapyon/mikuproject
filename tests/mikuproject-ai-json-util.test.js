@@ -17,7 +17,7 @@ function bootUtil() {
   return globalThis.__mikuprojectAiJsonUtil;
 }
 
-describe("mikuproject ai json util", () => {
+describe("miku-project ai json util", () => {
   beforeEach(() => {
     delete globalThis.__mikuprojectAiJsonUtil;
   });

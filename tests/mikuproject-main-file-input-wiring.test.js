@@ -254,7 +254,7 @@ function mountDom() {
     </div>
     <section id="tabPanelInput" class="md-tab-panel" data-tab-panel="input">
       <textarea id="xmlInput"></textarea>
-      <template id="aiPromptTemplate"># mikuproject AI JSON Spec</template>
+      <template id="aiPromptTemplate"># miku-project AI JSON Spec</template>
       <textarea id="projectDraftImportInput"></textarea>
       <div id="xmlSaveState"></div>
     </section>
@@ -296,7 +296,7 @@ function bootPage() {
   document.dispatchEvent(new Event("DOMContentLoaded"));
 }
 
-describe("mikuproject main file input wiring", () => {
+describe("miku-project main file input wiring", () => {
   beforeEach(() => {
     document.body.innerHTML = "";
   });

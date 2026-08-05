@@ -141,14 +141,14 @@ function mountDom() {
     <input id="phaseDetailRootUidInput" type="text" />
     <input id="phaseDetailMaxDepthInput" type="text" />
     <div id="statusMessage"></div>
-    <div class="md-top-tabs" role="tablist" aria-label="mikuproject sections">
+    <div class="md-top-tabs" role="tablist" aria-label="miku-project sections">
       <button type="button" class="md-top-tab is-active" data-tab="input" role="tab" aria-selected="true" aria-controls="tabPanelInput"></button>
       <button type="button" class="md-top-tab" data-tab="transform" role="tab" aria-selected="false" aria-controls="tabPanelTransform"></button>
       <button type="button" class="md-top-tab" data-tab="output" role="tab" aria-selected="false" aria-controls="tabPanelOutput"></button>
     </div>
     <section id="tabPanelInput" class="md-flow-section md-tab-panel" data-tab-panel="input">
       <textarea id="xmlInput"></textarea>
-      <template id="aiPromptTemplate"># mikuproject AI JSON Spec</template>
+      <template id="aiPromptTemplate"># miku-project AI JSON Spec</template>
       <textarea id="projectDraftImportInput"></textarea>
       <div id="xmlSaveState"></div>
     </section>

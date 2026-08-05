@@ -204,6 +204,7 @@ function clearMikuprojectGlobals() {
   delete globalThis.__mikuprojectWbsXlsx;
   delete globalThis.__mikuprojectNativeSvg;
   delete globalThis.__mikuprojectWbsMarkdown;
+  delete globalThis.__mikuProjectCoreApi;
   delete globalThis.__mikuprojectCoreApi;
 }
 
@@ -256,11 +257,11 @@ export function loadMikuprojectCoreApi(options = {}) {
     .join("\n");
   new Function(combinedCode)();
 
-  const api = globalThis.__mikuprojectCoreApi;
+  const api = globalThis.__mikuProjectCoreApi || globalThis.__mikuprojectCoreApi;
   if (!api) {
     restoreWindowGlobals();
     dom.window.close();
-    throw new Error("Failed to boot __mikuprojectCoreApi");
+    throw new Error("Failed to boot __mikuProjectCoreApi");
   }
 
   return {

@@ -11,7 +11,7 @@ import {
   setupMainPreviewExportDom
 } from "./helpers/main-preview-export-harness.js";
 
-describe("mikuproject main preview svg", () => {
+describe("miku-project main preview svg", () => {
   beforeEach(() => {
     setupMainPreviewExportDom();
   });
@@ -22,7 +22,7 @@ describe("mikuproject main preview svg", () => {
     await exportMermaidViaHook();
     const mermaidText = document.getElementById("mermaidOutput").value;
     expect(mermaidText).toContain("gantt");
-    expect(mermaidText).toContain("title mikuproject開発");
+    expect(mermaidText).toContain("title miku-project開発");
     expect(mermaidText).toContain("section 基盤整備");
     expect(document.getElementById("nativeSvgPreview").innerHTML).toContain("<svg");
     expect(document.getElementById("downloadSvgBtn").disabled).toBe(false);

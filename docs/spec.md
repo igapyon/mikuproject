@@ -1,8 +1,8 @@
-# mikuproject
+# miku-project
 
-`mikuproject` は、MS Project XML 形式の入出力を扱うプロジェクト管理アプリとして設計する。
+`miku-project` は、MS Project XML 形式の入出力を扱うプロジェクト管理アプリとして設計する。
 
-この文書は `mikuproject` の仕様メモであり、README の代わりではない。利用方法やビルド手順は `README.md` に置き、未完了タスクは `docs/TODO.md` に置く。
+この文書は `miku-project` の仕様メモであり、README の代わりではない。利用方法やビルド手順は `README.md` に置き、未完了タスクは `docs/TODO.md` に置く。
 
 利用者向けの import / export / 生成AI連携の導線整理は `docs/import-export-workflows.md` を参照する。
 
@@ -12,7 +12,7 @@
 
 アプリ名:
 
-- `mikuproject`
+- `miku-project`
 
 前提:
 
@@ -27,7 +27,7 @@
 
 立ち位置:
 
-- `mikuproject` は `MS Project` 代替製品を目指すものではない
+- `miku-project` は `MS Project` 代替製品を目指すものではない
 - 中核は、`MS Project XML` をハブにして `XLSX / Markdown / JSON / Mermaid / 生成AI / MS Project` をつなぐ変換・可視化・橋渡しツールである
 - したがって、重要機能の優先順位も「橋渡しを強くするか」で判断する
 - 具体的には、差分可視化、Patch 適用、phase 単位の scoped export/import、import/export の扱い可視化は優先しやすい
@@ -43,7 +43,7 @@ STEP 1 の目的は、`MS Project XML` を意味的に往復できる状態を�
 - `MS Project XML` を読める
 - 必要な情報を内部モデルへ落とせる
 - 内部モデルから `MS Project XML` を再生成できる
-- 再生成した XML を、少なくとも `mikuproject` 自身で再読込できる
+- 再生成した XML を、少なくとも `miku-project` 自身で再読込できる
 - 主要フィールドが壊れず往復できる
 
 注意:
@@ -53,7 +53,7 @@ STEP 1 の目的は、`MS Project XML` を意味的に往復できる状態を�
 
 ## `.xlsx` の位置づけ
 
-`mikuproject` における `.xlsx` は、`MS Project XML` の代替正本ではない。
+`miku-project` における `.xlsx` は、`MS Project XML` の代替正本ではない。
 
 - `MS Project XML` は意味の基軸
 - `ProjectModel` は内部の中立表現
@@ -174,10 +174,10 @@ STEP 1 の目的は、`MS Project XML` を意味的に往復できる状態を�
 
 ファイル名は当面次を基本とする。
 
-- `Daily SVG`: `mikuproject-wbs-daily-<YYYYMMDDHHmm>.svg`
-- `Weekly SVG`: `mikuproject-wbs-weekly-<YYYYMMDDHHmm>.svg`
-- `Monthly Calendar SVG`: `mikuproject-monthly-wbs-calendar-<YYYYMMDDHHmm>.zip`
-- `Mermaid`: `mikuproject-wbs-mermaid-<YYYYMMDDHHmm>.mmd`
+- `Daily SVG`: `miku-project-wbs-daily-<YYYYMMDDHHmm>.svg`
+- `Weekly SVG`: `miku-project-wbs-weekly-<YYYYMMDDHHmm>.svg`
+- `Monthly Calendar SVG`: `miku-project-monthly-wbs-calendar-<YYYYMMDDHHmm>.zip`
+- `Mermaid`: `miku-project-wbs-mermaid-<YYYYMMDDHHmm>.mmd`
 
 `Daily SVG` のラベル配置は次の方針とする。
 
@@ -194,7 +194,7 @@ STEP 1 の目的は、`MS Project XML` を意味的に往復できる状態を�
 
 - `Output` には、主要成果物をまとめて取得する `ALL` ボタンを置く
 - `ALL` は、その時点の内部モデルから再生成した主要出力をまとめた `ZIP` とする
-- `ALL` の保存名は `mikuproject-all-<YYYYMMDDHHmm>.zip` とする
+- `ALL` の保存名は `miku-project-all-<YYYYMMDDHHmm>.zip` とする
 - `ALL` ZIP の並び順は、概ね `README.txt -> XML -> workbook -> CSV -> WBS Report -> monthly-calendar -> .editjson` の順に固定してよい
 
 `ALL` ZIP には、少なくとも次を含める。
@@ -223,7 +223,7 @@ STEP 1 の目的は、`MS Project XML` を意味的に往復できる状態を�
 
 ### workbook JSON の位置づけ
 
-`mikuproject` は、構造忠実 workbook のテキスト版として `mikuproject_workbook_json` を持てるようにする。
+`miku-project` は、構造忠実 workbook のテキスト版として `mikuproject_workbook_json` を持てるようにする。
 
 これは生成AI向け projection JSON とは別物であり、`XLSX` の写し身として扱う。
 
@@ -243,20 +243,20 @@ STEP 1 の目的は、`MS Project XML` を意味的に往復できる状態を�
 
 first cut の最小候補は次とする。
 
-- `mikuproject ai spec`
-- `mikuproject ai export project-overview`
-- `mikuproject ai export task-edit`
-- `mikuproject ai export phase-detail`
-- `mikuproject ai export bundle`
-- `mikuproject ai detect-kind`
-- `mikuproject ai validate-patch`
-- `mikuproject state from-draft`
-- `mikuproject state summarize`
-- `mikuproject state diff`
-- `mikuproject state apply-patch`
-- `mikuproject export workbook-json`
-- `mikuproject export xml`
-- `mikuproject export xlsx`
+- `miku-project ai spec`
+- `miku-project ai export project-overview`
+- `miku-project ai export task-edit`
+- `miku-project ai export phase-detail`
+- `miku-project ai export bundle`
+- `miku-project ai detect-kind`
+- `miku-project ai validate-patch`
+- `miku-project state from-draft`
+- `miku-project state summarize`
+- `miku-project state diff`
+- `miku-project state apply-patch`
+- `miku-project export workbook-json`
+- `miku-project export xml`
+- `miku-project export xlsx`
 
 この段階では、`report` 系は `export` と混ぜず、別系統の次段候補として扱う。
 
@@ -307,7 +307,7 @@ import 時の扱いも `XLSX Import` と完全に揃える。
 
 ### 新規作成時の既定非稼働日
 
-`mikuproject` は `MS Project XML` を意味の基軸として扱うため、新規 project 作成時の既定非稼働日も、できる限り `MS Project XML` の calendar 表現にそのまま載る形で扱う。
+`miku-project` は `MS Project XML` を意味の基軸として扱うため、新規 project 作成時の既定非稼働日も、できる限り `MS Project XML` の calendar 表現にそのまま載る形で扱う。
 
 新規 project を作成する場合、明示的な calendar 指定がなければ、既定 calendar を 1 つ作り、その中に次を合成して持たせる前提とする。
 
@@ -326,16 +326,16 @@ import 時の扱いも `XLSX Import` と完全に揃える。
 
 この既定 calendar に含める祝日例外は、無制限に生成するのではなく、原則として project の `StartDate` から `FinishDate` までの期間内に入るものへ限定する。
 
-この制限は、calendar が存在しない project に対して `mikuproject` が既定 calendar を自動補完する場合にだけ適用する。
+この制限は、calendar が存在しない project に対して `miku-project` が既定 calendar を自動補完する場合にだけ適用する。
 
-すでに calendar が存在する場合や、ユーザーが明示的に指定した calendar / `Exceptions` については、`mikuproject` 側で自動的に再構成・再トリミングしない前提とする。
+すでに calendar が存在する場合や、ユーザーが明示的に指定した calendar / `Exceptions` については、`miku-project` 側で自動的に再構成・再トリミングしない前提とする。
 
 意図:
 
 - 暗黙の「土日休み」を仕様化して、生成AI による新規計画作成でも前提を揃えやすくする
 - 日本の業務予定として自然な初期状態を作る
 - project 期間外の祝日を `MS Project XML` へ過剰に書き出さず、正本の見通しと差分の素直さを保つ
-- 既存 calendar やユーザー指定内容を、`mikuproject` の都合で自動変更しない
+- 既存 calendar やユーザー指定内容を、`miku-project` の都合で自動変更しない
 - `MS Project XML` の `WeekDays / Exceptions` 表現をそのまま使い、独自概念への依存を増やさない
 - 将来の実装では、明示的な calendar がある場合にこの既定値を上書きまたは置換できる余地を残す
 
@@ -353,7 +353,7 @@ import 時の扱いも `XLSX Import` と完全に揃える。
 - `Calendar.WeekDays` による週次の非稼働日
 - `Calendar.Exceptions` による祝日その他の非稼働日例外
 
-土日と祝日は、WBS 上では表示都合で別色にしてよいが、そのために `MS Project XML` 正本へ別概念を追加しない。色分けは `mikuproject` 側の表示ルールで扱う。
+土日と祝日は、WBS 上では表示都合で別色にしてよいが、そのために `MS Project XML` 正本へ別概念を追加しない。色分けは `miku-project` 側の表示ルールで扱う。
 
 現時点で `XLSX Import` の反映対象としている列は次のとおり。
 
@@ -405,7 +405,7 @@ import 時の扱いも `XLSX Import` と完全に揃える。
 
 ### Calendar 編集方針
 
-`Calendars / Exceptions` は、業務上は重要だが壊しやすい領域でもあるため、当面は `mikuproject` の画面上で直接編集しない方針とする。
+`Calendars / Exceptions` は、業務上は重要だが壊しやすい領域でもあるため、当面は `miku-project` の画面上で直接編集しない方針とする。
 
 - 画面上では、calendar の存在、件数、参照状況、既定祝日の補完結果などの read-only 確認を主とする
 - `Calendars / Exceptions / WeekDays / WorkWeeks` の実編集は、`MS Project XML` または `XLSX Import` 経由で行う
@@ -423,7 +423,7 @@ import 時の扱いも `XLSX Import` と完全に揃える。
 - `PercentComplete=100` とは別軸の状態として保持する
 - `MS Project XML` の round-trip で保持しやすい形を優先する
 
-`MS Project` 互換の観点では、`Active=false` は「スケジュール対象外」として使いうるが、`WBS` 上での業務ステータス表示とは役割が異なる。そのため、`mikuproject` では `Cancelled` などの業務値を `ExtendedAttribute` に置く方針を採る。
+`MS Project` 互換の観点では、`Active=false` は「スケジュール対象外」として使いうるが、`WBS` 上での業務ステータス表示とは役割が異なる。そのため、`miku-project` では `Cancelled` などの業務値を `ExtendedAttribute` に置く方針を採る。
 
 具体的な `FieldID / FieldName / 値候補` は今後の設計項目とする。
 
@@ -487,16 +487,16 @@ preview / validation の現状メモ:
 生成AI連携の現状実装範囲:
 
 - 既存 project 向けには `project_overview_view` / `phase_detail_view` / `task_edit_view` / `full bundle` の export を持つ
-- CLI では `mikuproject ai export project-overview|task-edit|phase-detail` から projection を出力できる
-- CLI では `mikuproject ai export bundle` から `ai_projection_bundle` を出力できる
-- `mikuproject ai export bundle` は `ai export` 配下に残し、主用途は調査 / デバッグ / 比較検証とする
-- `mikuproject ai export task-edit` は `mikuproject_workbook_json` を入力とし、`--task-uid` 省略時は UI と同様の既定選択で `task_edit_view` を出力する
-- `mikuproject ai export task-edit` は `--select auto|first-task|uid` を受ける
-- `mikuproject ai export phase-detail` は `mikuproject_workbook_json` を入力とし、`--phase-uid` / `--select auto|first-phase|uid` / `--mode` / `--root-task-uid` / `--max-depth` を受ける
+- CLI では `miku-project ai export project-overview|task-edit|phase-detail` から projection を出力できる
+- CLI では `miku-project ai export bundle` から `ai_projection_bundle` を出力できる
+- `miku-project ai export bundle` は `ai export` 配下に残し、主用途は調査 / デバッグ / 比較検証とする
+- `miku-project ai export task-edit` は `mikuproject_workbook_json` を入力とし、`--task-uid` 省略時は UI と同様の既定選択で `task_edit_view` を出力する
+- `miku-project ai export task-edit` は `--select auto|first-task|uid` を受ける
+- `miku-project ai export phase-detail` は `mikuproject_workbook_json` を入力とし、`--phase-uid` / `--select auto|first-phase|uid` / `--mode` / `--root-task-uid` / `--max-depth` を受ける
 - `--select` は現時点では `task-edit` / `phase-detail` 専用とし、`project-overview` には持たせない
 - `bundle` / `detect-kind` / `validate-patch` / `state summarize` / `state diff` は現時点で `--select` を持たない
-- CLI では `mikuproject ai validate-patch` により dry-run apply ベースの patch 検査ができる
-- CLI では `mikuproject ai detect-kind` / `mikuproject state summarize` / `mikuproject state diff` を使える
+- CLI では `miku-project ai validate-patch` により dry-run apply ベースの patch 検査ができる
+- CLI では `miku-project ai detect-kind` / `miku-project state summarize` / `miku-project state diff` を使える
 - CLI では `--in -` / `--out -` により標準入力 / 標準出力を明示指定できる
 - 同一コマンドで標準入力を読める入力オプションは 1 つだけとする
 - `--in path` があればそのファイルを優先し、`--in -` は明示 stdin、`--in` 省略時だけ暗黙 stdin を使う
@@ -697,7 +697,7 @@ Patch JSON の次段 MVP 方針:
 - STEP 1 で扱うファイル形式は、`.mpp` ではなく `.xml` の `MS Project XML 形式` とする
 - `.mpp` は MS Project のネイティブ本体形式、`.xml` は外部連携や交換のための XML 表現と捉える
 - STEP 1 の検証用 XML は、自作の最小サンプル XML を用いる
-- まずは `mikuproject` 自身で意味的に往復できることを優先する
+- まずは `miku-project` 自身で意味的に往復できることを優先する
 - 実際の `MS Project` 本体が出力した XML との互換確認は、将来課題として扱う
 
 検証用データの参照元メモ:
@@ -1142,7 +1142,7 @@ STEP 1 では、次は非目標とする。
 - XML ファイルの export
 - `Project / Tasks / Resources / Assignments / Calendars` の簡易プレビュー表示
 - `project / tasks / resources / assignments / calendars` 単位の検証メッセージ表示
-- `mikuproject` 独自の最小妥当性チェック
+- `miku-project` 独自の最小妥当性チェック
 - `Calendar` の `BaseCalendarUID / WeekDays / WorkingTimes` の round-trip
 - `Calendar` の `IsBaselineCalendar / Exceptions / WorkWeeks / Exception WorkingTimes` の round-trip
 - `Resource` の `CalendarUID / StandardRate / CostPerUse` の round-trip
@@ -1187,7 +1187,7 @@ STEP 1 では、次は非目標とする。
 目的:
 
 - `MS Project XML` の全情報保持ではなく、task の時系列と大まかな依存関係を軽量に共有する
-- `mikuproject` 内部モデルの内容を、Mermaid 対応環境へ持ち出しやすくする
+- `miku-project` 内部モデルの内容を、Mermaid 対応環境へ持ち出しやすくする
 
 現時点の出力方針:
 
@@ -1229,7 +1229,7 @@ STEP 1 では、次は非目標とする。
 
 ## CSV + ParentID 交換形式メモ
 
-`mikuproject` の次段候補として、`CSV + ParentID` を「まず押さえるべき、よくある交換形式」の第1候補とする。
+`miku-project` の次段候補として、`CSV + ParentID` を「まず押さえるべき、よくある交換形式」の第1候補とする。
 
 目的:
 

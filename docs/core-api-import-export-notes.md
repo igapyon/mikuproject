@@ -1,6 +1,6 @@
 # Core API Import / Export Notes
 
-この文書は、`globalThis.__mikuprojectCoreApi` の import / export 公開方針について、現時点の判断経緯を簡潔に残すためのメモである。
+この文書は、`globalThis.__mikuProjectCoreApi` の import / export 公開方針について、現時点の判断経緯を簡潔に残すためのメモである。
 
 確定仕様の置き場は `README.md` と `docs/architecture.md` と `docs/spec.md` とし、この文書はそれらの補助メモとして扱う。
 
@@ -8,14 +8,14 @@
 
 ## 前提
 
-`mikuproject` は `MS Project XML` を意味の基軸として扱う。
+`miku-project` は `MS Project XML` を意味の基軸として扱う。
 
 - 正本: `MS Project XML`
 - 内部中立表現: `ProjectModel`
 - 補助交換形式: `XLSX`, `mikuproject_workbook_json`
 - 派生表示 / AI 向け表現: `WBS XLSX`, `Markdown`, `SVG`, `Mermaid`, `aiViews`
 
-外部再利用向けには、single-file web app 向けの既存 global を維持しつつ、集約入口として `globalThis.__mikuprojectCoreApi` を公開する。
+外部再利用向けには、single-file web app 向けの既存 global を維持しつつ、集約入口として `globalThis.__mikuProjectCoreApi` を公開する。
 
 Node / CLI 側では、`scripts/lib/core-api-loader.mjs` が `globalThis.__mikuprojectXmlDom` も初期化する。これにより、`msproject-xml` と `excel-io` の XML parse / serialize はブラウザ DOM 直依存ではなく、CLI では `@xmldom/xmldom` 優先、未導入時は `jsdom` フォールバックで動く。
 
@@ -140,36 +140,36 @@ import 側は、利用側が format ごとの分岐を毎回持ちやすいた�
 
 first cut の候補は次とする。
 
-- `mikuproject ai spec`
-- `mikuproject ai export project-overview`
-- `mikuproject ai export task-edit`
-- `mikuproject ai export phase-detail`
-- `mikuproject ai export bundle`
-- `mikuproject ai detect-kind`
-- `mikuproject ai validate-patch`
-- `mikuproject state from-draft`
-- `mikuproject state summarize`
-- `mikuproject state diff`
-- `mikuproject state apply-patch`
-- `mikuproject export workbook-json`
-- `mikuproject export xml`
-- `mikuproject export xlsx`
+- `miku-project ai spec`
+- `miku-project ai export project-overview`
+- `miku-project ai export task-edit`
+- `miku-project ai export phase-detail`
+- `miku-project ai export bundle`
+- `miku-project ai detect-kind`
+- `miku-project ai validate-patch`
+- `miku-project state from-draft`
+- `miku-project state summarize`
+- `miku-project state diff`
+- `miku-project state apply-patch`
+- `miku-project export workbook-json`
+- `miku-project export xml`
+- `miku-project export xlsx`
 
 `report` 系は first cut から分離し、次段候補として扱う。
 
 補足:
 
-- `mikuproject ai export task-edit` は `mikuproject_workbook_json` を入力とし、`task_edit_view` を stdout または `--out` へ出力する
-- `mikuproject ai export phase-detail` は `mikuproject_workbook_json` を入力とし、`phase_detail_view` を stdout または `--out` へ出力する
-- `mikuproject ai export bundle` は `mikuproject_workbook_json` を入力とし、`ai_projection_bundle` を stdout または `--out` へ出力する
+- `miku-project ai export task-edit` は `mikuproject_workbook_json` を入力とし、`task_edit_view` を stdout または `--out` へ出力する
+- `miku-project ai export phase-detail` は `mikuproject_workbook_json` を入力とし、`phase_detail_view` を stdout または `--out` へ出力する
+- `miku-project ai export bundle` は `mikuproject_workbook_json` を入力とし、`ai_projection_bundle` を stdout または `--out` へ出力する
 - `bundle` は `ai export` 配下に残し、主用途は調査 / デバッグ / 比較検証とする
 - `task-edit` は `--select auto|first-task|uid`、`phase-detail` は `--select auto|first-phase|uid` を受ける
 - `--select` は現時点では `task-edit` / `phase-detail` 専用とし、`project-overview` には広げない
 - `bundle` / `detect-kind` / `validate-patch` / `state summarize` / `state diff` は現時点で `--select` を持たない
 - `export phase-detail` の主オプションは `--phase-uid` / `--mode` / `--root-task-uid` / `--max-depth` とする
-- `mikuproject ai validate-patch` は `--state` と `patch_json` を受け、dry-run apply ベースの validation を返す
-- `mikuproject ai detect-kind` は JSON document の kind 判定を返す
-- `mikuproject state summarize` / `state diff` は state 確認系の補助コマンドとする
+- `miku-project ai validate-patch` は `--state` と `patch_json` を受け、dry-run apply ベースの validation を返す
+- `miku-project ai detect-kind` は JSON document の kind 判定を返す
+- `miku-project state summarize` / `state diff` は state 確認系の補助コマンドとする
 - `--in -` と `--out -` を受け、標準入力 / 標準出力を明示的に指定できる
 - 同一コマンドで標準入力を読む入力オプションは 1 つだけとする
 - `--in path` が最優先、`--in -` は明示 stdin、`--in` 省略時だけ暗黙 stdin を使う
@@ -202,11 +202,11 @@ first cut の候補は次とする。
 既定の出力先は次のとおり。
 
 ```text
-bundle/mikuproject.mjs
-bundle/mikuproject-sources.tgz
+bundle/miku-project.mjs
+bundle/miku-project-sources.tgz
 ```
 
-この artifact は、`scripts/mikuproject-cli.mjs` 相当の CLI entrypoint、`core API` 実行に必要な `src/js` runtime、XML DOM 実装を 1 ファイルに埋め込む。生成後の実行時には、従来の `bundle/mikuproject-cli-bundle/` ディレクトリや `node_modules` を同梱しない。
-`mikuproject-sources.tgz` は実行には不要だが、受け取り側が source / docs / tests を確認し、必要に応じて再ビルドや監査を行うための補助 artifact として扱う。
+この artifact は、`scripts/miku-project-cli.mjs` 相当の CLI entrypoint、`core API` 実行に必要な `src/js` runtime、XML DOM 実装を 1 ファイルに埋め込む。生成後の実行時には、従来の `bundle/miku-project-cli-bundle/` ディレクトリや `node_modules` を同梱しない。
+`miku-project-sources.tgz` は実行には不要だが、受け取り側が source / docs / tests を確認し、必要に応じて再ビルドや監査を行うための補助 artifact として扱う。
 
-`mikuproject-skills` 側では、この artifact を `skills/mikuproject/runtime/mikuproject.mjs` のような skill-local runtime path に配置して呼び出す想定である。
+`miku-project-skills` 側では、この artifact を `skills/miku-project/runtime/miku-project.mjs` のような skill-local runtime path に配置して呼び出す想定である。

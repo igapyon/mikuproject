@@ -265,7 +265,9 @@ describe("mikuproject excel io", () => {
         rows: [{
           cells: [
             { value: "ok\u0000bad\u0008text" },
-            { value: "line1\nline2\tok" }
+            { value: "line1\nline2\tok" },
+            { value: "😀 🐇 𠮷野家" },
+            { value: "before\uD800middle\uDC00\uFFFE\uFFFFafter" }
           ]
         }]
       }]
@@ -281,6 +283,8 @@ describe("mikuproject excel io", () => {
     expect(sheetXml).not.toContain("\u0008");
     expect(imported.sheets[0].rows[0].cells[0].value).toBe("okbadtext");
     expect(imported.sheets[0].rows[0].cells[1].value).toBe("line1\nline2\tok");
+    expect(imported.sheets[0].rows[0].cells[2].value).toBe("😀 🐇 𠮷野家");
+    expect(imported.sheets[0].rows[0].cells[3].value).toBe("beforemiddleafter");
   });
 
   it("keeps explicitly formatted numeric cells as numeric values", () => {

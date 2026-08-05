@@ -134,7 +134,7 @@
         return `<t${attribute}>${escapeXml(sanitizeXmlText(value))}</t>`;
     }
     function sanitizeXmlText(value) {
-        return value.replace(/[\u0000-\u0008\u000B\u000C\u000E-\u001F]/g, "");
+        return value.replace(/[^\u0009\u000A\u000D\u0020-\uD7FF\uE000-\uFFFD\u{10000}-\u{10FFFF}]/gu, "");
     }
     function encodeColumnName(columnIndex) {
         let current = columnIndex + 1;

@@ -19,6 +19,7 @@ describe("mikuproject single html build", () => {
     expect(builtHtml).not.toContain('src="src/js/main.js"');
     expect(builtHtml).not.toContain("src/vendor/mermaid/");
     expect(builtHtml).not.toContain("mermaid.min.js");
+    expect(builtHtml).not.toMatch(/^[ \t]+$/m);
     expect(builtHtml).toContain("function initialize()");
   });
 });

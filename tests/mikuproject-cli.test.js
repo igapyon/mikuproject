@@ -43,6 +43,16 @@ describe("mikuproject cli", () => {
     const result = runCli(["--help"]);
 
     expect(result.status).toBe(0);
+    expect(result.stdout).toContain("Description:");
+    expect(result.stdout).toContain("Default behavior:");
+    expect(result.stdout).toContain("Inputs:");
+    expect(result.stdout).toContain("Outputs:");
+    expect(result.stdout).toContain("Generated artifacts:");
+    expect(result.stdout).toContain("Overwrite behavior:");
+    expect(result.stdout).toContain("Machine-readable output contract:");
+    expect(result.stdout).toContain("Diagnostics / warnings:");
+    expect(result.stdout).toContain("Exit codes:");
+    expect(result.stdout).toContain("References:");
     expect(result.stdout).toContain("mikuproject --version");
     expect(result.stdout).toContain("mikuproject ai export project-overview");
     expect(result.stdout).toContain("mikuproject ai export task-edit");
@@ -979,7 +989,9 @@ describe("mikuproject cli", () => {
     expect(buildResult.status).toBe(0);
     expect(existsSync(bundlePath)).toBe(true);
     expect(existsSync(sourcesPath)).toBe(true);
-    expect(listTarGzEntries(sourcesPath)).toEqual(expect.arrayContaining([
+    const sourceEntries = listTarGzEntries(sourcesPath);
+    expect(sourceEntries).toEqual([...sourceEntries].sort());
+    expect(sourceEntries).toEqual(expect.arrayContaining([
       "mikuproject-sources/package.json",
       "mikuproject-sources/README.md",
       "mikuproject-sources/scripts/build-cli-bundle.mjs",

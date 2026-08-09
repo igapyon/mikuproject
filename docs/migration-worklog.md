@@ -14,7 +14,7 @@ audience:
   - developer
   - agent
 created: 2026-08-05
-updated: 2026-08-05
+updated: 2026-08-09
 sources:
   - type: upstream-doc
     role: primary
@@ -58,6 +58,28 @@ The following pre-standardization documents remain temporarily as history and mu
 - `docs/miku-soft-50-mcp-design-v20260501.md`
 
 Before moving or removing them, inspect inbound links from published documentation, Agent Skills, and sibling repositories. Preserve only a clearly labelled historical record or project-specific decisions; do not maintain another copy of the shared standard.
+
+## 2026-08-09 Web Separation Foundation
+
+Issue [#124](https://github.com/igapyon/miku-project/issues/124) の Main Application 側 first stage として、Node.js CLI bundle とは独立した browser-compatible runtime bundle を追加した。
+
+- `version`、`embeddedCorePaths`、`loadMikuProjectRuntime(options)`、default loader を公開する。
+- Node.js module、`process`、CLI 自動実行、UI event/download 層を runtime から除外する。
+- isolated browser smoke と境界検査を fast suite に組み込む。
+- Release workflow で CLI、browser runtime、machine-readable runtime lock、sources、SHA-256 を別 asset として生成・検証する。
+- downstream の固定 tag / asset / SHA-256 取込規則を [browser-runtime.md](browser-runtime.md) に定義する。
+
+同日、Public repository `igapyon/miku-project-web` が人手で作成され、Web surface の downstream first cut を local checkout に構築した。
+
+- `v0.13.0`、`miku-project-runtime-0.13.0.mjs`、SHA-256 を repository-local lock に固定する。
+- cache、明示 local file、固定 GitHub Release URL のすべてで同じ version / SHA-256 検証を必須にする。
+- runtime loader を 23 Web modules より先に実行し、runtime、UI、CSS、`lht-cmn` を single-file `miku-project.html` に内包する。
+- browser/UI suite は 18 test files、135 tests が成功した。
+- jsdom offline smoke で Input / Overview / Output、15 output entries、request-generating asset reference がないことを確認した。
+- tests は generated core shim を `src/js/` に置かず、固定・検証済み runtime を helper から直接起動する。
+- `.cache` と `node_modules` を持たない clean copy でも、同じ SHA-256 の local Release candidate を入力に `npm ci` と全検証を再現した。
+
+`v0.13.0` Release はまだ未公開である。clean clone の通常取得、CI、実ブラウザ smoke が Release asset に対して成功するまでは downstream の最終成立とみなさず、Main Application 側の combined Web surface を残す。
 
 ## Decisions Required Before the Next Migration
 

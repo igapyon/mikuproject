@@ -4,6 +4,9 @@
 
 ## miku-project
 
+- #124 Web 分離: `v0.13.0` Release を公開し、`miku-project-web` の clean clone で local override なしの runtime 取得、CI、実ブラウザ smoke を確認する
+- #124 Web 分離: Release 経由の downstream 成立後に Main Application 側の Web 専用 source、生成物、test、`lht-cmn` を整理し、core / CLI / browser runtime の回帰を確認する
+
 - 最優先: サンプルデータを更新し、利用者の好みに合う題材・構造・見た目へ見直す
 - `miku-project-skills` 側で、上流 `bundle/miku-project.mjs` を `skills/miku-project/runtime/miku-project.mjs` として受け取る手順と smoke test 観点を反映する
 - 再読込テストで validation error が見つかった場合の UI 表示について、status / toast / validation 詳細導線の最終仕様を整理する

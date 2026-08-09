@@ -2,11 +2,12 @@ import fs from "node:fs";
 import path from "node:path";
 import zlib from "node:zlib";
 
+import { CORE_API_MODULE_RELATIVE_PATHS } from "./lib/runtime-module-paths.mjs";
+
 const ROOT = process.cwd();
 const args = parseArgs(process.argv.slice(2));
 const outFile = path.resolve(args.out || path.join(ROOT, "bundle", "miku-project.mjs"));
 const sourcesOutFile = path.resolve(args["sources-out"] || path.join(path.dirname(outFile), "miku-project-sources.tgz"));
-const CORE_API_MODULE_RELATIVE_PATHS = readCoreApiModuleRelativePaths();
 
 const XMLDOM_MODULE_RELATIVE_PATHS = [
   "node_modules/@xmldom/xmldom/lib/conventions.js",
@@ -271,15 +272,6 @@ function buildClearGlobalsFunctionSource() {
     throw new Error("core-api-loader.mjs から clearMikuprojectGlobals を抽出できませんでした");
   }
   return match[0];
-}
-
-function readCoreApiModuleRelativePaths() {
-  const loaderSource = readRepoFile("scripts/lib/core-api-loader.mjs");
-  const match = loaderSource.match(/export const CORE_API_MODULE_RELATIVE_PATHS = (\[[\s\S]*?\n\]);/);
-  if (!match) {
-    throw new Error("core-api-loader.mjs から CORE_API_MODULE_RELATIVE_PATHS を抽出できませんでした");
-  }
-  return Function(`"use strict"; return ${match[1]};`)();
 }
 
 function stripCliImports(source) {

@@ -1,4 +1,4 @@
-name: Release CLI bundle
+name: Release runtime bundles
 
 on:
   release:
@@ -7,7 +7,7 @@ on:
   workflow_dispatch:
     inputs:
       tag_name:
-        description: "GitHub Release tag to attach the CLI bundle to"
+        description: "GitHub Release tag to attach the runtime bundles to"
         required: true
         type: string
 
@@ -18,7 +18,7 @@ env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: "true"
 
 jobs:
-  release-cli-bundle:
+  release-runtime-bundles:
     runs-on: ubuntu-latest
     if: startsWith(github.event.release.tag_name || github.event.inputs.tag_name, 'v')
 
@@ -57,12 +57,43 @@ jobs:
 
           mkdir -p release-assets
           cp bundle/miku-project.mjs "release-assets/miku-project-${VERSION}.mjs"
+          cp bundle/miku-project-runtime.mjs "release-assets/miku-project-runtime-${VERSION}.mjs"
           cp bundle/miku-project-sources.tgz "release-assets/miku-project-sources-${VERSION}.tgz"
+          node scripts/create-browser-runtime-manifest.mjs \
+            "release-assets/miku-project-runtime-${VERSION}.mjs" \
+            --release-tag "${TAG_NAME}" \
+            --out "release-assets/miku-project-runtime-${VERSION}.json"
+          (
+            cd release-assets
+            sha256sum \
+              "miku-project-${VERSION}.mjs" \
+              "miku-project-runtime-${VERSION}.mjs" \
+              "miku-project-runtime-${VERSION}.json" \
+              "miku-project-sources-${VERSION}.tgz" \
+              > "miku-project-SHA256SUMS-${VERSION}.txt"
+          )
 
-      - name: Verify CLI bundle asset
-        run: node release-assets/miku-project-*.mjs --version
+      - name: Verify runtime assets
+        env:
+          TAG_NAME: ${{ github.event.inputs.tag_name || github.event.release.tag_name || github.ref_name }}
+        run: |
+          set -euo pipefail
+          VERSION="${TAG_NAME#v}"
+          PACKAGE_VERSION="$(node -p "require('./package.json').version")"
+          node "release-assets/miku-project-${VERSION}.mjs" --version
+          node scripts/smoke-browser-runtime.mjs \
+            "release-assets/miku-project-runtime-${VERSION}.mjs" \
+            --expected-version "${PACKAGE_VERSION}"
+          node scripts/verify-browser-runtime-manifest.mjs \
+            "release-assets/miku-project-runtime-${VERSION}.json" \
+            "release-assets/miku-project-runtime-${VERSION}.mjs" \
+            --expected-release-tag "${TAG_NAME}"
+          (
+            cd release-assets
+            sha256sum --check "miku-project-SHA256SUMS-${VERSION}.txt"
+          )
 
-      - name: Upload CLI bundle to GitHub Release
+      - name: Upload runtime bundles to GitHub Release
         uses: softprops/action-gh-release@v2
         with:
           tag_name: ${{ github.event.inputs.tag_name || github.event.release.tag_name || github.ref_name }}

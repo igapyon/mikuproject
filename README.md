@@ -122,7 +122,7 @@ npm run build
 npm test
 ```
 
-`npm run build` には `build:web`、`build:cli-bundle`、`test:fast` が含まれる。開発用コマンドの詳細、テスト運用、`local-data/` の扱いは [docs/development.md](docs/development.md) を参照してください。
+`npm run build` には `build:web`、`build:browser-runtime`、`build:cli-bundle`、`test:fast` が含まれる。開発用コマンドの詳細、テスト運用、`local-data/` の扱いは [docs/development.md](docs/development.md) を参照してください。
 
 `workplace/` は外部リポジトリの一時 clone、展開物、検証成果物などを置くローカル作業領域として扱い、`workplace/.gitkeep` 以外は Git 管理しません。
 
@@ -246,6 +246,16 @@ miku-project report mermaid --in workbook.json --out project.mmd
 
 `report monthly-calendar-svg` は月別 SVG 一式をまとめた ZIP を出力する。
 `report all` は `wbs.xlsx` / `wbs.md` / `mermaid.mmd` / `daily.svg` / `weekly.svg` / `monthly-calendar/YYYY-MM.svg` をまとめた ZIP を出力する。
+
+## Browser runtime artifact
+
+`miku-project-web` などの browser downstream が build 時に取り込む importable runtime を生成できる。
+
+```bash
+npm run build:browser-runtime
+```
+
+既定の出力先は `bundle/miku-project-runtime.mjs` である。`version`、`embeddedCorePaths`、`loadMikuProjectRuntime(options)` と default loader を公開し、Node.js API、CLI 自動実行、UI event/download 層を含めない。公開契約、smoke、Release asset、SHA-256 固定による downstream 取込は [Browser Runtime Contract](docs/browser-runtime.md) を参照。
 
 ## CLI runtime artifact
 

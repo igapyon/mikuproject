@@ -182,17 +182,18 @@ sample 生成も含めた従来相当のフル実行:
 npm run build:full
 ```
 
-`npm run build` は日常開発向けの標準 build で、`build:web`、`build:cli-bundle`、`test:fast` を順に実行する。`npm run build:app` は `build:web` と `build:xlsx-sample` を順に実行する。`npm run build:full` は `build:web`、`build:cli-bundle`、`test:full` を順に実行し、日常で見たい core UI smoke suite までを確認する。`build:xlsx-sample` は必要なときだけ `build:app` か `npm run build:xlsx-sample` で明示実行する。`npm run test:extended` は validation、`XLSX import`、preview 切替、重い patch/export 系、表現変換/replace 系を追加で確認する。`npm test` / `npm run test:all` はそれらも含めた完全実行である。
+`npm run build` は日常開発向けの標準 build で、`build:web`、`build:browser-runtime`、`build:cli-bundle`、`test:fast` を順に実行する。`npm run build:app` は `build:web` と `build:xlsx-sample` を順に実行する。`npm run build:full` は `build:web`、`build:browser-runtime`、`build:cli-bundle`、`test:full` を順に実行し、日常で見たい core UI smoke suite までを確認する。`build:xlsx-sample` は必要なときだけ `build:app` か `npm run build:xlsx-sample` で明示実行する。`npm run test:extended` は validation、`XLSX import`、preview 切替、重い patch/export 系、表現変換/replace 系を追加で確認する。`npm test` / `npm run test:all` はそれらも含めた完全実行である。
 
 スクリプトの役割は次のとおり。
 
 - `npm run build:js`: `src/ts/` から `src/js/` を生成する
 - `npm run build:html`: `index-src.html` と `miku-project-src.html` から `index.html` と `miku-project.html` を生成する
 - `npm run build:web`: JavaScript 生成と HTML 生成をまとめて行う
+- `npm run build:browser-runtime`: browser downstream 用の importable runtime を `bundle/miku-project-runtime.mjs` へ生成する
 - `npm run build:cli-bundle`: 下流 Agent Skills に渡す単一 `MJS` CLI runtime artifact を `bundle/miku-project.mjs` へ生成し、再ビルド・監査用 source archive を `bundle/miku-project-sources.tgz` へ生成する
 - `npm run build:xlsx-sample`: `local-data/` 配下へサンプル XLSX / Markdown を生成する
 - `npm run build:app`: `build:web` と `build:xlsx-sample` を順に実行する
-- `npm run build:full`: `build:web`、`build:cli-bundle`、`test:full` を順に実行する
+- `npm run build:full`: `build:web`、`build:browser-runtime`、`build:cli-bundle`、`test:full` を順に実行する
 - `npm run test:extended`: validation、`XLSX import`、preview 切替、重い patch/export 系、表現変換/replace 系 UI suite を実行する
 - `npm run test:all`: `fast + ui + extended` をすべて実行する
 

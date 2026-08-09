@@ -1,36 +1,32 @@
 # Development
 
-## セットアップ
+## Setup
 
 ```bash
-npm install
+npm ci
 ```
 
-補足:
+- CLI XML parsing and serialization prefer `@xmldom/xmldom`.
+- `jsdom` provides the remaining Web API compatibility used by the Node.js CLI and tests.
+- XML DOM is obtained through `globalThis.__mikuprojectXmlDom` by `msproject-xml` and `excel-io`.
 
-- CLI の XML parse / serialize は `@xmldom/xmldom` を優先利用する
-- `jsdom` は CLI 上の HTML / Blob / File など、XML 以外の Web API 補完にも使っているため依存として残す
-- XML DOM の入口は `globalThis.__mikuprojectXmlDom` で、`msproject-xml` と `excel-io` が参照する
-
-## よく使うコマンド
+## Common commands
 
 ```bash
 npm run build
 npm test
 ```
 
-- `npm run build` は日常開発向けの標準 build で、`build:web`、`build:browser-runtime`、`build:cli-bundle`、`test:fast` を順に実行する
-- `build:browser-runtime` は、Web App などの browser downstream が build 時に取り込む importable runtime artifact を `bundle/miku-project-runtime.mjs` に生成する
-- `build:cli-bundle` は、下流 Agent Skills に渡す単一 `MJS` CLI runtime artifact を `bundle/miku-project.mjs` に生成し、再ビルド・監査用 source archive を `bundle/miku-project-sources.tgz` に生成する
-- `npm run build:app` は `build:web` と `build:xlsx-sample` を順に実行する
-- `npm run build:full` は `build:web`、`build:browser-runtime`、`build:cli-bundle`、`test:full` を順に実行し、日常で見たい core UI smoke suite までを確認する
-- `build:xlsx-sample` は必要なときだけ `build:app` か `npm run build:xlsx-sample` で明示実行する
+- `npm run build:core` transpiles the core TypeScript files to their tracked `src/js/` runtime modules.
+- `npm run build:browser-runtime` creates the browser-compatible downstream artifact at `bundle/miku-project-runtime.mjs`.
+- `npm run build:cli-bundle` creates the Node.js CLI artifact at `bundle/miku-project.mjs` and a source archive.
+- `npm run build:full` runs the core build, both bundles, and the complete Main Application suite.
+- `npm run build:xlsx-sample` writes optional sample XLSX and Markdown output under `local-data/`.
 
-## テストの使い分け
+`npm test`, `npm run test:fast`, `npm run test:full`, and `npm run test:all` validate the Main Application core, CLI, and browser runtime contract.
 
-- `npm run test:extended` は validation、`XLSX import`、preview 切替、重い patch/export 系、projection/replace 系を追加で確認する
-- `npm test` / `npm run test:all` はそれらも含めた完全実行である
+Web UI development, browser/UI tests, single-file HTML build, and offline browser verification are maintained in [miku-project-web](https://github.com/igapyon/miku-project-web).
 
-## `local-data/` の扱い
+## local-data
 
-`local-data/` は確認用の再生成可能な生成物置き場として扱う。ここに出す sample や検証用出力は、Git 管理下の永続成果物ではなく、必要時に再生成できればよい前提とする。
+`local-data/` is a disposable workspace for generated samples and verification outputs. It is not tracked by Git and must be reproducible when needed.

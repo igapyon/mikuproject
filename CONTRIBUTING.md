@@ -13,10 +13,9 @@ This project accepts bug reports, feature requests, documentation fixes, tests, 
 
 ## Development Notes
 
-- `index.html` and `miku-project.html` are generated files.
-- Edit `index-src.html`, `miku-project-src.html`, and files under `src/` instead of editing generated output directly unless regeneration is intentionally part of the change.
-- Application logic should normally be edited in `src/ts/`.
-- `src/js/` is generated from `src/ts/`, but is currently committed to Git. If you change `src/ts/`, regenerate `src/js/` as part of the same change.
+- Main Application logic should normally be edited in `src/ts/`.
+- `src/js/` is generated from `src/ts/`, but is currently committed to Git. If you change core `src/ts/`, run `npm run build:core` and include the corresponding `src/js/` update.
+- Web UI, generated HTML, and `lht-cmn` are maintained in `miku-project-web`; do not reintroduce them here.
 - When a behavior change affects project structure, input/output rules, or AI integration, update the relevant documentation as well.
 
 Documentation roles:
@@ -31,8 +30,7 @@ Documentation roles:
 Run relevant commands before submitting a pull request when possible.
 
 ```bash
-npm run build:js
-npm run build:html
+npm run build:core
 npm test
 ```
 
@@ -87,10 +85,9 @@ Contributors may be acknowledged in project history, release notes, or other pro
 
 ## 開発メモ
 
-- `index.html` と `miku-project.html` は生成物です。
-- 生成物を直接編集するのではなく、通常は `index-src.html`、`miku-project-src.html`、`src/` 配下を編集してください。
-- アプリロジックの変更は、通常 `src/ts/` で行ってください。
-- `src/js/` は `src/ts/` から生成されますが、現状では Git 管理しています。`src/ts/` を変更した場合は、同じ変更で `src/js/` も更新してください。
+- Main Application のロジック変更は、通常 `src/ts/` で行ってください。
+- `src/js/` は `src/ts/` から生成されますが、現状では Git 管理しています。core `src/ts/` を変更した場合は、`npm run build:core` を実行し、同じ変更で `src/js/` も更新してください。
+- Web UI、生成 HTML、`lht-cmn` は `miku-project-web` が管理します。この repository へ再配置しないでください。
 - project 構造、入出力ルール、生成AI 連携の挙動を変える場合は、関連ドキュメントも更新してください。
 
 ドキュメントの役割:
@@ -105,8 +102,7 @@ Contributors may be acknowledged in project history, release notes, or other pro
 可能であれば、Pull Request 前に関連コマンドを実行してください。
 
 ```bash
-npm run build:js
-npm run build:html
+npm run build:core
 npm test
 ```
 

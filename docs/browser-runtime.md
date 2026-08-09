@@ -55,7 +55,7 @@ Office ZIP helper の同期 Node zlib fallback は browser runtime 生成時に�
 ## Build and verification
 
 ```bash
-npm run build:web
+npm run build:core
 npm run build:browser-runtime
 node scripts/smoke-browser-runtime.mjs \
   bundle/miku-project-runtime.mjs \

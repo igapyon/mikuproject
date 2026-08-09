@@ -1,7 +1,5 @@
 # miku-project
 
-![miku-project OGP](docs/screenshots/miku-project-ogp.png)
-
 GitHub: https://github.com/igapyon/miku-project
 
 Agent Skills 版: https://github.com/igapyon/miku-project-skills
@@ -16,7 +14,7 @@ Agent Skills 版: https://github.com/igapyon/miku-project-skills
 - 生成AIと人の往復に適した表現変換 / 再取込 / 介在を支えること
 - 人が読むための可視化と、WBS 帳票・SVG を含む成果物出力を提供すること
 
-配布物は `miku-project.html` ひとつの single-file web app で、Web ブラウザさえあればインストール不要・ネットワーク不要で利用できます。
+Web UI と single-file 配布物は [miku-project-web](https://github.com/igapyon/miku-project-web) が canonical repository として管理します。Main Application は UI 非依存の core API、Node.js CLI、browser-compatible runtime bundle を提供します。
 
 `MS Project XML` を意味の基軸として扱い、`.xlsx` と workbook JSON は確認・可視化・限定編集のための周辺表現として扱います。生成AI 連携の編集用 JSON は、workbook JSON と区別するため当面 `.editjson` 拡張子を推奨します。
 
@@ -30,43 +28,9 @@ Agent Skills から `miku-project` の CLI / AI JSON 連携を扱うための関
 
 import / export / 生成AI連携の使い分けを「何をしたいか」から辿りたい場合は、[docs/import-export-workflows.md](docs/import-export-workflows.md) を参照してください。`replace / merge / patch` の違い、`project-overview / task-edit / phase-detail / bundle` の使い分け、既存WBSの安全な局所修正フローをまとめています。
 
-## スクリーンショット
+## Web App
 
-### Input
-
-`Load from file`、`サンプル`、`生成AI連携` から入力を受け付ける。
-
-![Input](docs/screenshots/screen01.png)
-
-### Overview
-
-`Daily / Weekly / Monthly Calendar` preview をここで行う。
-
-![Overview](docs/screenshots/screen02.png)
-
-### Overview Monthly Calendar
-
-`Overview` では `Monthly Calendar` preview も確認できる。
-
-![Overview Monthly Calendar](docs/screenshots/screen02c.png)
-
-### Output
-
-`MS Project XML`、`XLSX`、workbook JSON、`CSV`、`WBS XLSX`、`WBS Markdown`、`Daily / Weekly / Monthly Calendar SVG`、Mermaid、生成AI向け `.editjson`、`ALL` ZIP をここから保存する。
-
-![Output](docs/screenshots/screen03.png)
-
-### WBS Excel ブック (.xlsx)
-
-人が読むための帳票として出力される `WBS Excel ブック (.xlsx)` の例。
-
-![WBS Excel ブック](docs/screenshots/excel01.png)
-
-### WBS Markdown
-
-`WBS ツリー` と `WBS テーブル` を含む `Markdown` 出力の例。
-
-![WBS Markdown](docs/screenshots/markdown01.png)
+ブラウザでの入力、可視化、ダウンロード、screenshots、single-file HTML は [miku-project-web](https://github.com/igapyon/miku-project-web) を参照してください。Web App は固定した Main Application runtime を build 時に検証・内包し、実行時にネットワークから runtime を取得しません。
 
 ## できること
 
@@ -85,34 +49,9 @@ import / export / 生成AI連携の使い分けを「何をしたいか」から
 
 ## 使い始め方
 
-もっとも簡単なのは、生成済みの [miku-project.html](miku-project.html) をブラウザで開く方法です。
+Web App の使い始め方とブラウザ配布物は [miku-project-web](https://github.com/igapyon/miku-project-web) を参照してください。
 
-画面上では主に次を行えます。
-
-- `Load from file` からの `MS Project XML / XLSX / workbook JSON (.json) / 生成AI向け編集用 JSON (.editjson) / CSV + ParentID` の読込
-- 生成AIによる WBS 草案（`project_draft_view`）をもとに生成した `MS Project XML` の読込
-- 生成AIが返した WBS 草案（`project_draft_view`）の JSON 貼り付け取込
-- 内部モデル、validation、`Daily / Weekly / Monthly Calendar` preview の確認
-- `MS Project XML / XLSX / WBS XLSX / workbook JSON / CSV + ParentID / Daily SVG / Weekly SVG / Monthly Calendar SVG / Mermaid / 生成AI向け編集用 JSON (.editjson)` の保存
-- 主要成果物をまとめた `ALL` ZIP の保存
-
-主な保存名の例:
-
-- `Daily SVG`: `miku-project-wbs-daily-<YYYYMMDDHHmm>.svg`
-- `Weekly SVG`: `miku-project-wbs-weekly-<YYYYMMDDHHmm>.svg`
-- `Monthly Calendar SVG`: `miku-project-monthly-wbs-calendar-<YYYYMMDDHHmm>.zip`
-- `ALL`: `miku-project-all-<YYYYMMDDHHmm>.zip`
-
-`Monthly Calendar SVG` の ZIP 内では、月別ファイルを `monthly-calendar/YYYY-MM.svg` の形で格納します。
-
-### Windows 11 での `SVG` / `ZIP` 取扱いメモ
-
-- `Monthly Calendar SVG` は、月ごとの `SVG` をまとめた `ZIP` として保存される
-- `ALL` も、複数の成果物をまとめた `ZIP` として保存される
-- `Windows 11` では、ダウンロードした `ZIP` や `SVG` が「危険なファイル」として警告される場合がある
-- これは `miku-project` 固有の独自拡張ではなく、`ZIP` や `SVG` を Windows 側が外部由来ファイルとして慎重に扱う場合があるため
-- 少なくとも `Monthly Calendar SVG` と `ALL` の `ZIP` は、アプリ内で生成した成果物をまとめたもの
-- 警告の有無や表示文言は、利用するブラウザや Windows の設定に依存する可能性がある
+CLI の使い始め方、AI JSON API、runtime contract はこの repository の [docs/development.md](docs/development.md) と [docs/browser-runtime.md](docs/browser-runtime.md) を参照してください。
 
 ## 開発
 
@@ -122,17 +61,17 @@ npm run build
 npm test
 ```
 
-`npm run build` には `build:web`、`build:browser-runtime`、`build:cli-bundle`、`test:fast` が含まれる。開発用コマンドの詳細、テスト運用、`local-data/` の扱いは [docs/development.md](docs/development.md) を参照してください。
+`npm run build` には `build:core`、`build:browser-runtime`、`build:cli-bundle`、`test:fast` が含まれる。開発用コマンドの詳細、テスト運用、`local-data/` の扱いは [docs/development.md](docs/development.md) を参照してください。
 
 `workplace/` は外部リポジトリの一時 clone、展開物、検証成果物などを置くローカル作業領域として扱い、`workplace/.gitkeep` 以外は Git 管理しません。
 
-`src/js/`、`index.html`、`miku-project.html` は、ブラウザ実行と配布のために Git 管理する生成物です。手編集はせず、対応する `src/ts/` や HTML source を更新して `npm run build:web` で再生成します。一方、`node_modules/`、`.npm-cache/`、`coverage/`、`bundle/`、`local-data/`、`workplace/` と個人用の `.vscode/mcp.json` はローカル作業用であり、Git 管理しません。
+`src/js/` は core runtime の Git 管理する生成物です。手編集はせず、対応する `src/ts/` を更新して `npm run build:core` で再生成します。`node_modules/`、`.npm-cache/`、`coverage/`、`bundle/`、`local-data/`、`workplace/` と個人用の `.vscode/mcp.json` はローカル作業用であり、Git 管理しません。
 
 miku-soft の共有標準と、このリポジトリの追従状況は [docs/miku-soft-reference.md](docs/miku-soft-reference.md) と [docs/migration-worklog.md](docs/migration-worklog.md) を参照してください。
 
 ## 再利用 API
 
-single-file web app 向けの既存 `globalThis.__mikuproject*` 群は維持しつつ、Agent Skills / CLI / MCP から使いやすい集約入口として `globalThis.__mikuProjectCoreApi` を公開しています。
+Web App / Agent Skills / CLI / MCP から使いやすい集約入口として `globalThis.__mikuProjectCoreApi` を公開しています。
 
 - `getAiJsonSpec()` / `getAiJsonSpecText()`: `miku-project-ai-json-spec` の安定取得
 - `parseAiJsonText()` / `importAiJsonDocument()` / `importAiJsonText()`: `project_draft_view` / Patch JSON / workbook JSON の UI 非依存な共通入口

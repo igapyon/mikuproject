@@ -33,22 +33,13 @@
 
 `miku-project-sample.xlsx` は `MS Project XML` との対応関係を確認するための構造忠実 workbook として扱う。列やシートの対応関係は崩さず、見た目改善は可読性補助に留める。これに対して `miku-project-wbs-sample.xlsx` は人が読むための表示重視 workbook として扱う。
 
-## Single-file Web App
+## Web App boundary
 
-配布物は `miku-project.html` ひとつの single-file web app である。Web ブラウザさえあればインストール不要・ネットワーク不要で利用できる。
-
-開発用 source は分割して管理するが、配布物としては single-file web app を維持する。
-
-- HTML source: `miku-project-src.html`
-- TypeScript source: `src/ts/`
-- generated JavaScript: `src/js/`
-- CSS: `src/css/`
-
-`miku-project.html` は `miku-project-src.html` をもとに、ローカル CSS / JS を単一 HTML へインライン展開して生成する。
+single-file Web App、browser adapter、UI state/event/download module、CSS、`lht-cmn`、browser/UI test は [miku-project-web](https://github.com/igapyon/miku-project-web) が所有する。Web App は Main Application の versioned browser runtime bundle を build 時に SHA-256 検証して内包し、実行時にネットワークから runtime を取得しない。
 
 ## Reusable Entry Points
 
-single-file web app としての配布を維持しつつ、外部再利用向けには UI 非依存の公開入口も持つ。
+外部再利用向けには UI 非依存の公開入口を持つ。
 
 - `globalThis.__mikuprojectAiJsonSpec`: `miku-project-ai-json-spec` を安定取得するための小さな公開面
 - `globalThis.__mikuProjectCoreApi`: Agent Skills / CLI / MCP から再利用するための集約 entrypoint
@@ -76,51 +67,22 @@ XML の parse / serialize は、ブラウザ DOM 直依存ではなく `globalTh
 
 - `msproject-xml` と `excel-io` は `DOMParser` を `__mikuprojectXmlDom` から優先取得する
 - `msproject-xml` の XML export は `XMLSerializer` と `createDocument` も同じ経路で解決する
-- Web ではブラウザ標準の XML DOM を使う
+- browser runtime を使う downstream Web App ではブラウザ標準の XML DOM を使う
 - CLI では `scripts/lib/core-api-loader.mjs` が `@xmldom/xmldom` を優先して注入し、未導入時のみ `jsdom` の XML 実装へフォールバックする
 
 この方針により、CLI の XML 処理は `jsdom` 全体に依存せず、XML 用 DOM 実装だけを差し替えられる。`jsdom` は引き続き CLI 上の HTML / Blob / File など、XML 以外の Web API 補完に使う。
 
 ## リポジトリ構成
 
-- `miku-project.html`: 生成済みの単一 HTML アプリ
-- `miku-project-src.html`: HTML ソース
 - `package.json`: Node.js ベースの開発設定
-- `src/ts/`: TypeScript ソース
-- `src/js/`: `src/ts/` から生成し、Git 管理も行うブラウザ実行用 JavaScript
-- `src/css/`: アプリ用 CSS
+- `src/ts/`: core TypeScript ソース
+- `src/js/`: `src/ts/` から生成し、Git 管理も行う core runtime JavaScript
 - `tests/`: Vitest ベースのテスト
 - `testdata/`: XML テストデータ
 - `scripts/`: ビルド補助スクリプト
 - `scripts/lib/core-api-loader.mjs`: CLI / 外部再利用向けに core API と XML DOM 実装を初期化する
 - `docs/spec.md`: 現行仕様メモ
 - `docs/gap-notes.md`: 保持項目や互換性のギャップメモ
-
-## 画面構成
-
-### Input
-
-- `Load from file` からの `MS Project XML / XLSX / workbook JSON (.json) / 生成AI向け編集用 JSON (.editjson) / CSV + ParentID` の読込
-- 生成AIによる WBS 草案（`project_draft_view`）をもとに生成した `MS Project XML` の読込
-- 生成AIが返した WBS 草案（`project_draft_view`）の JSON 貼り付け取込
-
-### Overview
-
-- 内部モデルの要約確認
-- validation メッセージの確認
-- `Daily / Weekly / Monthly Calendar` プレビューの確認
-- `Project / Tasks / Resources / Assignments / Calendars` の preview 確認
-
-### Output
-
-- `MS Project XML` の保存
-- `XLSX` の保存
-- `WBS XLSX` の保存
-- `XLSX` 相当 workbook JSON の保存
-- `CSV + ParentID` の保存
-- Mermaid fenced code block を含む `.md` の保存
-- `Daily SVG / Weekly SVG / Monthly Calendar SVG` の保存
-- 生成AI向け `project_overview_view` / `phase_detail_view` / `task_edit_view` / `full bundle` の `.editjson` 保存
 
 ## 生成AI連携
 
@@ -146,16 +108,10 @@ XML の parse / serialize は、ブラウザ DOM 直依存ではなく `globalTh
 npm install
 ```
 
-TypeScript 由来のブラウザ実行 JavaScript を再生成:
+TypeScript 由来の core runtime JavaScript を再生成:
 
 ```bash
-npm run build:js
-```
-
-単一 HTML を再生成:
-
-```bash
-npm run build:html
+npm run build:core
 ```
 
 サンプル XLSX を再生成:
@@ -182,38 +138,32 @@ sample 生成も含めた従来相当のフル実行:
 npm run build:full
 ```
 
-`npm run build` は日常開発向けの標準 build で、`build:web`、`build:browser-runtime`、`build:cli-bundle`、`test:fast` を順に実行する。`npm run build:app` は `build:web` と `build:xlsx-sample` を順に実行する。`npm run build:full` は `build:web`、`build:browser-runtime`、`build:cli-bundle`、`test:full` を順に実行し、日常で見たい core UI smoke suite までを確認する。`build:xlsx-sample` は必要なときだけ `build:app` か `npm run build:xlsx-sample` で明示実行する。`npm run test:extended` は validation、`XLSX import`、preview 切替、重い patch/export 系、表現変換/replace 系を追加で確認する。`npm test` / `npm run test:all` はそれらも含めた完全実行である。
+`npm run build` は日常開発向けの標準 build で、`build:core`、`build:browser-runtime`、`build:cli-bundle`、`test:fast` を順に実行する。`npm run build:full` は同じ build と Main Application の complete suite を実行する。`build:xlsx-sample` は必要なときに `npm run build:xlsx-sample` で明示実行する。`npm test` / `npm run test:all` は core、CLI、browser runtime contract を検証する。
 
 スクリプトの役割は次のとおり。
 
-- `npm run build:js`: `src/ts/` から `src/js/` を生成する
-- `npm run build:html`: `index-src.html` と `miku-project-src.html` から `index.html` と `miku-project.html` を生成する
-- `npm run build:web`: JavaScript 生成と HTML 生成をまとめて行う
+- `npm run build:core`: `src/ts/` から `src/js/` の core runtime を生成する
 - `npm run build:browser-runtime`: browser downstream 用の importable runtime を `bundle/miku-project-runtime.mjs` へ生成する
 - `npm run build:cli-bundle`: 下流 Agent Skills に渡す単一 `MJS` CLI runtime artifact を `bundle/miku-project.mjs` へ生成し、再ビルド・監査用 source archive を `bundle/miku-project-sources.tgz` へ生成する
 - `npm run build:xlsx-sample`: `local-data/` 配下へサンプル XLSX / Markdown を生成する
-- `npm run build:app`: `build:web` と `build:xlsx-sample` を順に実行する
-- `npm run build:full`: `build:web`、`build:browser-runtime`、`build:cli-bundle`、`test:full` を順に実行する
-- `npm run test:extended`: validation、`XLSX import`、preview 切替、重い patch/export 系、表現変換/replace 系 UI suite を実行する
-- `npm run test:all`: `fast + ui + extended` をすべて実行する
-
-`scripts/build-project.mjs` は `--js-only` と `--html-only` を受け取り、JavaScript 生成と HTML 生成を切り替える。
+- `npm run build:full`: `build:core`、`build:browser-runtime`、`build:cli-bundle`、`test:full` を順に実行する
+- `npm run test:all`: Main Application suite を実行する
 
 ## ソースと生成物の扱い
 
-`src/ts/` を正本として扱い、`src/js/` はそこから生成する中間生成物として扱う。ただし、現状では `src/js/` も Git 管理する。ブラウザ実行、テスト、`build:xlsx-sample` は `src/js/` を参照する。
+`src/ts/` を正本として扱い、`src/js/` はそこから生成する core runtime の中間生成物として扱う。ただし、現状では `src/js/` も Git 管理する。CLI bundle、browser runtime、テスト、`build:xlsx-sample` は `src/js/` を参照する。
 
 運用ルール:
 
 - アプリロジックの修正は原則 `src/ts/` で行う
 - `src/js/` は手編集の正本としては扱わない
-- `src/ts/` を更新した場合は `npm run build:js` を実行し、`src/js/` の差分もあわせて扱う
+- `src/ts/` を更新した場合は `npm run build:core` を実行し、`src/js/` の差分もあわせて扱う
 
 ## 現在の状態
 
 - `package.json` と `package-lock.json` を持つ単独の Node.js プロジェクトとして扱える
-- ソース配置は `src/ts/`, `src/js/`, `src/css/`
-- `npm run build:js`、`npm run build:html`、`npm test` は通る
+- ソース配置は `src/ts/` と `src/js/`
+- `npm run build:core`、`npm run build:browser-runtime`、`npm run build:cli-bundle`、`npm test` は通る
 - `local-data/` と `node_modules/` は Git 管理対象外
 - `local-data/` は確認用の再生成可能な生成物置き場として扱う
 - `local-data/` 配下の sample や検証用出力は、消えてもよく、必要時に再生成できればよい前提とする

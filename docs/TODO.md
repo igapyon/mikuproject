@@ -4,18 +4,12 @@
 
 ## miku-project
 
-- #124 Web 分離: `v0.13.0` Release を公開し、`miku-project-web` の clean clone で local override なしの runtime 取得、CI、実ブラウザ smoke を確認する
-- #124 Web 分離: Release 経由の downstream 成立後に Main Application 側の Web 専用 source、生成物、test、`lht-cmn` を整理し、core / CLI / browser runtime の回帰を確認する
 
 - 最優先: サンプルデータを更新し、利用者の好みに合う題材・構造・見た目へ見直す
 - `miku-project-skills` 側で、上流 `bundle/miku-project.mjs` を `skills/miku-project/runtime/miku-project.mjs` として受け取る手順と smoke test 観点を反映する
-- 再読込テストで validation error が見つかった場合の UI 表示について、status / toast / validation 詳細導線の最終仕様を整理する
 - WBS workbook と `miku-project-sample.xlsx` のタイトル行で、フォントサイズ指定をどこまで使うか整理する
 - `Mermaid` 出力は Markdown / 設計資料向けに残しつつ、見た目を制御しやすい `WBS SVG` 描画を別系統で追加するか検討する
 - `WBS SVG` について、今の既定である `近接ラベル` 表示だけを残し、左側にテキストを描画する `一覧ラベル` モードは将来的に廃止したい
-- リファクタリングを再開する場合は、まず `main.ts` を controller としてここで止めるか再確認する
-  - `main.ts` に pure function や表示 helper が再流入していないかを見る
-  - `main.ts` の長さだけで再分割せず、責務混在が再発しているかで判断する
 - 完了済みの大分割領域を再度触る前に、本当に新しい責務混在があるか確認する
   - `core-api*`、`msproject-*`、`project-patch-json*`、`project-xlsx*`、`project-workbook-json*`
   - `excel-io*`、`wbs-svg*`、`wbs-xlsx*`
@@ -36,15 +30,8 @@
 - workbook import の次段候補として、少なくとも次の列を優先順位つきで整理する
   - 優先候補: `Resources.StandardRate / OvertimeRate / CostPerUse`
   - 優先候補: `Assignments.Start / Finish`
-- `phase_detail_view scoped` の `phase UID / root UID / max depth` 指定を、より選びやすい UI に改善する
-- 既存WBSの局所修正フローを `CLI` / `Agent Skills` 主導に寄せる方針に合わせて、Web UI の AI 連携欄を軽量化するか検討する
-  - `bundle` や `phase detail full` を前面導線から外すか
-  - `project overview` / `task edit` / `phase detail scoped` / `patch_json import` に絞るか
-  - UI は軽い入口と確認用に留める説明へ寄せるか
 - import 前後で、どの `task / calendar / assignment` がどう変わったかを見やすく確認できる差分可視化を追加する
 - 差分適用を前提として、生成AI や外部編集結果を全件置換ではなく部分適用できる運用を強化する
-- `project_draft_request` を UI から生成しやすくするか整理する
-- UI の微調整として、`Input / Overview / Output` の各カードの余白・見出し・ボタン階層を見直し、`miku` 系テーマの統一感をさらに整える
 - `Overview` タブの summary / validation / preview の情報密度を見直し、どこを見る画面なのかをより直感的に伝わる構成へ調整する
 - `Overview` 画面について、簡易な task 操作機能を追加するか検討する
   - 今は表示専用だが、軽い編集や操作だけはできると便利な可能性がある

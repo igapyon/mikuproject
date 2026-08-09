@@ -6,7 +6,7 @@ topics:
   - web-app
   - migration
 category: workflow
-status: draft
+status: completed
 audience:
   - maintainer
   - developer
@@ -17,7 +17,7 @@ updated: 2026-08-09
 
 # Web Separation Inventory
 
-この文書は Issue [#124](https://github.com/igapyon/miku-project/issues/124) の移動対象と残置対象を固定する。実際の削除は `miku-project-web` の独立 build、browser/UI test、オフライン動作が成立した後に行う。
+この文書は Issue [#124](https://github.com/igapyon/miku-project/issues/124) の移動対象と残置対象を固定した移行記録である。Web repository の独立 build、browser/UI test、オフライン動作を確認して、Main Application 側の Web 専用 assets を整理済みである。
 
 ## Ownership boundary
 
@@ -25,7 +25,6 @@ updated: 2026-08-09
 | --- | --- |
 | Main Application | `src/ts` / `src/js` の core modules、`globalThis.__mikuProjectCoreApi`、CLI、Node CLI bundle、browser runtime bundle、source archive、domain fixtures、core/CLI tests |
 | Web App | HTML source and generated HTML、browser adapter、UI state/event/download modules、`src/css/`、`lht-cmn/`、browser/UI tests、single-file Web App build and publication |
-| Transitional | `scripts/build-project.mjs`、`scripts/lib/single-html.mjs`、現行 Web screenshots/docs。Web repository の再現性が確認されるまで Main Application 側に残す |
 
 core と Web surface の module path は [runtime-module-paths.mjs](../scripts/lib/runtime-module-paths.mjs) の `CORE_API_MODULE_RELATIVE_PATHS` と `WEB_SURFACE_MODULE_RELATIVE_PATHS` を判定元にする。browser runtime build と smoke は Web surface module の混入を拒否する。
 
@@ -84,8 +83,8 @@ core と Web surface の module path は [runtime-module-paths.mjs](../scripts/l
 
 この証拠が不足している間は、combined layout が残っていても分離未完了として扱う。
 
-## 2026-08-09 checkpoint
+## 2026-08-09 completion checkpoint
 
-`igapyon/miku-project-web` の local checkout に runtime lock、SHA-256 検証、runtime-first bootstrap、single-file build、移行 browser/UI suite、offline smoke、CI と Web Release workflow を構築した。tests は core source/shim を Web source tree に置かず、検証済み runtime を直接起動する。local `miku-project-runtime.mjs` を lock と同じ SHA-256 で注入した通常 checkout と clean copy の検証では、18 test files / 135 tests と、Input / Overview / Output / 15 output entries の offline smoke が成功した。
+`miku-project` `v0.13.0` Release は CLI、browser runtime、machine-readable manifest、sources、SHA-256 assets を公開した。`igapyon/miku-project-web` は runtime lock、SHA-256 検証、runtime-first bootstrap、single-file build、browser/UI suite、offline smoke、CI と Web Release workflow を持つ。cache を持たない copy は公開 Release URL から runtime を取得し、18 test files / 135 tests と Input / Overview / Output / 15 output entries の offline smoke を成功させた。
 
-未完了 gate は `miku-project` `v0.13.0` Release の公開、clean clone の通常 runtime 取得、CI、実ブラウザ smoke である。この gate が閉じるまで Main Application 側の Web 専用 path は削除しない。
+Web CI はタイムゾーンに依存しない download filename assertion へ修正後に成功した。Main Application から HTML、browser adapter、UI source / generated JS、CSS、`lht-cmn`、browser/UI test、screenshots と Web build を整理し、core / CLI / browser runtime の `npm run build:full` を成功させた。

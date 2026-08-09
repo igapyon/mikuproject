@@ -48,8 +48,8 @@
 
 逆に、最初から重い統合 test を増やしすぎない。
 
-- 小粒な確認は `test:fast` または `test:ui` へ寄せる
-- 重い回帰確認だけを `test:extended` や `test:full` に残す
+- 小粒な確認は `test:fast` へ寄せる
+- 重い回帰確認は `test:full` に残す
 
 ## 分割順の考え方
 
@@ -60,8 +60,8 @@
 1. util / normalize / validation helper
 2. zip / codec / package XML のような低レイヤ helper
 3. import / export の片側だけで閉じる処理
-4. UI event / preview / support のような補助 module
-5. 最後に controller / facade / entrypoint
+4. core API adapter / report adapter のような補助 module
+5. 最後に public facade / entrypoint
 
 つまり、中心の orchestrator を先に崩すのではなく、周辺から薄くしていく。
 
@@ -71,7 +71,7 @@
 
 例:
 
-- `main.ts` の format 判別、archive 生成、round-trip 判定
+- `core-api.ts` の public API 判別、archive 生成、round-trip 判定
 - `project-xlsx` / `project-workbook-json` の限定列 import
 - `msproject-xml` の AI views / CSV / calendar helper の代表ケース
 
@@ -89,23 +89,20 @@
 
 分割後は次の追随が必要になることが多い。
 
-- `scripts/build-project.mjs`
+- `scripts/build-core.mjs`
 - `scripts/lib/core-api-loader.mjs`
-- `miku-project-src.html`
+- `scripts/lib/runtime-module-paths.mjs`
 - `scripts/build-project-xlsx-sample.mjs`
-- `tests/` 配下の harness
 - `src/js` 生成物
-- `miku-project.html`
-- `index.html`
 
-`globalThis.__mikuproject...` を使う module は、読み込み順が 1 つずれるだけで壊れることがある。
+`globalThis.__mikuproject...` を使う core module は、runtime module path と公開 API の初期化順が 1 つずれるだけで壊れることがある。
 
 ### 4. 区切りで `build:full` を実行する
 
 各区切りごとに、少なくとも次を実行する。
 
 ```bash
-npm run build:js
+npm run build:core
 npm run build:full
 ```
 
@@ -127,7 +124,7 @@ npm run build:full
 - 残っているのが orchestration だけになった
 - これ以上分けると、呼び出し先を追うコストのほうが増える
 
-`main.ts` のような file は、長くても controller として整理されていれば、無理にさらに割らない判断がありうる。
+`core-api.ts` のような file は、長くても public facade として整理されていれば、無理にさらに割らない判断がありうる。
 
 ## 再開判断
 
@@ -142,7 +139,7 @@ npm run build:full
 ## 注意点
 
 - `src/ts` を正本とし、`src/js` は必ず追随させる
-- generated JS や single HTML を更新し忘れない
+- generated core JS を更新し忘れない
 - `globalThis` 公開面を変える場合は、loader / harness も同時に見る
 - 既存の挙動を変える変更は、責務分離と同時に混ぜない
 - 失敗した分割は、原因を小さく直してから再度 `build:full` で閉じる
@@ -152,7 +149,7 @@ npm run build:full
 - 小さい回帰 test は足したか
 - 分割対象は 1 責務に絞れているか
 - build 順と boot 順を更新したか
-- `npm run build:js` は通ったか
+- `npm run build:core` は通ったか
 - `npm run build:full` は通ったか
 - test 実行時間に異常な悪化はないか
 - その file はもう stop point か、まだ次の塊があるか

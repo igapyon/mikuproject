@@ -79,7 +79,7 @@ Issue [#124](https://github.com/igapyon/miku-project/issues/124) の Main Applic
 - tests は generated core shim を `src/js/` に置かず、固定・検証済み runtime を helper から直接起動する。
 - `.cache` と `node_modules` を持たない clean copy でも、同じ SHA-256 の local Release candidate を入力に `npm ci` と全検証を再現した。
 
-`v0.13.0` Release はまだ未公開である。clean clone の通常取得、CI、実ブラウザ smoke が Release asset に対して成功するまでは downstream の最終成立とみなさず、Main Application 側の combined Web surface を残す。
+`v0.13.0` Release は CLI、browser runtime、manifest、sources、SHA-256 assets を公開した。cache を持たない Web copy は Release URL から runtime を取得し、Web CI も成功した。Main Application 側の combined Web surface は整理済みであり、以後 Web App の変更は `miku-project-web` で管理する。
 
 ## Decisions Required Before the Next Migration
 

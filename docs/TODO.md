@@ -144,7 +144,9 @@ G3承認により、`ZB-P4`（Node CLI vertical slice）の製品実装へ進め
 
 P4ではNode CLIを承認済み契約の参照実装にする。最初に現行互換動作とtest topologyを固定し、その後に責務分離と新契約のvertical sliceへ進む。詳細な境界とGate G4条件は[実施計画のZB-P4](miku-project-zero-base-implementation-plan-v20260810.md#zb-p4-node-cli-vertical-sliceとv1完成)を参照する。
 
-- [ ] `ZB-P4.1` 現行CLIの互換動作をcontract testsで固定する
+- [x] `ZB-P4.1` 現行CLIの互換動作をcontract testsで固定する
+  - `tests/mikuproject-cli-compatibility-contract.test.js`で、legacy command surface、help/version、AI spec、stdin/stdout/stderr、named file outputと上書き、JSON usage diagnostics、draft→workbook変換を固定した
+  - legacy diagnosticsが`--out`をI/O metadataへ反映しない観測済み挙動は、新v1 result contractと混同せず明示的に固定した
 - [ ] `ZB-P4.2` 現行test suiteの`fast / full / all`を実態に合わせ、一部testの実行漏れを解消する
 - [ ] `ZB-P4.3` semantic変更より先に、CLIのparser、command service、I/O、diagnostics、formattingを分離する
 - [ ] `ZB-P4.4` G0で選んだscenario一つだけを新契約でend-to-end実装する

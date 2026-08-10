@@ -8,6 +8,7 @@ const FAST_SUITE = [
   "tests/mikuproject-project-workbook-json.test.js",
   "tests/mikuproject-project-xlsx.test.js",
   "tests/miku-project-browser-runtime.test.js",
+  "tests/mikuproject-cli-compatibility-contract.test.js",
   "tests/mikuproject-cli.test.js",
   "tests/mikuproject-wbs-markdown.test.js",
   "tests/mikuproject-wbs-xlsx.test.js"

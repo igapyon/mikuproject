@@ -314,11 +314,13 @@ CLI examplesとProjection/request/diff/plan/approval/provenanceの全体がschem
 
 依存: `G3`  
 主担当: Node CLI
-状態: 着手可能（現在の最優先）
+状態: 進行中（`ZB-P4.1`完了、次は`ZB-P4.2`）
 
 ### 作業
 
-- [ ] `ZB-P4.1` 現行CLIの互換動作をcontract testsで固定する
+- [x] `ZB-P4.1` 現行CLIの互換動作をcontract testsで固定する
+  - `tests/mikuproject-cli-compatibility-contract.test.js`にlegacy command surface、help/version、AI spec、stdin/stdout/stderr、named file outputと上書き、JSON usage diagnostics、draft→workbook変換を固定する6 caseを置く
+  - legacy diagnosticsの`--out` I/O metadata欠落は観測済み互換挙動として固定し、新v1 result envelopeへ継承しない
 - [ ] `ZB-P4.2` 現行test suiteの `fast / full / all` を実態に合わせ、一部testの実行漏れを解消する
 - [ ] `ZB-P4.3` semantic変更より先に、CLIのparser、command service、I/O、diagnostics、formattingを分離する
 - [ ] `ZB-P4.4` G0で選んだscenario一つだけを新契約でend-to-end実装する

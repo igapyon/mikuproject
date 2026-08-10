@@ -16,18 +16,145 @@
 
 G0の承認内容は、[v1利用シナリオ](miku-project-zero-base-scenarios-v1.md)、[現行capability matrix](miku-project-current-capability-matrix-v20260810.md)、[再利用資産棚卸し](miku-project-zero-base-reuse-inventory-v20260810.md)に記録する。詳細は [miku-project-zero-base-implementation-plan-v20260810.md](miku-project-zero-base-implementation-plan-v20260810.md) を参照する。
 
-## ゼロベース再設計: 現在の最優先（G1）
+## ゼロベース再設計: G1 完了
 
-- [ ] `ZB-P1.1` project、task、階層、identity、順序の最小semantic scopeを定義する
-- [ ] `ZB-P1.2` 日付、日時、duration、milestone、summary、進捗の意味と不変条件を定義する
-- [ ] `ZB-P1.3` dependencyの最小scopeとcycle、link type、lagの規則を定義する
-- [ ] `ZB-P1.4` resource、assignment、calendar、actual、baseline、timephased dataをv1に含めるか個別に決める
-- [ ] `ZB-P1.5` unknown field、拡張field、opaque preservationの扱いを定義する
-- [ ] `ZB-P1.6` stable identity、selector、並び順、文字列normalization、timezoneの規則を定義する
-- [ ] `ZB-P1.7` valid、invalid、boundaryのsemantic fixturesを作る
-- [ ] `Gate G1` v1 fieldとoperation candidateを、意味、不変条件、identity、順序、valid/invalid境界へ対応づけて承認する
+`ZB-P1.1`〜`ZB-P1.8`と`Gate G1`は完了した。製品コードは変更していない。成果物は [semantic contract v1](miku-project-semantic-contract-v1.md)、[semantic fixture catalog v1](miku-project-semantic-fixture-catalog-v1.md)、[実施計画](miku-project-zero-base-implementation-plan-v20260810.md) である。
 
-最初のC1の変更範囲はtaskの`percentComplete`更新だけである。dependency、resource、assignmentは観測・保持対象とし、編集は含めない。G1のドラフトは [semantic contract v1](miku-project-semantic-contract-v1.md) に記録する。
+- [x] `ZB-P1.1` ordered forest、summary、identityを確定する
+  - `docs/miku-project-semantic-contract-v1.md` の「identity、順序、階層」を編集する
+  - 「順序付きの木」を「複数rootを許すordered forest」へ変更する
+  - rootは`parent = null`、childは一つのparentを持ち、sibling orderは入力順として保持すると書く
+  - taskを持たない空のordered forestはR1でvalidとする
+  - `summary = true`と「子を一つ以上持つ」を同値にし、不一致をinvalidとする
+  - task UIDは入力artifactから次artifactを生成する一回の処理単位でstableとし、名称、行番号、outline numberをselectorにしない
+  - MS Project XMLのUID `0`など外部形式の疑似taskはsemantic taskに含めず、mapping詳細はG2へ送る
+  - 完了条件: 複数rootを持つ`testdata/dependency.xml`がvalidになり、単一tree前提やraw `level 1`をsemantic invariantとして残していない
+
+- [x] `ZB-P1.2` v1 domain scope tableをfield単位へ展開する
+  - `required / optional-preserved / unsupported` の三分類を定義する
+  - semantic typeとしてidentity token、non-empty text、local civil datetime、boolean、working duration、units、resource type、sibling orderを定義し、外部形式の字句表現はG2へ送る
+  - `required`に分類する: projectのname/start/finish、taskのUID/name/parent/order/start/finish/duration/milestone/summary/percentComplete、dependencyの両端UID/type/lag、resource UID、assignment UID/task UID、存在するcalendar entityのUID
+  - `optional-preserved`に分類する: project currentDate/scheduleFromStart/calendar参照、task calendar参照、resource name/type/calendar参照、assignment resource UID/start/finish/units/work、calendar name/isBaseCalendar
+  - `unsupported`に分類する: actual、EV、baseline、timephased、extended data、および明示していないunknown field
+  - task/resourceの外部ID、outline level/number、外部sentinelはadapter表現でありsemantic fieldではないと明記する
+  - 完了条件: 代表fixtureに現れるproject/task/dependency/resource/assignment/calendarの各fieldが一つの分類に入り、未分類fieldがない
+
+- [x] `ZB-P1.3` 日時、duration、milestone、summary、進捗の境界を確定する
+  - projectとtaskのstartはfinish以前とする
+  - datetimeはtimezone変換しないlocal civil datetimeとし、文字列表現はG2へ送る
+  - `required`に分類したstart/finish/durationの欠落はinvalidとする。project currentDateとassignment start/finishは欠落可能だが、存在する値は保持し、start/finishの両方がある場合だけ順序を検証する
+  - durationは入力が宣言した非負のworking durationとして保持し、calendarによる再計算やstart/finishとの差の一致をv1では要求しない
+  - milestoneはstartとfinishが等しくduration 0、summaryは子を持つtaskとする
+  - percentCompleteは0〜100の整数とし、小数、-1、101をinvalidとする
+  - C1の対象を`summary = false`のleaf taskへ限定し、summary進捗は観測・保持のみとする
+  - 完了条件: required/optionalな日時fieldの欠落可否と、各invalid条件が文章で判定可能になっている
+
+- [x] `ZB-P1.4` dependencyのv1 scopeを閉じる
+  - semantic edgeを`predecessor UID → successor UID`として定義する
+  - v1正式対応をfinish-to-start・lag 0だけに限定する
+  - 欠損参照、自己参照、二task以上のcycleをinvalidとする
+  - 他のlink typeまたは非zero lagをunsupported errorとし、暗黙変換や無視を禁止する
+  - semantic identityを`(predecessor UID, successor UID, type, lag)`とし、同じtupleの重複をinvalidにする
+  - dependency collectionの並び順は意味を持たない
+  - dependency編集はC1に含めない
+  - 完了条件: link type/lagの扱いを「G2で決める」とする文がsemantic contractからなくなり、入力ごとのvalid/unsupported判定が一意になる
+
+- [x] `ZB-P1.5` resource、assignment、calendar、unknown dataのfail-closed規則を確定する
+  - resource、assignment、calendarのUIDは各collection内で空でなく一意とする
+  - assignmentは既存taskを参照し、resource UIDがある場合だけ既存resource参照を必須とする
+  - unassignedはresourceなしとしてvalidとし、`-65535`などのsentinelをsemantic UIDへ露出しない
+  - project/task/resourceのcalendar参照がある場合は既存calendarを必須とする
+  - dependency/resource/assignment/calendar collectionは空でもvalidとし、task以外のcollection順序は意味を持たない
+  - unknown、actual、EV、baseline、timephased、extended dataのopaque preservationをv1では約束しない
+  - R1ではunsupported dataの存在を報告し、C1では保持保証がない場合にapply/exportを成功させない
+  - 完了条件: unsupported dataを無警告で破棄・正規化・成功扱いできる抜け道がない
+
+- [x] `ZB-P1.6` C1の許可変更とsemantic equivalenceを確定する
+  - 許可operationを「stable UIDで選んだleaf task一件のpercentComplete更新」だけにする
+  - preconditionには対象UIDと現在のpercentCompleteが必要と定義する。JSON field名やschemaはG2へ送る
+  - 対象UID不存在、重複、summary task、現在値不一致、同値更新、整数範囲外、unsupported data存在時はapplyしない
+  - apply後は対象percentComplete以外の`required`と存在していた`optional-preserved`がsemantic equivalentであることを要求する
+  - byte一致、XML要素順、空白、serialization表現はsemantic equivalenceに含めず、詳細なnormalizationはG2へ送る
+  - 完了条件: C1の入力、許可変更、reject条件、保持条件が一つの節だけで追跡できる
+
+- [x] `ZB-P1.7` semantic fixture catalogとtraceabilityを作る
+  - `docs/miku-project-semantic-fixture-catalog-v1.md` を新規作成する
+  - 各行に `fixture ID / 種類 / baseまたは入力差分 / 検証対象 / 期待status / 関連不変条件` を書く
+  - valid/boundary: `S-V001` dependency.xml正例、`S-V002` validなsummary/child階層、`S-B001` 進捗0、`S-B002` 進捗100、`S-B003` unassigned、`S-B004` optional field欠落、`S-B005` 空forest/collection、`S-B006` 非task collection順序のsemantic equivalenceを登録する
+  - identity/hierarchy: `S-I001` duplicate task UID、`S-I002` unknown target、`S-I003` hierarchy orphan/depth jump、`S-I004` summary/children不一致、`S-I005` duplicate resource/assignment/calendar UIDを登録する
+  - datetime/progress: `S-I006` project date order、`S-I007` task date order、`S-I008` required field欠落、`S-I009` negative duration、`S-I010` milestone mismatch、`S-I011` percent -1、`S-I012` percent 101、`S-I013` percent小数を登録する
+  - dependency/reference: `S-I014` missing predecessor、`S-I015` self dependency、`S-I016` cycle、`S-I017` orphan assignment、`S-I018` missing calendar、`S-I019` unsupported link/lagを登録する
+  - C1/unsupported: `S-I020` unsupported extended/unknown data、`S-I021` precondition mismatch、`S-I022` summary taskへの進捗変更、`S-I023` 同値更新を登録する
+  - type/value: `S-I024` identity token、non-empty text、datetime、boolean、resource type、units/workのinvalid値を登録する
+  - dependency identity: `S-I025` duplicate semantic tupleを登録する
+  - この段階では製品用IRやJSON schemaを作らず、実行fixture化の担当phaseをG3と記録する
+  - 完了条件: semantic contractの全不変条件とreject条件が一つ以上のfixture IDへ対応する
+
+- [x] `ZB-P1.8` G1文書横断reviewを完了する
+  - `docs/miku-project-zero-base-scenarios-v1.md`、semantic contract、fixture catalog、実施計画、TODOでR1/C1、field scope、用語、非目標を照合する
+  - semantic contractに「ordered tree」「FS・lag 0以外をG2で決める」「unknown dataの扱いをG2で決める」という未決表現が残っていないことを確認する
+  - G2へ残すのが外部形式、IR、schema、diagnostics、serialization normalizationだけであることを確認する
+  - `git diff --check`を実行し、変更文書の差分をreviewする。文書だけの変更なので製品testは必須にしない
+  - 完了条件: review結果と未決事項がsemantic contractのG1 checklistに記録され、未決事項が0または明示的な承認依頼になっている
+
+- [x] `Gate G1` semantic contract、domain scope table、fixture catalog、review checklistを人が承認する（2026-08-10）
+  - 承認前に`ZB-P1.1`〜`ZB-P1.8`をすべて完了させる
+  - 承認後、G2を「現在の最優先」へ切り替えた
+
+## ゼロベース再設計: G2 完了
+
+`ZB-P2`では製品コードを変更していない。成果物は [format and loss contract v1](miku-project-format-and-loss-contract-v1.md) と [change contract v1](miku-project-change-contract-v1.md) である。詳細な完了条件は [実施計画のZB-P2](miku-project-zero-base-implementation-plan-v20260810.md#zb-p2-形式損失中間表現変更契約) を参照する。
+
+- [x] `ZB-P2.1` 原入力、中間表現、Projection、変更要求、派生成果物、外部形式の役割を確定する
+- [x] `ZB-P2.2` miku-project固有の中間表現が必要か判断する
+- [x] `ZB-P2.3` 中間表現を採用する場合、internal / exchange / persistentの役割とschema versionを定義する
+- [x] `ZB-P2.4` v1形式ごとの `read / write / roundtrip / loss / unsupported` matrixを作る
+- [x] `ZB-P2.5` preservationを `required / normalized / lossy-with-warning / unsupported-error / opaque-preserved` に分類する
+- [x] `ZB-P2.6` AI向けProjectionのpurpose、範囲、情報量、規則を定義する
+- [x] `ZB-P2.7` whole-state replacementとoperation-based changeの境界を決める
+- [x] `ZB-P2.8` 許可operation、selector、logical publication、precondition、validation、diff、output preflight、apply後検証を定義する
+- [x] `ZB-P2.9` loss、normalization、ignored change、unsupported dataのprovenance表現を定義する
+- [x] `ZB-P2.10` artifactの役割、寿命、schema versionを対応づけ、hidden state非依存を確認する
+- [x] `Gate G2` artifactの役割・損失規則・変更安全性を人が承認する（2026-08-10）
+  - internal-only IR、`miku-project-ms-project-xml-subset/v1`のnamespace / field / lexical / canonical child順 / 非目標、Projectionの限定公開、C1 operation allowlist、diff/output planをdigestで束縛するhuman gateを承認対象とする
+  - C1成功出力を`project.xml + provenance.json + COMMITTED`を持つ新規artifact set directoryとし、directoryとcommit markerを排他的に新規作成する。markerなしをincomplete、markerありで検証不一致をcorruptとして利用禁止にし、既存pathを置換しない判断を承認対象とする
+  - 承認後、G3を「現在の最優先」へ切り替えた
+
+## ゼロベース再設計: G3 完了
+
+G3では、承認済みのsemantic / format / change contractをCLI・diagnostics・conformance契約へ落とし込む。まだ製品コードは変更しない。詳細な依存と完了条件は[実施計画のZB-P3](miku-project-zero-base-implementation-plan-v20260810.md#zb-p3-cli-diagnostics-共通conformance契約)を参照する。
+
+- [x] `ZB-P3.1` v1 CLIの最小command matrixを確定する（[CLI contract v1](miku-project-cli-contract-v1.md)）
+- [x] `ZB-P3.2` args、stdin/stdout/stderr、file output、encoding/BOMの規則を定義する
+- [x] `ZB-P3.3` exclusive directory create、commit marker、`incomplete / committed / corrupt`、cleanup diagnosticsをCLI契約へ定義する
+- [x] `ZB-P3.4` versioned result / diagnostics schemaを定義する（[result and diagnostics contract v1](miku-project-cli-result-contract-v1.md)）
+- [x] `ZB-P3.5` diagnostic code、severity、scope/path、status、I/O metadata、loss、normalization、retryabilityを定義する
+- [x] `ZB-P3.6` exit codeとsuccess、validation failure、invalid usage、internal errorの境界を定義する
+- [x] `ZB-P3.7` Nodeをv1の参照実装とする。正本は承認済み契約・Schema・共通fixture / goldenであり、Nodeの偶発的な挙動は契約を上書きしない（2026-08-10決定）
+- [x] `ZB-P3.8` [runtime capability contract v1](miku-project-runtime-capability-contract-v1.md)で共通core profile、静的capabilityと動的preflight、runtime固有extensionの境界を定義する。v1のNode/Java extension setは空とする
+- [x] `ZB-P3.9` [conformance corpus v1](miku-project-conformance-corpus-v1.md)と`testdata/conformance/v1/`に共通fixture / golden、21 workflow / harness case、31 schema / binding adversarial case、比較modeを設計する。runtime manifest/asset/source failure、複数diagnostic集約、command別I/O/effect、Projection/state binding、expected plan不一致、`COMMITTED`後にresultを受け取れないunknown outcomeを含める
+- [x] `ZB-P3.10` [runtime manifest contract v1](miku-project-runtime-manifest-contract-v1.md)とJSON Schemaでproduct / runtime / fixture / asset / source / SHA-256 / capabilityの記録・検証規則を定義する
+- [x] `ZB-P3.11` command候補を`read-only / artifact生成 / 意味変更`へ分類する
+- [x] `ZB-P3.12` [human gate and next action contract v1](miku-project-human-gate-and-next-action-contract-v1.md)でnon-interactive実行、human gate、retry / abort / next actionの機械判定を定義する
+- [x] `Gate G3` CLI契約、command別I/O/effect、artifact/result/diagnostic schema、Projection/source-stateを含むcross-artifact binding、conformance corpus、runtime manifest、human gate / safe next actionを文書横断reviewし、人が承認する（2026-08-11）
+
+G3承認により、`ZB-P4`（Node CLI vertical slice）の製品実装へ進める。
+
+## ゼロベース再設計: P4 現在の最優先
+
+P4ではNode CLIを承認済み契約の参照実装にする。最初に現行互換動作とtest topologyを固定し、その後に責務分離と新契約のvertical sliceへ進む。詳細な境界とGate G4条件は[実施計画のZB-P4](miku-project-zero-base-implementation-plan-v20260810.md#zb-p4-node-cli-vertical-sliceとv1完成)を参照する。
+
+- [ ] `ZB-P4.1` 現行CLIの互換動作をcontract testsで固定する
+- [ ] `ZB-P4.2` 現行test suiteの`fast / full / all`を実態に合わせ、一部testの実行漏れを解消する
+- [ ] `ZB-P4.3` semantic変更より先に、CLIのparser、command service、I/O、diagnostics、formattingを分離する
+- [ ] `ZB-P4.4` G0で選んだscenario一つだけを新契約でend-to-end実装する
+- [ ] `ZB-P4.5` whole-project inspect/validate、semantic diff、pre/post apply validationを選択scopeに応じて実装する
+- [ ] `ZB-P4.6` exclusive output directory、commit marker、incomplete/corrupt判定、cleanup diagnostics、structured loss reportingを実装する
+- [ ] `ZB-P4.7` 既存coreの再利用部分を新conformance fixturesで検証する
+- [ ] `ZB-P4.8` 選択scopeの残りを一sliceずつ追加し、capability matrixを更新する
+- [ ] `ZB-P4.9` versioned single `.mjs`、sources、runtime manifest、SHA-256を生成する
+- [ ] `ZB-P4.10` repository外のclean temporary directoryでbundle smokeを実行する
+- [ ] `Gate G4` Node参照実装、共通conformance、決定性、安全なpublication、bundle/manifestを検証し、人が承認する
 
 ## 現行仕様由来・再評価待ち
 

@@ -69,7 +69,7 @@ npm test
 
 miku-soft の共有標準と、このリポジトリの追従状況は [docs/miku-soft-reference.md](docs/miku-soft-reference.md) と [docs/migration-worklog.md](docs/migration-worklog.md) を参照してください。
 
-CLI、Java CLI、Agent Skillsを中心にしたゼロベース再設計は、[2026-08-09版仕様](docs/miku-project-zero-base-spec-v20260809.md) と [2026-08-10版実施計画](docs/miku-project-zero-base-implementation-plan-v20260810.md) を参照してください。WebとMCPは、この初期計画では後続検討です。
+CLI、Java CLI、Agent Skillsを中心にしたゼロベース再設計は、[2026-08-09版仕様](docs/miku-project-zero-base-spec-v20260809.md)、[2026-08-10版実施計画](docs/miku-project-zero-base-implementation-plan-v20260810.md)、[semantic contract v1](docs/miku-project-semantic-contract-v1.md)、[format and loss contract v1](docs/miku-project-format-and-loss-contract-v1.md)、[change contract v1](docs/miku-project-change-contract-v1.md)、[CLI contract v1](docs/miku-project-cli-contract-v1.md)、[CLI result and diagnostics contract v1](docs/miku-project-cli-result-contract-v1.md)、[runtime capability contract v1](docs/miku-project-runtime-capability-contract-v1.md)、[runtime manifest contract v1](docs/miku-project-runtime-manifest-contract-v1.md)、[conformance corpus v1](docs/miku-project-conformance-corpus-v1.md)、[human gate and next action contract v1](docs/miku-project-human-gate-and-next-action-contract-v1.md) を参照してください。WebとMCPは、この初期計画では後続検討です。
 
 ## 再利用 API
 
@@ -225,6 +225,19 @@ node bundle/miku-project.mjs export xml --in workbook.json --out project.xml
 
 - [docs/miku-project-zero-base-spec-v20260809.md](docs/miku-project-zero-base-spec-v20260809.md)
 - [docs/miku-project-zero-base-implementation-plan-v20260810.md](docs/miku-project-zero-base-implementation-plan-v20260810.md)
+- [docs/miku-project-semantic-contract-v1.md](docs/miku-project-semantic-contract-v1.md)
+- [docs/miku-project-semantic-fixture-catalog-v1.md](docs/miku-project-semantic-fixture-catalog-v1.md)
+- [docs/miku-project-format-and-loss-contract-v1.md](docs/miku-project-format-and-loss-contract-v1.md)
+- [docs/miku-project-change-contract-v1.md](docs/miku-project-change-contract-v1.md)
+- [docs/miku-project-cli-contract-v1.md](docs/miku-project-cli-contract-v1.md)
+- [docs/miku-project-cli-result-contract-v1.md](docs/miku-project-cli-result-contract-v1.md)
+- [docs/schemas/miku-project-artifacts-v1.schema.json](docs/schemas/miku-project-artifacts-v1.schema.json)
+- [docs/schemas/miku-project-cli-result-v1.schema.json](docs/schemas/miku-project-cli-result-v1.schema.json)
+- [docs/schemas/miku-project-cli-diagnostic-v1.schema.json](docs/schemas/miku-project-cli-diagnostic-v1.schema.json)
+- [docs/miku-project-runtime-capability-contract-v1.md](docs/miku-project-runtime-capability-contract-v1.md)
+- [docs/miku-project-runtime-manifest-contract-v1.md](docs/miku-project-runtime-manifest-contract-v1.md)
+- [docs/miku-project-conformance-corpus-v1.md](docs/miku-project-conformance-corpus-v1.md)
+- [docs/miku-project-human-gate-and-next-action-contract-v1.md](docs/miku-project-human-gate-and-next-action-contract-v1.md)
 - [docs/architecture.md](docs/architecture.md)
 - [docs/import-export-workflows.md](docs/import-export-workflows.md)
 - [docs/core-api-import-export-notes.md](docs/core-api-import-export-notes.md)

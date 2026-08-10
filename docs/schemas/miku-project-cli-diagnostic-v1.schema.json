@@ -1,0 +1,291 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:miku-project:schema:cli-diagnostic:v1",
+  "title": "miku-project CLI diagnostic v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "kind",
+    "schema_version",
+    "code",
+    "severity",
+    "category",
+    "message",
+    "location",
+    "retryability",
+    "details"
+  ],
+  "properties": {
+    "kind": { "const": "miku_project_cli_diagnostic" },
+    "schema_version": { "const": "1" },
+    "code": {
+      "enum": [
+        "cli.unknown-command",
+        "cli.unknown-option",
+        "cli.missing-option",
+        "cli.duplicate-option",
+        "cli.unexpected-argument",
+        "cli.invalid-option-value",
+        "cli.multiple-stdin-sources",
+        "io.input-not-found",
+        "io.input-type-invalid",
+        "io.input-symlink-rejected",
+        "io.input-read-failed",
+        "io.result-path-exists",
+        "io.result-path-unsafe",
+        "io.result-reservation-failed",
+        "text.invalid-utf8",
+        "json.invalid",
+        "json.bom-not-allowed",
+        "json.duplicate-key",
+        "artifact.kind-unsupported",
+        "artifact.schema-version-unsupported",
+        "xml.invalid",
+        "xml.encoding-unsupported",
+        "xml.profile-unsupported",
+        "semantic.invalid",
+        "semantic.unsupported",
+        "change.request-invalid",
+        "change.operation-unsupported",
+        "change.precondition-failed",
+        "change.no-op",
+        "change.binding-mismatch",
+        "change.approval-invalid",
+        "publication.destination-exists",
+        "publication.destination-unsafe",
+        "publication.capability-unsupported",
+        "publication.reservation-conflict",
+        "publication.write-failed",
+        "publication.postwrite-verification-failed",
+        "publication.cleanup-failed",
+        "publication.artifact-absent",
+        "publication.artifact-incomplete",
+        "publication.artifact-corrupt",
+        "publication.expected-plan-mismatch",
+        "runtime.manifest-invalid",
+        "runtime.artifact-digest-mismatch",
+        "runtime.capability-missing",
+        "internal.unexpected-error"
+      ]
+    },
+    "severity": { "const": "error" },
+    "category": {
+      "enum": [
+        "usage",
+        "io",
+        "encoding",
+        "json",
+        "xml",
+        "artifact",
+        "semantic",
+        "change",
+        "publication",
+        "runtime",
+        "internal"
+      ]
+    },
+    "message": {
+      "type": "string",
+      "minLength": 1
+    },
+    "location": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["scope", "path", "option", "artifact_role", "rule_id"],
+      "properties": {
+        "scope": {
+          "enum": [
+            "command",
+            "option",
+            "stdin",
+            "input",
+            "artifact",
+            "semantic",
+            "filesystem",
+            "runtime",
+            "internal"
+          ]
+        },
+        "path": {
+          "type": ["string", "null"]
+        },
+        "option": {
+          "type": ["string", "null"]
+        },
+        "artifact_role": {
+          "type": ["string", "null"]
+        },
+        "rule_id": {
+          "type": ["string", "null"]
+        }
+      }
+    },
+    "retryability": {
+      "enum": [
+        "after-input-change",
+        "after-environment-change",
+        "after-replan-and-approval",
+        "not-retryable"
+      ]
+    },
+    "details": {
+      "type": "object"
+    }
+  },
+  "allOf": [
+    {
+      "if": { "properties": { "code": { "pattern": "^cli\\." } } },
+      "then": { "properties": { "category": { "const": "usage" } } }
+    },
+    {
+      "if": { "properties": { "code": { "pattern": "^io\\." } } },
+      "then": { "properties": { "category": { "const": "io" } } }
+    },
+    {
+      "if": { "properties": { "code": { "pattern": "^text\\." } } },
+      "then": { "properties": { "category": { "const": "encoding" } } }
+    },
+    {
+      "if": { "properties": { "code": { "pattern": "^json\\." } } },
+      "then": { "properties": { "category": { "const": "json" } } }
+    },
+    {
+      "if": { "properties": { "code": { "pattern": "^artifact\\." } } },
+      "then": { "properties": { "category": { "const": "artifact" } } }
+    },
+    {
+      "if": { "properties": { "code": { "pattern": "^xml\\." } } },
+      "then": { "properties": { "category": { "const": "xml" } } }
+    },
+    {
+      "if": { "properties": { "code": { "pattern": "^semantic\\." } } },
+      "then": { "properties": { "category": { "const": "semantic" } } }
+    },
+    {
+      "if": { "properties": { "code": { "pattern": "^change\\." } } },
+      "then": { "properties": { "category": { "const": "change" } } }
+    },
+    {
+      "if": { "properties": { "code": { "pattern": "^publication\\." } } },
+      "then": { "properties": { "category": { "const": "publication" } } }
+    },
+    {
+      "if": { "properties": { "code": { "pattern": "^runtime\\." } } },
+      "then": { "properties": { "category": { "const": "runtime" } } }
+    },
+    {
+      "if": { "properties": { "code": { "pattern": "^internal\\." } } },
+      "then": { "properties": { "category": { "const": "internal" } } }
+    },
+    {
+      "if": {
+        "properties": {
+          "code": {
+            "enum": [
+              "cli.unknown-command",
+              "cli.unknown-option",
+              "cli.missing-option",
+              "cli.duplicate-option",
+              "cli.unexpected-argument",
+              "cli.invalid-option-value",
+              "cli.multiple-stdin-sources",
+              "io.input-not-found",
+              "io.input-type-invalid",
+              "io.input-symlink-rejected",
+              "io.result-path-exists",
+              "io.result-path-unsafe",
+              "text.invalid-utf8",
+              "json.invalid",
+              "json.bom-not-allowed",
+              "json.duplicate-key",
+              "artifact.kind-unsupported",
+              "artifact.schema-version-unsupported",
+              "xml.invalid",
+              "xml.encoding-unsupported",
+              "xml.profile-unsupported",
+              "semantic.invalid",
+              "semantic.unsupported",
+              "change.request-invalid",
+              "change.operation-unsupported",
+              "change.no-op",
+              "publication.destination-unsafe"
+            ]
+          }
+        },
+        "required": ["code"]
+      },
+      "then": {
+        "properties": {
+          "retryability": { "const": "after-input-change" }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "code": {
+            "enum": [
+              "io.input-read-failed",
+              "io.result-reservation-failed",
+              "publication.capability-unsupported",
+              "publication.write-failed",
+              "runtime.capability-missing"
+            ]
+          }
+        },
+        "required": ["code"]
+      },
+      "then": {
+        "properties": {
+          "retryability": { "const": "after-environment-change" }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "code": {
+            "enum": [
+              "change.precondition-failed",
+              "change.binding-mismatch",
+              "change.approval-invalid",
+              "publication.destination-exists",
+              "publication.reservation-conflict",
+              "publication.expected-plan-mismatch"
+            ]
+          }
+        },
+        "required": ["code"]
+      },
+      "then": {
+        "properties": {
+          "retryability": { "const": "after-replan-and-approval" }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "code": {
+            "enum": [
+              "publication.postwrite-verification-failed",
+              "publication.cleanup-failed",
+              "publication.artifact-absent",
+              "publication.artifact-incomplete",
+              "publication.artifact-corrupt",
+              "runtime.manifest-invalid",
+              "runtime.artifact-digest-mismatch",
+              "internal.unexpected-error"
+            ]
+          }
+        },
+        "required": ["code"]
+      },
+      "then": {
+        "properties": {
+          "retryability": { "const": "not-retryable" }
+        }
+      }
+    }
+  ]
+}

@@ -1,0 +1,116 @@
+{
+  "kind": "miku_project_cli_result",
+  "schema_version": "1",
+  "contract": {
+    "product": "miku-project",
+    "product_contract_version": "1",
+    "artifact_schema": "miku_project_artifacts/v1",
+    "result_schema": "miku_project_cli_result/v1",
+    "diagnostic_schema": "miku_project_cli_diagnostic/v1",
+    "diagnostic_catalog_version": "1"
+  },
+  "runtime": {
+    "binding_status": "verified",
+    "family": "node",
+    "version": "1.0.0",
+    "artifact_digest": {
+      "algorithm": "sha-256",
+      "value": "0000000000000000000000000000000000000000000000000000000000000000"
+    },
+    "manifest_digest": {
+      "algorithm": "sha-256",
+      "value": "7777777777777777777777777777777777777777777777777777777777777777"
+    },
+    "capability_profile": "miku-project-cli-core/v1",
+    "fixture_suite_version": "1"
+  },
+  "command": "inspect",
+  "side_effect_class": "read-only",
+  "status": "succeeded",
+  "exit_code": 0,
+  "io": {
+    "stdin_option": "--project",
+    "inputs": [
+      {
+        "role": "project",
+        "option": "--project",
+        "source": "stdin",
+        "path": null,
+        "digest": {
+          "algorithm": "sha-256",
+          "value": "c550ad78a0f477412b2182520732ff47a64c38d2e1f37d925641b098a45305c4"
+        }
+      }
+    ],
+    "result": { "target": "stdout", "path": null },
+    "destination": null
+  },
+  "effects": {
+    "project_input_modified": false,
+    "project_artifact": null,
+    "cleanup": { "status": "not-needed", "path": null }
+  },
+  "observations": {
+    "normalizations": [],
+    "losses": [],
+    "unsupported": []
+  },
+  "next_action": {
+    "action": "complete",
+    "command": null,
+    "source_retryability": null
+  },
+  "diagnostics": [],
+  "data": {
+    "projection": {
+      "kind": "miku_project_projection",
+      "schema_version": "1",
+      "semantic_contract_version": "1",
+      "purpose": "project_overview",
+      "source_state_digest": {
+        "algorithm": "sha-256",
+        "value": "a98f0c8b560382234572a61f360c9e96911bc75fc1d57b79968d6e60b5d751d0"
+      },
+      "scope": {
+        "target_task_uid": null,
+        "included_domains": ["project", "tasks", "dependencies"],
+        "omitted_domains": ["task_edit_details", "raw_external_artifact", "unsupported_data"]
+      },
+      "project": {
+        "name": "Dependency Project",
+        "start": "2026-03-16T09:00:00",
+        "finish": "2026-03-19T18:00:00",
+        "current_date": "2026-03-16T09:00:00",
+        "schedule_from_start": true,
+        "calendar_uid": "1"
+      },
+      "tasks": [
+        {
+          "uid": "1",
+          "name": "Prepare",
+          "parent_uid": null,
+          "order": 0,
+          "summary": false,
+          "percent_complete": 100
+        },
+        {
+          "uid": "2",
+          "name": "Execute",
+          "parent_uid": null,
+          "order": 1,
+          "summary": false,
+          "percent_complete": 0
+        }
+      ],
+      "dependencies": [
+        {
+          "predecessor_uid": "1",
+          "successor_uid": "2",
+          "type": "FS",
+          "lag": "PT0H0M0S"
+        }
+      ],
+      "capability": { "unsupported_data": [] }
+    }
+  }
+}

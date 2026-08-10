@@ -13,7 +13,7 @@ audience:
   - developer
   - agent
 created: 2026-08-10
-updated: 2026-08-10
+updated: 2026-08-11
 ---
 
 # miku-project ゼロベース v1 利用シナリオ
@@ -22,7 +22,7 @@ updated: 2026-08-10
 
 この文書は、[ゼロベース再設計仕様](miku-project-zero-base-spec-v20260809.md) と [実施計画](miku-project-zero-base-implementation-plan-v20260810.md) の `Gate G0` に必要な利用シナリオである。ここで選ぶのはv1で実証する利用者ジョブであり、MS Project XML、現行 `ProjectModel`、workbook JSONのいずれかを正本と決めることではない。形式、保持意味、CLIの最終語彙は後続の `G1`〜`G3` で確定する。
 
-`G0` は 2026-08-10 に承認された。承認範囲はR1/C1、AI Agentをprimary actorとする同一CLI契約、ならびに本稿の非目標である。次の `G1` では、この承認範囲を超えずに最小semantic contractを定義する。
+`G0` は 2026-08-10 に承認された。承認範囲はR1/C1、AI Agentをprimary actorとする同一CLI契約、ならびに本稿の非目標である。続く`G1`と`G2`も同日に通過し、R1/C1の最小semantic contractは [semantic contract v1](miku-project-semantic-contract-v1.md) と [semantic fixture catalog v1](miku-project-semantic-fixture-catalog-v1.md)、外部形式と変更安全性は [format and loss contract v1](miku-project-format-and-loss-contract-v1.md) と [change contract v1](miku-project-change-contract-v1.md) に確定した。具体的なcommand mappingは、2026-08-11にGate G3で承認された [CLI contract v1](miku-project-cli-contract-v1.md) に従う。
 
 本稿の提案は、次の二つをv1のend-to-end scenarioとして採用することである。
 
@@ -40,22 +40,22 @@ R1/C1を抽象的な要望に留めないため、最初の共通fixture候補�
 | scenario | 入力 | 具体的な要求 | 成功時に観測できる結果 |
 | --- | --- | --- | --- |
 | R1 | `testdata/dependency.xml` | 全taskを対象に、構造とdependencyを理解するためのProjectionを得る | `Prepare` と `Execute`、`Prepare → Execute` のdependency、resource/assignmentの取扱い、対応可否・diagnosticsが構造化して分かる |
-| C1 | `testdata/dependency.xml` と変更要求 | `UID 2` の進捗を `0` から `50` へ変更する。対象identity、現値、許可operationをpreconditionにする | diffにはこの進捗変更だけが示され、dependency、resource、assignment、`UID 1`は保持される。元のXMLは変更せず、承認後に別の次状態artifactを生成する |
+| C1 | `testdata/dependency.xml` と変更要求 | leaf taskである`UID 2`の進捗を `0` から `50` へ変更する。対象identity、現値、許可operationをpreconditionにする | diffにはこの進捗変更だけが示され、dependency、resource、assignment、`UID 1`は保持される。元のXMLは変更せず、承認後に別の次状態artifactを生成する |
 
 この例でのPatch表現の具体的なJSON schemaや外部出力のbyte列は、まだ決めない。G0で固定するのは「どの意味を観測し、どの意味だけを変更し、何を保持すべきか」である。`G1`〜`G3`で、identity、precondition、診断、出力形式、semantic equivalenceを契約化する。
 
-最初のC1で許可する意味変更は、taskを安定したUIDで選んだ `percentComplete` の更新だけとする。dependency、resource、assignmentはR1で観測し、C1で保持を検証する対象であり、v1の編集面には含めない。XMLの成功判定はbyte列の一致ではなく、この文書で指定した意味が保持・変更されたこととする。
+最初のC1で許可する意味変更は、leaf taskを安定したUIDで選んだ `percentComplete` の更新だけとする。dependency、resource、assignmentはR1で観測し、C1で保持を検証する対象であり、v1の編集面には含めない。XMLの成功判定はbyte列の一致ではなく、この文書で指定した意味が保持・変更されたこととする。
 
 ## v1共通の受入原則
 
-v1では、人、shell script、CI、AI Agentが同じCLI契約を利用する。Agent Skillsはこの契約を安全な順序で呼び出すworkflow adapterであり、ドメイン変換やPatch適用を再実装しない。
+v1では、人、shell script、CI、AI Agentが同じCLI契約を利用する。Agent Skillsはこの契約を安全な順序で呼び出すworkflow adapterであり、ドメイン変換やchange request適用を再実装しない。
 
-- CLIは非対話実行を基本とし、入力、出力、artifactの役割、上書き許可を明示する
+- CLIは非対話実行を基本とし、入力、出力、artifactの役割を明示する。C1のv1出力は既存pathを置換しない新規artifact set directoryとする
 - result、diagnostics、exit statusは機械可読かつversioned schemaで取得できる
 - Agentは人間向けメッセージの文字列解析ではなく、status、diagnostic code、severity、retryability、artifact metadataから次の行動を判断できる
 - 読み取りと検証は入力artifactを変更しない
-- artifact生成は入力artifactを変更しない。既存出力の置換には明示許可を要する
-- プロジェクトの意味を変更する操作は、`diff`を示した後のhuman gateを通過しなければ実行しない
+- artifact生成は入力artifactを変更しない。C1のv1は既存出力の置換を許可しない
+- プロジェクトの意味を変更する操作は、semantic diffとoutput planを示した後のhuman gateを通過しなければ実行しない
 - 失敗、validation error、unsafe overwriteでは、出力を公開せず、入力を変更しない
 
 ## Scenario R1: 読み取り・検証・目的別Projection
@@ -69,26 +69,24 @@ v1では、人、shell script、CI、AI Agentが同じCLI契約を利用する�
 | actor | 入力 | 目的 |
 | --- | --- | --- |
 | 人またはAI Agent | 外部プロジェクトartifact | 内容と対応可能範囲を知る |
-| CLI | 外部artifact、明示した入力形式または検出規則 | `inspect` と `validate` を行う |
-| CLI | 検証可能な意味表現とProjection要求 | 用途を限定したProjectionを生成する |
+| CLI | 外部artifact、明示した入力形式 | `validate`を行う |
+| CLI | validな外部artifact、Projection purposeとscope | `inspect`で用途を限定したProjectionを生成する |
 
-最初のfixtureは、現行実装に読み書き資産がある小規模なMS Project XMLを候補とする。ただし、これはv1を実証するための外部入力例であり、XMLを正本とする決定ではない。
+最初のfixtureは、Gate G2で唯一の外部read/write profileに固定した`miku-project-ms-project-xml-subset/v1`の小規模なXMLとする。XMLは永続的なinternal semantic stateではなく、外部project artifactとして扱う。
 
 ### 操作の流れ
 
 ```text
 外部artifact
-  → inspect
   → validate
-  → Projection生成
+  → inspect（project_overviewまたはtask_change_context）
   → 人またはAI Agentが理解・判断
 ```
 
 | 区分 | 操作 | 入力 | 出力 | 意味上の副作用 |
 | --- | --- | --- | --- | --- |
-| read-only | `inspect` | 外部artifact | 形式、内容概要、能力、diagnostics | なし |
-| read-only | `validate` | 解釈済みの意味表現 | valid/invalid、diagnostics | なし |
-| artifact生成 | Projection生成 | 意味表現、目的、範囲 | AIまたは人向けProjection | 入力を変更しない |
+| read-only | `validate` | 外部artifact | valid/invalid、diagnostics | なし |
+| read-only | `inspect` | validな外部artifact、purpose、scope | AIまたは人向けProjection | 入力を変更しない |
 
 ### 成功条件
 
@@ -111,7 +109,7 @@ v1では、人、shell script、CI、AI Agentが同じCLI契約を利用する�
 - Web UIによる編集・可視化
 - XLSX、SVG、Markdownなどの派生成果物をv1の必須出力にすること
 
-## Scenario C1: Patchによる安全な局所変更往復
+## Scenario C1: change requestによる安全な局所変更往復
 
 ### 利用者ジョブ
 
@@ -122,55 +120,54 @@ v1では、人、shell script、CI、AI Agentが同じCLI契約を利用する�
 | actor | 入力 | 目的 |
 | --- | --- | --- |
 | AI Agentまたは人 | R1のProjection、変更意図 | 許可された変更要求を作る |
-| CLI | 現在の意味表現、変更要求 | precondition、許可operation、不変条件を検証する |
-| 人 | semantic diff | 意味変更を承認または中止する |
-| CLI | 承認済み変更要求 | 次の状態と外部artifactを生成する |
+| CLI | 現在のproject artifact、変更要求、未使用destination | precondition、許可operation、不変条件、出力可否を検証する |
+| 人 | semantic diff、output plan | 意味変更、normalization、公開先を承認または中止する |
+| CLI | 現在のproject artifact、変更要求、diff、output plan、approval | 次の状態を含むartifact setを新規directoryとして生成する |
 
-変更要求は中間表現全体の置換ではなく、許可されたoperationの集合とする。最初のC1で許可するoperationは、taskの`percentComplete`を更新する一種類だけである。追加、削除、移動、dependency変更はhuman gateが必要になる操作の例ではあるが、v1の操作候補には含めない。具体的な表現、selector、preconditionは `G2` で決める。
+変更要求は中間表現全体の置換ではなく、許可されたoperationの集合とする。最初のC1で許可するoperationは、leaf taskの`percentComplete`を現在値とは異なる整数へ更新する一種類だけである。同じ値への更新は意味変更ではないためinvalidとし、human gateへ進めない。追加、削除、移動、dependency変更はhuman gateが必要になる操作の例ではあるが、v1の操作候補には含めない。具体的な表現、selector、precondition、output plan、approval bindingは、`Gate G2`で承認された [change contract v1](miku-project-change-contract-v1.md) に定義する。
 
 ### 操作の流れ
 
 ```text
 現在のartifact + 変更要求
-  → 変更要求のvalidate
-  → semantic diff
-  → human gate
-  → apply
-  → post-apply validate
-  → 次の外部artifactをexport
+  → plan-change（変更要求のvalidate、semantic diff、XML preflight）
+  → semantic diff + output plan
+  → human gate（semantic diff + output plan）
+  → approval artifact
+  → apply-change（再検証、適用、post-apply validate、論理publish）
+  → verify-artifact
 ```
 
 | 区分 | 操作 | 入力 | 出力 | 意味上の副作用 |
 | --- | --- | --- | --- | --- |
-| read-only | 変更要求の`validate` | 現在の状態、変更要求 | valid/invalid、diagnostics | なし |
-| read-only | `diff` | 現在の状態、適用予定の状態 | semantic diff、loss/provenance | なし |
-| 意味変更 | `apply` | 現在の状態、承認済み変更要求 | 次の状態 | プロジェクト意味を変更する |
-| artifact生成 | `export` | 次の状態、明示した出力形式 | 次の外部artifact | 入力を変更しない |
+| exchange artifact生成 | `plan-change` | 現在のartifact、変更要求、未使用destination | semantic diff、output plan | final出力を公開しない |
+| 意味変更 + project artifact生成 | `apply-change` | 現在のartifact、変更要求、diff、output plan、approval | committed artifact set | 入力・既存出力を変更しない |
+| read-only | `verify-artifact` | artifact set directory | publication状態、整合性、provenance | なし |
 
 ### human gate
 
-`apply`の前に、少なくとも次を人が確認できるようにする。
+`apply-change`の前に、少なくとも次を人が確認できるようにする。
 
 - 変更対象のidentityと変更前後の値
 - 追加、削除、移動、依存変更などのoperation種別
 - validation warning、normalization、loss、unsupported data
 - 変更が許可範囲を超えないこと
-- 生成する出力artifactの場所と、既存ファイルを置換する場合の明示許可
+- 生成するartifact set directoryの場所と、そのpathがまだ存在しないこと
 
-CLIは標準では対話的な確認を要求しない。Agent Skillsまたは呼び出し側がhuman gateを実現し、CLIへは承認済みであることと明示的な出力許可を渡す契約にする。
+CLIは標準では対話的な確認を要求せず、人のidentityも認証しない。Agent Skillsまたは呼び出し側がsemantic diffとoutput planを人へ提示してhuman gateを実現し、CLIへは両artifactのdigestへ束縛したapprovalを渡す契約にする。
 
 ### 成功条件
 
-- Patchが対象、操作、precondition、許可範囲を満たすか構造化して検証できる
-- `diff`が変更をsemanticな単位で示し、人が承認可否を判断できる
-- 承認後だけ次の状態と外部artifactを生成する
-- apply後に不変条件を再検証し、入力artifactを上書きせずに出力する
+- change requestが対象、操作、precondition、許可範囲を満たすか構造化して検証できる
+- `plan-change`が変更をsemanticな単位で示すdiffを返し、人が承認可否を判断できる
+- 承認後だけ次の状態を含むartifact setを新規directoryとして生成する
+- `apply-change`内で適用後の不変条件を再検証し、入力artifactを上書きせずに出力する
 - Agentは構造化結果だけで、`修正依頼`、`人へ承認依頼`、`適用`、`中止`を選べる
 
 ### 失敗時動作
 
-- 不正Patch、precondition failure、validation failure、未対応operationでは、`apply`とexportを行わない
-- 出力エラーまたはunsafe overwriteでは、部分成果物を公開しない
+- 不正change request、precondition failure、validation failure、未対応operationでは、`apply-change`を行わない
+- 出力エラー、既存destination、unsafe pathでは、committed artifact setを公開しない。marker作成前にcleanupできなかったdirectoryはincompleteとしてdiagnosticsへ示し、成功artifactとして扱わない
 - 人が中止した場合は、変更要求とdiffを監査用artifactとして残すかを呼び出し側の明示方針で決める。元のプロジェクトartifactは変更しない
 
 ### 非目標
@@ -187,7 +184,7 @@ CLIは標準では対話的な確認を要求しない。Agent Skillsまたは�
 1. v1はR1とC1の二つのscenarioを実証する
 2. 最初の外部入力fixtureには小規模なMS Project XMLを使うが、正本形式は未決定とする
 3. AIとの受け渡しは、外部形式そのものではなく目的別Projectionと変更要求を使う
-4. `apply`前のhuman gate、構造化diagnostics、明示出力、失敗時非破壊をv1の必須条件とする
+4. `apply-change`前のhuman gate、構造化diagnostics、明示出力、失敗時非破壊をv1の必須条件とする
 5. XLSX、帳票、SVG、Web、MCP、広範なドメイン拡張はv1の必須範囲から外す
 
-承認後、`G1`ではこの二つのscenarioに必要な意味と不変条件だけを最小scopeとして定義する。
+項目2はG0時点の判断記録である。その後Gate G2で、`miku-project-ms-project-xml-subset/v1`をv1唯一の外部read/write profileに固定した。internal semantic stateは永続的な外部正本にしない。

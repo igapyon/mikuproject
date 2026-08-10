@@ -1,0 +1,1796 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:miku-project:schema:cli-result:v1",
+  "title": "miku-project CLI result v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "kind",
+    "schema_version",
+    "contract",
+    "runtime",
+    "command",
+    "side_effect_class",
+    "status",
+    "exit_code",
+    "io",
+    "effects",
+    "observations",
+    "next_action",
+    "diagnostics",
+    "data"
+  ],
+  "properties": {
+    "kind": { "const": "miku_project_cli_result" },
+    "schema_version": { "const": "1" },
+    "contract": { "$ref": "#/$defs/contract" },
+    "runtime": { "$ref": "#/$defs/runtime" },
+    "command": {
+      "enum": [
+        "cli",
+        "inspect",
+        "validate",
+        "plan-change",
+        "apply-change",
+        "verify-artifact"
+      ]
+    },
+    "side_effect_class": {
+      "enum": [
+        "none",
+        "read-only",
+        "exchange-artifact-generation",
+        "meaning-change-and-project-artifact-generation"
+      ]
+    },
+    "status": {
+      "enum": ["succeeded", "rejected", "usage-error", "runtime-error"]
+    },
+    "exit_code": {
+      "enum": [0, 1, 2, 3]
+    },
+    "io": { "$ref": "#/$defs/io" },
+    "effects": { "$ref": "#/$defs/effects" },
+    "observations": { "$ref": "#/$defs/observations" },
+    "next_action": { "$ref": "#/$defs/nextAction" },
+    "diagnostics": {
+      "type": "array",
+      "items": {
+        "$ref": "urn:miku-project:schema:cli-diagnostic:v1"
+      }
+    },
+    "data": {
+      "oneOf": [
+        { "type": "null" },
+        { "$ref": "#/$defs/data" }
+      ]
+    }
+  },
+  "allOf": [
+    {
+      "if": { "properties": { "status": { "const": "succeeded" } } },
+      "then": {
+        "properties": {
+          "exit_code": { "const": 0 },
+          "diagnostics": { "maxItems": 0 }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "status": { "const": "succeeded" },
+          "command": { "const": "plan-change" }
+        },
+        "required": ["status", "command"]
+      },
+      "then": {
+        "properties": {
+          "next_action": {
+            "properties": {
+              "action": { "const": "request-human-approval" },
+              "command": { "type": "null" },
+              "source_retryability": { "type": "null" }
+            }
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "command": { "const": "verify-artifact" },
+          "status": { "const": "rejected" },
+          "data": {
+            "properties": {
+              "verification": {
+                "properties": { "publication_state": { "const": "committed" } },
+                "required": ["publication_state"]
+              }
+            },
+            "required": ["verification"]
+          }
+        },
+        "required": ["command", "status", "data"]
+      },
+      "then": {
+        "properties": {
+          "io": {
+            "properties": {
+              "inputs": {
+                "contains": {
+                  "properties": { "role": { "const": "expected_plan_result" } },
+                  "required": ["role"]
+                }
+              }
+            }
+          },
+          "diagnostics": {
+            "contains": {
+              "properties": { "code": { "const": "publication.expected-plan-mismatch" } },
+              "required": ["code"]
+            }
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "status": { "const": "succeeded" },
+          "command": { "const": "apply-change" }
+        },
+        "required": ["status", "command"]
+      },
+      "then": {
+        "properties": {
+          "next_action": {
+            "properties": {
+              "action": { "const": "verify-artifact" },
+              "command": { "const": "verify-artifact" },
+              "source_retryability": { "type": "null" }
+            }
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "status": { "const": "succeeded" },
+          "command": {
+            "not": { "enum": ["plan-change", "apply-change"] }
+          }
+        },
+        "required": ["status", "command"]
+      },
+      "then": {
+        "properties": {
+          "next_action": {
+            "properties": {
+              "action": { "const": "complete" },
+              "command": { "type": "null" },
+              "source_retryability": { "type": "null" }
+            }
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "status": {
+            "enum": ["rejected", "usage-error", "runtime-error"]
+          }
+        },
+        "required": ["status"]
+      },
+      "then": {
+        "properties": {
+          "next_action": {
+            "properties": {
+              "action": {
+                "not": {
+                  "enum": ["complete", "request-human-approval"]
+                }
+              },
+              "source_retryability": { "type": "string" }
+            }
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "status": { "enum": ["rejected", "usage-error", "runtime-error"] },
+          "diagnostics": {
+            "contains": {
+              "properties": { "retryability": { "const": "not-retryable" } },
+              "required": ["retryability"]
+            }
+          }
+        },
+        "required": ["status", "diagnostics"]
+      },
+      "then": {
+        "properties": {
+          "next_action": {
+            "properties": {
+              "action": { "const": "abort-and-investigate" },
+              "command": { "type": "null" },
+              "source_retryability": { "const": "not-retryable" }
+            }
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "status": { "enum": ["rejected", "usage-error", "runtime-error"] },
+          "diagnostics": {
+            "not": {
+              "contains": {
+                "properties": { "retryability": { "const": "not-retryable" } },
+                "required": ["retryability"]
+              }
+            },
+            "contains": {
+              "properties": { "retryability": { "const": "after-replan-and-approval" } },
+              "required": ["retryability"]
+            }
+          }
+        },
+        "required": ["status", "diagnostics"]
+      },
+      "then": {
+        "properties": {
+          "next_action": {
+            "properties": {
+              "action": { "const": "replan-and-request-human-approval" },
+              "command": { "const": "plan-change" },
+              "source_retryability": { "const": "after-replan-and-approval" }
+            }
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "status": { "enum": ["rejected", "usage-error", "runtime-error"] },
+          "diagnostics": {
+            "not": {
+              "contains": {
+                "properties": {
+                  "retryability": {
+                    "enum": ["not-retryable", "after-replan-and-approval"]
+                  }
+                },
+                "required": ["retryability"]
+              }
+            },
+            "contains": {
+              "properties": { "retryability": { "const": "after-environment-change" } },
+              "required": ["retryability"]
+            }
+          }
+        },
+        "required": ["status", "diagnostics"]
+      },
+      "then": {
+        "properties": {
+          "next_action": {
+            "properties": {
+              "action": { "const": "repair-environment" },
+              "command": { "type": "null" },
+              "source_retryability": { "const": "after-environment-change" }
+            }
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "status": { "enum": ["rejected", "usage-error", "runtime-error"] },
+          "diagnostics": {
+            "items": {
+              "properties": { "retryability": { "const": "after-input-change" } },
+              "required": ["retryability"]
+            }
+          }
+        },
+        "required": ["status", "diagnostics"]
+      },
+      "then": {
+        "properties": {
+          "next_action": {
+            "properties": {
+              "action": { "const": "revise-invocation-or-input" },
+              "command": { "type": "null" },
+              "source_retryability": { "const": "after-input-change" }
+            }
+          }
+        }
+      }
+    },
+    {
+      "if": { "properties": { "status": { "const": "rejected" } } },
+      "then": {
+        "properties": {
+          "exit_code": { "const": 1 },
+          "diagnostics": {
+            "minItems": 1,
+            "items": {
+              "allOf": [
+                { "$ref": "urn:miku-project:schema:cli-diagnostic:v1" },
+                {
+                  "properties": {
+                    "code": {
+                      "enum": [
+                        "io.input-not-found",
+                        "io.input-type-invalid",
+                        "io.input-symlink-rejected",
+                        "io.result-path-exists",
+                        "io.result-path-unsafe",
+                        "text.invalid-utf8",
+                        "json.invalid",
+                        "json.bom-not-allowed",
+                        "json.duplicate-key",
+                        "artifact.kind-unsupported",
+                        "artifact.schema-version-unsupported",
+                        "xml.invalid",
+                        "xml.encoding-unsupported",
+                        "xml.profile-unsupported",
+                        "semantic.invalid",
+                        "semantic.unsupported",
+                        "change.request-invalid",
+                        "change.operation-unsupported",
+                        "change.precondition-failed",
+                        "change.no-op",
+                        "change.binding-mismatch",
+                        "change.approval-invalid",
+                        "publication.destination-exists",
+                        "publication.destination-unsafe",
+                        "publication.capability-unsupported",
+                        "publication.reservation-conflict",
+                        "publication.artifact-absent",
+                        "publication.artifact-incomplete",
+                        "publication.artifact-corrupt",
+                        "publication.expected-plan-mismatch"
+                      ]
+                    }
+                  }
+                }
+              ]
+            }
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "status": { "enum": ["succeeded", "rejected"] }
+        },
+        "required": ["status"]
+      },
+      "then": {
+        "properties": {
+          "runtime": {
+            "properties": {
+              "binding_status": { "const": "verified" }
+            }
+          }
+        }
+      }
+    },
+    {
+      "if": { "properties": { "status": { "const": "usage-error" } } },
+      "then": {
+        "properties": {
+          "exit_code": { "const": 2 },
+          "diagnostics": {
+            "minItems": 1,
+            "items": {
+              "allOf": [
+                { "$ref": "urn:miku-project:schema:cli-diagnostic:v1" },
+                {
+                  "properties": {
+                    "code": {
+                      "enum": [
+                        "cli.unknown-command",
+                        "cli.unknown-option",
+                        "cli.missing-option",
+                        "cli.duplicate-option",
+                        "cli.unexpected-argument",
+                        "cli.invalid-option-value",
+                        "cli.multiple-stdin-sources"
+                      ]
+                    }
+                  }
+                }
+              ]
+            }
+          }
+        }
+      }
+    },
+    {
+      "if": { "properties": { "status": { "const": "runtime-error" } } },
+      "then": {
+        "properties": {
+          "exit_code": { "const": 3 },
+          "diagnostics": {
+            "minItems": 1,
+            "items": {
+              "allOf": [
+                { "$ref": "urn:miku-project:schema:cli-diagnostic:v1" },
+                {
+                  "properties": {
+                    "code": {
+                      "enum": [
+                        "io.input-read-failed",
+                        "io.result-reservation-failed",
+                        "publication.write-failed",
+                        "publication.postwrite-verification-failed",
+                        "publication.cleanup-failed",
+                        "runtime.manifest-invalid",
+                        "runtime.artifact-digest-mismatch",
+                        "runtime.capability-missing",
+                        "internal.unexpected-error"
+                      ]
+                    }
+                  }
+                }
+              ]
+            }
+          }
+        }
+      }
+    },
+    {
+      "if": { "properties": { "status": { "const": "succeeded" } } },
+      "then": {
+        "properties": {
+          "observations": {
+            "properties": {
+              "losses": { "maxItems": 0 },
+              "unsupported": { "maxItems": 0 }
+            }
+          }
+        }
+      }
+    },
+    {
+      "if": { "properties": { "command": { "const": "cli" } } },
+      "then": {
+        "properties": {
+          "side_effect_class": { "const": "none" },
+          "status": { "enum": ["usage-error", "runtime-error"] },
+          "data": { "type": "null" },
+          "io": {
+            "properties": {
+              "inputs": { "maxItems": 0 },
+              "destination": { "type": "null" }
+            }
+          },
+          "effects": {
+            "properties": {
+              "project_artifact": { "type": "null" },
+              "cleanup": { "const": { "status": "not-needed", "path": null } }
+            }
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "command": { "enum": ["inspect", "validate", "verify-artifact"] }
+        }
+      },
+      "then": {
+        "properties": {
+          "side_effect_class": { "const": "read-only" },
+          "io": { "properties": { "destination": { "type": "null" } } },
+          "effects": {
+            "properties": {
+              "cleanup": { "const": { "status": "not-needed", "path": null } },
+              "project_artifact": {
+                "oneOf": [
+                  { "type": "null" },
+                  {
+                    "type": "object",
+                    "properties": { "created_by_invocation": { "const": false } }
+                  }
+                ]
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "command": { "const": "inspect" },
+          "status": { "enum": ["rejected", "runtime-error"] }
+        }
+      },
+      "then": {
+        "properties": { "data": { "type": "null" } }
+      }
+    },
+    {
+      "if": { "properties": { "command": { "const": "plan-change" } } },
+      "then": {
+        "properties": {
+          "side_effect_class": { "const": "exchange-artifact-generation" },
+          "effects": {
+            "properties": {
+              "project_artifact": { "type": "null" },
+              "cleanup": { "const": { "status": "not-needed", "path": null } }
+            }
+          }
+        }
+      }
+    },
+    {
+      "if": { "properties": { "command": { "const": "apply-change" } } },
+      "then": {
+        "properties": {
+          "side_effect_class": {
+            "const": "meaning-change-and-project-artifact-generation"
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "command": { "const": "inspect" },
+          "status": { "const": "succeeded" }
+        }
+      },
+      "then": {
+        "properties": {
+          "data": {
+            "type": "object",
+            "required": ["projection"],
+            "minProperties": 1,
+            "maxProperties": 1
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "command": { "const": "validate" },
+          "status": { "const": "runtime-error" }
+        }
+      },
+      "then": {
+        "properties": { "data": { "type": "null" } }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "command": { "const": "validate" },
+          "status": { "enum": ["succeeded", "rejected"] }
+        }
+      },
+      "then": {
+        "properties": {
+          "data": {
+            "type": "object",
+            "required": ["validation"],
+            "minProperties": 1,
+            "maxProperties": 1
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "command": { "const": "validate" },
+          "status": { "const": "succeeded" }
+        }
+      },
+      "then": {
+        "properties": {
+          "data": {
+            "properties": {
+              "validation": {
+                "properties": {
+                  "format_profile": { "type": "string", "minLength": 1 },
+                  "state_digest": { "$ref": "#/$defs/digest" }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "command": { "const": "plan-change" },
+          "status": { "const": "rejected" }
+        }
+      },
+      "then": {
+        "properties": {
+          "data": {
+            "oneOf": [
+              { "type": "null" },
+              {
+                "type": "object",
+                "required": ["validation"],
+                "minProperties": 1,
+                "maxProperties": 1
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "command": { "const": "plan-change" },
+          "status": { "const": "runtime-error" }
+        }
+      },
+      "then": {
+        "properties": { "data": { "type": "null" } }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "command": { "const": "validate" },
+          "status": { "const": "succeeded" }
+        }
+      },
+      "then": {
+        "properties": {
+          "data": {
+            "properties": {
+              "validation": {
+                "properties": { "valid": { "const": true } }
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "command": { "const": "apply-change" },
+          "status": { "enum": ["rejected", "runtime-error"] }
+        }
+      },
+      "then": {
+        "properties": { "data": { "type": "null" } }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "command": { "const": "apply-change" },
+          "status": { "const": "rejected" }
+        },
+        "required": ["command", "status"]
+      },
+      "then": {
+        "properties": {
+          "effects": {
+            "properties": {
+              "project_artifact": { "type": "null" },
+              "cleanup": { "const": { "status": "not-needed", "path": null } }
+            }
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "command": { "const": "apply-change" },
+          "status": { "const": "runtime-error" }
+        },
+        "required": ["command", "status"]
+      },
+      "then": {
+        "properties": {
+          "effects": {
+            "properties": {
+              "project_artifact": {
+                "oneOf": [
+                  { "type": "null" },
+                  {
+                    "type": "object",
+                    "properties": {
+                      "publication_state": {
+                        "enum": ["absent", "incomplete", "corrupt", null]
+                      }
+                    }
+                  }
+                ]
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "command": { "const": "validate" },
+          "status": { "const": "rejected" }
+        }
+      },
+      "then": {
+        "properties": {
+          "data": {
+            "properties": {
+              "validation": {
+                "properties": { "valid": { "const": false } }
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "command": { "const": "apply-change" },
+          "status": { "const": "succeeded" }
+        }
+      },
+      "then": {
+        "properties": {
+          "effects": {
+            "properties": {
+              "project_artifact": {
+                "type": "object",
+                "properties": {
+                  "publication_state": { "const": "committed" },
+                  "created_by_invocation": { "const": true }
+                }
+              },
+              "cleanup": {
+                "properties": {
+                  "status": { "const": "prohibited-after-commit" }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "command": { "const": "verify-artifact" },
+          "status": { "const": "runtime-error" }
+        }
+      },
+      "then": {
+        "properties": {
+          "data": {
+            "oneOf": [
+              { "type": "null" },
+              {
+                "type": "object",
+                "required": ["verification"],
+                "minProperties": 1,
+                "maxProperties": 1
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "command": { "const": "verify-artifact" },
+          "status": { "const": "succeeded" }
+        }
+      },
+      "then": {
+        "properties": {
+          "data": {
+            "properties": {
+              "verification": {
+                "properties": {
+                  "publication_state": { "const": "committed" },
+                  "bindings": { "type": "object" }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "command": { "const": "verify-artifact" },
+          "status": { "const": "succeeded" },
+          "io": {
+            "properties": {
+              "inputs": {
+                "contains": {
+                  "properties": { "role": { "const": "expected_plan_result" } },
+                  "required": ["role"]
+                }
+              }
+            }
+          }
+        },
+        "required": ["command", "status", "io"]
+      },
+      "then": {
+        "properties": {
+          "data": {
+            "properties": {
+              "verification": {
+                "properties": { "matches_expected_plan": { "const": true } }
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "command": { "const": "verify-artifact" },
+          "status": { "const": "succeeded" },
+          "io": {
+            "properties": {
+              "inputs": {
+                "not": {
+                  "contains": {
+                    "properties": { "role": { "const": "expected_plan_result" } },
+                    "required": ["role"]
+                  }
+                }
+              }
+            }
+          }
+        },
+        "required": ["command", "status", "io"]
+      },
+      "then": {
+        "properties": {
+          "data": {
+            "properties": {
+              "verification": {
+                "properties": { "matches_expected_plan": { "type": "null" } }
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "command": { "const": "verify-artifact" },
+          "status": { "const": "rejected" }
+        }
+      },
+      "then": {
+        "properties": {
+          "data": {
+            "oneOf": [
+              {
+                "properties": {
+                  "verification": {
+                    "properties": {
+                      "publication_state": {
+                        "enum": ["absent", "incomplete", "corrupt"]
+                      },
+                      "matches_expected_plan": { "type": "null" },
+                      "bindings": { "type": "null" }
+                    },
+                    "required": ["publication_state", "matches_expected_plan", "bindings"]
+                  }
+                },
+                "required": ["verification"]
+              },
+              {
+                "properties": {
+                  "verification": {
+                    "properties": {
+                      "publication_state": { "const": "committed" },
+                      "matches_expected_plan": { "const": false },
+                      "bindings": { "type": "object" }
+                    }
+                  }
+                },
+                "required": ["verification"]
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "command": { "const": "plan-change" },
+          "status": { "const": "succeeded" }
+        }
+      },
+      "then": {
+        "properties": {
+          "data": {
+            "type": "object",
+            "required": ["semantic_diff", "output_plan"],
+            "minProperties": 2,
+            "maxProperties": 2
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "command": { "const": "apply-change" },
+          "status": { "const": "succeeded" }
+        }
+      },
+      "then": {
+        "properties": {
+          "data": {
+            "type": "object",
+            "required": ["artifact_set"],
+            "minProperties": 1,
+            "maxProperties": 1
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "command": { "const": "verify-artifact" },
+          "status": { "enum": ["succeeded", "rejected"] }
+        }
+      },
+      "then": {
+        "properties": {
+          "data": {
+            "type": "object",
+            "required": ["verification"],
+            "minProperties": 1,
+            "maxProperties": 1
+          },
+          "effects": {
+            "properties": {
+              "project_artifact": { "type": "object" }
+            }
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "command": { "enum": ["inspect", "validate"] }
+        },
+        "required": ["command"]
+      },
+      "then": {
+        "properties": {
+          "effects": {
+            "properties": { "project_artifact": { "type": "null" } }
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "command": { "enum": ["inspect", "validate"] },
+          "status": { "not": { "const": "usage-error" } }
+        },
+        "required": ["command", "status"]
+      },
+      "then": {
+        "properties": {
+          "io": {
+            "properties": {
+              "inputs": { "$ref": "#/$defs/projectInputs" },
+              "destination": { "type": "null" }
+            }
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "command": { "const": "plan-change" },
+          "status": { "not": { "const": "usage-error" } }
+        },
+        "required": ["command", "status"]
+      },
+      "then": {
+        "properties": {
+          "io": {
+            "properties": {
+              "inputs": { "$ref": "#/$defs/planInputs" },
+              "destination": { "$ref": "#/$defs/destination" }
+            }
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "command": { "const": "apply-change" },
+          "status": { "not": { "const": "usage-error" } }
+        },
+        "required": ["command", "status"]
+      },
+      "then": {
+        "properties": {
+          "io": {
+            "properties": {
+              "inputs": { "$ref": "#/$defs/applyInputs" },
+              "destination": { "$ref": "#/$defs/destination" }
+            }
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "command": { "const": "verify-artifact" },
+          "status": { "not": { "const": "usage-error" } }
+        },
+        "required": ["command", "status"]
+      },
+      "then": {
+        "properties": {
+          "io": {
+            "properties": {
+              "inputs": { "$ref": "#/$defs/verifyInputs" },
+              "destination": { "type": "null" }
+            }
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": { "status": { "const": "succeeded" } },
+        "required": ["status"]
+      },
+      "then": {
+        "properties": {
+          "io": {
+            "properties": {
+              "inputs": {
+                "items": {
+                  "if": {
+                    "properties": { "role": { "not": { "const": "artifact_set" } } },
+                    "required": ["role"]
+                  },
+                  "then": {
+                    "properties": { "digest": { "$ref": "#/$defs/digest" } }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "if": { "properties": { "status": { "const": "usage-error" } } },
+      "then": {
+        "properties": {
+          "data": { "type": "null" },
+          "effects": {
+            "properties": {
+              "project_artifact": { "type": "null" },
+              "cleanup": { "const": { "status": "not-needed", "path": null } }
+            }
+          }
+        }
+      }
+    }
+  ],
+  "$defs": {
+    "digest": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["algorithm", "value"],
+      "properties": {
+        "algorithm": { "const": "sha-256" },
+        "value": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        }
+      }
+    },
+    "contract": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "product",
+        "product_contract_version",
+        "artifact_schema",
+        "result_schema",
+        "diagnostic_schema",
+        "diagnostic_catalog_version"
+      ],
+      "properties": {
+        "product": { "const": "miku-project" },
+        "product_contract_version": { "const": "1" },
+        "artifact_schema": { "const": "miku_project_artifacts/v1" },
+        "result_schema": { "const": "miku_project_cli_result/v1" },
+        "diagnostic_schema": { "const": "miku_project_cli_diagnostic/v1" },
+        "diagnostic_catalog_version": { "const": "1" }
+      }
+    },
+    "runtime": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "binding_status",
+        "family",
+        "version",
+        "artifact_digest",
+        "manifest_digest",
+        "capability_profile",
+        "fixture_suite_version"
+      ],
+      "properties": {
+        "binding_status": { "enum": ["verified", "unverified"] },
+        "family": { "enum": ["node", "java"] },
+        "version": { "type": "string", "minLength": 1 },
+        "artifact_digest": {
+          "oneOf": [
+            { "type": "null" },
+            { "$ref": "#/$defs/digest" }
+          ]
+        },
+        "manifest_digest": {
+          "oneOf": [
+            { "type": "null" },
+            { "$ref": "#/$defs/digest" }
+          ]
+        },
+        "capability_profile": {
+          "type": ["string", "null"],
+          "enum": ["miku-project-cli-core/v1", null]
+        },
+        "fixture_suite_version": {
+          "type": ["string", "null"],
+          "enum": ["1", null]
+        }
+      },
+      "allOf": [
+        {
+          "if": {
+            "properties": { "binding_status": { "const": "verified" } },
+            "required": ["binding_status"]
+          },
+          "then": {
+            "properties": {
+              "artifact_digest": { "$ref": "#/$defs/digest" },
+              "manifest_digest": { "$ref": "#/$defs/digest" },
+              "capability_profile": { "const": "miku-project-cli-core/v1" },
+              "fixture_suite_version": { "const": "1" }
+            }
+          }
+        }
+      ]
+    },
+    "nextAction": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["action", "command", "source_retryability"],
+      "properties": {
+        "action": {
+          "enum": [
+            "complete",
+            "request-human-approval",
+            "revise-invocation-or-input",
+            "repair-environment",
+            "replan-and-request-human-approval",
+            "verify-artifact",
+            "abort-and-investigate"
+          ]
+        },
+        "command": {
+          "type": ["string", "null"],
+          "enum": [
+            "cli",
+            "inspect",
+            "validate",
+            "plan-change",
+            "apply-change",
+            "verify-artifact",
+            null
+          ]
+        },
+        "source_retryability": {
+          "type": ["string", "null"],
+          "enum": [
+            "after-input-change",
+            "after-environment-change",
+            "after-replan-and-approval",
+            "not-retryable",
+            null
+          ]
+        }
+      },
+      "oneOf": [
+        {
+          "properties": {
+            "action": { "const": "complete" },
+            "command": { "type": "null" },
+            "source_retryability": { "type": "null" }
+          }
+        },
+        {
+          "properties": {
+            "action": { "const": "request-human-approval" },
+            "command": { "type": "null" },
+            "source_retryability": { "type": "null" }
+          }
+        },
+        {
+          "properties": {
+            "action": { "const": "revise-invocation-or-input" },
+            "command": { "type": "null" },
+            "source_retryability": { "const": "after-input-change" }
+          }
+        },
+        {
+          "properties": {
+            "action": { "const": "repair-environment" },
+            "command": { "type": "null" },
+            "source_retryability": { "const": "after-environment-change" }
+          }
+        },
+        {
+          "properties": {
+            "action": { "const": "replan-and-request-human-approval" },
+            "command": { "const": "plan-change" },
+            "source_retryability": { "const": "after-replan-and-approval" }
+          }
+        },
+        {
+          "properties": {
+            "action": { "const": "verify-artifact" },
+            "command": { "const": "verify-artifact" },
+            "source_retryability": { "type": "null" }
+          }
+        },
+        {
+          "properties": {
+            "action": { "const": "abort-and-investigate" },
+            "command": { "type": "null" },
+            "source_retryability": { "const": "not-retryable" }
+          }
+        }
+      ]
+    },
+    "projectInputs": {
+      "type": "array",
+      "prefixItems": [
+        {
+          "allOf": [
+            { "$ref": "#/$defs/input" },
+            { "properties": { "role": { "const": "project" } } }
+          ]
+        }
+      ],
+      "items": false,
+      "minItems": 1,
+      "maxItems": 1
+    },
+    "planInputs": {
+      "type": "array",
+      "prefixItems": [
+        {
+          "allOf": [
+            { "$ref": "#/$defs/input" },
+            { "properties": { "role": { "const": "project" } } }
+          ]
+        },
+        {
+          "allOf": [
+            { "$ref": "#/$defs/input" },
+            { "properties": { "role": { "const": "change_request" } } }
+          ]
+        }
+      ],
+      "items": false,
+      "minItems": 2,
+      "maxItems": 2
+    },
+    "applyInputs": {
+      "type": "array",
+      "prefixItems": [
+        {
+          "allOf": [
+            { "$ref": "#/$defs/input" },
+            { "properties": { "role": { "const": "project" } } }
+          ]
+        },
+        {
+          "allOf": [
+            { "$ref": "#/$defs/input" },
+            { "properties": { "role": { "const": "change_request" } } }
+          ]
+        },
+        {
+          "allOf": [
+            { "$ref": "#/$defs/input" },
+            { "properties": { "role": { "const": "plan_result" } } }
+          ]
+        },
+        {
+          "allOf": [
+            { "$ref": "#/$defs/input" },
+            { "properties": { "role": { "const": "approval" } } }
+          ]
+        }
+      ],
+      "items": false,
+      "minItems": 4,
+      "maxItems": 4
+    },
+    "verifyInputs": {
+      "type": "array",
+      "prefixItems": [
+        {
+          "allOf": [
+            { "$ref": "#/$defs/input" },
+            { "properties": { "role": { "const": "artifact_set" } } }
+          ]
+        },
+        {
+          "allOf": [
+            { "$ref": "#/$defs/input" },
+            { "properties": { "role": { "const": "expected_plan_result" } } }
+          ]
+        }
+      ],
+      "items": false,
+      "minItems": 1,
+      "maxItems": 2
+    },
+    "input": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["role", "option", "source", "path", "digest"],
+      "properties": {
+        "role": {
+          "enum": [
+            "project",
+            "change_request",
+            "plan_result",
+            "approval",
+            "artifact_set",
+            "expected_plan_result"
+          ]
+        },
+        "option": { "type": "string", "minLength": 1 },
+        "source": { "enum": ["stdin", "file", "directory", "filesystem-path"] },
+        "path": {
+          "oneOf": [
+            { "type": "null" },
+            { "type": "string", "pattern": "^/" }
+          ]
+        },
+        "digest": {
+          "oneOf": [
+            { "type": "null" },
+            { "$ref": "#/$defs/digest" }
+          ]
+        }
+      },
+      "allOf": [
+        {
+          "if": { "properties": { "role": { "const": "project" } }, "required": ["role"] },
+          "then": {
+            "properties": {
+              "option": { "const": "--project" },
+              "source": { "enum": ["stdin", "file", "directory"] }
+            }
+          }
+        },
+        {
+          "if": { "properties": { "role": { "const": "change_request" } }, "required": ["role"] },
+          "then": {
+            "properties": {
+              "option": { "const": "--request" },
+              "source": { "enum": ["stdin", "file"] }
+            }
+          }
+        },
+        {
+          "if": { "properties": { "role": { "const": "plan_result" } }, "required": ["role"] },
+          "then": {
+            "properties": {
+              "option": { "const": "--plan-result" },
+              "source": { "enum": ["stdin", "file"] }
+            }
+          }
+        },
+        {
+          "if": { "properties": { "role": { "const": "approval" } }, "required": ["role"] },
+          "then": {
+            "properties": {
+              "option": { "const": "--approval" },
+              "source": { "enum": ["stdin", "file"] }
+            }
+          }
+        },
+        {
+          "if": { "properties": { "role": { "const": "artifact_set" } }, "required": ["role"] },
+          "then": {
+            "properties": {
+              "option": { "const": "--artifact-set" },
+              "source": { "const": "filesystem-path" },
+              "digest": { "type": "null" }
+            }
+          }
+        },
+        {
+          "if": { "properties": { "role": { "const": "expected_plan_result" } }, "required": ["role"] },
+          "then": {
+            "properties": {
+              "option": { "const": "--expect-plan-result" },
+              "source": { "enum": ["stdin", "file"] }
+            }
+          }
+        },
+        {
+          "if": { "properties": { "source": { "const": "stdin" } }, "required": ["source"] },
+          "then": { "properties": { "path": { "type": "null" } } },
+          "else": { "properties": { "path": { "type": "string", "pattern": "^/" } } }
+        }
+      ]
+    },
+    "resultTarget": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["target", "path"],
+      "properties": {
+        "target": { "enum": ["stdout", "file"] },
+        "path": {
+          "oneOf": [
+            { "type": "null" },
+            { "type": "string", "pattern": "^/" }
+          ]
+        }
+      },
+      "allOf": [
+        {
+          "if": { "properties": { "target": { "const": "stdout" } }, "required": ["target"] },
+          "then": { "properties": { "path": { "type": "null" } } },
+          "else": { "properties": { "path": { "type": "string", "pattern": "^/" } } }
+        }
+      ]
+    },
+    "destination": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["requested_path", "path"],
+      "properties": {
+        "requested_path": { "type": "string", "minLength": 1 },
+        "path": { "type": "string", "pattern": "^/" }
+      }
+    },
+    "io": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["stdin_option", "inputs", "result", "destination"],
+      "properties": {
+        "stdin_option": {
+          "type": ["string", "null"],
+          "enum": ["--project", "--request", "--plan-result", "--approval", "--expect-plan-result", null]
+        },
+        "inputs": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/input" },
+          "contains": {
+            "properties": { "source": { "const": "stdin" } },
+            "required": ["source"]
+          },
+          "minContains": 0,
+          "maxContains": 1
+        },
+        "result": { "$ref": "#/$defs/resultTarget" },
+        "destination": {
+          "oneOf": [
+            { "type": "null" },
+            { "$ref": "#/$defs/destination" }
+          ]
+        }
+      },
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "inputs": {
+                "not": {
+                  "contains": {
+                    "properties": { "source": { "const": "stdin" } },
+                    "required": ["source"]
+                  }
+                }
+              }
+            },
+            "required": ["inputs"]
+          },
+          "then": { "properties": { "stdin_option": { "type": "null" } } }
+        },
+        {
+          "if": {
+            "properties": {
+              "inputs": {
+                "contains": {
+                  "properties": { "source": { "const": "stdin" }, "option": { "const": "--project" } },
+                  "required": ["source", "option"]
+                }
+              }
+            },
+            "required": ["inputs"]
+          },
+          "then": { "properties": { "stdin_option": { "const": "--project" } } }
+        },
+        {
+          "if": {
+            "properties": {
+              "inputs": {
+                "contains": {
+                  "properties": { "source": { "const": "stdin" }, "option": { "const": "--request" } },
+                  "required": ["source", "option"]
+                }
+              }
+            },
+            "required": ["inputs"]
+          },
+          "then": { "properties": { "stdin_option": { "const": "--request" } } }
+        },
+        {
+          "if": {
+            "properties": {
+              "inputs": {
+                "contains": {
+                  "properties": { "source": { "const": "stdin" }, "option": { "const": "--plan-result" } },
+                  "required": ["source", "option"]
+                }
+              }
+            },
+            "required": ["inputs"]
+          },
+          "then": { "properties": { "stdin_option": { "const": "--plan-result" } } }
+        },
+        {
+          "if": {
+            "properties": {
+              "inputs": {
+                "contains": {
+                  "properties": { "source": { "const": "stdin" }, "option": { "const": "--approval" } },
+                  "required": ["source", "option"]
+                }
+              }
+            },
+            "required": ["inputs"]
+          },
+          "then": { "properties": { "stdin_option": { "const": "--approval" } } }
+        },
+        {
+          "if": {
+            "properties": {
+              "inputs": {
+                "contains": {
+                  "properties": { "source": { "const": "stdin" }, "option": { "const": "--expect-plan-result" } },
+                  "required": ["source", "option"]
+                }
+              }
+            },
+            "required": ["inputs"]
+          },
+          "then": { "properties": { "stdin_option": { "const": "--expect-plan-result" } } }
+        }
+      ]
+    },
+    "projectArtifactEffect": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["path", "publication_state", "created_by_invocation"],
+      "properties": {
+        "path": { "type": "string", "pattern": "^/" },
+        "publication_state": {
+          "type": ["string", "null"],
+          "enum": ["absent", "incomplete", "committed", "corrupt", null]
+        },
+        "created_by_invocation": { "type": "boolean" }
+      }
+    },
+    "cleanup": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["status", "path"],
+      "properties": {
+        "status": {
+          "enum": ["not-needed", "succeeded", "failed", "prohibited-after-commit"]
+        },
+        "path": {
+          "oneOf": [
+            { "type": "null" },
+            { "type": "string", "pattern": "^/" }
+          ]
+        }
+      }
+    },
+    "effects": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["project_input_modified", "project_artifact", "cleanup"],
+      "properties": {
+        "project_input_modified": { "const": false },
+        "project_artifact": {
+          "oneOf": [
+            { "type": "null" },
+            { "$ref": "#/$defs/projectArtifactEffect" }
+          ]
+        },
+        "cleanup": { "$ref": "#/$defs/cleanup" }
+      }
+    },
+    "normalization": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["code", "path", "before", "after"],
+      "properties": {
+        "code": { "type": "string", "minLength": 1 },
+        "path": { "type": "string" },
+        "before": {},
+        "after": {}
+      }
+    },
+    "lossOrUnsupported": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["code", "path", "description"],
+      "properties": {
+        "code": { "type": "string", "minLength": 1 },
+        "path": { "type": "string" },
+        "description": { "type": "string", "minLength": 1 }
+      }
+    },
+    "observations": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["normalizations", "losses", "unsupported"],
+      "properties": {
+        "normalizations": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/normalization" }
+        },
+        "losses": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/lossOrUnsupported" }
+        },
+        "unsupported": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/lossOrUnsupported" }
+        }
+      }
+    },
+    "projection": {
+      "$ref": "urn:miku-project:schema:artifacts:v1#/$defs/projection"
+    },
+    "semanticDiff": {
+      "$ref": "urn:miku-project:schema:artifacts:v1#/$defs/semanticDiff"
+    },
+    "outputPlan": {
+      "$ref": "urn:miku-project:schema:artifacts:v1#/$defs/outputPlan"
+    },
+    "validation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["valid", "format_profile", "state_digest"],
+      "properties": {
+        "valid": { "type": "boolean" },
+        "format_profile": { "type": ["string", "null"] },
+        "state_digest": {
+          "oneOf": [
+            { "type": "null" },
+            { "$ref": "#/$defs/digest" }
+          ]
+        }
+      }
+    },
+    "artifactSetDescriptor": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "kind",
+        "schema_version",
+        "path",
+        "publication_state",
+        "project_artifact_digest",
+        "provenance_digest"
+      ],
+      "properties": {
+        "kind": { "const": "miku_project_artifact_set" },
+        "schema_version": { "const": "1" },
+        "path": { "type": "string", "pattern": "^/" },
+        "publication_state": { "const": "committed" },
+        "project_artifact_digest": { "$ref": "#/$defs/digest" },
+        "provenance_digest": { "$ref": "#/$defs/digest" }
+      }
+    },
+    "verification": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["path", "publication_state", "matches_expected_plan", "bindings"],
+      "properties": {
+        "path": { "type": "string", "pattern": "^/" },
+        "publication_state": {
+          "type": ["string", "null"],
+          "enum": ["absent", "incomplete", "committed", "corrupt", null]
+        },
+        "matches_expected_plan": { "type": ["boolean", "null"] },
+        "bindings": {
+          "oneOf": [
+            { "type": "null" },
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "change_request_digest",
+                "semantic_diff_digest",
+                "output_plan_digest"
+              ],
+              "properties": {
+                "change_request_digest": { "$ref": "#/$defs/digest" },
+                "semantic_diff_digest": { "$ref": "#/$defs/digest" },
+                "output_plan_digest": { "$ref": "#/$defs/digest" }
+              }
+            }
+          ]
+        }
+      }
+    },
+    "data": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "projection": { "$ref": "#/$defs/projection" },
+        "validation": { "$ref": "#/$defs/validation" },
+        "semantic_diff": { "$ref": "#/$defs/semanticDiff" },
+        "output_plan": { "$ref": "#/$defs/outputPlan" },
+        "artifact_set": { "$ref": "#/$defs/artifactSetDescriptor" },
+        "verification": { "$ref": "#/$defs/verification" }
+      }
+    }
+  }
+}

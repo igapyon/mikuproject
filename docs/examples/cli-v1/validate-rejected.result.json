@@ -1,0 +1,95 @@
+{
+  "kind": "miku_project_cli_result",
+  "schema_version": "1",
+  "contract": {
+    "product": "miku-project",
+    "product_contract_version": "1",
+    "artifact_schema": "miku_project_artifacts/v1",
+    "result_schema": "miku_project_cli_result/v1",
+    "diagnostic_schema": "miku_project_cli_diagnostic/v1",
+    "diagnostic_catalog_version": "1"
+  },
+  "runtime": {
+    "binding_status": "verified",
+    "family": "node",
+    "version": "1.0.0",
+    "artifact_digest": {
+      "algorithm": "sha-256",
+      "value": "0000000000000000000000000000000000000000000000000000000000000000"
+    },
+    "manifest_digest": {
+      "algorithm": "sha-256",
+      "value": "7777777777777777777777777777777777777777777777777777777777777777"
+    },
+    "capability_profile": "miku-project-cli-core/v1",
+    "fixture_suite_version": "1"
+  },
+  "command": "validate",
+  "side_effect_class": "read-only",
+  "status": "rejected",
+  "exit_code": 1,
+  "io": {
+    "stdin_option": null,
+    "inputs": [
+      {
+        "role": "project",
+        "option": "--project",
+        "source": "file",
+        "path": "/work/input.xml",
+        "digest": {
+          "algorithm": "sha-256",
+          "value": "1111111111111111111111111111111111111111111111111111111111111111"
+        }
+      }
+    ],
+    "result": { "target": "stdout", "path": null },
+    "destination": null
+  },
+  "effects": {
+    "project_input_modified": false,
+    "project_artifact": null,
+    "cleanup": { "status": "not-needed", "path": null }
+  },
+  "observations": {
+    "normalizations": [],
+    "losses": [],
+    "unsupported": [
+      {
+        "code": "xml.unsupported-baseline",
+        "path": "tasks[uid=2].baseline",
+        "description": "Baseline data is outside the v1 semantic scope."
+      }
+    ]
+  },
+  "next_action": {
+    "action": "revise-invocation-or-input",
+    "command": null,
+    "source_retryability": "after-input-change"
+  },
+  "diagnostics": [
+    {
+      "kind": "miku_project_cli_diagnostic",
+      "schema_version": "1",
+      "code": "semantic.unsupported",
+      "severity": "error",
+      "category": "semantic",
+      "message": "Baseline data is not supported by the v1 contract.",
+      "location": {
+        "scope": "semantic",
+        "path": "tasks[uid=2].baseline",
+        "option": "--project",
+        "artifact_role": "external_project",
+        "rule_id": "S-I020"
+      },
+      "retryability": "after-input-change",
+      "details": { "unsupported_kind": "baseline" }
+    }
+  ],
+  "data": {
+    "validation": {
+      "valid": false,
+      "format_profile": "miku-project-ms-project-xml-subset/v1",
+      "state_digest": null
+    }
+  }
+}

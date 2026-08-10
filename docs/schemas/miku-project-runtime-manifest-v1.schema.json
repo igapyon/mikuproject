@@ -1,0 +1,269 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:miku-project:schema:runtime-manifest:v1",
+  "title": "miku-project runtime manifest v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "kind",
+    "schema_version",
+    "product",
+    "runtime",
+    "compatibility",
+    "artifacts",
+    "source",
+    "reference_runtime"
+  ],
+  "properties": {
+    "kind": { "const": "miku_project_runtime_manifest" },
+    "schema_version": { "const": "1" },
+    "product": { "$ref": "#/$defs/product" },
+    "runtime": { "$ref": "#/$defs/runtime" },
+    "compatibility": { "$ref": "#/$defs/compatibility" },
+    "artifacts": { "$ref": "#/$defs/artifacts" },
+    "source": { "$ref": "#/$defs/source" },
+    "reference_runtime": {
+      "oneOf": [
+        { "type": "null" },
+        { "$ref": "#/$defs/referenceRuntime" }
+      ]
+    }
+  },
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "runtime": {
+            "properties": { "family": { "const": "node" } },
+            "required": ["family"]
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "runtime": {
+            "properties": {
+              "role": { "const": "reference" },
+              "launcher": { "const": "node" }
+            }
+          },
+          "artifacts": {
+            "properties": {
+              "executable": {
+                "properties": {
+                  "path": { "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]*\\.mjs$" },
+                  "media_type": { "const": "text/javascript" }
+                }
+              }
+            }
+          },
+          "reference_runtime": { "type": "null" }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "runtime": {
+            "properties": { "family": { "const": "java" } },
+            "required": ["family"]
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "runtime": {
+            "properties": {
+              "role": { "const": "conforming" },
+              "launcher": { "const": "java-jar" }
+            }
+          },
+          "artifacts": {
+            "properties": {
+              "executable": {
+                "properties": {
+                  "path": { "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]*\\.jar$" },
+                  "media_type": { "const": "application/java-archive" }
+                }
+              }
+            }
+          },
+          "reference_runtime": { "$ref": "#/$defs/referenceRuntime" }
+        }
+      }
+    }
+  ],
+  "$defs": {
+    "semver": {
+      "type": "string",
+      "pattern": "^(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)(?:-[0-9A-Za-z-]+(?:\\.[0-9A-Za-z-]+)*)?(?:\\+[0-9A-Za-z-]+(?:\\.[0-9A-Za-z-]+)*)?$"
+    },
+    "digest": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["algorithm", "value"],
+      "properties": {
+        "algorithm": { "const": "sha-256" },
+        "value": { "type": "string", "pattern": "^[0-9a-f]{64}$" }
+      }
+    },
+    "product": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "name",
+        "release_version",
+        "product_contract_version",
+        "semantic_contract_version",
+        "format_contract_version",
+        "change_contract_version",
+        "cli_contract_version",
+        "artifact_schema",
+        "result_schema",
+        "diagnostic_schema",
+        "diagnostic_catalog_version"
+      ],
+      "properties": {
+        "name": { "const": "miku-project" },
+        "release_version": { "$ref": "#/$defs/semver" },
+        "product_contract_version": { "const": "1" },
+        "semantic_contract_version": { "const": "1" },
+        "format_contract_version": { "const": "1" },
+        "change_contract_version": { "const": "1" },
+        "cli_contract_version": { "const": "1" },
+        "artifact_schema": { "const": "miku_project_artifacts/v1" },
+        "result_schema": { "const": "miku_project_cli_result/v1" },
+        "diagnostic_schema": { "const": "miku_project_cli_diagnostic/v1" },
+        "diagnostic_catalog_version": { "const": "1" }
+      }
+    },
+    "runtime": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["family", "role", "version", "launcher"],
+      "properties": {
+        "family": { "enum": ["node", "java"] },
+        "role": { "enum": ["reference", "conforming"] },
+        "version": { "$ref": "#/$defs/semver" },
+        "launcher": { "enum": ["node", "java-jar"] }
+      }
+    },
+    "capabilities": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["catalog_version", "profiles", "provided", "extensions"],
+      "properties": {
+        "catalog_version": { "const": "1" },
+        "profiles": {
+          "type": "array",
+          "prefixItems": [{ "const": "miku-project-cli-core/v1" }],
+          "items": false,
+          "minItems": 1,
+          "maxItems": 1
+        },
+        "provided": {
+          "type": "array",
+          "items": {
+            "enum": [
+              "miku-project.capability.apply-change.set-task-percent-complete/v1",
+              "miku-project.capability.format.ms-project-xml-subset.read/v1",
+              "miku-project.capability.format.ms-project-xml-subset.write/v1",
+              "miku-project.capability.inspect.project-overview/v1",
+              "miku-project.capability.inspect.task-change-context/v1",
+              "miku-project.capability.plan-change.set-task-percent-complete/v1",
+              "miku-project.capability.publication.exclusive-directory-commit-marker/v1",
+              "miku-project.capability.validate.project/v1",
+              "miku-project.capability.verify-artifact/v1"
+            ]
+          },
+          "uniqueItems": true,
+          "maxItems": 9
+        },
+        "extensions": {
+          "type": "array",
+          "maxItems": 0
+        }
+      }
+    },
+    "conformance": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["fixture_suite_version", "corpus_digest"],
+      "properties": {
+        "fixture_suite_version": { "const": "1" },
+        "corpus_digest": { "$ref": "#/$defs/digest" }
+      }
+    },
+    "compatibility": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["capabilities", "conformance"],
+      "properties": {
+        "capabilities": { "$ref": "#/$defs/capabilities" },
+        "conformance": { "$ref": "#/$defs/conformance" }
+      }
+    },
+    "artifact": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["path", "media_type", "size_bytes", "digest"],
+      "properties": {
+        "path": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]*$"
+        },
+        "media_type": { "type": "string", "minLength": 1 },
+        "size_bytes": { "type": "integer", "minimum": 1 },
+        "digest": { "$ref": "#/$defs/digest" }
+      }
+    },
+    "artifacts": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["executable", "sources"],
+      "properties": {
+        "executable": { "$ref": "#/$defs/artifact" },
+        "sources": {
+          "allOf": [
+            { "$ref": "#/$defs/artifact" },
+            {
+              "properties": {
+                "path": { "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]*-sources\\.tgz$" },
+                "media_type": { "const": "application/gzip" }
+              }
+            }
+          ]
+        }
+      }
+    },
+    "sourceRevision": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["repository", "revision", "tag"],
+      "properties": {
+        "repository": { "type": "string", "format": "uri" },
+        "revision": { "type": "string", "pattern": "^[0-9a-f]{40}$" },
+        "tag": { "type": "string", "pattern": "^v.+$" }
+      }
+    },
+    "source": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["contract", "runtime"],
+      "properties": {
+        "contract": { "$ref": "#/$defs/sourceRevision" },
+        "runtime": { "$ref": "#/$defs/sourceRevision" }
+      }
+    },
+    "referenceRuntime": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["family", "version", "manifest_digest"],
+      "properties": {
+        "family": { "const": "node" },
+        "version": { "$ref": "#/$defs/semver" },
+        "manifest_digest": { "$ref": "#/$defs/digest" }
+      }
+    }
+  }
+}

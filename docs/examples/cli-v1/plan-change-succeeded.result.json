@@ -1,0 +1,178 @@
+{
+  "kind": "miku_project_cli_result",
+  "schema_version": "1",
+  "contract": {
+    "product": "miku-project",
+    "product_contract_version": "1",
+    "artifact_schema": "miku_project_artifacts/v1",
+    "result_schema": "miku_project_cli_result/v1",
+    "diagnostic_schema": "miku_project_cli_diagnostic/v1",
+    "diagnostic_catalog_version": "1"
+  },
+  "runtime": {
+    "binding_status": "verified",
+    "family": "node",
+    "version": "1.0.0",
+    "artifact_digest": {
+      "algorithm": "sha-256",
+      "value": "0000000000000000000000000000000000000000000000000000000000000000"
+    },
+    "manifest_digest": {
+      "algorithm": "sha-256",
+      "value": "7777777777777777777777777777777777777777777777777777777777777777"
+    },
+    "capability_profile": "miku-project-cli-core/v1",
+    "fixture_suite_version": "1"
+  },
+  "command": "plan-change",
+  "side_effect_class": "exchange-artifact-generation",
+  "status": "succeeded",
+  "exit_code": 0,
+  "io": {
+    "stdin_option": null,
+    "inputs": [
+      {
+        "role": "project",
+        "option": "--project",
+        "source": "file",
+        "path": "/work/input.xml",
+        "digest": {
+          "algorithm": "sha-256",
+          "value": "c550ad78a0f477412b2182520732ff47a64c38d2e1f37d925641b098a45305c4"
+        }
+      },
+      {
+        "role": "change_request",
+        "option": "--request",
+        "source": "file",
+        "path": "/work/request.json",
+        "digest": {
+          "algorithm": "sha-256",
+          "value": "a2e9bf7986da75b6eacb2d2f8ac8a50f19805ec5898bba89d7b456f2eee5df20"
+        }
+      }
+    ],
+    "result": { "target": "file", "path": "/work/plan.result.json" },
+    "destination": {
+      "requested_path": "next-project",
+      "path": "/work/next-project"
+    }
+  },
+  "effects": {
+    "project_input_modified": false,
+    "project_artifact": null,
+    "cleanup": { "status": "not-needed", "path": null }
+  },
+  "observations": {
+    "normalizations": [],
+    "losses": [],
+    "unsupported": []
+  },
+  "next_action": {
+    "action": "request-human-approval",
+    "command": null,
+    "source_retryability": null
+  },
+  "diagnostics": [],
+  "data": {
+    "semantic_diff": {
+      "kind": "miku_project_semantic_diff",
+      "schema_version": "1",
+      "semantic_contract_version": "1",
+      "base_state_digest": {
+        "algorithm": "sha-256",
+        "value": "a98f0c8b560382234572a61f360c9e96911bc75fc1d57b79968d6e60b5d751d0"
+      },
+      "proposed_state_digest": {
+        "algorithm": "sha-256",
+        "value": "1c72d70cc114853b2a61f1c4798794093e46419f16b6cc49819a9d050cb67a08"
+      },
+      "change_request_digest": {
+        "algorithm": "sha-256",
+        "value": "25bb990ec7530995c7fdcb201c57eed083c85fe6e99aa77bc1f13814ca693c60"
+      },
+      "changes": [
+        {
+          "kind": "set_task_percent_complete",
+          "task_uid": "2",
+          "before": 0,
+          "after": 50
+        }
+      ],
+      "preservation": { "semantic_equivalent_except_changes": true },
+      "provenance": {
+        "losses": [],
+        "normalizations": [],
+        "unsupported": []
+      }
+    },
+    "output_plan": {
+      "kind": "miku_project_output_plan",
+      "schema_version": "1",
+      "semantic_contract_version": "1",
+      "base_state_digest": {
+        "algorithm": "sha-256",
+        "value": "a98f0c8b560382234572a61f360c9e96911bc75fc1d57b79968d6e60b5d751d0"
+      },
+      "change_request_digest": {
+        "algorithm": "sha-256",
+        "value": "25bb990ec7530995c7fdcb201c57eed083c85fe6e99aa77bc1f13814ca693c60"
+      },
+      "semantic_diff_digest": {
+        "algorithm": "sha-256",
+        "value": "46b35347fbf493430bf9dd285b788bab6950cff431eb96b01a1725aaf9718db3"
+      },
+      "runtime": {
+        "family": "node",
+        "version": "1.0.0",
+        "artifact_digest": {
+          "algorithm": "sha-256",
+          "value": "0000000000000000000000000000000000000000000000000000000000000000"
+        },
+        "manifest_digest": {
+          "algorithm": "sha-256",
+          "value": "7777777777777777777777777777777777777777777777777777777777777777"
+        },
+        "capability_profile": "miku-project-cli-core/v1",
+        "fixture_suite_version": "1"
+      },
+      "output": {
+        "format": "ms-project-xml",
+        "format_profile": "miku-project-ms-project-xml-subset/v1",
+        "adapter": "ms-project-xml-adapter/v1",
+        "artifact_set": "miku_project_artifact_set/v1",
+        "destination": {
+          "path": "/work/next-project",
+          "write_mode": "create-new-directory"
+        },
+        "publication": {
+          "strategy": "exclusive-directory-commit-marker/v1",
+          "directory_create": "exclusive",
+          "commit_marker": {
+            "path": "COMMITTED",
+            "create_mode": "exclusive-empty-file"
+          },
+          "runtime_filesystem_supported": true
+        },
+        "members": [
+          { "role": "external_project", "path": "project.xml" },
+          { "role": "provenance", "path": "provenance.json" },
+          { "role": "commit_marker", "path": "COMMITTED", "size": 0 }
+        ]
+      },
+      "preflight": {
+        "proposed_state_digest": {
+          "algorithm": "sha-256",
+          "value": "1c72d70cc114853b2a61f1c4798794093e46419f16b6cc49819a9d050cb67a08"
+        },
+        "project_artifact_digest": {
+          "algorithm": "sha-256",
+          "value": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+        },
+        "normalizations": [],
+        "losses": [],
+        "unsupported": []
+      }
+    }
+  }
+}

@@ -1,0 +1,137 @@
+{
+  "kind": "miku_project_cli_result",
+  "schema_version": "1",
+  "contract": {
+    "product": "miku-project",
+    "product_contract_version": "1",
+    "artifact_schema": "miku_project_artifacts/v1",
+    "result_schema": "miku_project_cli_result/v1",
+    "diagnostic_schema": "miku_project_cli_diagnostic/v1",
+    "diagnostic_catalog_version": "1"
+  },
+  "runtime": {
+    "binding_status": "verified",
+    "family": "node",
+    "version": "1.0.0",
+    "artifact_digest": {
+      "algorithm": "sha-256",
+      "value": "0000000000000000000000000000000000000000000000000000000000000000"
+    },
+    "manifest_digest": {
+      "algorithm": "sha-256",
+      "value": "7777777777777777777777777777777777777777777777777777777777777777"
+    },
+    "capability_profile": "miku-project-cli-core/v1",
+    "fixture_suite_version": "1"
+  },
+  "command": "apply-change",
+  "side_effect_class": "meaning-change-and-project-artifact-generation",
+  "status": "runtime-error",
+  "exit_code": 3,
+  "io": {
+    "stdin_option": null,
+    "inputs": [
+      {
+        "role": "project",
+        "option": "--project",
+        "source": "file",
+        "path": "/work/input.xml",
+        "digest": {
+          "algorithm": "sha-256",
+          "value": "c550ad78a0f477412b2182520732ff47a64c38d2e1f37d925641b098a45305c4"
+        }
+      },
+      {
+        "role": "change_request",
+        "option": "--request",
+        "source": "file",
+        "path": "/work/request.json",
+        "digest": {
+          "algorithm": "sha-256",
+          "value": "a2e9bf7986da75b6eacb2d2f8ac8a50f19805ec5898bba89d7b456f2eee5df20"
+        }
+      },
+      {
+        "role": "plan_result",
+        "option": "--plan-result",
+        "source": "file",
+        "path": "/work/plan.result.json",
+        "digest": {
+          "algorithm": "sha-256",
+          "value": "62650a1c1e66b9d42908dc031cbb8e7abb108e0b87f32f3d2a9f4fc6ebda1d18"
+        }
+      },
+      {
+        "role": "approval",
+        "option": "--approval",
+        "source": "file",
+        "path": "/work/approval.json",
+        "digest": {
+          "algorithm": "sha-256",
+          "value": "9473a0535a934f20334c39dabfe3b860fe01099539e9a7f216e7de28d74178d4"
+        }
+      }
+    ],
+    "result": { "target": "stdout", "path": null },
+    "destination": {
+      "requested_path": "next-project",
+      "path": "/work/next-project"
+    }
+  },
+  "effects": {
+    "project_input_modified": false,
+    "project_artifact": {
+      "path": "/work/next-project",
+      "publication_state": "incomplete",
+      "created_by_invocation": true
+    },
+    "cleanup": { "status": "failed", "path": "/work/next-project" }
+  },
+  "observations": {
+    "normalizations": [],
+    "losses": [],
+    "unsupported": []
+  },
+  "next_action": {
+    "action": "abort-and-investigate",
+    "command": null,
+    "source_retryability": "not-retryable"
+  },
+  "diagnostics": [
+    {
+      "kind": "miku_project_cli_diagnostic",
+      "schema_version": "1",
+      "code": "publication.cleanup-failed",
+      "severity": "error",
+      "category": "publication",
+      "message": "The incomplete destination could not be removed.",
+      "location": {
+        "scope": "filesystem",
+        "path": "/work/next-project",
+        "option": null,
+        "artifact_role": "project_artifact_set",
+        "rule_id": null
+      },
+      "retryability": "not-retryable",
+      "details": { "cleanup_status": "failed" }
+    },
+    {
+      "kind": "miku_project_cli_diagnostic",
+      "schema_version": "1",
+      "code": "publication.write-failed",
+      "severity": "error",
+      "category": "publication",
+      "message": "The project artifact set could not be completed.",
+      "location": {
+        "scope": "filesystem",
+        "path": "/work/next-project/project.xml",
+        "option": null,
+        "artifact_role": "external_project",
+        "rule_id": null
+      },
+      "retryability": "after-environment-change",
+      "details": {}
+    }
+  ],
+  "data": null
+}

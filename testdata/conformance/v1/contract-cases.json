@@ -1,0 +1,417 @@
+{
+  "kind": "miku_project_contract_validation_cases",
+  "schema_version": "1",
+  "artifact_schema": "../../../docs/schemas/miku-project-artifacts-v1.schema.json",
+  "result_schema": "../../../docs/schemas/miku-project-cli-result-v1.schema.json",
+  "canonicalization": "../../../docs/miku-project-conformance-corpus-v1.md#seed-fixture%E3%81%AE%E6%84%8F%E5%91%B3",
+  "cases": [
+    {
+      "id": "SC-DIFF-EMPTY-001",
+      "validation_layer": "json-schema",
+      "inputs": [
+        { "role": "result", "path": "../../../docs/examples/cli-v1/plan-change-succeeded.result.json" }
+      ],
+      "mutations": [
+        { "input_role": "result", "operation": "replace", "pointer": "/data/semantic_diff/changes", "value": [] }
+      ],
+      "expected_valid": false,
+      "expected_rule_ids": []
+    },
+    {
+      "id": "SC-PLAN-INCOMPLETE-001",
+      "validation_layer": "json-schema",
+      "inputs": [
+        { "role": "result", "path": "../../../docs/examples/cli-v1/plan-change-succeeded.result.json" }
+      ],
+      "mutations": [
+        { "input_role": "result", "operation": "remove", "pointer": "/data/output_plan/preflight" }
+      ],
+      "expected_valid": false,
+      "expected_rule_ids": []
+    },
+    {
+      "id": "SC-STATUS-CODE-001",
+      "validation_layer": "json-schema",
+      "inputs": [
+        { "role": "result", "path": "../../../docs/examples/cli-v1/runtime-manifest-invalid.result.json" }
+      ],
+      "mutations": [
+        { "input_role": "result", "operation": "replace", "pointer": "/status", "value": "rejected" },
+        { "input_role": "result", "operation": "replace", "pointer": "/exit_code", "value": 1 }
+      ],
+      "expected_valid": false,
+      "expected_rule_ids": ["RB-009"]
+    },
+    {
+      "id": "SC-SUMMARY-DUPLICATE-001",
+      "validation_layer": "json-schema",
+      "inputs": [
+        { "role": "result", "path": "../../../docs/examples/cli-v1/validate-rejected.result.json" }
+      ],
+      "mutations": [
+        { "input_role": "result", "operation": "add", "pointer": "/diagnostic_summary", "value": { "error_count": 0 } }
+      ],
+      "expected_valid": false,
+      "expected_rule_ids": ["RB-009"]
+    },
+    {
+      "id": "SC-NEXT-ACTION-AGGREGATE-001",
+      "validation_layer": "json-schema",
+      "inputs": [
+        { "role": "result", "path": "../../../docs/examples/cli-v1/apply-change-incomplete.result.json" }
+      ],
+      "mutations": [
+        { "input_role": "result", "operation": "replace", "pointer": "/next_action/action", "value": "repair-environment" },
+        { "input_role": "result", "operation": "replace", "pointer": "/next_action/source_retryability", "value": "after-environment-change" }
+      ],
+      "expected_valid": false,
+      "expected_rule_ids": ["RB-009"]
+    },
+    {
+      "id": "SC-VERIFY-EXPECTED-FALSE-SUCCESS-001",
+      "validation_layer": "json-schema",
+      "inputs": [
+        { "role": "result", "path": "../../../docs/examples/cli-v1/verify-artifact-committed.result.json" }
+      ],
+      "mutations": [
+        { "input_role": "result", "operation": "replace", "pointer": "/data/verification/matches_expected_plan", "value": false }
+      ],
+      "expected_valid": false,
+      "expected_rule_ids": ["RB-008"]
+    },
+    {
+      "id": "SC-VERIFY-MISMATCH-REJECTED-001",
+      "validation_layer": "json-schema",
+      "inputs": [
+        { "role": "result", "path": "../../../docs/examples/cli-v1/verify-artifact-expected-plan-mismatch.result.json" }
+      ],
+      "mutations": [],
+      "expected_valid": true,
+      "expected_rule_ids": []
+    },
+    {
+      "id": "SC-RUNTIME-MANIFEST-ERROR-001",
+      "validation_layer": "json-schema",
+      "inputs": [
+        { "role": "result", "path": "../../../docs/examples/cli-v1/runtime-manifest-invalid.result.json" }
+      ],
+      "mutations": [],
+      "expected_valid": true,
+      "expected_rule_ids": []
+    },
+    {
+      "id": "BC-RUNTIME-DIVERGENCE-001",
+      "validation_layer": "cross-artifact-binding",
+      "inputs": [
+        { "role": "result", "path": "../../../docs/examples/cli-v1/plan-change-succeeded.result.json" },
+        { "role": "change_request", "path": "../../../docs/examples/artifacts-v1/change-request.example.json" }
+      ],
+      "mutations": [
+        { "input_role": "result", "operation": "replace", "pointer": "/data/output_plan/runtime/manifest_digest/value", "value": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee" }
+      ],
+      "expected_valid": false,
+      "expected_rule_ids": ["RB-004"]
+    },
+    {
+      "id": "BC-REQUEST-DIVERGENCE-001",
+      "validation_layer": "cross-artifact-binding",
+      "inputs": [
+        { "role": "result", "path": "../../../docs/examples/cli-v1/plan-change-succeeded.result.json" },
+        { "role": "change_request", "path": "../../../docs/examples/artifacts-v1/change-request.example.json" }
+      ],
+      "mutations": [
+        { "input_role": "result", "operation": "replace", "pointer": "/data/output_plan/change_request_digest/value", "value": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee" }
+      ],
+      "expected_valid": false,
+      "expected_rule_ids": ["RB-002"]
+    },
+    {
+      "id": "BC-DIFF-DIGEST-DIVERGENCE-001",
+      "validation_layer": "cross-artifact-binding",
+      "inputs": [
+        { "role": "result", "path": "../../../docs/examples/cli-v1/plan-change-succeeded.result.json" },
+        { "role": "change_request", "path": "../../../docs/examples/artifacts-v1/change-request.example.json" }
+      ],
+      "mutations": [
+        { "input_role": "result", "operation": "replace", "pointer": "/data/output_plan/semantic_diff_digest/value", "value": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee" }
+      ],
+      "expected_valid": false,
+      "expected_rule_ids": ["RB-003"]
+    },
+    {
+      "id": "BC-DESTINATION-DIVERGENCE-001",
+      "validation_layer": "cross-artifact-binding",
+      "inputs": [
+        { "role": "result", "path": "../../../docs/examples/cli-v1/plan-change-succeeded.result.json" },
+        { "role": "change_request", "path": "../../../docs/examples/artifacts-v1/change-request.example.json" }
+      ],
+      "mutations": [
+        { "input_role": "result", "operation": "replace", "pointer": "/data/output_plan/output/destination/path", "value": "/work/other-project" }
+      ],
+      "expected_valid": false,
+      "expected_rule_ids": ["RB-005"]
+    },
+    {
+      "id": "BC-APPROVAL-DIVERGENCE-001",
+      "validation_layer": "cross-artifact-binding",
+      "inputs": [
+        { "role": "result", "path": "../../../docs/examples/cli-v1/plan-change-succeeded.result.json" },
+        { "role": "change_request", "path": "../../../docs/examples/artifacts-v1/change-request.example.json" },
+        { "role": "approval", "path": "../../../docs/examples/artifacts-v1/change-approval.example.json" }
+      ],
+      "mutations": [
+        { "input_role": "approval", "operation": "replace", "pointer": "/output_plan_digest/value", "value": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee" }
+      ],
+      "expected_valid": false,
+      "expected_rule_ids": ["RB-006"]
+    },
+    {
+      "id": "BC-PLAN-BINDINGS-VALID-001",
+      "validation_layer": "cross-artifact-binding",
+      "inputs": [
+        { "role": "result", "path": "../../../docs/examples/cli-v1/plan-change-succeeded.result.json" },
+        { "role": "change_request", "path": "../../../docs/examples/artifacts-v1/change-request.example.json" },
+        { "role": "approval", "path": "../../../docs/examples/artifacts-v1/change-approval.example.json" }
+      ],
+      "mutations": [],
+      "expected_valid": true,
+      "expected_rule_ids": [],
+      "checked_rule_ids": ["RB-001", "RB-002", "RB-003", "RB-004", "RB-005", "RB-006"]
+    },
+    {
+      "id": "SC-PLAN-MISSING-INPUT-001",
+      "validation_layer": "json-schema",
+      "inputs": [
+        { "role": "result", "path": "../../../docs/examples/cli-v1/plan-change-succeeded.result.json" }
+      ],
+      "mutations": [
+        { "input_role": "result", "operation": "replace", "pointer": "/io/inputs", "value": [] }
+      ],
+      "expected_valid": false,
+      "expected_rule_ids": ["RB-010"]
+    },
+    {
+      "id": "SC-PLAN-MISSING-DESTINATION-001",
+      "validation_layer": "json-schema",
+      "inputs": [
+        { "role": "result", "path": "../../../docs/examples/cli-v1/plan-change-succeeded.result.json" }
+      ],
+      "mutations": [
+        { "input_role": "result", "operation": "replace", "pointer": "/io/destination", "value": null }
+      ],
+      "expected_valid": false,
+      "expected_rule_ids": ["RB-010"]
+    },
+    {
+      "id": "SC-READONLY-PROJECT-EFFECT-001",
+      "validation_layer": "json-schema",
+      "inputs": [
+        { "role": "result", "path": "../../../docs/examples/cli-v1/inspect-succeeded.result.json" }
+      ],
+      "mutations": [
+        {
+          "input_role": "result",
+          "operation": "replace",
+          "pointer": "/effects/project_artifact",
+          "value": {
+            "path": "/work/next-project",
+            "publication_state": "committed",
+            "created_by_invocation": true
+          }
+        }
+      ],
+      "expected_valid": false,
+      "expected_rule_ids": ["RB-010"]
+    },
+    {
+      "id": "SC-VERIFY-CREATED-EFFECT-001",
+      "validation_layer": "json-schema",
+      "inputs": [
+        { "role": "result", "path": "../../../docs/examples/cli-v1/verify-artifact-committed.result.json" }
+      ],
+      "mutations": [
+        { "input_role": "result", "operation": "replace", "pointer": "/effects/project_artifact/created_by_invocation", "value": true }
+      ],
+      "expected_valid": false,
+      "expected_rule_ids": ["RB-011"]
+    },
+    {
+      "id": "SC-STDIN-METADATA-001",
+      "validation_layer": "json-schema",
+      "inputs": [
+        { "role": "result", "path": "../../../docs/examples/cli-v1/plan-change-succeeded.result.json" }
+      ],
+      "mutations": [
+        { "input_role": "result", "operation": "replace", "pointer": "/io/inputs/0/source", "value": "stdin" }
+      ],
+      "expected_valid": false,
+      "expected_rule_ids": ["RB-010"]
+    },
+    {
+      "id": "SC-PROJECTION-SCOPE-001",
+      "validation_layer": "json-schema",
+      "inputs": [
+        { "role": "result", "path": "../../../docs/examples/cli-v1/inspect-succeeded.result.json" }
+      ],
+      "mutations": [
+        { "input_role": "result", "operation": "replace", "pointer": "/data/projection/scope/target_task_uid", "value": "999" }
+      ],
+      "expected_valid": false,
+      "expected_rule_ids": ["RB-012"]
+    },
+    {
+      "id": "BC-APPLY-PATH-DIVERGENCE-001",
+      "validation_layer": "cross-artifact-binding",
+      "inputs": [
+        { "role": "result", "path": "../../../docs/examples/cli-v1/apply-change-succeeded.result.json" },
+        { "role": "plan_result", "path": "../../../docs/examples/cli-v1/plan-change-succeeded.result.json" }
+      ],
+      "mutations": [
+        { "input_role": "result", "operation": "replace", "pointer": "/data/artifact_set/path", "value": "/work/other-project" }
+      ],
+      "expected_valid": false,
+      "expected_rule_ids": ["RB-011"]
+    },
+    {
+      "id": "BC-PROJECTION-TARGET-DIVERGENCE-001",
+      "validation_layer": "cross-artifact-binding",
+      "inputs": [
+        { "role": "projection", "path": "../../../docs/examples/artifacts-v1/task-change-context-projection.example.json" },
+        { "role": "semantic_state", "path": "../../../testdata/conformance/v1/golden/semantic/dependency.state.json" }
+      ],
+      "mutations": [
+        { "input_role": "projection", "operation": "replace", "pointer": "/scope/target_task_uid", "value": "999" }
+      ],
+      "expected_valid": false,
+      "expected_rule_ids": ["RB-012"]
+    },
+    {
+      "id": "BC-PROJECTION-BINDING-VALID-001",
+      "validation_layer": "cross-artifact-binding",
+      "inputs": [
+        { "role": "projection", "path": "../../../docs/examples/artifacts-v1/task-change-context-projection.example.json" },
+        { "role": "semantic_state", "path": "../../../testdata/conformance/v1/golden/semantic/dependency.state.json" }
+      ],
+      "mutations": [],
+      "expected_valid": true,
+      "expected_rule_ids": [],
+      "checked_rule_ids": ["RB-012"]
+    },
+    {
+      "id": "SC-INSPECT-OBSERVED-EFFECT-001",
+      "validation_layer": "json-schema",
+      "inputs": [
+        { "role": "result", "path": "../../../docs/examples/cli-v1/inspect-succeeded.result.json" }
+      ],
+      "mutations": [
+        {
+          "input_role": "result",
+          "operation": "replace",
+          "pointer": "/effects/project_artifact",
+          "value": {
+            "path": "/work/next-project",
+            "publication_state": "committed",
+            "created_by_invocation": false
+          }
+        }
+      ],
+      "expected_valid": false,
+      "expected_rule_ids": ["RB-010"]
+    },
+    {
+      "id": "SC-APPLY-RUNTIME-COMMITTED-001",
+      "validation_layer": "json-schema",
+      "inputs": [
+        { "role": "result", "path": "../../../docs/examples/cli-v1/apply-change-incomplete.result.json" }
+      ],
+      "mutations": [
+        { "input_role": "result", "operation": "replace", "pointer": "/effects/project_artifact/publication_state", "value": "committed" }
+      ],
+      "expected_valid": false,
+      "expected_rule_ids": ["RB-011"]
+    },
+    {
+      "id": "BC-VERIFY-PATH-DIVERGENCE-001",
+      "validation_layer": "cross-artifact-binding",
+      "inputs": [
+        { "role": "result", "path": "../../../docs/examples/cli-v1/verify-artifact-committed.result.json" }
+      ],
+      "mutations": [
+        { "input_role": "result", "operation": "replace", "pointer": "/data/verification/path", "value": "/work/other-project" }
+      ],
+      "expected_valid": false,
+      "expected_rule_ids": ["RB-011"]
+    },
+    {
+      "id": "BC-PROJECTION-DIGEST-DIVERGENCE-001",
+      "validation_layer": "cross-artifact-binding",
+      "inputs": [
+        { "role": "projection", "path": "../../../docs/examples/artifacts-v1/task-change-context-projection.example.json" },
+        { "role": "semantic_state", "path": "../../../testdata/conformance/v1/golden/semantic/dependency.state.json" }
+      ],
+      "mutations": [
+        { "input_role": "projection", "operation": "replace", "pointer": "/source_state_digest/value", "value": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee" }
+      ],
+      "expected_valid": false,
+      "expected_rule_ids": ["RB-012"]
+    },
+    {
+      "id": "BC-PROJECTION-CONTENT-DIVERGENCE-001",
+      "validation_layer": "cross-artifact-binding",
+      "inputs": [
+        { "role": "projection", "path": "../../../docs/examples/artifacts-v1/task-change-context-projection.example.json" },
+        { "role": "semantic_state", "path": "../../../testdata/conformance/v1/golden/semantic/dependency.state.json" }
+      ],
+      "mutations": [
+        { "input_role": "projection", "operation": "replace", "pointer": "/target_task/name", "value": "Different task" }
+      ],
+      "expected_valid": false,
+      "expected_rule_ids": ["RB-012"]
+    },
+    {
+      "id": "SC-USAGE-EFFECT-001",
+      "validation_layer": "json-schema",
+      "inputs": [
+        { "role": "result", "path": "../../../docs/examples/cli-v1/usage-error.result.json" }
+      ],
+      "mutations": [
+        {
+          "input_role": "result",
+          "operation": "replace",
+          "pointer": "/effects/project_artifact",
+          "value": {
+            "path": "/work/next-project",
+            "publication_state": "committed",
+            "created_by_invocation": true
+          }
+        }
+      ],
+      "expected_valid": false,
+      "expected_rule_ids": ["RB-010"]
+    },
+    {
+      "id": "SC-SUCCESS-NULL-INPUT-DIGEST-001",
+      "validation_layer": "json-schema",
+      "inputs": [
+        { "role": "result", "path": "../../../docs/examples/cli-v1/inspect-succeeded.result.json" }
+      ],
+      "mutations": [
+        { "input_role": "result", "operation": "replace", "pointer": "/io/inputs/0/digest", "value": null }
+      ],
+      "expected_valid": false,
+      "expected_rule_ids": ["RB-010"]
+    },
+    {
+      "id": "BC-VERIFY-STATE-DIVERGENCE-001",
+      "validation_layer": "cross-artifact-binding",
+      "inputs": [
+        { "role": "result", "path": "../../../docs/examples/cli-v1/verify-artifact-committed.result.json" }
+      ],
+      "mutations": [
+        { "input_role": "result", "operation": "replace", "pointer": "/effects/project_artifact/publication_state", "value": "corrupt" }
+      ],
+      "expected_valid": false,
+      "expected_rule_ids": ["RB-011"]
+    }
+  ]
+}

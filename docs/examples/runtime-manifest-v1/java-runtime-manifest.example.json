@@ -1,0 +1,88 @@
+{
+  "kind": "miku_project_runtime_manifest",
+  "schema_version": "1",
+  "product": {
+    "name": "miku-project",
+    "release_version": "1.0.0",
+    "product_contract_version": "1",
+    "semantic_contract_version": "1",
+    "format_contract_version": "1",
+    "change_contract_version": "1",
+    "cli_contract_version": "1",
+    "artifact_schema": "miku_project_artifacts/v1",
+    "result_schema": "miku_project_cli_result/v1",
+    "diagnostic_schema": "miku_project_cli_diagnostic/v1",
+    "diagnostic_catalog_version": "1"
+  },
+  "runtime": {
+    "family": "java",
+    "role": "conforming",
+    "version": "1.0.0",
+    "launcher": "java-jar"
+  },
+  "compatibility": {
+    "capabilities": {
+      "catalog_version": "1",
+      "profiles": ["miku-project-cli-core/v1"],
+      "provided": [
+        "miku-project.capability.apply-change.set-task-percent-complete/v1",
+        "miku-project.capability.format.ms-project-xml-subset.read/v1",
+        "miku-project.capability.format.ms-project-xml-subset.write/v1",
+        "miku-project.capability.inspect.project-overview/v1",
+        "miku-project.capability.inspect.task-change-context/v1",
+        "miku-project.capability.plan-change.set-task-percent-complete/v1",
+        "miku-project.capability.publication.exclusive-directory-commit-marker/v1",
+        "miku-project.capability.validate.project/v1",
+        "miku-project.capability.verify-artifact/v1"
+      ],
+      "extensions": []
+    },
+    "conformance": {
+      "fixture_suite_version": "1",
+      "corpus_digest": {
+        "algorithm": "sha-256",
+        "value": "1111111111111111111111111111111111111111111111111111111111111111"
+      }
+    }
+  },
+  "artifacts": {
+    "executable": {
+      "path": "miku-project-java-1.0.0.jar",
+      "media_type": "application/java-archive",
+      "size_bytes": 2000000,
+      "digest": {
+        "algorithm": "sha-256",
+        "value": "4444444444444444444444444444444444444444444444444444444444444444"
+      }
+    },
+    "sources": {
+      "path": "miku-project-java-1.0.0-sources.tgz",
+      "media_type": "application/gzip",
+      "size_bytes": 750000,
+      "digest": {
+        "algorithm": "sha-256",
+        "value": "5555555555555555555555555555555555555555555555555555555555555555"
+      }
+    }
+  },
+  "source": {
+    "contract": {
+      "repository": "https://github.com/igapyon/miku-project",
+      "revision": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "tag": "v1.0.0"
+    },
+    "runtime": {
+      "repository": "https://github.com/igapyon/miku-project-java",
+      "revision": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+      "tag": "v1.0.0"
+    }
+  },
+  "reference_runtime": {
+    "family": "node",
+    "version": "1.0.0",
+    "manifest_digest": {
+      "algorithm": "sha-256",
+      "value": "6666666666666666666666666666666666666666666666666666666666666666"
+    }
+  }
+}

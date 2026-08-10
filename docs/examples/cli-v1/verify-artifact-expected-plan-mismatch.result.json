@@ -1,0 +1,114 @@
+{
+  "kind": "miku_project_cli_result",
+  "schema_version": "1",
+  "contract": {
+    "product": "miku-project",
+    "product_contract_version": "1",
+    "artifact_schema": "miku_project_artifacts/v1",
+    "result_schema": "miku_project_cli_result/v1",
+    "diagnostic_schema": "miku_project_cli_diagnostic/v1",
+    "diagnostic_catalog_version": "1"
+  },
+  "runtime": {
+    "binding_status": "verified",
+    "family": "node",
+    "version": "1.0.0",
+    "artifact_digest": {
+      "algorithm": "sha-256",
+      "value": "0000000000000000000000000000000000000000000000000000000000000000"
+    },
+    "manifest_digest": {
+      "algorithm": "sha-256",
+      "value": "7777777777777777777777777777777777777777777777777777777777777777"
+    },
+    "capability_profile": "miku-project-cli-core/v1",
+    "fixture_suite_version": "1"
+  },
+  "command": "verify-artifact",
+  "side_effect_class": "read-only",
+  "status": "rejected",
+  "exit_code": 1,
+  "io": {
+    "stdin_option": null,
+    "inputs": [
+      {
+        "role": "artifact_set",
+        "option": "--artifact-set",
+        "source": "filesystem-path",
+        "path": "/work/next-project",
+        "digest": null
+      },
+      {
+        "role": "expected_plan_result",
+        "option": "--expect-plan-result",
+        "source": "file",
+        "path": "/work/other-plan.result.json",
+        "digest": {
+          "algorithm": "sha-256",
+          "value": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+        }
+      }
+    ],
+    "result": { "target": "stdout", "path": null },
+    "destination": null
+  },
+  "effects": {
+    "project_input_modified": false,
+    "project_artifact": {
+      "path": "/work/next-project",
+      "publication_state": "committed",
+      "created_by_invocation": false
+    },
+    "cleanup": { "status": "not-needed", "path": null }
+  },
+  "observations": {
+    "normalizations": [],
+    "losses": [],
+    "unsupported": []
+  },
+  "next_action": {
+    "action": "replan-and-request-human-approval",
+    "command": "plan-change",
+    "source_retryability": "after-replan-and-approval"
+  },
+  "diagnostics": [
+    {
+      "kind": "miku_project_cli_diagnostic",
+      "schema_version": "1",
+      "code": "publication.expected-plan-mismatch",
+      "severity": "error",
+      "category": "publication",
+      "message": "The committed artifact does not match the expected output plan.",
+      "location": {
+        "scope": "artifact",
+        "path": "/work/next-project/provenance.json",
+        "option": "--expect-plan-result",
+        "artifact_role": "provenance",
+        "rule_id": null
+      },
+      "retryability": "after-replan-and-approval",
+      "details": {}
+    }
+  ],
+  "data": {
+    "verification": {
+      "path": "/work/next-project",
+      "publication_state": "committed",
+      "matches_expected_plan": false,
+      "bindings": {
+        "change_request_digest": {
+          "algorithm": "sha-256",
+          "value": "25bb990ec7530995c7fdcb201c57eed083c85fe6e99aa77bc1f13814ca693c60"
+        },
+        "semantic_diff_digest": {
+          "algorithm": "sha-256",
+          "value": "46b35347fbf493430bf9dd285b788bab6950cff431eb96b01a1725aaf9718db3"
+        },
+        "output_plan_digest": {
+          "algorithm": "sha-256",
+          "value": "33f6a857bb88afe72d96458dd9c152c1f856ddced7c885534b768978462a05f7"
+        }
+      }
+    }
+  }
+}

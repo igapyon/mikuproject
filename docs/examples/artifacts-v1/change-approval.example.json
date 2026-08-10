@@ -1,0 +1,22 @@
+{
+  "kind": "miku_project_change_approval",
+  "schema_version": "1",
+  "semantic_contract_version": "1",
+  "approved": true,
+  "base_state_digest": {
+    "algorithm": "sha-256",
+    "value": "a98f0c8b560382234572a61f360c9e96911bc75fc1d57b79968d6e60b5d751d0"
+  },
+  "change_request_digest": {
+    "algorithm": "sha-256",
+    "value": "25bb990ec7530995c7fdcb201c57eed083c85fe6e99aa77bc1f13814ca693c60"
+  },
+  "semantic_diff_digest": {
+    "algorithm": "sha-256",
+    "value": "46b35347fbf493430bf9dd285b788bab6950cff431eb96b01a1725aaf9718db3"
+  },
+  "output_plan_digest": {
+    "algorithm": "sha-256",
+    "value": "33f6a857bb88afe72d96458dd9c152c1f856ddced7c885534b768978462a05f7"
+  }
+}

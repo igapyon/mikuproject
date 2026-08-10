@@ -1,0 +1,64 @@
+{
+  "kind": "miku_project_projection",
+  "schema_version": "1",
+  "semantic_contract_version": "1",
+  "purpose": "task_change_context",
+  "source_state_digest": {
+    "algorithm": "sha-256",
+    "value": "a98f0c8b560382234572a61f360c9e96911bc75fc1d57b79968d6e60b5d751d0"
+  },
+  "scope": {
+    "target_task_uid": "2",
+    "included_domains": ["project", "target_task", "ancestors", "dependencies", "assignments", "resources"],
+    "omitted_domains": ["other_task_details", "raw_external_artifact", "unsupported_data"]
+  },
+  "project": {
+    "name": "Dependency Project",
+    "start": "2026-03-16T09:00:00",
+    "finish": "2026-03-19T18:00:00",
+    "current_date": "2026-03-16T09:00:00",
+    "schedule_from_start": true,
+    "calendar_uid": "1"
+  },
+  "target_task": {
+    "uid": "2",
+    "name": "Execute",
+    "parent_uid": null,
+    "start": "2026-03-18T09:00:00",
+    "finish": "2026-03-19T18:00:00",
+    "duration": "PT16H0M0S",
+    "milestone": false,
+    "summary": false,
+    "percent_complete": 0
+  },
+  "ancestors": [],
+  "dependencies": [
+    {
+      "predecessor_uid": "1",
+      "successor_uid": "2",
+      "type": "FS",
+      "lag": "PT0H0M0S"
+    }
+  ],
+  "resources": [
+    { "uid": "1", "name": "Miku", "type": "work" }
+  ],
+  "assignments": [
+    {
+      "uid": "1",
+      "task_uid": "2",
+      "resource_uid": "1",
+      "start": "2026-03-18T09:00:00",
+      "finish": "2026-03-19T18:00:00",
+      "units": "1",
+      "work": "PT16H0M0S"
+    }
+  ],
+  "capability": { "unsupported_data": [] },
+  "supported_change_requests": [
+    {
+      "kind": "set_task_percent_complete",
+      "required_preconditions": ["source_state_digest", "expected_percent_complete"]
+    }
+  ]
+}

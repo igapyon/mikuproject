@@ -1,0 +1,96 @@
+{
+  "kind": "miku_project_cli_result",
+  "schema_version": "1",
+  "contract": {
+    "product": "miku-project",
+    "product_contract_version": "1",
+    "artifact_schema": "miku_project_artifacts/v1",
+    "result_schema": "miku_project_cli_result/v1",
+    "diagnostic_schema": "miku_project_cli_diagnostic/v1",
+    "diagnostic_catalog_version": "1"
+  },
+  "runtime": {
+    "binding_status": "verified",
+    "family": "node",
+    "version": "1.0.0",
+    "artifact_digest": {
+      "algorithm": "sha-256",
+      "value": "0000000000000000000000000000000000000000000000000000000000000000"
+    },
+    "manifest_digest": {
+      "algorithm": "sha-256",
+      "value": "7777777777777777777777777777777777777777777777777777777777777777"
+    },
+    "capability_profile": "miku-project-cli-core/v1",
+    "fixture_suite_version": "1"
+  },
+  "command": "verify-artifact",
+  "side_effect_class": "read-only",
+  "status": "succeeded",
+  "exit_code": 0,
+  "io": {
+    "stdin_option": null,
+    "inputs": [
+      {
+        "role": "artifact_set",
+        "option": "--artifact-set",
+        "source": "filesystem-path",
+        "path": "/work/next-project",
+        "digest": null
+      },
+      {
+        "role": "expected_plan_result",
+        "option": "--expect-plan-result",
+        "source": "file",
+        "path": "/work/plan.result.json",
+        "digest": {
+          "algorithm": "sha-256",
+          "value": "62650a1c1e66b9d42908dc031cbb8e7abb108e0b87f32f3d2a9f4fc6ebda1d18"
+        }
+      }
+    ],
+    "result": { "target": "stdout", "path": null },
+    "destination": null
+  },
+  "effects": {
+    "project_input_modified": false,
+    "project_artifact": {
+      "path": "/work/next-project",
+      "publication_state": "committed",
+      "created_by_invocation": false
+    },
+    "cleanup": { "status": "not-needed", "path": null }
+  },
+  "observations": {
+    "normalizations": [],
+    "losses": [],
+    "unsupported": []
+  },
+  "next_action": {
+    "action": "complete",
+    "command": null,
+    "source_retryability": null
+  },
+  "diagnostics": [],
+  "data": {
+    "verification": {
+      "path": "/work/next-project",
+      "publication_state": "committed",
+      "matches_expected_plan": true,
+      "bindings": {
+        "change_request_digest": {
+          "algorithm": "sha-256",
+          "value": "25bb990ec7530995c7fdcb201c57eed083c85fe6e99aa77bc1f13814ca693c60"
+        },
+        "semantic_diff_digest": {
+          "algorithm": "sha-256",
+          "value": "46b35347fbf493430bf9dd285b788bab6950cff431eb96b01a1725aaf9718db3"
+        },
+        "output_plan_digest": {
+          "algorithm": "sha-256",
+          "value": "33f6a857bb88afe72d96458dd9c152c1f856ddced7c885534b768978462a05f7"
+        }
+      }
+    }
+  }
+}

@@ -14,7 +14,7 @@ audience:
   - developer
   - agent
 created: 2026-08-09
-updated: 2026-08-10
+updated: 2026-08-11
 ---
 
 # miku-project ゼロベース再設計仕様 v20260809
@@ -208,7 +208,7 @@ Microsoft Office と Markdown の変換系列には、複数の小さな変換CL
 
 `miku-project` と旧 `mikuproject` の名称がディレクトリ名に混在しているが、これは固定すべき製品構造ではなく、名称移行の途中状態である。別途、`miku-project` 命名へ修正する予定があるため、新仕様では `miku-project` を正規名称として扱い、旧名称を新しい契約へ持ち込まない。
 
-調査時点の各リポジトリ版は、Main `0.14.0`、Java `0.12.0`、Skills `0.12.3`、Web `0.1.0`、MCP `0.0.0` である。版の差は各componentが独立して成長した履歴を示している。新仕様では、単純な版番号一致だけに依存せず、Skillsが利用するruntimeの正確な版、互換契約、由来、digestを記録できる形を検討する。
+調査時点の各リポジトリ版は、Main `0.14.0`、Java `0.12.0`、Skills `0.12.3`、Web `0.1.0`、MCP `0.0.0` である。版の差は各componentが独立して成長した履歴を示している。新仕様では、単純な版番号一致だけに依存せず、Skillsが利用するruntimeの正確な版、互換契約、由来、digestを[runtime manifest contract v1](miku-project-runtime-manifest-contract-v1.md)として記録・検証する。
 
 `miku-score` は製品説明上すでに、楽譜エディターではなく変換、確認、受け渡しのツールとして整理されている。一方で、Web Appを主な配布形態としてきた履歴があり、CLI runtimeとAgent Skillsは後から強化されている。予定されているWeb分離後の構造は、miku-projectのゼロベース再設計にとっても比較材料になる。
 
@@ -244,7 +244,7 @@ miku-project の意味・操作・検証契約
 後続検討: miku-project-web / miku-project-mcp
 ```
 
-NodeとJavaのどちらを参照実装とするか、完全な同等性を求めるか、Java固有拡張を許可するかは未決事項とする。
+v1ではNode CLIを最初の実行可能な参照実装とし、Java CLIは固定済みの共通製品契約へ適合するruntimeとする。正本は承認済みの契約、Schema、共通fixture / goldenであり、Nodeの偶発的な挙動は契約を上書きしない。共通v1 capabilityには意味的な適合を求める。[runtime capability contract v1](miku-project-runtime-capability-contract-v1.md)で閉じたcore profileを定義し、v1の共有CLI上ではNode/Java固有extensionを採用しない。
 
 ## miku-project の製品定義案
 
@@ -333,9 +333,9 @@ CLI は製品仕様の実行可能な入口とする。
 - 明示的な入力、出力、形式、文字コード、上書き条件を持つ
 - 大きな一括処理だけでなく、検査と検証を単独で実行できる
 - 非対話実行を基本とし、人間確認は Agent Skills または呼び出し側が明示的に挿入できる
-- 失敗時に不完全な成果物を公開せず、出力は可能な限り原子的に確定する
+- 失敗時に不完全な成果物を成功として公開せず、明示的なcommit markerで利用可能状態を確定する
 
-コマンド名は未決定だが、miku-soft 共通の操作語彙として次を候補にする。
+初期検討では、miku-soft 共通の操作概念として次を候補にした。
 
 ```text
 inspect
@@ -357,7 +357,9 @@ export
 | `apply` | 許可された変更要求を適用し、次の状態を生成する | プロジェクトの意味を変更するため、事前確認を要する |
 | `export` | 外部利用または閲覧用の派生成果物を生成する | 新規出力を生成するが、入力を変更しない |
 
-`convert` と `export` を別コマンドとして残すかなど、最終的な語彙は利用シナリオを決めた後に確定する。すべての miku-soft が同じコマンドを持つ必要はない。同じ意味の操作には同じ語彙、同じ副作用の扱い、同じ入出力原則を使うことを重視する。
+G0〜G2で利用シナリオとartifact/change contractを絞り、Gate G3で承認したv1 project workflow commandは`inspect`、`validate`、`plan-change`、`apply-change`、`verify-artifact`の五つとする。generic `diff`はC1固有のplanningへ、概念上の`apply`と`publish`は承認必須の`apply-change`へまとめる。`convert`、`export`、`report`は選択済みv1 scenarioに独立jobがないため後続へ送る。command/I/O/publicationは [CLI contract v1](miku-project-cli-contract-v1.md)、result/diagnostics/status/exit codeは [CLI result and diagnostics contract v1](miku-project-cli-result-contract-v1.md)、非対話実行、human gate、retry/abort/safe next actionは[human gate and next action contract v1](miku-project-human-gate-and-next-action-contract-v1.md)を正本とする。
+
+すべての miku-soft が同じcommandを持つ必要はない。同じ意味の操作には同じ語彙、同じ副作用の扱い、同じ入出力原則を使うことを重視する。
 
 AI Agent が理解すべき正本はコマンド名ではなく、versioned schemaで定義されたartifactの役割と操作契約である。miku-projectでは、概念上の受け渡しを次のように捉える。
 
@@ -379,18 +381,19 @@ Agent Skills が担当するのは次の事項である。
 - 人間の確認が必要な地点を示す
 - diagnostics に応じて続行、再試行、中止を判断する
 - 生成AIに渡す Projection と返却形式を指定する
-- 適用前後の validate と diff を実施する
+- `plan-change`前の入力確認と、`apply-change`後の`verify-artifact`を実施する
 
 Agent Skills は、CLI が所有する変換、検証、正規化、Patch 適用を独自実装しない。CLI の人間向けメッセージを不安定な文字列解析で解釈せず、構造化された結果を利用する。
 
 代表的な安全な往復workflowは次の順序とする。
 
 ```text
-inspect → validate → Projection生成 → Agentまたは人の判断
-        → 変更要求 → validate → diff → 人間確認 → apply → validate → export
+validate → inspect（目的別Projection）→ Agentまたは人の判断
+         → 変更要求 → plan-change → semantic diff + output plan
+         → 人間確認 → approval → apply-change → verify-artifact
 ```
 
-読み取り、検証、比較は自動実行しやすくし、プロジェクトの意味を変える `apply` の前に人間確認を置けるようにする。確認が不要な利用形態でも、呼び出し側が明示的に変更を許可したことをCLIへ伝えられる契約を定義する。
+読み取り、検証、計画は自動実行しやすくし、プロジェクトの意味を変える`apply-change`の前に人間確認を置く。CLIは承認を自作せず、呼び出し側が明示的に作ったapproval artifactを要求する。
 
 ## 初期検討の対象範囲
 
@@ -477,7 +480,7 @@ MCP の transport、session、tool schema などの都合を、初期の CLI と
 7. 生成AIまたは人に許可する変更操作を定義する
 8. validate、diff、apply の安全条件を定義する
 9. CLI の最小コマンド体系と構造化出力を定義する
-10. Node CLI と Java CLI の参照実装、同等性、固有拡張の方針を定義する
+10. Node CLIを参照実装として固定し、Node / Javaの共通適合範囲とruntime固有拡張の方針を定義する
 11. Agent Skills の最小ワークフローとruntime provenance契約を定義する
 12. 現行実装から再利用するコード、テスト、fixtures を選別する
 13. 後方互換性と移行方針を最後に決定する

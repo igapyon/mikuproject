@@ -69,6 +69,8 @@ npm test
 
 miku-soft の共有標準と、このリポジトリの追従状況は [docs/miku-soft-reference.md](docs/miku-soft-reference.md) と [docs/migration-worklog.md](docs/migration-worklog.md) を参照してください。
 
+CLI、Java CLI、Agent Skillsを中心にしたゼロベース再設計は、[2026-08-09版仕様](docs/miku-project-zero-base-spec-v20260809.md) と [2026-08-10版実施計画](docs/miku-project-zero-base-implementation-plan-v20260810.md) を参照してください。WebとMCPは、この初期計画では後続検討です。
+
 ## 再利用 API
 
 Web App / Agent Skills / CLI / MCP から使いやすい集約入口として `globalThis.__mikuProjectCoreApi` を公開しています。
@@ -221,6 +223,8 @@ node bundle/miku-project.mjs export xml --in workbook.json --out project.xml
 
 ## 関連ドキュメント
 
+- [docs/miku-project-zero-base-spec-v20260809.md](docs/miku-project-zero-base-spec-v20260809.md)
+- [docs/miku-project-zero-base-implementation-plan-v20260810.md](docs/miku-project-zero-base-implementation-plan-v20260810.md)
 - [docs/architecture.md](docs/architecture.md)
 - [docs/import-export-workflows.md](docs/import-export-workflows.md)
 - [docs/core-api-import-export-notes.md](docs/core-api-import-export-notes.md)

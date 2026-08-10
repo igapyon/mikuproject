@@ -1,11 +1,51 @@
 # TODO
 
-この文書には、未完了の作業だけを書く。概要説明や仕様判断は `README.md` と `docs/spec.md` に寄せる。
+この文書には、現在着手可能な未完了作業と、再評価待ちの既存backlogだけを書く。新しい製品像は `docs/miku-project-zero-base-spec-v20260809.md`、詳細な順序と完了条件は `docs/miku-project-zero-base-implementation-plan-v20260810.md`、現行実装の仕様は `docs/spec.md` を参照する。
 
-## miku-project
+## ゼロベース再設計: G0 完了
 
+- [x] `ZB-P0.1` 新仕様、実施計画、TODO、現行仕様、worklogの文書authorityを確認する
+- [x] `ZB-P0.2` 現行CLI、core API、形式、diagnostics、testsのcapability matrixを作る
+- [x] `ZB-P0.3` 現行module、fixture、test、artifactを `reuse / evidence / rewrite / defer / drop` に仮分類する
+- [x] `ZB-P0.4` R1/C1を、v1で証明するend-to-end scenarioのG0提案として具体的な入力・出力例で書く
+- [x] `ZB-P0.5` scenarioごとにactor、human gate、成功、失敗、非目標を定義する
+- [x] `ZB-P0.6` 下記の現行backlogを選択scenarioとの関係でtriageする
+- [x] `ZB-P0.7` AI Agentフレンドリーを主要要件として、同じ操作契約を人、shell、CI、Agentが利用できる受入観点を定義する
+- [x] `ZB-P0.8` scenario内の操作を `read-only / artifact生成 / 意味変更` に仮分類し、構造化結果、次の行動、human gateを対応づける
+- [x] `Gate G0` 一文の製品定義、primary job、v1 scenario 1〜2個、非目標、AI Agentフレンドリーの受入観点を承認する（2026-08-10）
 
-- 最優先: サンプルデータを更新し、利用者の好みに合う題材・構造・見た目へ見直す
+G0の承認内容は、[v1利用シナリオ](miku-project-zero-base-scenarios-v1.md)、[現行capability matrix](miku-project-current-capability-matrix-v20260810.md)、[再利用資産棚卸し](miku-project-zero-base-reuse-inventory-v20260810.md)に記録する。詳細は [miku-project-zero-base-implementation-plan-v20260810.md](miku-project-zero-base-implementation-plan-v20260810.md) を参照する。
+
+## ゼロベース再設計: 現在の最優先（G1）
+
+- [ ] `ZB-P1.1` project、task、階層、identity、順序の最小semantic scopeを定義する
+- [ ] `ZB-P1.2` 日付、日時、duration、milestone、summary、進捗の意味と不変条件を定義する
+- [ ] `ZB-P1.3` dependencyの最小scopeとcycle、link type、lagの規則を定義する
+- [ ] `ZB-P1.4` resource、assignment、calendar、actual、baseline、timephased dataをv1に含めるか個別に決める
+- [ ] `ZB-P1.5` unknown field、拡張field、opaque preservationの扱いを定義する
+- [ ] `ZB-P1.6` stable identity、selector、並び順、文字列normalization、timezoneの規則を定義する
+- [ ] `ZB-P1.7` valid、invalid、boundaryのsemantic fixturesを作る
+- [ ] `Gate G1` v1 fieldとoperation candidateを、意味、不変条件、identity、順序、valid/invalid境界へ対応づけて承認する
+
+最初のC1の変更範囲はtaskの`percentComplete`更新だけである。dependency、resource、assignmentは観測・保持対象とし、編集は含めない。G1のドラフトは [semantic contract v1](miku-project-semantic-contract-v1.md) に記録する。
+
+## 現行仕様由来・再評価待ち
+
+以下は過去の実装と利用経験から得た候補を失わないために保持する。新仕様での実装を約束するものではない。Web UI項目は後続の `miku-project-web` 候補、帳票や見た目はderived output候補、意味と往復に関する項目は`ZB-P0`〜`ZB-P2`の入力としてtriageする。
+
+次の分類は、以下の個別backlogに最初に適用する再評価先である。同じ項目が複数の分類に関係する場合も、R1/C1を成立させるまで実装を開始しない。
+
+| 現行backlogの種類 | disposition | 再評価先 |
+| --- | --- | --- |
+| sample、`local-data`、BOM、source分割、build/test時間、既存roundtrip回帰 | evidence / reuse候補。現行互換とfixtureの根拠として保持 | `ZB-P4` |
+| Skills runtime受け渡し、bundle smoke | Agent Skillsのprovenance候補 | `ZB-P6` |
+| XML/XLSX、dependency、calendar、validation、partial apply、diff、scoped Projection | semantic / format / change候補。現行JSONやCLIを正本にしない | `ZB-P1`〜`ZB-P3` |
+| actual、Earned Value、baseline、timephased data、ExtendedAttribute | domain scope候補。v1実装を約束しない | `ZB-P1` |
+| Overview、Output、画面内task操作 | `miku-project-web` の後続候補 | `ZB-P8` |
+| WBS XLSX、SVG、Markdown、Mermaid、sample workbookの見た目、タイムチャート | derived output候補。v1 coreの後に評価 | `ZB-P4`後 / `G7`後 |
+| `docs/spec.md` と現行実装のdrift | current/target authorityの移行作業 | `ZB-P0`、`ZB-P7` |
+
+- サンプルデータを更新し、利用者の好みに合う題材・構造・見た目へ見直す
 - `miku-project-skills` 側で、上流 `bundle/miku-project.mjs` を `skills/miku-project/runtime/miku-project.mjs` として受け取る手順と smoke test 観点を反映する
 - WBS workbook と `miku-project-sample.xlsx` のタイトル行で、フォントサイズ指定をどこまで使うか整理する
 - `Mermaid` 出力は Markdown / 設計資料向けに残しつつ、見た目を制御しやすい `WBS SVG` 描画を別系統で追加するか検討する

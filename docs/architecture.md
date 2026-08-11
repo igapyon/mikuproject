@@ -138,7 +138,7 @@ sample 生成も含めた従来相当のフル実行:
 npm run build:full
 ```
 
-`npm run build` は日常開発向けの標準 build で、`build:core`、`build:browser-runtime`、`build:cli-bundle`、`test:fast` を順に実行する。`npm run build:full` は同じ build と Main Application の complete suite を実行する。`build:xlsx-sample` は必要なときに `npm run build:xlsx-sample` で明示実行する。`npm test` / `npm run test:all` は core、CLI、browser runtime contract を検証する。
+`npm run build` は日常開発向けの標準 build で、`build:core`、`build:browser-runtime`、`build:cli-bundle`、`test:fast` を順に実行する。`test:fast` はcore APIとlegacy CLI compatibility contractを含む日常回帰であり、時間のかかるCLI統合testとbrowser runtime testは含めない。`npm run build:full` は同じ build と完全suiteを実行する。`npm test` / `npm run test:all` は、全checked-in test fileを実行する完全suite aliasである。`build:xlsx-sample` は必要なときに `npm run build:xlsx-sample` で明示実行する。
 
 スクリプトの役割は次のとおり。
 

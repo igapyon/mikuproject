@@ -1,24 +1,5 @@
 import { spawnSync } from "node:child_process";
-
-const FAST_SUITE = [
-  "tests/mikuproject-ai-json-util.test.js",
-  "tests/mikuproject-main-util.test.js",
-  "tests/mikuproject-excel-io.test.js",
-  "tests/mikuproject-msproject-xml-roundtrip.test.js",
-  "tests/mikuproject-project-workbook-json.test.js",
-  "tests/mikuproject-project-xlsx.test.js",
-  "tests/miku-project-browser-runtime.test.js",
-  "tests/mikuproject-cli-compatibility-contract.test.js",
-  "tests/mikuproject-cli.test.js",
-  "tests/mikuproject-wbs-markdown.test.js",
-  "tests/mikuproject-wbs-xlsx.test.js"
-];
-
-const SUITES = {
-  fast: FAST_SUITE,
-  full: FAST_SUITE,
-  all: FAST_SUITE
-};
+import { SUITES } from "./lib/test-suite-topology.mjs";
 
 const requestedSuite = process.argv[2] || "all";
 if (!Object.hasOwn(SUITES, requestedSuite)) {

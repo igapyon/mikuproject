@@ -157,8 +157,15 @@ P4ではNode CLIを承認済み契約の参照実装にする。最初に現行�
   - [x] `ZB-P4.3.4` legacy commandを`ai`、`state`、`import/export`、`report`のfamily serviceへ一つずつ移し、`cli-legacy-router.mjs`と73行のentrypoint wiringへ縮小した
   - [x] `ZB-P4.3.5` CLI内部moduleを決定的な順序でsingle `.mjs` bundleへ内包し、既存のrepository外bundle smokeとsource archiveの内容確認を通した
   - [x] `ZB-P4.3` 完了確認: `npm run test:full`、`npm run build:full`、P4.1 compatibility contract、repository外bundle smokeが成功し、v1 command / semantic / safe publicationを先取りしていない
-- [ ] `ZB-P4.4` G0で選んだscenario一つだけを新契約でend-to-end実装する
-- [ ] `ZB-P4.5` whole-project inspect/validate、semantic diff、pre/post apply validationを選択scopeに応じて実装する
+- [ ] `ZB-P4.4` R1の外部XML `validate → inspect(project_overview)` を最初の新契約vertical sliceとして実装する（詳細は[実施計画のP4.4](miku-project-zero-base-implementation-plan-v20260810.md#p44の実行計画)）
+  - [ ] `ZB-P4.4.1` schema registry / standalone validator、canonical JSON / SHA-256、semantic collection canonicalizationを実装し、生成物driftとgolden digestをdirect testで固定する
+  - [ ] `ZB-P4.4.2` legacy parserと分離したv1 strict argv、exclusive result file、result envelope / diagnostic / status / exit / next-action builderを実装する
+  - [ ] `ZB-P4.4.3` XML subset profile scan → semantic state decode → v1 invariant validationを実装し、`S-V001`、`S-I012`、`S-I020`を通す
+  - [ ] `ZB-P4.4.4` `validate`をfile/stdin・stdout/new result fileで実装し、`CV-VALID-001`、`CV-INVALID-001`、`CV-UNSUPPORTED-001`をcontract testへ接続する
+  - [ ] `ZB-P4.4.5` semantic stateからv1 `project_overview`を生成し、source digest / scope / content bindingと`CI-OVERVIEW-001` goldenを固定する
+  - [ ] `ZB-P4.4.6` fixed test bindingによるR1 integration、byte determinism、usage時project未読、legacy回帰、bundle/source archive包含を検証する
+  - [ ] P4.4ではpartial runtimeを`miku-project-cli-core/v1`適合として公開しない。実asset/source/manifest bindingとrepository外のworkflow smokeはP4.9/P4.10で行う
+- [ ] `ZB-P4.5` C1に必要な`task_change_context`、semantic diff、pre/post apply validationを実装する
 - [ ] `ZB-P4.6` exclusive output directory、commit marker、incomplete/corrupt判定、cleanup diagnostics、structured loss reportingを実装する
 - [ ] `ZB-P4.7` 既存coreの再利用部分を新conformance fixturesで検証する
 - [ ] `ZB-P4.8` 選択scopeの残りを一sliceずつ追加し、capability matrixを更新する

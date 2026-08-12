@@ -15,7 +15,7 @@ audience:
   - developer
   - agent
 created: 2026-08-10
-updated: 2026-08-11
+updated: 2026-08-12
 sources:
   - type: local-file
     role: primary
@@ -327,8 +327,9 @@ CLI examplesとProjection/request/diff/plan/approval/provenanceの全体がschem
   - `tests/mikuproject-test-suite-topology.test.js`で、全`*.test.js`の分類と重複なしを検証する
 - [x] `ZB-P4.3` semantic変更より先に、CLIのparser、command service、I/O、diagnostics、formattingを分離する
   - 実行計画は下記「P4.3の実行計画」を正本とする。`ZB-P4.3.1`から順に、一変更単位ずつ実施する
-- [ ] `ZB-P4.4` G0で選んだscenario一つだけを新契約でend-to-end実装する
-- [ ] `ZB-P4.5` whole-project inspect/validate、semantic diff、pre/post apply validationを選択scopeに応じて実装する
+- [ ] `ZB-P4.4` R1の外部XML `validate → inspect(project_overview)` を最初の新契約vertical sliceとして実装する
+  - 実行計画は下記「P4.4の実行計画」を正本とする。部分実装を完成済みcore runtimeとして公開せず、R1処理系と契約testを先に完成させる
+- [ ] `ZB-P4.5` C1に必要な`task_change_context`、semantic diff、pre/post apply validationを実装する
 - [ ] `ZB-P4.6` exclusive output directory、commit marker、incomplete/corrupt判定、cleanup diagnostics、structured loss reportingを実装する
 - [ ] `ZB-P4.7` 既存coreの再利用部分を新conformance fixturesで検証する
 - [ ] `ZB-P4.8` 選択scopeの残りを一sliceずつ追加し、capability matrixを更新する
@@ -407,6 +408,89 @@ CLI examplesとProjection/request/diff/plan/approval/provenanceの全体がschem
 - 次の`ZB-P4.4`が、legacy routerとは別のv1 command serviceを追加する変更として開始できる
 
 結果: 2026-08-12に通過。`npm run test:full`（17 files / 217 tests）と`npm run build:full`、P4.1 legacy compatibility contract、repository外single-MJS bundle smokeが成功した。legacy command、option、standard I/O、legacy overwrite、diagnostics envelope、exit behaviorは維持し、v1 command / semantic / safe publicationは実装していない。
+
+### P4.4の実行計画
+
+最初のvertical sliceは、G0で承認したR1のうち、`miku-project-ms-project-xml-subset/v1`のexternal XMLを`validate`し、validな同じ入力から`inspect --purpose project_overview`を得る経路とする。代表fixtureは`testdata/conformance/v1/fixtures/project/dependency-canonical.xml`であり、現行`ProjectModel`やlegacy `project_overview_view`を新契約の正本にはしない。
+
+このsliceに含めるのはexternal XMLのfile/stdin入力、stdoutまたは新規result fileへのresult envelope、format/semantic validation、`project_overview` Projectionである。committed artifact set入力、`task_change_context`、change request、diff、approval、publication、`verify-artifact`は後続へ送る。legacy `ai / state / import / export / report`のcommand、option、I/O、上書き、diagnosticsは変更しない。
+
+#### runtime適合を先取りしない境界
+
+v1の`succeeded` / domain `rejected` resultは、全九capabilityを持つ`miku-project-cli-core/v1`のmanifestと実行assetを検証した`runtime.binding_status = verified`へ束縛しなければならない。一方、R1だけを実装した時点ではcore profile全体を実装済みとはいえない。したがってP4.4では次を守る。
+
+- R1 command serviceはruntime bindingを明示依存として受け取り、固定したtest bindingでschema、semantic、I/O、determinismを検証する。このtest bindingはresult組立てのtest inputであり、release適合の証拠には数えない
+- R1の部分実装だけを指すrelease `runtime-manifest.json`を生成せず、`miku-project-cli-core/v1`適合、Gate G4通過、Node reference releaseを名乗らない
+- public bundleから五workflow commandを適合runtimeとして有効化するのは、P4.5〜P4.8で九capabilityが揃い、P4.9で実asset/source/manifest bindingを検証した後とする
+- P4.4のconformance記録は`R1 service pass / runtime-integrity pending`と区別し、`CR-*`、release smoke、外部manifest pinをpass扱いしない
+
+これはv1契約を緩和する措置ではなく、不完全なruntimeが契約適合を自己申告しないための実装順序である。
+
+#### `ZB-P4.4.1` schema validatorとcanonical data基盤を作る
+
+- `docs/schemas/`のartifact、result、diagnostic、runtime manifest schemaを一つのregistryとして読めるbuild/test基盤を作る
+- JSON Schema validatorはbuild時にstandalone codeへ生成し、製品runtimeへpackage lookupやsource checkoutを要求しない。generator、生成物、drift checkを同じ変更に含め、生成物にrelative/bare importが残らないことを検査する
+- canonical JSON serializer、canonical SHA-256、raw byte SHA-256、semantic collection canonicalizationを`conformance corpus v1`どおりに実装する。Unicode normalization、timestamp、host pathをsemantic digestへ混ぜない
+- `dependency.state.json`のdigest、schema正例、`contract-cases.json`のうちR1に必要なschema/binding caseでdirect testを作る
+- schema生成にbuild-time dependencyを追加する場合は、`package.json` / lockfile / `THIRD-PARTY-NOTICES.md`を同じ変更で更新し、runtime dependencyを増やさない
+
+想定配置: `scripts/lib/v1/cli-v1-canonical-json.mjs`、`scripts/generated/cli-v1-schema-validators.mjs`、`scripts/generate-cli-v1-schema-validators.mjs`、`tests/mikuproject-cli-v1-contract.test.js`。
+
+#### `ZB-P4.4.2` v1専用argvとresult transportを作る
+
+- raw argvから五workflow commandだけを識別するv1 dispatcherと、`inspect` / `validate`のstrict parserをlegacy parserとは別moduleに置く
+- long optionだけ、必須option、unknown/duplicate option、余分な位置引数、`project_overview`での`--task-uid`拒否、明示stdin一件を、project inputを読む前に検証する
+- `--result -`はJSON一件 + LFをstdoutへ、`--result <path>`は既存親directory内の未使用fileをexclusive createして返す。既存pathを上書きせず、stdout/stderrの役割をlegacy I/Oと混ぜない
+- result envelope、diagnostic、status `succeeded / rejected / usage-error / runtime-error`、exit `0 / 1 / 2 / 3`、`next_action`をstable codeから決定的に組み立てる
+- `process.argv`、stdin/stdout、filesystemをcommand serviceへ直接持たせず、entrypoint / v1 I/O境界から注入する
+
+想定配置: `scripts/lib/v1/cli-v1-argv.mjs`、`cli-v1-io.mjs`、`cli-v1-result.mjs`、`cli-v1-router.mjs`、`tests/mikuproject-cli-v1-argv-io.test.js`。
+
+#### `ZB-P4.4.3` XML subset decodeとsemantic validationを実装する
+
+- inputをraw byteで読みSHA-256を記録し、fatal UTF-8 decode、XML BOM normalization、XML declaration、namespace/root、許可element/attribute、singleton/container規則を検査する
+- XMLを`miku_project_semantic_state/v1`へdecodeし、pseudo task、ordered forest、required/optional field、FS/lag 0 dependency、resource、assignment、calendarを契約どおり対応づける
+- 現行XML DOM/codecのparse処理は再利用候補にできるが、現行validatorのwarning判定やmessage文字列をv1のoracleにしない。v1 validatorはstable diagnostic code、semantic rule ID、locationを直接生成する
+- まず`S-V001`、`S-I012`、`S-I020`の三seedを通し、valid stateは`dependency.state.json`とsemantic exact比較する。invalid/unsupportedでは成功state digestやProjectionを返さない
+- XML profile scanとsemantic invariant validationを分離し、P4.7で残るcatalog fixtureを追加できる構造にする
+
+想定配置: `scripts/lib/v1/cli-v1-xml-adapter.mjs`、`cli-v1-semantic-validator.mjs`、`tests/mikuproject-cli-v1-xml-adapter.test.js`。
+
+#### `ZB-P4.4.4` `validate` resultを完成させる
+
+- `validate --project <file|-> [--result <path|->]`を、strict parse → result reservation → XML decode → semantic validate → structured resultの順で実装する
+- `CV-VALID-001`は`validation.valid = true`、format profile、canonical state digest、diagnostics空、`complete`を返す
+- `CV-INVALID-001`は`semantic.invalid / S-I012`、`CV-UNSUPPORTED-001`は`semantic.unsupported / S-I020`として`rejected / 1`を返す
+- 三caseすべてでinput不変、destinationなし、project artifactなし、I/O source/path/digest、result target、observations、next actionをschema/binding ruleと照合する
+
+想定配置: `scripts/lib/v1/cli-v1-r1-commands.mjs`、`tests/mikuproject-cli-v1-validate.test.js`。
+
+#### `ZB-P4.4.5` `inspect project_overview`を完成させる
+
+- `inspect`は独自の緩い読取り経路を持たず、`validate`と同じXML decode / semantic validationを内部で必ず通す
+- valid semantic stateから、project required/optional field、semantic preorder上の全task、全dependency、unsupported summaryを`miku_project_projection/v1`へ決定的に射影する
+- `source_state_digest`、固定scope、included/omitted domain、taskの0始まり`order`を生成元stateへ`RB-012`で束縛する
+- legacy `api.aiViews.exportProjectOverviewView()`は用途とschemaが異なるため直接返さない。再利用する場合も、v1 Projection builderの明示mappingを経由する
+- `testdata/conformance/v1/golden/projection/dependency.project-overview.json`を追加し、`CI-OVERVIEW-001`をexact JSONで比較する。invalid/unsupported入力ではProjectionを返さない
+
+想定配置: `scripts/lib/v1/cli-v1-projection.mjs`、`tests/mikuproject-cli-v1-inspect.test.js`。
+
+#### `ZB-P4.4.6` R1 sliceを統合して回帰を固定する
+
+- v1 routerをlegacy routerの前段で識別できるようにするが、release manifest未完成のsource/bundleを適合runtimeとして公開しない境界を保つ
+- fixed test bindingを注入したR1 harnessでfile/stdin、stdout/new result file、同一条件二回のbyte determinism、result path既存拒否、usage error時project未読を検証する
+- direct testは`fast`、subprocess/I/O integrationは`full`へ分類し、suite topology testへ登録する
+- `scripts/build-cli-bundle.mjs`へ新module/生成validatorを決定的な順序で含め、source archiveにもschema、generator、golden、testを含める。ただしrepository外の適合runtime smokeはP4.9/P4.10まで未完と記録する
+- P4.1 legacy compatibility contract、既存CLI integration、`npm run test:fast`、`npm run test:full`、`npm run build:full`、`git diff --check`を通す
+
+#### `ZB-P4.4` 完了判定
+
+- `CV-VALID-001`、`CV-INVALID-001`、`CV-UNSUPPORTED-001`、`CI-OVERVIEW-001`がR1 service harnessでschema、semantic/binding、I/O、determinismの期待を満たす
+- external XMLのfile/stdinから`validate`と`project_overview`までが同じdecode/validation pipelineで完結し、入力と既存pathを変更しない
+- invalid/unsupported/usage errorで成功payloadを返さず、stable diagnosticと安全な`next_action`を返す
+- legacy CLIの外形互換と既存testが維持される
+- partial runtime manifest、適合宣言、G4通過、`task_change_context`、C1、artifact publicationを先取りしていない
+- 完了後の次作業は`ZB-P4.5`の`task_change_context`とC1 semantic planningである
 
 ### Gate G4
 

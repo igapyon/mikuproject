@@ -131,7 +131,7 @@ JSON Schemaで表現できない別object間の同値関係は、次のbinding r
 | `RB-007` | provenanceのruntime、input/change/output digest、target/before/afterが、承認済みplan、実際の入力、生成artifact、再decode後semantic stateと一致する |
 | `RB-008` | `verify-artifact --expect-plan-result`指定時は、committed artifactのprovenance bindingがexpected planと完全一致した場合だけ`succeeded / matches_expected_plan = true`とする。不一致は`rejected / false / publication.expected-plan-mismatch` |
 | `RB-009` | result status、diagnostic code、retryability、集約`next_action`をschemaどおり一致させる。result直下にdiagnostic件数summaryを複製しない |
-| `RB-010` | usage error以外ではcommandごとの入力role、option、source、順序、件数とdestination有無をschemaの固定matrixに一致させる。stdinは一入力だけ、`stdin_option`はそのoption、stdinのpathは`null`、file/directory/path入力とfile result/destinationはcanonical absolute pathでなければならない。successで実際に読んだartifact-set path以外の入力digestは非nullとする |
+| `RB-010` | usage error以外ではcommandごとの入力role、option、source、順序、件数とdestination有無をschemaの固定matrixに一致させる。stdinは一入力だけ、`stdin_option`はそのoption、stdinのpathは`null`、file/directory/path入力とfile result/destinationはcanonical absolute pathでなければならない。`apply-change`だけはsuccessful plan resultを検証してdestinationを取得する前のnon-successで`io.destination = null`を許す。successで実際に読んだartifact-set path以外の入力digestは非nullとする |
 | `RB-011` | plan resultでは`io.destination.path = output_plan.output.destination.path`。apply successではそのpath、承認済みplanのdestination、`effects.project_artifact.path`、`data.artifact_set.path`を一致させる。verifyではartifact-set入力path、`verification.path`、観測した`effects.project_artifact.path`と、verification/effect双方のpublication stateを一致させる。cleanup pathが非nullなら同じartifact pathでなければならない |
 | `RB-012` | Projectionの`source_state_digest`はcanonical semantic state digestと一致し、purpose固有scopeとcontentは同じstateから決定的に導出されなければならない。`project_overview`はproject、全taskのoverview field、全dependencyを、`task_change_context`はtarget leaf task、ancestor chain、targetに接続するdependency、target assignmentとそのresourceを過不足なく反映する |
 
@@ -143,7 +143,7 @@ canonical JSONとdigest規則は[conformance corpus v1](miku-project-conformance
 
 `source = file / directory`は`--project`等で実際に分類して読んだentry、`source = stdin`は選択された一入力を表す。`verify-artifact --artifact-set`はpathがabsentまたは壊れたdirectoryでも検査対象になるため、存在・typeの成功を含意しない`source = filesystem-path`へ固定し、raw file digestは持たせない。
 
-`io.result`は実際に選んだ`stdout`または予約済み`file`とcanonical pathを記録する。指定result fileを予約できずstdoutへerror resultをfallbackした場合は、実際のtargetを`stdout`とする。`io.destination`は`plan-change / apply-change`だけが持ち、caller指定値とcanonical absolute pathを区別する。
+`io.result`は実際に選んだ`stdout`または予約済み`file`とcanonical pathを記録する。指定result fileを予約できずstdoutへerror resultをfallbackした場合は、実際のtargetを`stdout`とする。`io.destination`は`plan-change / apply-change`だけが持ち、caller指定値とcanonical absolute pathを区別する。`apply-change`はdestinationを独立optionで受けず、成功した`--plan-result`を読んで初めてcanonical pathを得るため、result channel予約失敗、project/request/plan result/approvalの読取り・schema・binding失敗など、その地点へ到達しなかったnon-success resultでは`null`を記録する。pathを推測してはならない。
 
 pathやdigestを取得できなかった場合、推測値を入れず`null`にする。秘密値、file内容、環境変数、会話履歴はI/O metadataへ入れない。
 

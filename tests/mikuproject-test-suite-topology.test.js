@@ -27,6 +27,7 @@ describe("test suite topology", () => {
     expect(FAST_SUITE).not.toContain("tests/miku-project-browser-runtime.test.js");
     expect(FULL_ONLY_SUITE).toEqual([
       "tests/miku-project-browser-runtime.test.js",
+      "tests/mikuproject-cli-v1-r1-integration.test.js",
       "tests/mikuproject-cli.test.js"
     ]);
   });

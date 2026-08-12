@@ -14,6 +14,8 @@
     "build:core": "node scripts/build-core.mjs",
     "build:browser-runtime": "node scripts/build-browser-runtime.mjs",
     "build:cli-bundle": "node scripts/build-cli-bundle.mjs",
+    "generate:cli-v1-schema-validators": "node scripts/generate-cli-v1-schema-validators.mjs",
+    "check:cli-v1-schema-validators": "node scripts/check-cli-v1-schema-validators.mjs",
     "cli": "node scripts/miku-project-cli.mjs",
     "build:full": "npm run build:core && npm run build:browser-runtime && npm run build:cli-bundle && npm run test:full",
     "build:xlsx-sample": "node scripts/build-project-xlsx-sample.mjs",
@@ -30,6 +32,8 @@
     "esbuild": "^0.28.1"
   },
   "devDependencies": {
+    "ajv": "8.17.1",
+    "ajv-formats": "3.0.1",
     "esbuild": "^0.28.1",
     "jsdom": "^26.1.0",
     "typescript": "^5.8.2",

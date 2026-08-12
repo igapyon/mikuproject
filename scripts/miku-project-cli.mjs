@@ -11,6 +11,7 @@ import { writeOutput } from "./lib/cli-io.mjs";
 import { buildErrorDiagnostics, writeDiagnostics } from "./lib/cli-diagnostics.mjs";
 import { writeHelp } from "./lib/cli-presentation.mjs";
 import { runLegacyCommand } from "./lib/cli-legacy-router.mjs";
+import { recognizesV1Workflow, rejectUnreleasedV1Workflow } from "./lib/v1/cli-v1-router.mjs";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -18,6 +19,14 @@ const repoRoot = path.resolve(__dirname, "..");
 
 async function main() {
   const rawArgv = process.argv.slice(2);
+  if (recognizesV1Workflow(rawArgv)) {
+    const result = rejectUnreleasedV1Workflow(rawArgv, {
+      version: getCliVersion(),
+      stdout: process.stdout
+    });
+    process.exitCode = result.exit_code;
+    return;
+  }
   const { command, options } = parseArgs(rawArgv);
   if (options.version) {
     process.stdout.write(`miku-project ${getCliVersion()}\n`);

@@ -1052,7 +1052,12 @@
           "io": {
             "properties": {
               "inputs": { "$ref": "#/$defs/applyInputs" },
-              "destination": { "$ref": "#/$defs/destination" }
+              "destination": {
+                "oneOf": [
+                  { "type": "null" },
+                  { "$ref": "#/$defs/destination" }
+                ]
+              }
             }
           }
         }

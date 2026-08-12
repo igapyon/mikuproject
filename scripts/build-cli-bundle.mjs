@@ -18,7 +18,7 @@ const XMLDOM_MODULE_RELATIVE_PATHS = [
   "node_modules/@xmldom/xmldom/lib/index.js"
 ];
 
-const CLI_INTERNAL_MODULE_RELATIVE_PATHS = [
+const LEGACY_CLI_INTERNAL_MODULE_RELATIVE_PATHS = [
   "scripts/lib/cli-errors.mjs",
   "scripts/lib/cli-argv.mjs",
   "scripts/lib/cli-io.mjs",
@@ -30,6 +30,37 @@ const CLI_INTERNAL_MODULE_RELATIVE_PATHS = [
   "scripts/lib/cli-exchange-commands.mjs",
   "scripts/lib/cli-report-commands.mjs",
   "scripts/lib/cli-legacy-router.mjs"
+];
+
+// v1 code uses its own module-local helper names (for example taskPath), so
+// the single-MJS bundle keeps it in a closure and exports only the public
+// entrypoint boundary. This preserves the source-module dependency graph
+// without making its private names collide with legacy CLI helpers.
+const V1_CLI_INTERNAL_MODULE_RELATIVE_PATHS = [
+  "scripts/generated/cli-v1-schema-validators.mjs",
+  "scripts/lib/v1/cli-v1-errors.mjs",
+  "scripts/lib/v1/cli-v1-canonical-json.mjs",
+  "scripts/lib/v1/cli-v1-argv.mjs",
+  "scripts/lib/v1/cli-v1-result.mjs",
+  "scripts/lib/v1/cli-v1-io.mjs",
+  "scripts/lib/v1/cli-v1-json-artifact.mjs",
+  "scripts/lib/v1/cli-v1-destination.mjs",
+  "scripts/lib/v1/cli-v1-xml-adapter.mjs",
+  "scripts/lib/v1/cli-v1-xml-encoder.mjs",
+  "scripts/lib/v1/cli-v1-semantic-validator.mjs",
+  "scripts/lib/v1/cli-v1-projection.mjs",
+  "scripts/lib/v1/cli-v1-change.mjs",
+  "scripts/lib/v1/cli-v1-r1-commands.mjs",
+  "scripts/lib/v1/cli-v1-apply.mjs",
+  "scripts/lib/v1/cli-v1-provenance.mjs",
+  "scripts/lib/v1/cli-v1-artifact-verifier.mjs",
+  "scripts/lib/v1/cli-v1-publisher.mjs",
+  "scripts/lib/v1/cli-v1-router.mjs"
+];
+
+const CLI_INTERNAL_MODULE_RELATIVE_PATHS = [
+  ...LEGACY_CLI_INTERNAL_MODULE_RELATIVE_PATHS,
+  ...V1_CLI_INTERNAL_MODULE_RELATIVE_PATHS
 ];
 
 const SOURCE_ARCHIVE_ROOT = "miku-project-sources";
@@ -103,7 +134,10 @@ function assertRequiredFilesExist() {
 function buildSingleMjsRuntime() {
   const packageJson = JSON.parse(readRepoFile("package.json"));
   const cliSource = stripCliImports(readRepoFile("scripts/miku-project-cli.mjs"));
-  const cliInternalModuleSources = CLI_INTERNAL_MODULE_RELATIVE_PATHS
+  const legacyCliInternalModuleSources = LEGACY_CLI_INTERNAL_MODULE_RELATIVE_PATHS
+    .map((relativePath) => stripCliModuleSyntax(readRepoFile(relativePath)))
+    .join("\n\n");
+  const v1CliInternalModuleSources = V1_CLI_INTERNAL_MODULE_RELATIVE_PATHS
     .map((relativePath) => stripCliModuleSyntax(readRepoFile(relativePath)))
     .join("\n\n");
   const coreModuleSources = Object.fromEntries(
@@ -120,8 +154,10 @@ function buildSingleMjsRuntime() {
     "#!/usr/bin/env node",
     "",
     "import fs from \"node:fs\";",
+    "import fsPromises from \"node:fs/promises\";",
     "import path from \"node:path\";",
     "import { fileURLToPath } from \"node:url\";",
+    "import { createHash } from \"node:crypto\";",
     "import { Blob as NodeBlob, File as NodeFile } from \"node:buffer\";",
     "",
     `const BUNDLED_PACKAGE_VERSION = ${JSON.stringify(packageJson.version || "unknown")};`,
@@ -163,6 +199,8 @@ function requireBundledXmldom(request, parentId = "/node_modules/@xmldom/xmldom/
   new Function("require", "module", "exports", source)(localRequire, module, module.exports);
   return module.exports;
 }`,
+    "",
+    "const { DOMParser } = requireBundledXmldom(\"@xmldom/xmldom\");",
     "",
     String.raw`function createBundledXmlDomGlobals() {
   const xmldom = requireBundledXmldom("@xmldom/xmldom");
@@ -276,7 +314,13 @@ function requireBundledXmldom(request, parentId = "/node_modules/@xmldom/xmldom/
   };
 }`,
     "",
-    cliInternalModuleSources,
+    legacyCliInternalModuleSources,
+    "",
+    "const BUNDLED_V1_RUNTIME = (() => {",
+    v1CliInternalModuleSources,
+    "return { recognizesV1Workflow, rejectUnreleasedV1Workflow };",
+    "})();",
+    "const { recognizesV1Workflow, rejectUnreleasedV1Workflow } = BUNDLED_V1_RUNTIME;",
     cliSource
   ].join("\n");
 }
@@ -299,7 +343,8 @@ function stripCliModuleSyntax(source) {
   return source
     .replace(/^#!.*\n/, "")
     .replace(/^import\s+[\s\S]*?;\n/gm, "")
-    .replace(/^export\s+(?=(class|function|const|let|var)\b)/gm, "");
+    .replace(/^export\s*\{[\s\S]*?\};\n?/gm, "")
+    .replace(/^export\s+(?=(?:async\s+)?(?:class|function)|const|let|var)\b/gm, "");
 }
 
 function toXmldomModuleId(relativePath) {

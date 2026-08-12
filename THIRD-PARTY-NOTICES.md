@@ -16,6 +16,18 @@ This document lists third-party software and reference materials used or referre
 - License: MIT
 - Source: https://github.com/xmldom/xmldom
 
+### `ajv` and `ajv-formats`
+
+- Usage: Build-time-only JSON Schema 2020-12 validation and standalone validator generation for the v1 CLI contract. Generated validators are bundled without a runtime package lookup.
+- License: MIT
+- Source: https://github.com/ajv-validator/ajv and https://github.com/ajv-validator/ajv-formats
+
+### `fast-deep-equal`
+
+- Usage: An MIT-licensed transitive dependency included in the generated v1 standalone schema validators by Ajv.
+- License: MIT
+- Source: https://github.com/epoberezkin/fast-deep-equal
+
 ## Reference materials
 
 ### `open-msp-viewer`
@@ -49,6 +61,18 @@ This document lists third-party software and reference materials used or referre
 - 用途: CLI で、`DOMParser`、`XMLSerializer`、XML document 生成の優先 XML DOM 実装として利用する。
 - ライセンス: MIT
 - Source: https://github.com/xmldom/xmldom
+
+### `ajv` と `ajv-formats`
+
+- 用途: v1 CLI契約のJSON Schema 2020-12検証とstandalone validator生成に、build-timeだけで利用する。生成済みvalidatorはruntimeでpackage lookupを要求しないようbundleする。
+- ライセンス: MIT
+- Source: https://github.com/ajv-validator/ajv および https://github.com/ajv-validator/ajv-formats
+
+### `fast-deep-equal`
+
+- 用途: Ajvが生成するv1 standalone schema validatorへ取り込まれる、MITライセンスのtransitive dependency。
+- ライセンス: MIT
+- Source: https://github.com/epoberezkin/fast-deep-equal
 
 ## 参考資料
 

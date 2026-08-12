@@ -1,0 +1,60 @@
+{
+  "kind": "miku_project_projection",
+  "schema_version": "1",
+  "semantic_contract_version": "1",
+  "purpose": "project_overview",
+  "source_state_digest": {
+    "algorithm": "sha-256",
+    "value": "a98f0c8b560382234572a61f360c9e96911bc75fc1d57b79968d6e60b5d751d0"
+  },
+  "scope": {
+    "target_task_uid": null,
+    "included_domains": [
+      "project",
+      "tasks",
+      "dependencies"
+    ],
+    "omitted_domains": [
+      "task_edit_details",
+      "raw_external_artifact",
+      "unsupported_data"
+    ]
+  },
+  "project": {
+    "name": "Dependency Project",
+    "start": "2026-03-16T09:00:00",
+    "finish": "2026-03-19T18:00:00",
+    "current_date": "2026-03-16T09:00:00",
+    "schedule_from_start": true,
+    "calendar_uid": "1"
+  },
+  "tasks": [
+    {
+      "uid": "1",
+      "name": "Prepare",
+      "parent_uid": null,
+      "order": 0,
+      "summary": false,
+      "percent_complete": 100
+    },
+    {
+      "uid": "2",
+      "name": "Execute",
+      "parent_uid": null,
+      "order": 1,
+      "summary": false,
+      "percent_complete": 0
+    }
+  ],
+  "dependencies": [
+    {
+      "predecessor_uid": "1",
+      "successor_uid": "2",
+      "type": "FS",
+      "lag": "PT0H0M0S"
+    }
+  ],
+  "capability": {
+    "unsupported_data": []
+  }
+}

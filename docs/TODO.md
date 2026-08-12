@@ -147,7 +147,9 @@ P4ではNode CLIを承認済み契約の参照実装にする。最初に現行�
 - [x] `ZB-P4.1` 現行CLIの互換動作をcontract testsで固定する
   - `tests/mikuproject-cli-compatibility-contract.test.js`で、legacy command surface、help/version、AI spec、stdin/stdout/stderr、named file outputと上書き、JSON usage diagnostics、draft→workbook変換を固定した
   - legacy diagnosticsが`--out`をI/O metadataへ反映しない観測済み挙動は、新v1 result contractと混同せず明示的に固定した
-- [ ] `ZB-P4.2` 現行test suiteの`fast / full / all`を実態に合わせ、一部testの実行漏れを解消する
+- [x] `ZB-P4.2` 現行test suiteの`fast / full / all`を実態に合わせ、一部testの実行漏れを解消する
+  - `fast`を日常回帰、`full`をCLI統合testとbrowser runtime contractを含む完全回帰、`all`を全checked-in test fileを実行する安定aliasとして固定した
+  - `tests/mikuproject-core-api.test.js`と`tests/mikuproject-core-api-loader.test.js`をsuiteへ編入し、`tests/mikuproject-test-suite-topology.test.js`で新規test fileの未分類・重複を検出する
 - [ ] `ZB-P4.3` semantic変更より先に、CLIのparser、command service、I/O、diagnostics、formattingを分離する
 - [ ] `ZB-P4.4` G0で選んだscenario一つだけを新契約でend-to-end実装する
 - [ ] `ZB-P4.5` whole-project inspect/validate、semantic diff、pre/post apply validationを選択scopeに応じて実装する

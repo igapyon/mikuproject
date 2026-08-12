@@ -314,14 +314,17 @@ CLI examplesとProjection/request/diff/plan/approval/provenanceの全体がschem
 
 依存: `G3`  
 主担当: Node CLI
-状態: 進行中（`ZB-P4.1`完了、次は`ZB-P4.2`）
+状態: 進行中（`ZB-P4.2`完了、次は`ZB-P4.3`）
 
 ### 作業
 
 - [x] `ZB-P4.1` 現行CLIの互換動作をcontract testsで固定する
   - `tests/mikuproject-cli-compatibility-contract.test.js`にlegacy command surface、help/version、AI spec、stdin/stdout/stderr、named file outputと上書き、JSON usage diagnostics、draft→workbook変換を固定する6 caseを置く
   - legacy diagnosticsの`--out` I/O metadata欠落は観測済み互換挙動として固定し、新v1 result envelopeへ継承しない
-- [ ] `ZB-P4.2` 現行test suiteの `fast / full / all` を実態に合わせ、一部testの実行漏れを解消する
+- [x] `ZB-P4.2` 現行test suiteの `fast / full / all` を実態に合わせ、一部testの実行漏れを解消する
+  - `scripts/lib/test-suite-topology.mjs`を唯一のsuite inventoryとし、core API / loader testを編入する
+  - `fast`は日常回帰、`full`はCLI統合testとbrowser runtime contractを含む完全回帰、`all`は全checked-in test fileを実行する安定aliasとする
+  - `tests/mikuproject-test-suite-topology.test.js`で、全`*.test.js`の分類と重複なしを検証する
 - [ ] `ZB-P4.3` semantic変更より先に、CLIのparser、command service、I/O、diagnostics、formattingを分離する
 - [ ] `ZB-P4.4` G0で選んだscenario一つだけを新契約でend-to-end実装する
 - [ ] `ZB-P4.5` whole-project inspect/validate、semantic diff、pre/post apply validationを選択scopeに応じて実装する

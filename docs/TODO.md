@@ -150,7 +150,13 @@ P4ではNode CLIを承認済み契約の参照実装にする。最初に現行�
 - [x] `ZB-P4.2` 現行test suiteの`fast / full / all`を実態に合わせ、一部testの実行漏れを解消する
   - `fast`を日常回帰、`full`をCLI統合testとbrowser runtime contractを含む完全回帰、`all`を全checked-in test fileを実行する安定aliasとして固定した
   - `tests/mikuproject-core-api.test.js`と`tests/mikuproject-core-api-loader.test.js`をsuiteへ編入し、`tests/mikuproject-test-suite-topology.test.js`で新規test fileの未分類・重複を検出する
-- [ ] `ZB-P4.3` semantic変更より先に、CLIのparser、command service、I/O、diagnostics、formattingを分離する
+- [x] `ZB-P4.3` semantic変更より先に、CLIのparser、command service、I/O、diagnostics、formattingを分離する（詳細は[実施計画のP4.3](miku-project-zero-base-implementation-plan-v20260810.md#p43の実行計画)）
+  - [x] `ZB-P4.3.1` entrypointからerror / argv parseを抽出し、`process.argv`とtop-level error handlingをentrypointだけに残す。`scripts/lib/cli-errors.mjs`と`cli-argv.mjs`へ移し、parse/errorの既存code・JSON diagnosticsをdirect testとcompatibility testで固定した
+  - [x] `ZB-P4.3.2` text / binary / Base64 I/O、stdin source検査、primary output、diagnostics用I/O記述を`cli-io.mjs`へ抽出した。legacy `--out`上書きとdiagnostics I/O metadata欠落を変えない
+  - [x] `ZB-P4.3.3` diagnostics/status/error/validation formatterを`cli-diagnostics.mjs`、help presentationを`cli-presentation.mjs`へ抽出した。legacyのmessage→code推測は移動だけとし、v1へ継承しない
+  - [x] `ZB-P4.3.4` legacy commandを`ai`、`state`、`import/export`、`report`のfamily serviceへ一つずつ移し、`cli-legacy-router.mjs`と73行のentrypoint wiringへ縮小した
+  - [x] `ZB-P4.3.5` CLI内部moduleを決定的な順序でsingle `.mjs` bundleへ内包し、既存のrepository外bundle smokeとsource archiveの内容確認を通した
+  - [x] `ZB-P4.3` 完了確認: `npm run test:full`、`npm run build:full`、P4.1 compatibility contract、repository外bundle smokeが成功し、v1 command / semantic / safe publicationを先取りしていない
 - [ ] `ZB-P4.4` G0で選んだscenario一つだけを新契約でend-to-end実装する
 - [ ] `ZB-P4.5` whole-project inspect/validate、semantic diff、pre/post apply validationを選択scopeに応じて実装する
 - [ ] `ZB-P4.6` exclusive output directory、commit marker、incomplete/corrupt判定、cleanup diagnostics、structured loss reportingを実装する

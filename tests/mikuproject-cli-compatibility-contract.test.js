@@ -114,6 +114,14 @@ describe("legacy CLI compatibility contract", () => {
     });
   });
 
+  it("keeps legacy option validation ahead of unknown import command handling", () => {
+    const result = runCli(["import", "unknown", "--diagnostics", "yaml"]);
+
+    expect(result.status).toBe(2);
+    expect(result.stdout).toBe("");
+    expect(result.stderr).toContain("--diagnostics には text または json を指定してください");
+  });
+
   it("keeps project draft conversion available through stdin", () => {
     const result = runCli(["state", "from-draft", "--in", "-"], {
       input: `${JSON.stringify({

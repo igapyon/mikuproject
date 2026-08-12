@@ -314,7 +314,7 @@ CLI examplesとProjection/request/diff/plan/approval/provenanceの全体がschem
 
 依存: `G3`  
 主担当: Node CLI
-状態: 進行中（`ZB-P4.2`完了、次は`ZB-P4.3`）
+状態: 進行中（`ZB-P4.3`完了、次は`ZB-P4.4`）
 
 ### 作業
 
@@ -325,7 +325,8 @@ CLI examplesとProjection/request/diff/plan/approval/provenanceの全体がschem
   - `scripts/lib/test-suite-topology.mjs`を唯一のsuite inventoryとし、core API / loader testを編入する
   - `fast`は日常回帰、`full`はCLI統合testとbrowser runtime contractを含む完全回帰、`all`は全checked-in test fileを実行する安定aliasとする
   - `tests/mikuproject-test-suite-topology.test.js`で、全`*.test.js`の分類と重複なしを検証する
-- [ ] `ZB-P4.3` semantic変更より先に、CLIのparser、command service、I/O、diagnostics、formattingを分離する
+- [x] `ZB-P4.3` semantic変更より先に、CLIのparser、command service、I/O、diagnostics、formattingを分離する
+  - 実行計画は下記「P4.3の実行計画」を正本とする。`ZB-P4.3.1`から順に、一変更単位ずつ実施する
 - [ ] `ZB-P4.4` G0で選んだscenario一つだけを新契約でend-to-end実装する
 - [ ] `ZB-P4.5` whole-project inspect/validate、semantic diff、pre/post apply validationを選択scopeに応じて実装する
 - [ ] `ZB-P4.6` exclusive output directory、commit marker、incomplete/corrupt判定、cleanup diagnostics、structured loss reportingを実装する
@@ -340,6 +341,72 @@ CLI examplesとProjection/request/diff/plan/approval/provenanceの全体がschem
 - browser runtimeは既存 `miku-project-web` の互換性保守に必要な間は維持するが、新CLI契約を支配させない
 - reportの見た目改善や未選択formatを、vertical sliceへ混ぜない
 - CLI責務分割とsemantic変更を同じ変更単位で行わない
+
+### P4.3の実行計画
+
+目的は、legacy CLIの外形を変えずに `scripts/miku-project-cli.mjs` をentrypoint/wiringへ縮小し、承認済みv1 commandを載せるための境界を作ることである。この工程で新v1 command、semantic scope、exit code、safe publication、legacy output上書き、diagnostics schemaを変更しない。特に、P4.1で固定したlegacy diagnosticsの`--out` I/O metadata欠落は観測済み互換挙動として保つ。
+
+共通の作業規則:
+
+- 各小項目の開始前に `tests/mikuproject-cli-compatibility-contract.test.js` と既存CLI testの対象境界を確認する
+- 各小項目では移動・依存注入・import更新だけを行い、command名、option、標準入出力、出力byte列、diagnostics JSON、終了状態、上書き動作を変えない
+- 各小項目ごとに `npm run test:fast`、対象のdirect test、`git diff --check` を実行する。command serviceまたはbundleに触れた区切りでは `npm run test:full` と `npm run build:cli-bundle` も実行する
+- public entrypoint以外は `process.argv` を読まず、command serviceにはparse済み`command`、`options`、core API、I/O/diagnostics依存を明示して渡す。module間で同じerror classを二重定義しない
+- module追加時はsingle `.mjs` bundleがsource treeに依存しないことを同じ変更で維持する。相対importを残したままbundleの動作を偶然に任せない
+
+#### `ZB-P4.3.1` 入口とerror / argv境界を固定する
+
+- `CliUsageError`、`CliProcessingError`、error details/codeの共通処理を一箇所へ移す。既存のerror codeとdiagnostics JSONはそのまま返す
+- argv parse、`--help` / `--version`判定、requested diagnostics format、error時のcommand summaryを独立moduleへ移す
+- entrypointだけが`process.argv`とtop-level `main().catch(...)`を持つ構成にする。optionの重複時の最後の値採用など、現行parse挙動を変更しない
+- 正常系・usage errorのCLI compatibility testを通し、抽出moduleのdirect testではparse結果、missing option、`--diagnostics json`検出、command summaryを固定する
+
+結果: 2026-08-12に完了。`scripts/lib/cli-errors.mjs`と`cli-argv.mjs`へ移し、`tests/mikuproject-cli-argv.test.js`を追加した。single-MJS bundleは内部moduleを明示順で内包し、source CLIとbundle CLIの`--version`、stdin `ai detect-kind --diagnostics json`を確認した。
+
+#### `ZB-P4.3.2` text / binary I/Oと出力先記述を抽出する
+
+- UTF-8 stdin/file読取り、binary/Base64読取り、stdin source重複検査、binary input/outputの制約、primary output書込みをI/O moduleへ移す
+- diagnostics用のinput/output記述も同じI/O境界に置く。ただしlegacy commandが渡す`output: null`はstdoutとして記録される現行挙動を変えない
+- `--out`の既存ファイル上書き、`--out-base64 -`、binary stdout拒否、stdioの空入力エラーを既存のcode/message/exit状態のまま維持する
+- compatibility testのstdin/stdout/stderr・named outputを通し、既存CLI testのbinary/Base64ケースを対象確認する
+
+結果: 2026-08-12に完了。`scripts/lib/cli-io.mjs`へ移し、`tests/mikuproject-cli-io.test.js`でBase64、binary target、stdin conflict、diagnostics I/O記述を固定した。legacy CLI target test、bundle、fast suiteを確認した。
+
+#### `ZB-P4.3.3` diagnostics / formatting境界を抽出する
+
+- diagnostics version、status/exit判定、warning/change summary、structured error、text/JSON formatter、help textをpresentation/diagnostics moduleへ移す
+- `ai validate-patch`の成功・validation failureを含め、text diagnosticsとJSON diagnosticsの既存整合を保持する。message文字列からcodeを推測するlegacy処理は、v1への採用を意味しないまま移動だけする
+- `--version`のpackage/bundle metadata読取りはentrypoint側に残すか、明示したmetadata providerへ渡す。bundle外で`package.json`を読めない場合の既存fallbackを保持する
+- existing CLI testのdiagnostics、help/version、validation failureを対象確認する
+
+結果: 2026-08-12に完了。`scripts/lib/cli-diagnostics.mjs`と`cli-presentation.mjs`へ移し、`tests/mikuproject-cli-diagnostics.test.js`でoption/status、structured error、validation formatterを固定した。`ai validate-patch`のvalidation failureを含むlegacy CLI target testを確認した。
+
+#### `ZB-P4.3.4` legacy command serviceをfamilyごとに移す
+
+- routerはcommand tokensの照合とunsupported command errorだけを担い、実処理を `ai`、`state`、`import/export`、`report` のfamily serviceへ一つずつ移す
+- serviceはcore APIを引数で受け、filesystem・process・global stateを直接所有しない。workbook loading、AI view選択、state summary/diff、report生成などの既存helperは最小の所有moduleへ移す
+- familyを移すたびに、P4.1 compatibility testと該当する既存CLI testを通す。処理順、JSON pretty-print、warnings/changesの順序を変えない
+- 完了時にentrypointからlegacy command固有の`scope/action`分岐とdomain helperを除き、parse → control operation → core API lifecycle → router → diagnostics/output → disposeだけにする
+
+結果: 2026-08-12に完了。`cli-ai-commands.mjs`、`cli-state-commands.mjs`、`cli-exchange-commands.mjs`、`cli-report-commands.mjs`へfamilyを移し、`cli-legacy-router.mjs`が照合・unsupported commandだけを担う。entrypointは73行のparse → control operation → core API lifecycle → router → diagnostics/output → disposeに縮小した。legacy compatibility contract 7 caseと既存CLI 57 caseを確認した。
+
+#### `ZB-P4.3.5` single-MJS bundleをmodule graph対応へ更新する
+
+- `scripts/build-cli-bundle.mjs`にCLI内部moduleの明示的・決定的なdependency orderを持たせ、bundleへ必要なsourceをentrypointより先に内包する
+- source moduleのrelative importをbundle内へ残さない。bundle用にstripするimportとNode built-in依存を明示し、module名・初期化順・`BUNDLED_PACKAGE_VERSION`の可視性を検証する
+- source archiveには新規CLI moduleとtestを自動的に含め、bundle生成結果が不必要なsource tree/pathへ依存しないことを維持する
+- `npm run build:cli-bundle`、既存のrepository外single-MJS test、`--help`、`--version`、代表的なstdin commandをsource CLIとbundle CLIの双方で通す
+
+結果: 2026-08-12に完了。`CLI_INTERNAL_MODULE_RELATIVE_PATHS`でinternal moduleの依存順を明示し、module syntaxを除去してentrypointより先にsingle-MJSへ内包する。既存のrepository外bundle test、bundleの`--help` / `--version` / stdin `ai detect-kind --diagnostics json`、source archive内のnew module/testを確認した。
+
+#### `ZB-P4.3` 完了判定
+
+- entrypoint、argv/error、I/O、diagnostics/formatting、legacy command family、bundleの責務と依存方向が上記どおりに分離されている
+- P4.1 compatibility contract、既存CLI test、`npm run test:full`、`npm run build:full`、repository外bundle smokeが成功する
+- `scripts/miku-project-cli.mjs`の外形互換を保ち、v1 commandやsafe publicationを先取りしていない
+- 次の`ZB-P4.4`が、legacy routerとは別のv1 command serviceを追加する変更として開始できる
+
+結果: 2026-08-12に通過。`npm run test:full`（17 files / 217 tests）と`npm run build:full`、P4.1 legacy compatibility contract、repository外single-MJS bundle smokeが成功した。legacy command、option、standard I/O、legacy overwrite、diagnostics envelope、exit behaviorは維持し、v1 command / semantic / safe publicationは実装していない。
 
 ### Gate G4
 

@@ -18,6 +18,20 @@ const XMLDOM_MODULE_RELATIVE_PATHS = [
   "node_modules/@xmldom/xmldom/lib/index.js"
 ];
 
+const CLI_INTERNAL_MODULE_RELATIVE_PATHS = [
+  "scripts/lib/cli-errors.mjs",
+  "scripts/lib/cli-argv.mjs",
+  "scripts/lib/cli-io.mjs",
+  "scripts/lib/cli-diagnostics.mjs",
+  "scripts/lib/cli-presentation.mjs",
+  "scripts/lib/cli-command-utils.mjs",
+  "scripts/lib/cli-ai-commands.mjs",
+  "scripts/lib/cli-state-commands.mjs",
+  "scripts/lib/cli-exchange-commands.mjs",
+  "scripts/lib/cli-report-commands.mjs",
+  "scripts/lib/cli-legacy-router.mjs"
+];
+
 const SOURCE_ARCHIVE_ROOT = "miku-project-sources";
 const SOURCE_ARCHIVE_PATHS = [
   "package.json",
@@ -70,6 +84,7 @@ function parseArgs(argv) {
 function assertRequiredFilesExist() {
   const requiredFiles = [
     "scripts/miku-project-cli.mjs",
+    ...CLI_INTERNAL_MODULE_RELATIVE_PATHS,
     ...CORE_API_MODULE_RELATIVE_PATHS,
     ...XMLDOM_MODULE_RELATIVE_PATHS
   ];
@@ -88,6 +103,9 @@ function assertRequiredFilesExist() {
 function buildSingleMjsRuntime() {
   const packageJson = JSON.parse(readRepoFile("package.json"));
   const cliSource = stripCliImports(readRepoFile("scripts/miku-project-cli.mjs"));
+  const cliInternalModuleSources = CLI_INTERNAL_MODULE_RELATIVE_PATHS
+    .map((relativePath) => stripCliModuleSyntax(readRepoFile(relativePath)))
+    .join("\n\n");
   const coreModuleSources = Object.fromEntries(
     CORE_API_MODULE_RELATIVE_PATHS.map((relativePath) => [relativePath, readRepoFile(relativePath)])
   );
@@ -258,6 +276,7 @@ function requireBundledXmldom(request, parentId = "/node_modules/@xmldom/xmldom/
   };
 }`,
     "",
+    cliInternalModuleSources,
     cliSource
   ].join("\n");
 }
@@ -272,12 +291,15 @@ function buildClearGlobalsFunctionSource() {
 }
 
 function stripCliImports(source) {
+  return stripCliModuleSyntax(source)
+    .trimStart();
+}
+
+function stripCliModuleSyntax(source) {
   return source
     .replace(/^#!.*\n/, "")
-    .split("\n")
-    .filter((line) => !line.startsWith("import "))
-    .join("\n")
-    .trimStart();
+    .replace(/^import\s+[\s\S]*?;\n/gm, "")
+    .replace(/^export\s+(?=(class|function|const|let|var)\b)/gm, "");
 }
 
 function toXmldomModuleId(relativePath) {

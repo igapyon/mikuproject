@@ -69,6 +69,16 @@ describe("v1 argv grammar", () => {
   it("rejects invalid grammar before any project input is read", () => {
     expectError([], "cli.unknown-command");
     expectError(["legacy-command"], "cli.unknown-command");
+    const corpusUsageError = expectError(["--unknown-option"], "cli.unknown-option");
+    expect(corpusUsageError.status).toBe("usage-error");
+    expect(corpusUsageError.location).toEqual({
+      scope: "option",
+      path: null,
+      option: "--unknown-option",
+      artifact_role: null,
+      rule_id: null
+    });
+    expect(corpusUsageError.details).toEqual({ received: "--unknown-option" });
     expectError(["validate", "project.xml"], "cli.unexpected-argument");
     expectError(["validate", "--unknown", "value"], "cli.unknown-option");
     expectError(["validate", "--project=value"], "cli.unknown-option");
@@ -233,7 +243,7 @@ function expectError(argv, expectedCode) {
   } catch (error) {
     expect(isCliV1Error(error)).toBe(true);
     expect(error.code).toBe(expectedCode);
-    return;
+    return error;
   }
   throw new Error(`expected ${expectedCode} for ${JSON.stringify(argv)}`);
 }

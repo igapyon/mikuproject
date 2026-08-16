@@ -1,0 +1,31 @@
+{
+  "kind": "miku_project_semantic_state",
+  "schema_version": "1",
+  "semantic_contract_version": "1",
+  "project": {
+    "name": "Hierarchy Project",
+    "start": "2026-03-16T09:00:00",
+    "finish": "2026-03-21T18:00:00",
+    "current_date": "2026-03-16T09:00:00",
+    "schedule_from_start": true,
+    "calendar_uid": "1"
+  },
+  "tasks": [
+    { "uid": "1", "name": "Plan", "parent_uid": null, "start": "2026-03-16T09:00:00", "finish": "2026-03-19T18:00:00", "duration": "PT32H0M0S", "milestone": false, "summary": true, "percent_complete": 0 },
+    { "uid": "2", "name": "Prepare", "parent_uid": "1", "start": "2026-03-16T09:00:00", "finish": "2026-03-17T18:00:00", "duration": "PT16H0M0S", "milestone": false, "summary": false, "percent_complete": 0 },
+    { "uid": "3", "name": "Execute", "parent_uid": "1", "start": "2026-03-18T09:00:00", "finish": "2026-03-19T18:00:00", "duration": "PT16H0M0S", "milestone": false, "summary": false, "percent_complete": 0 },
+    { "uid": "4", "name": "Release", "parent_uid": null, "start": "2026-03-20T09:00:00", "finish": "2026-03-21T18:00:00", "duration": "PT16H0M0S", "milestone": false, "summary": false, "percent_complete": 0 }
+  ],
+  "dependencies": [
+    { "predecessor_uid": "1", "successor_uid": "2", "type": "FS", "lag": "PT0H0M0S" }
+  ],
+  "resources": [
+    { "uid": "1", "name": "Miku", "type": "work" }
+  ],
+  "assignments": [
+    { "uid": "1", "task_uid": "2", "resource_uid": "1", "start": "2026-03-16T09:00:00", "finish": "2026-03-17T18:00:00", "units": "1", "work": "PT16H0M0S" }
+  ],
+  "calendars": [
+    { "uid": "1", "name": "Standard", "is_base_calendar": true }
+  ]
+}

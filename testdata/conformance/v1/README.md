@@ -9,4 +9,4 @@
 - `golden/semantic/`: runtime非依存の期待semantic state
 - `golden/projection/`: runtime非依存でexact JSON比較する期待Projection
 
-この段階では製品runtimeやtest runnerを同梱しない。`suite-index.json`の`materialization_phase = "P4/P5"`であるcaseは、契約済みのcaseであって実装済みtestではない。NodeはG4、JavaはG5までに同じ21 workflow / harness caseと31 schema / binding caseを実行可能にする。
+このdirectoryは製品runtimeやtest runnerを同梱しない。`suite-index.json`の`materialization_phase = "P4/P5"`は、caseを実装する計画phaseであって、実装済みtestかどうかを一律に表す値ではない。P4.8時点でNode reference testはhierarchy C1の八caseをmaterialize済みである。NodeはGate G4、JavaはGate G5までに、現行30 workflow / harness caseと31 schema / binding caseを同じ比較規則で実行可能にする。

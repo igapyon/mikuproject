@@ -28,6 +28,7 @@ describe("test suite topology", () => {
     expect(FULL_ONLY_SUITE).toEqual([
       "tests/miku-project-browser-runtime.test.js",
       "tests/mikuproject-cli-v1-r1-integration.test.js",
+      "tests/mikuproject-cli-v1-runtime-manifest.test.js",
       "tests/mikuproject-cli.test.js"
     ]);
   });

@@ -102,10 +102,14 @@
           "command": { "const": "verify-artifact" },
           "status": { "const": "rejected" },
           "data": {
+            "type": "object",
             "properties": {
               "verification": {
-                "properties": { "publication_state": { "const": "committed" } },
-                "required": ["publication_state"]
+                "properties": {
+                  "publication_state": { "const": "committed" },
+                  "matches_expected_plan": { "const": false }
+                },
+                "required": ["publication_state", "matches_expected_plan"]
               }
             },
             "required": ["verification"]
@@ -888,7 +892,11 @@
       "if": {
         "properties": {
           "command": { "const": "verify-artifact" },
-          "status": { "const": "rejected" }
+          "status": { "const": "rejected" },
+          "data": {
+            "type": "object",
+            "required": ["verification"]
+          }
         }
       },
       "then": {
@@ -918,6 +926,19 @@
                       "matches_expected_plan": { "const": false },
                       "bindings": { "type": "object" }
                     }
+                  }
+                },
+                "required": ["verification"]
+              },
+              {
+                "properties": {
+                  "verification": {
+                    "properties": {
+                      "publication_state": { "const": "committed" },
+                      "matches_expected_plan": { "type": "null" },
+                      "bindings": { "type": "object" }
+                    },
+                    "required": ["publication_state", "matches_expected_plan", "bindings"]
                   }
                 },
                 "required": ["verification"]
@@ -965,10 +986,26 @@
     },
     {
       "if": {
-        "properties": {
-          "command": { "const": "verify-artifact" },
-          "status": { "enum": ["succeeded", "rejected"] }
-        }
+        "anyOf": [
+          {
+            "properties": {
+              "command": { "const": "verify-artifact" },
+              "status": { "const": "succeeded" }
+            },
+            "required": ["command", "status"]
+          },
+          {
+            "properties": {
+              "command": { "const": "verify-artifact" },
+              "status": { "const": "rejected" },
+              "data": {
+                "type": "object",
+                "required": ["verification"]
+              }
+            },
+            "required": ["command", "status", "data"]
+          }
+        ]
       },
       "then": {
         "properties": {

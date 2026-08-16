@@ -156,6 +156,141 @@
       "materialization_phase": "P4/P5"
     },
     {
+      "id": "CV-HIERARCHY-VALID-001",
+      "semantic_fixture_ids": ["S-V002"],
+      "command": "validate",
+      "parameters": {},
+      "input": "fixtures/project/hierarchy-canonical.xml",
+      "golden_semantic_state": "golden/semantic/hierarchy.state.json",
+      "expected_status": "succeeded",
+      "expected_exit_code": 0,
+      "expected_next_action": { "action": "complete", "command": null, "source_retryability": null },
+      "expected_diagnostic_codes": [],
+      "expected_rule_ids": [],
+      "comparison_modes": ["schema", "semantic-state", "byte-same-runtime"],
+      "materialization_phase": "P4/P5"
+    },
+    {
+      "id": "CI-HIERARCHY-OVERVIEW-001",
+      "semantic_fixture_ids": ["S-V002"],
+      "command": "inspect",
+      "parameters": { "purpose": "project_overview", "task_uid": null },
+      "input": "fixtures/project/hierarchy-canonical.xml",
+      "golden_semantic_state": "golden/semantic/hierarchy.state.json",
+      "expected_status": "succeeded",
+      "expected_exit_code": 0,
+      "expected_next_action": { "action": "complete", "command": null, "source_retryability": null },
+      "expected_diagnostic_codes": [],
+      "expected_rule_ids": [],
+      "comparison_modes": ["schema", "exact-json", "cross-artifact-binding", "byte-same-runtime"],
+      "materialization_phase": "P4/P5"
+    },
+    {
+      "id": "CI-HIERARCHY-CONTEXT-001",
+      "semantic_fixture_ids": ["S-V002"],
+      "command": "inspect",
+      "parameters": { "purpose": "task_change_context", "task_uid": "2" },
+      "input": "fixtures/project/hierarchy-canonical.xml",
+      "golden_semantic_state": "golden/semantic/hierarchy.state.json",
+      "expected_status": "succeeded",
+      "expected_exit_code": 0,
+      "expected_next_action": { "action": "complete", "command": null, "source_retryability": null },
+      "expected_diagnostic_codes": [],
+      "expected_rule_ids": [],
+      "comparison_modes": ["schema", "exact-json", "cross-artifact-binding", "byte-same-runtime"],
+      "materialization_phase": "P4/P5"
+    },
+    {
+      "id": "CP-HIERARCHY-CHANGE-001",
+      "semantic_fixture_ids": ["S-V002"],
+      "command": "plan-change",
+      "parameters": {
+        "destination": "${FRESH_DESTINATION}",
+        "request": "fixtures/change/set-hierarchy-task-2-percent-0-to-50.template.json"
+      },
+      "input": "fixtures/project/hierarchy-canonical.xml",
+      "change_request_template": "fixtures/change/set-hierarchy-task-2-percent-0-to-50.template.json",
+      "golden_semantic_state": "golden/semantic/hierarchy-percent-50.state.json",
+      "expected_status": "succeeded",
+      "expected_exit_code": 0,
+      "expected_next_action": { "action": "request-human-approval", "command": null, "source_retryability": null },
+      "expected_diagnostic_codes": [],
+      "expected_rule_ids": [],
+      "comparison_modes": ["schema", "exact-json", "semantic-state", "cross-artifact-binding", "byte-same-runtime"],
+      "materialization_phase": "P4/P5"
+    },
+    {
+      "id": "CA-HIERARCHY-CHANGE-001",
+      "semantic_fixture_ids": ["S-V002"],
+      "command": "apply-change",
+      "parameters": {
+        "plan_case": "CP-HIERARCHY-CHANGE-001",
+        "approval": "${EXPLICIT_TEST_APPROVAL}"
+      },
+      "input": "fixtures/project/hierarchy-canonical.xml",
+      "change_request_template": "fixtures/change/set-hierarchy-task-2-percent-0-to-50.template.json",
+      "golden_semantic_state": "golden/semantic/hierarchy-percent-50.state.json",
+      "expected_status": "succeeded",
+      "expected_exit_code": 0,
+      "expected_next_action": { "action": "verify-artifact", "command": "verify-artifact", "source_retryability": null },
+      "expected_diagnostic_codes": [],
+      "expected_rule_ids": [],
+      "comparison_modes": ["schema", "semantic-state", "cross-artifact-binding", "artifact-topology", "byte-same-runtime"],
+      "materialization_phase": "P4/P5"
+    },
+    {
+      "id": "CV-HIERARCHY-INVALID-PREORDER-001",
+      "semantic_fixture_ids": ["S-V002", "S-I003"],
+      "command": "validate",
+      "parameters": {},
+      "input": "fixtures/project/hierarchy-invalid-preorder.xml",
+      "golden_semantic_state": null,
+      "expected_status": "rejected",
+      "expected_exit_code": 1,
+      "expected_next_action": { "action": "revise-invocation-or-input", "command": null, "source_retryability": "after-input-change" },
+      "expected_diagnostic_codes": ["semantic.invalid", "semantic.invalid"],
+      "expected_rule_ids": ["S-I003", "S-I003"],
+      "expected_diagnostic_paths": ["tasks[uid=2]", "tasks[uid=2].outline_number"],
+      "comparison_modes": ["schema", "artifact-topology", "byte-same-runtime"],
+      "materialization_phase": "P4/P5"
+    },
+    {
+      "id": "CV-HIERARCHY-INVALID-SUMMARY-001",
+      "semantic_fixture_ids": ["S-V002", "S-I004"],
+      "command": "validate",
+      "parameters": {},
+      "input": "fixtures/project/hierarchy-invalid-summary.xml",
+      "golden_semantic_state": null,
+      "expected_status": "rejected",
+      "expected_exit_code": 1,
+      "expected_next_action": { "action": "revise-invocation-or-input", "command": null, "source_retryability": "after-input-change" },
+      "expected_diagnostic_codes": ["semantic.invalid"],
+      "expected_rule_ids": ["S-I004"],
+      "expected_diagnostic_paths": ["tasks[uid=1].summary"],
+      "comparison_modes": ["schema", "artifact-topology", "byte-same-runtime"],
+      "materialization_phase": "P4/P5"
+    },
+    {
+      "id": "CP-HIERARCHY-SUMMARY-REJECT-001",
+      "semantic_fixture_ids": ["S-V002", "S-I022"],
+      "command": "plan-change",
+      "parameters": {
+        "destination": "${FRESH_DESTINATION}",
+        "request": "fixtures/change/set-hierarchy-summary-task-1-percent-0-to-50.template.json"
+      },
+      "input": "fixtures/project/hierarchy-canonical.xml",
+      "change_request_template": "fixtures/change/set-hierarchy-summary-task-1-percent-0-to-50.template.json",
+      "golden_semantic_state": null,
+      "expected_status": "rejected",
+      "expected_exit_code": 1,
+      "expected_next_action": { "action": "revise-invocation-or-input", "command": null, "source_retryability": "after-input-change" },
+      "expected_diagnostic_codes": ["change.operation-unsupported"],
+      "expected_rule_ids": ["S-I022"],
+      "expected_diagnostic_paths": ["tasks[uid=1].summary"],
+      "comparison_modes": ["schema", "artifact-topology", "byte-same-runtime"],
+      "materialization_phase": "P4/P5"
+    },
+    {
       "id": "CVF-ABSENT-001",
       "semantic_fixture_ids": [],
       "command": "verify-artifact",
@@ -267,6 +402,24 @@
       "materialization_phase": "P4/P5"
     },
     {
+      "id": "CVF-EXPECTED-PLAN-INVALID-001",
+      "semantic_fixture_ids": ["S-V001"],
+      "command": "verify-artifact",
+      "parameters": {
+        "artifact_setup": "output-of:CA-CHANGE-001",
+        "expect_plan_result": "schema-invalid-plan-result"
+      },
+      "input": null,
+      "golden_semantic_state": "golden/semantic/dependency-percent-50.state.json",
+      "expected_status": "rejected",
+      "expected_exit_code": 1,
+      "expected_next_action": { "action": "replan-and-request-human-approval", "command": "plan-change", "source_retryability": "after-replan-and-approval" },
+      "expected_diagnostic_codes": ["change.binding-mismatch"],
+      "expected_rule_ids": [null],
+      "comparison_modes": ["schema", "semantic-state", "artifact-topology"],
+      "materialization_phase": "P4/P5"
+    },
+    {
       "id": "CA-CLEANUP-AGGREGATE-001",
       "semantic_fixture_ids": ["S-V001"],
       "command": "apply-change",
@@ -291,7 +444,7 @@
       "command": "validate",
       "parameters": {
         "runtime_setup": {
-          "manifest_base": "../../../docs/examples/runtime-manifest-v1/node-runtime-manifest.example.json",
+          "manifest_base": "generated-test-runtime",
           "manifest_mutations": [
             { "operation": "replace", "pointer": "/artifacts/executable/path", "value": "../miku-project-node-1.0.0.mjs" }
           ],
@@ -315,10 +468,10 @@
       "command": "validate",
       "parameters": {
         "runtime_setup": {
-          "manifest_base": "../../../docs/examples/runtime-manifest-v1/node-runtime-manifest.example.json",
+          "manifest_base": "generated-test-runtime",
           "manifest_mutations": [],
           "filesystem_mutations": [
-            { "operation": "replace-content", "artifact_role": "executable", "content": "digest-mismatch" }
+            { "operation": "append-content", "artifact_role": "executable", "content": "digest-mismatch" }
           ]
         },
         "expected_project_input_read": false
@@ -339,7 +492,7 @@
       "command": "validate",
       "parameters": {
         "runtime_setup": {
-          "manifest_base": "../../../docs/examples/runtime-manifest-v1/node-runtime-manifest.example.json",
+          "manifest_base": "generated-test-runtime",
           "manifest_mutations": [
             { "operation": "remove", "pointer": "/compatibility/capabilities/provided/7" }
           ],
@@ -363,7 +516,7 @@
       "command": "validate",
       "parameters": {
         "runtime_setup": {
-          "manifest_base": "../../../docs/examples/runtime-manifest-v1/node-runtime-manifest.example.json",
+          "manifest_base": "generated-test-runtime",
           "manifest_mutations": [],
           "filesystem_mutations": [
             { "operation": "remove", "artifact_role": "sources" }

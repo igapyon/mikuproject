@@ -1,0 +1,19 @@
+{
+  "kind": "miku_project_change_request",
+  "schema_version": "1",
+  "semantic_contract_version": "1",
+  "base": {
+    "state_digest": {
+      "algorithm": "sha-256",
+      "value": "${BASE_STATE_DIGEST}"
+    }
+  },
+  "operations": [
+    {
+      "kind": "set_task_percent_complete",
+      "target": { "task_uid": "1" },
+      "preconditions": { "expected_percent_complete": 0 },
+      "value": { "percent_complete": 50 }
+    }
+  ]
+}

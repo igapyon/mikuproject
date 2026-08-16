@@ -12,11 +12,17 @@ import { verifyV1ArtifactSet } from "../scripts/lib/v1/cli-v1-artifact-verifier.
 import {
   canonicalJsonText,
   sha256CanonicalJson,
-  sha256RawBytes
+  sha256RawBytes,
+  sha256SemanticState
 } from "../scripts/lib/v1/cli-v1-canonical-json.mjs";
 import { validateV1ApplyPreparationBindings } from "../scripts/lib/v1/cli-v1-change.mjs";
 import { reserveV1ResultTransport } from "../scripts/lib/v1/cli-v1-io.mjs";
-import { runV1PlanChange } from "../scripts/lib/v1/cli-v1-r1-commands.mjs";
+import {
+  prepareV1ExternalProjectInput,
+  runV1Inspect,
+  runV1PlanChange,
+  runV1Validate
+} from "../scripts/lib/v1/cli-v1-r1-commands.mjs";
 import { createV1DiagnosticFromError } from "../scripts/lib/v1/cli-v1-result.mjs";
 import { validateArtifact, validateCliDiagnostic, validateCliResult } from "../scripts/generated/cli-v1-schema-validators.mjs";
 
@@ -262,6 +268,192 @@ describe("v1 apply-change publication service", () => {
     });
   });
 
+  it("uses a committed artifact-set directory through validate, inspect, plan-change, and apply-change without changing its source members", async () => {
+    const firstMaterial = await createApprovedPlan();
+    const first = await runV1ApplyChange({
+      invocation: applyInvocation(firstMaterial),
+      resultTransport: captureResultTransport(),
+      runtime: testRuntime,
+      cwd: repoRoot
+    });
+    expect(first).toMatchObject({ status: "succeeded" });
+
+    const artifactSetPath = first.data.artifact_set.path;
+    const projectMemberPath = path.join(artifactSetPath, "project.xml");
+    const sourceProjectBefore = await readFile(projectMemberPath);
+    const sourceProvenanceBefore = await readFile(path.join(artifactSetPath, "provenance.json"));
+    const externalXmlPath = path.join(firstMaterial.directory, "same-state-external.xml");
+    await writeFile(externalXmlPath, sourceProjectBefore);
+
+    const fromDirectory = await prepareV1ExternalProjectInput(artifactSetPath, {
+      cwd: repoRoot,
+      stdin: Buffer.alloc(0)
+    });
+    const fromExternalXml = await prepareV1ExternalProjectInput(externalXmlPath, {
+      cwd: repoRoot,
+      stdin: Buffer.alloc(0)
+    });
+    expect(fromDirectory.error).toBeUndefined();
+    expect(fromExternalXml.error).toBeUndefined();
+    expect(fromDirectory.input).toEqual({
+      role: "project",
+      option: "--project",
+      source: "directory",
+      path: artifactSetPath,
+      digest: first.data.artifact_set.project_artifact_digest
+    });
+    expect(fromDirectory.decoded).toEqual(fromExternalXml.decoded);
+    expect(fromDirectory.validation).toEqual(fromExternalXml.validation);
+
+    const validated = await runV1Validate({
+      invocation: parseV1Invocation(["validate", "--project", artifactSetPath]),
+      resultTransport: captureResultTransport(),
+      runtime: testRuntime,
+      cwd: repoRoot,
+      stdin: Buffer.alloc(0)
+    });
+    expect(validated).toMatchObject({
+      status: "succeeded",
+      io: { inputs: [{ source: "directory", path: artifactSetPath, digest: first.data.artifact_set.project_artifact_digest }] },
+      data: { validation: { state_digest: sha256SemanticState(fromDirectory.decoded.state) } }
+    });
+
+    const inspectedDirectory = await runV1Inspect({
+      invocation: parseV1Invocation([
+        "inspect", "--project", artifactSetPath, "--purpose", "project_overview"
+      ]),
+      resultTransport: captureResultTransport(),
+      runtime: testRuntime,
+      cwd: repoRoot,
+      stdin: Buffer.alloc(0)
+    });
+    const inspectedExternalXml = await runV1Inspect({
+      invocation: parseV1Invocation([
+        "inspect", "--project", externalXmlPath, "--purpose", "project_overview"
+      ]),
+      resultTransport: captureResultTransport(),
+      runtime: testRuntime,
+      cwd: repoRoot,
+      stdin: Buffer.alloc(0)
+    });
+    expect(inspectedDirectory).toMatchObject({ status: "succeeded" });
+    expect(inspectedExternalXml).toMatchObject({ status: "succeeded" });
+    expect(inspectedDirectory.data.projection).toEqual(inspectedExternalXml.data.projection);
+
+    const secondRequest = await requestArtifact({
+      baseStateDigest: sha256SemanticState(fromDirectory.decoded.state).value,
+      expectedPercentComplete: 50,
+      percentComplete: 75
+    });
+    const secondRequestPath = path.join(firstMaterial.directory, "second-request.json");
+    const secondPlanResultPath = path.join(firstMaterial.directory, "second-plan.result.json");
+    const secondApprovalPath = path.join(firstMaterial.directory, "second-approval.json");
+    const secondDestinationParent = path.join(firstMaterial.directory, "second-output-parent");
+    const secondDestination = path.join(secondDestinationParent, "next-project");
+    const directPlanResultPath = path.join(firstMaterial.directory, "direct-plan.result.json");
+    const directApprovalPath = path.join(firstMaterial.directory, "direct-approval.json");
+    const directDestinationParent = path.join(firstMaterial.directory, "direct-output-parent");
+    const directDestination = path.join(directDestinationParent, "next-project");
+    await mkdir(secondDestinationParent);
+    await mkdir(directDestinationParent);
+    await writeFile(secondRequestPath, `${canonicalJsonText(secondRequest)}\n`, "utf8");
+    const secondPlanInvocation = parseV1Invocation([
+      "plan-change",
+      "--project", artifactSetPath,
+      "--request", secondRequestPath,
+      "--destination", secondDestination,
+      "--result", secondPlanResultPath
+    ]);
+    const secondPlan = await runV1PlanChange({
+      invocation: secondPlanInvocation,
+      resultTransport: await reserveV1ResultTransport(secondPlanInvocation.options.result, { cwd: firstMaterial.directory }),
+      runtime: testRuntime,
+      cwd: firstMaterial.directory,
+      stdin: Buffer.alloc(0)
+    });
+    expect(secondPlan.status).toBe("succeeded");
+    expect(validateCliResult(secondPlan)).toBe(true);
+    expect(secondPlan.io.inputs[0]).toEqual({
+      role: "project",
+      option: "--project",
+      source: "directory",
+      path: artifactSetPath,
+      digest: first.data.artifact_set.project_artifact_digest
+    });
+    expect(secondPlan.data.semantic_diff.proposed_state_digest).toEqual(sha256SemanticState({
+      ...fromDirectory.decoded.state,
+      tasks: fromDirectory.decoded.state.tasks.map((task) => task.uid === "2"
+        ? { ...task, percent_complete: 75 }
+        : task)
+    }));
+
+    const directPlanInvocation = parseV1Invocation([
+      "plan-change",
+      "--project", externalXmlPath,
+      "--request", secondRequestPath,
+      "--destination", directDestination,
+      "--result", directPlanResultPath
+    ]);
+    const directPlan = await runV1PlanChange({
+      invocation: directPlanInvocation,
+      resultTransport: await reserveV1ResultTransport(directPlanInvocation.options.result, { cwd: firstMaterial.directory }),
+      runtime: testRuntime,
+      cwd: firstMaterial.directory,
+      stdin: Buffer.alloc(0)
+    });
+    expect(directPlan.status).toBe("succeeded");
+    expect(secondPlan.data.semantic_diff).toEqual(directPlan.data.semantic_diff);
+    expect(secondPlan.data.output_plan.preflight).toEqual(directPlan.data.output_plan.preflight);
+
+    const secondApproval = approvalForPlan(secondRequest, secondPlan);
+    const directApproval = approvalForPlan(secondRequest, directPlan);
+    await writeFile(secondApprovalPath, `${canonicalJsonText(secondApproval)}\n`, "utf8");
+    await writeFile(directApprovalPath, `${canonicalJsonText(directApproval)}\n`, "utf8");
+    const second = await runV1ApplyChange({
+      invocation: parseV1Invocation([
+        "apply-change",
+        "--project", artifactSetPath,
+        "--request", secondRequestPath,
+        "--plan-result", secondPlanResultPath,
+        "--approval", secondApprovalPath
+      ]),
+      resultTransport: captureResultTransport(),
+      runtime: testRuntime,
+      cwd: firstMaterial.directory,
+      stdin: Buffer.alloc(0)
+    });
+    expect(second.status).toBe("succeeded");
+    expect(validateCliResult(second)).toBe(true);
+    expect(second.io.inputs[0]).toEqual({
+      role: "project",
+      option: "--project",
+      source: "directory",
+      path: artifactSetPath,
+      digest: first.data.artifact_set.project_artifact_digest
+    });
+    expect(second.data.artifact_set).toMatchObject({ publication_state: "committed" });
+    const direct = await runV1ApplyChange({
+      invocation: parseV1Invocation([
+        "apply-change",
+        "--project", externalXmlPath,
+        "--request", secondRequestPath,
+        "--plan-result", directPlanResultPath,
+        "--approval", directApprovalPath
+      ]),
+      resultTransport: captureResultTransport(),
+      runtime: testRuntime,
+      cwd: firstMaterial.directory,
+      stdin: Buffer.alloc(0)
+    });
+    expect(direct.status).toBe("succeeded");
+    expect(validateCliResult(direct)).toBe(true);
+    expect(await readFile(path.join(second.data.artifact_set.path, "project.xml"))).toEqual(
+      await readFile(path.join(direct.data.artifact_set.path, "project.xml"))
+    );
+    expect(await readFile(projectMemberPath)).toEqual(sourceProjectBefore);
+    expect(await readFile(path.join(artifactSetPath, "provenance.json"))).toEqual(sourceProvenanceBefore);
+  });
+
   it("maps a pre-marker write failure to an absent/succeeded cleanup result without claiming publication", async () => {
     const material = await createApprovedPlan();
     const canonicalDestination = material.planResult.io.destination.path;
@@ -304,6 +496,68 @@ describe("v1 apply-change publication service", () => {
       data: null
     });
     await expect(access(material.destination)).rejects.toMatchObject({ code: "ENOENT" });
+  });
+
+  it("materializes CA-CLEANUP-AGGREGATE-001 when a pre-marker write failure cannot clean up its owned directory", async () => {
+    const material = await createApprovedPlan();
+    const canonicalDestination = material.planResult.io.destination.path;
+    const targetMember = path.join(canonicalDestination, "project.xml");
+    const failingFileSystem = new Proxy(await import("node:fs/promises"), {
+      get(target, property, receiver) {
+        if (property === "open") {
+          return async (candidatePath, flags, ...rest) => {
+            if (candidatePath === targetMember && flags === "wx") {
+              const error = new Error("injected project.xml write failure");
+              error.code = "EIO";
+              throw error;
+            }
+            return target.open(candidatePath, flags, ...rest);
+          };
+        }
+        if (property === "rmdir") {
+          return async (candidatePath, ...rest) => {
+            if (candidatePath === canonicalDestination) {
+              const error = new Error("injected cleanup failure");
+              error.code = "EPERM";
+              throw error;
+            }
+            return target.rmdir(candidatePath, ...rest);
+          };
+        }
+        return Reflect.get(target, property, receiver);
+      }
+    });
+    const result = await runV1ApplyChange({
+      invocation: applyInvocation(material),
+      resultTransport: captureResultTransport(),
+      runtime: testRuntime,
+      cwd: repoRoot,
+      fileSystem: failingFileSystem
+    });
+
+    expect(validateCliResult(result)).toBe(true);
+    expect(result).toMatchObject({
+      status: "runtime-error",
+      exit_code: 3,
+      diagnostics: [
+        { code: "publication.cleanup-failed", retryability: "not-retryable" },
+        { code: "publication.write-failed", retryability: "after-environment-change" }
+      ],
+      next_action: { action: "abort-and-investigate", command: null, source_retryability: "not-retryable" },
+      effects: {
+        project_artifact: {
+          path: canonicalDestination,
+          publication_state: "incomplete",
+          created_by_invocation: true
+        },
+        cleanup: { status: "failed", path: canonicalDestination }
+      },
+      data: null
+    });
+    await expect(access(material.destination)).resolves.toBeUndefined();
+    expect(await verifyV1ArtifactSet(canonicalDestination)).toMatchObject({
+      verification: { publication_state: "incomplete" }
+    });
   });
 
   it("does not synthesize a failure envelope when result delivery fails after commit; verification recovers the outcome", async () => {
@@ -380,9 +634,29 @@ function applyInvocation(material, { projectPath = fixturePath, approvalPath = m
   ]);
 }
 
-async function requestArtifact() {
+async function requestArtifact({
+  baseStateDigest = "a98f0c8b560382234572a61f360c9e96911bc75fc1d57b79968d6e60b5d751d0",
+  expectedPercentComplete = 0,
+  percentComplete = 50
+} = {}) {
   const template = await readFile(requestTemplatePath, "utf8");
-  return JSON.parse(template.replace("${BASE_STATE_DIGEST}", "a98f0c8b560382234572a61f360c9e96911bc75fc1d57b79968d6e60b5d751d0"));
+  const request = JSON.parse(template.replace("${BASE_STATE_DIGEST}", baseStateDigest));
+  request.operations[0].preconditions.expected_percent_complete = expectedPercentComplete;
+  request.operations[0].value.percent_complete = percentComplete;
+  return request;
+}
+
+function approvalForPlan(request, planResult) {
+  return {
+    kind: "miku_project_change_approval",
+    schema_version: "1",
+    semantic_contract_version: "1",
+    approved: true,
+    base_state_digest: { ...planResult.data.semantic_diff.base_state_digest },
+    change_request_digest: sha256CanonicalJson(request),
+    semantic_diff_digest: sha256CanonicalJson(planResult.data.semantic_diff),
+    output_plan_digest: sha256CanonicalJson(planResult.data.output_plan)
+  };
 }
 
 async function expectedFileInput(role, option, filePath) {

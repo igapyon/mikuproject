@@ -106,6 +106,67 @@ export async function verifyV1ArtifactSet(artifactSetPath, {
 }
 
 /**
+ * Reads the project member of a committed artifact set for use as a project
+ * input. The directory verifier remains authoritative: this helper never
+ * accepts a member from an absent, incomplete, corrupt, or indeterminate set.
+ * It also checks that the bytes read after verification still have the
+ * committed descriptor's raw digest before returning them to the semantic
+ * pipeline, so a member cannot be silently substituted between those steps.
+ */
+export async function readV1CommittedArtifactSetProject(artifactSetPath, {
+  cwd = process.cwd(),
+  fileSystem = fsPromises
+} = {}) {
+  const verified = await verifyV1ArtifactSet(artifactSetPath, { cwd, fileSystem });
+  const input = artifactProjectInputMetadata({
+    path: verified.verification.path,
+    digest: null
+  });
+  if (verified.error || verified.verification.publication_state !== "committed" || !verified.artifact_set) {
+    return {
+      input,
+      error: toProjectInputArtifactError(verified.error, verified.verification)
+    };
+  }
+
+  const projectPath = path.join(verified.artifact_set.path, "project.xml");
+  let bytes;
+  try {
+    bytes = Buffer.from(await fileSystem.readFile(projectPath));
+  } catch (error) {
+    return {
+      input,
+      error: createV1RuntimeError({
+        code: "io.input-read-failed",
+        message: "The committed project artifact member could not be read.",
+        scope: "filesystem",
+        path: verified.artifact_set.path,
+        option: "--project",
+        artifactRole: "project_artifact_set",
+        details: { phase: "committed-project-member-read", error_code: error?.code ?? null }
+      })
+    };
+  }
+  const digest = sha256RawBytes(bytes);
+  if (!sameDigest(digest, verified.artifact_set.project_artifact_digest)) {
+    return {
+      input,
+      error: createV1RejectedError({
+        code: "publication.artifact-corrupt",
+        message: "The project.xml member changed after the artifact set was verified as committed.",
+        scope: "filesystem",
+        path: verified.artifact_set.path,
+        option: "--project",
+        artifactRole: "project_artifact_set",
+        details: { phase: "committed-project-member-digest", expected_digest: verified.artifact_set.project_artifact_digest.value }
+      })
+    };
+  }
+  input.digest = digest;
+  return { input, bytes };
+}
+
+/**
  * Checks the two non-marker C1 member byte streams without consulting a
  * directory. P4.6.4 uses this before creating COMMITTED; P4.6.3 uses the same
  * primitive after observing the committed topology.
@@ -207,6 +268,52 @@ function resolveArtifactSetPath(artifactSetPath, cwd) {
     throw new TypeError("v1 artifact verification requires a non-empty artifact-set path");
   }
   return path.resolve(cwd, artifactSetPath);
+}
+
+function artifactProjectInputMetadata({ path: inputPath, digest }) {
+  return {
+    role: "project",
+    option: "--project",
+    source: "directory",
+    path: inputPath,
+    digest
+  };
+}
+
+function toProjectInputArtifactError(error, verification) {
+  if (error?.code === "publication.artifact-absent"
+    || error?.code === "publication.artifact-incomplete"
+    || error?.code === "publication.artifact-corrupt") {
+    return createV1RejectedError({
+      code: error.code,
+      message: error.message,
+      scope: "filesystem",
+      path: verification.path,
+      option: "--project",
+      artifactRole: "project_artifact_set",
+      ruleId: error.location?.rule_id ?? null,
+      details: { ...error.details }
+    });
+  }
+  if (error?.code === "io.input-read-failed") {
+    return createV1RuntimeError({
+      code: "io.input-read-failed",
+      message: error.message,
+      scope: "filesystem",
+      path: verification.path,
+      option: "--project",
+      artifactRole: "project_artifact_set",
+      details: { ...error.details }
+    });
+  }
+  return createV1RuntimeError({
+    message: "The project artifact set could not be verified before it was used as a project input.",
+    scope: "filesystem",
+    path: verification?.path ?? null,
+    option: "--project",
+    artifactRole: "project_artifact_set",
+    details: { observed_publication_state: verification?.publication_state ?? null }
+  });
 }
 
 async function inspectArtifactMembers(artifactSetPath, fileSystem) {

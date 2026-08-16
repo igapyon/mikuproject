@@ -14,7 +14,7 @@ audience:
   - developer
   - agent
 created: 2026-08-10
-updated: 2026-08-11
+updated: 2026-08-13
 sources:
   - type: local-file
     role: primary
@@ -68,13 +68,23 @@ testdata/conformance/v1/
 │   ├── project/
 │   │   ├── dependency-canonical.xml
 │   │   ├── dependency-percent-101.xml
-│   │   └── dependency-unsupported-actual.xml
+│   │   ├── dependency-unsupported-actual.xml
+│   │   ├── hierarchy-canonical.xml
+│   │   ├── hierarchy-invalid-preorder.xml
+│   │   └── hierarchy-invalid-summary.xml
 │   └── change/
-│       └── set-task-2-percent-0-to-50.template.json
+│       ├── set-task-2-percent-0-to-50.template.json
+│       ├── set-hierarchy-task-2-percent-0-to-50.template.json
+│       └── set-hierarchy-summary-task-1-percent-0-to-50.template.json
 └── golden/
+    ├── projection/
+    │   ├── hierarchy.project-overview.json
+    │   └── hierarchy.task-2-change-context.json
     └── semantic/
         ├── dependency.state.json
-        └── dependency-percent-50.state.json
+        ├── dependency-percent-50.state.json
+        ├── hierarchy.state.json
+        └── hierarchy-percent-50.state.json
 ```
 
 - pathは`suite-index.json`からの相対pathとし、`..`、absolute path、symlinkを許可しない。
@@ -87,7 +97,7 @@ testdata/conformance/v1/
 
 `dependency-canonical.xml`は`S-V001`のG3 canonical variantであり、正式な`LinkLag=0 / LagFormat=3`とcanonical child順を使う。現行`testdata/dependency.xml`はlegacy zero-lag normalizationを検証する別caseとして残し、新しいcanonical write goldenと同一視しない。
 
-`dependency.state.json`は入力のruntime非依存semantic state、`dependency-percent-50.state.json`はC1後の期待stateである。stateのscalar JSON表現は次で固定する。
+`dependency.state.json`は入力のruntime非依存semantic state、`dependency-percent-50.state.json`はC1後の期待stateである。`hierarchy-canonical.xml`は`S-V002`のcanonical variantであり、summary root、二つのchild leaf、独立rootをtask preorder `1, 2, 3, 4`で持つ。`hierarchy.state.json`と`hierarchy-percent-50.state.json`はnested leaf UID `2`のC1前後stateである。stateのscalar JSON表現は次で固定する。
 
 | semantic type | fixture/golden JSON表現 |
 | --- | --- |
@@ -109,7 +119,7 @@ change request templateの`${BASE_STATE_DIGEST}`は、上記規則で`dependency
 
 | mode | 比較対象 | 規則 |
 | --- | --- | --- |
-| `schema` | CLI result / diagnostics | 対応JSON Schemaに適合し、status、exit、code、rule ID、side effect、`next_action`がcase期待値と一致する。`message`は比較しない |
+| `schema` | CLI result / diagnostics | 対応JSON Schemaに適合し、status、exit、code、rule ID、semantic diagnosticの`location.path`、side effect、`next_action`がcase期待値と一致する。`message`は比較しない |
 | `exact-json` | Projection、semantic diffなどruntime非依存JSON | object key順とformattingを無視し、全valueとarray順を一致させる。非task collectionは比較前に契約どおりsortする |
 | `cross-artifact-binding` | state / Projection / request / diff / plan / approval / provenance / result | `RB-001`〜`RB-012`のcanonical digest、runtime、I/O/effect/path、Projection content、status/next action bindingを検査する |
 | `semantic-state` | input/output project | runtime内IRを直接公開させず、test-only adapterまたはoutput XML再decode結果をgolden stateとsemantic比較する |
@@ -124,9 +134,9 @@ artifact生成caseの`byte-same-runtime`は、runner自身が所有する明示�
 
 ## suite case
 
-[`suite-index.json`](../testdata/conformance/v1/suite-index.json)は21件のworkflow / harness caseを固定する。schemaとcross-artifact bindingを直接検証する31件は[`contract-cases.json`](../testdata/conformance/v1/contract-cases.json)で別に固定し、workflow件数へ重複加算しない。
+[`suite-index.json`](../testdata/conformance/v1/suite-index.json)は30件のworkflow / harness caseを固定する。schemaとcross-artifact bindingを直接検証する31件は[`contract-cases.json`](../testdata/conformance/v1/contract-cases.json)で別に固定し、workflow件数へ重複加算しない。
 
-各caseの`expected_next_action`は[human gate and next action contract v1](miku-project-human-gate-and-next-action-contract-v1.md)に従う。runnerはactionだけでなく`command / source_retryability`も完全一致させ、複数diagnostic caseでは定義済み優先順から集約したことを検証する。
+各caseの`expected_next_action`は[human gate and next action contract v1](miku-project-human-gate-and-next-action-contract-v1.md)に従う。runnerはactionだけでなく`command / source_retryability`も完全一致させる。`expected_diagnostic_codes`、`expected_rule_ids`、必要な`expected_diagnostic_paths`はdiagnostic配列と同じ順序で比較し、複数diagnostic caseでは定義済み優先順から集約したことを検証する。
 
 | case ID | command / flow | seedまたはsetup | 主な期待 |
 | --- | --- | --- | --- |
@@ -139,11 +149,20 @@ artifact生成caseの`byte-same-runtime`は、runner自身が所有する明示�
 | `CA-CHANGE-001` | `apply-change` | CP result + explicit test approval | committed三member、input不変、outputはafter goldenとsemantic equivalent |
 | `CA-DEST-EXISTS-001` | `apply-change` | approval後にdestinationを競合生成 | rejected、`publication.reservation-conflict`、既存entry不変 |
 | `CA-BINDING-001` | `apply-change` | request/plan/approvalのdigest一つを変更 | rejected、`change.binding-mismatch`、destinationなし |
+| `CV-HIERARCHY-VALID-001` | `validate` | canonical `S-V002` XML | success、ordered forest / summary / referenceを含むhierarchy stateとsemantic equivalent |
+| `CI-HIERARCHY-OVERVIEW-001` | `inspect project_overview` | canonical `S-V002` XML | success、preorder、parent、summaryを含むoverviewをexact-json比較 |
+| `CI-HIERARCHY-CONTEXT-001` | `inspect task_change_context --task-uid 2` | canonical `S-V002` XML | success、ancestor UID `1`を含むnested leaf contextをexact-json / RB-012比較 |
+| `CP-HIERARCHY-CHANGE-001` | `plan-change` | canonical `S-V002` XML + materialized request + fresh destination | success、nested leaf UID `2`の`0 → 50`だけのdiff、destination未作成 |
+| `CA-HIERARCHY-CHANGE-001` | `apply-change` | hierarchy CP result + explicit test approval | committed三member、hierarchy / collection意味を保持しafter goldenとsemantic equivalent |
+| `CV-HIERARCHY-INVALID-PREORDER-001` | `validate` | `S-V002`由来の不正preorder XML | rejected、二件の`semantic.invalid`、rule `S-I003`、成功payloadなし |
+| `CV-HIERARCHY-INVALID-SUMMARY-001` | `validate` | `S-V002`由来のsummary不整合XML | rejected、`semantic.invalid`、rule `S-I004`、成功payloadなし |
+| `CP-HIERARCHY-SUMMARY-REJECT-001` | `plan-change` | canonical `S-V002` XML + summary UID `1`へのrequest | rejected、`change.operation-unsupported`、rule `S-I022`、destination未作成 |
 | `CVF-ABSENT-001` | `verify-artifact` | path不存在 | rejected、absent、`publication.artifact-absent` |
 | `CVF-INCOMPLETE-001` | `verify-artifact` | markerなしdirectory | rejected、incomplete、`publication.artifact-incomplete`、非変更 |
 | `CVF-CORRUPT-001` | `verify-artifact` | markerありでmember/digest不一致 | rejected、corrupt、`publication.artifact-corrupt`、非変更 |
 | `CVF-COMMITTED-001` | `verify-artifact` | CAの成功destination | success、committed、plan/runtime binding一致 |
-| `CVF-EXPECTED-PLAN-MISMATCH-001` | `verify-artifact` | committed set + 別plan | rejected、artifact非変更、`publication.expected-plan-mismatch` |
+| `CVF-EXPECTED-PLAN-MISMATCH-001` | `verify-artifact` | committed set + schema-validな別plan | rejected、artifact非変更、`committed / false`、`publication.expected-plan-mismatch` |
+| `CVF-EXPECTED-PLAN-INVALID-001` | `verify-artifact` | committed set + I/O/JSON/envelope不正のexpected plan | rejected、artifact非変更、`committed / null`、入力diagnostic。RB-008は未評価 |
 | `CU-UNKNOWN-OUTCOME-001` | apply → result delivery遮断 → verify | `COMMITTED`作成後・success result受信前にharnessがtransportだけを遮断 | applyを再試行せずverifyでcommittedと前回bindingを回収 |
 | `CU-USAGE-001` | invalid option | project未読 | usage-error、exit 2、`cli.unknown-option`、副作用なし |
 | `CA-CLEANUP-AGGREGATE-001` | `apply-change` | write failure後にcleanupも失敗 | runtime-error、二diagnostic、最保守`not-retryable`からabortへ集約 |
@@ -152,7 +171,7 @@ artifact生成caseの`byte-same-runtime`は、runner自身が所有する明示�
 | `CR-CAPABILITY-MISSING-001` | `validate` | 既知validate capabilityを除外 | runtime-error、`runtime.capability-missing`、environment修復待ち |
 | `CR-SOURCE-MISSING-001` | `validate` | source archive不在 | runtime-error、`runtime.manifest-invalid`、project未読 |
 
-`CR-*`の`runtime_setup`はNode manifest exampleをbaseにし、JSON Pointer mutationとfilesystem mutationを機械可読に記録する。runnerはbaseを専用temporary runtime directoryへmaterializeしてからmutationを適用し、元exampleを変更しない。manifest schema違反と、schema上は既知subsetとしてvalidだがcore profileを満たさないcapability不足を別stageで判定する。全runtime integrity caseでproject inputのopen/readを監視し、`expected_project_input_read = false`を満たすこと、destination entryを一件も作らないことをassertする。
+`CR-*`の`runtime_setup`は、clean / exact-tag releaseだけが許されるproduction builderとは別の、明示的なtest-only source identityから生成したtemporary versioned Node runtimeをbaseにする。JSON Pointer mutationとfilesystem mutationをmachine-readableに記録し、runnerはそのfresh runtime directoryへmutationを適用する。実行assetを丸ごと置換するとNode processが自己検証まで起動できないため、executable digest caseは実行可能な`.mjs`へcommentをappendしてdigestだけを不一致にする。manifest schema違反と、schema上は既知subsetとしてvalidだがcore profileを満たさないcapability不足を別stageで判定する。全runtime integrity caseではsubprocessのartifact未作成確認に加え、direct serviceのfilesystem guardでproject / result pathへの`lstat`・`realpath`・`readFile`を監視し、`expected_project_input_read = false`を満たすこと、destination entryを一件も作らないことをassertする。
 
 ## schema / binding adversarial case
 

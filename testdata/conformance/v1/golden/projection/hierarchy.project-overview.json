@@ -1,0 +1,33 @@
+{
+  "kind": "miku_project_projection",
+  "schema_version": "1",
+  "semantic_contract_version": "1",
+  "purpose": "project_overview",
+  "source_state_digest": {
+    "algorithm": "sha-256",
+    "value": "def14cb546dd7b6f943e97479218dc8400807c398e08b7683dcc855d3d680685"
+  },
+  "scope": {
+    "target_task_uid": null,
+    "included_domains": ["project", "tasks", "dependencies"],
+    "omitted_domains": ["task_edit_details", "raw_external_artifact", "unsupported_data"]
+  },
+  "project": {
+    "name": "Hierarchy Project",
+    "start": "2026-03-16T09:00:00",
+    "finish": "2026-03-21T18:00:00",
+    "current_date": "2026-03-16T09:00:00",
+    "schedule_from_start": true,
+    "calendar_uid": "1"
+  },
+  "tasks": [
+    { "uid": "1", "name": "Plan", "parent_uid": null, "order": 0, "summary": true, "percent_complete": 0 },
+    { "uid": "2", "name": "Prepare", "parent_uid": "1", "order": 1, "summary": false, "percent_complete": 0 },
+    { "uid": "3", "name": "Execute", "parent_uid": "1", "order": 2, "summary": false, "percent_complete": 0 },
+    { "uid": "4", "name": "Release", "parent_uid": null, "order": 3, "summary": false, "percent_complete": 0 }
+  ],
+  "dependencies": [
+    { "predecessor_uid": "1", "successor_uid": "2", "type": "FS", "lag": "PT0H0M0S" }
+  ],
+  "capability": { "unsupported_data": [] }
+}

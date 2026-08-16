@@ -44,6 +44,7 @@ export function planV1SetTaskPercentComplete({ state, changeRequest, runtime, de
       path: `tasks[uid=${target.uid}].summary`,
       option: "--request",
       artifactRole: "change_request",
+      ruleId: "S-I022",
       details: { target_task_uid: target.uid }
     });
   }

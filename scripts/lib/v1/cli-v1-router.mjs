@@ -6,6 +6,8 @@ import { createV1RuntimeError, isCliV1Error } from "./cli-v1-errors.mjs";
 import { reserveV1ResultTransport } from "./cli-v1-io.mjs";
 import { runV1Inspect, runV1PlanChange, runV1Validate } from "./cli-v1-r1-commands.mjs";
 import { createUnverifiedRuntimeBinding, createV1ErrorResult, serializeV1Result } from "./cli-v1-result.mjs";
+import { verifyV1VersionedNodeRuntime } from "./cli-v1-runtime-manifest.mjs";
+import { runV1VerifyArtifact } from "./cli-v1-verify-artifact.mjs";
 
 /**
  * Detects only the explicit v1 command words. Legacy routing remains the
@@ -68,7 +70,9 @@ export async function runV1R1Harness(argv, {
         ? unreadPlanChangeIo(invocation, cwd)
         : invocation.command === "apply-change"
           ? unreadApplyChangeIo(invocation, cwd)
-          : unreadR1ProjectIo(invocation, cwd),
+          : invocation.command === "verify-artifact"
+            ? unreadVerifyArtifactIo(invocation, cwd)
+            : unreadR1ProjectIo(invocation, cwd),
       data: invocation.command === "validate" && error.status === "rejected"
         ? { validation: { valid: false, format_profile: null, state_digest: null } }
         : null
@@ -89,11 +93,66 @@ export async function runV1R1Harness(argv, {
     if (invocation.command === "apply-change") {
       return await runV1ApplyChange({ invocation, resultTransport, runtime, cwd, stdin, fileSystem });
     }
+    if (invocation.command === "verify-artifact") {
+      return await runV1VerifyArtifact({ invocation, resultTransport, runtime, cwd, stdin, fileSystem });
+    }
     throw new TypeError(`The fixed v1 service harness does not implement ${invocation.command} ${invocation.options.purpose ?? ""}`.trim());
   } catch (error) {
     await resultTransport.abort();
     throw error;
   }
+}
+
+/**
+ * Public v1 workflow entrypoint for a versioned Node runtime bundle. Unlike
+ * the fixed test harness, this establishes the adjacent manifest/asset/source
+ * binding itself before parsing domain inputs or reserving a result channel.
+ */
+export async function runV1VersionedRuntime(argv, {
+  entryPath,
+  runtimeVersion,
+  productVersion,
+  conformanceCorpusDigest,
+  cwd = process.cwd(),
+  stdin = process.stdin,
+  stdout = process.stdout,
+  fileSystem
+} = {}) {
+  let parsedInvocation = null;
+  try {
+    parsedInvocation = parseV1Invocation(argv);
+  } catch {
+    // Runtime integrity is deliberately checked before a grammar error is
+    // reported. A valid manifest produces the later verified usage result.
+  }
+
+  let runtime;
+  try {
+    runtime = await verifyV1VersionedNodeRuntime({
+      entryPath,
+      runtimeVersion,
+      productVersion,
+      conformanceCorpusDigest,
+      fileSystem
+    });
+  } catch (error) {
+    if (!isCliV1Error(error)) {
+      throw error;
+    }
+    const invocation = parsedInvocation?.kind === "workflow" ? parsedInvocation : null;
+    const result = createV1ErrorResult({
+      error,
+      command: invocation?.command ?? "cli",
+      runtime: createUnverifiedRuntimeBinding({ version: runtimeVersion }),
+      io: invocation
+        ? unreadIoForVersionedRuntimeFailure(invocation, cwd)
+        : undefined
+    });
+    stdout.write(serializeV1Result(result));
+    return result;
+  }
+
+  return runV1R1Harness(argv, { runtime, cwd, stdin, stdout, fileSystem });
 }
 
 /**
@@ -141,6 +200,9 @@ function assertImplementedServiceInvocation(invocation) {
     return;
   }
   if (invocation.command === "apply-change") {
+    return;
+  }
+  if (invocation.command === "verify-artifact") {
     return;
   }
   throw new TypeError(`The fixed v1 service harness does not implement ${invocation.command} ${invocation.options.purpose ?? ""}`.trim());
@@ -215,6 +277,46 @@ function unreadApplyChangeIo(invocation, cwd) {
     // unread, so no destination path can honestly be reported yet.
     destination: null
   };
+}
+
+function unreadVerifyArtifactIo(invocation, cwd) {
+  const expectedPlanResult = invocation.options["expect-plan-result"];
+  const expectedSource = expectedPlanResult === "-" ? "stdin" : "file";
+  const inputs = [{
+    role: "artifact_set",
+    option: "--artifact-set",
+    source: "filesystem-path",
+    path: resolveUnopenedPath(cwd, invocation.options["artifact-set"]),
+    digest: null
+  }];
+  if (expectedPlanResult !== undefined) {
+    inputs.push({
+      role: "expected_plan_result",
+      option: "--expect-plan-result",
+      source: expectedSource,
+      path: expectedSource === "stdin" ? null : resolveUnopenedPath(cwd, expectedPlanResult),
+      digest: null
+    });
+  }
+  return {
+    stdin_option: expectedSource === "stdin" ? "--expect-plan-result" : null,
+    inputs,
+    result: { target: "stdout", path: null },
+    destination: null
+  };
+}
+
+function unreadIoForVersionedRuntimeFailure(invocation, cwd) {
+  if (invocation.command === "plan-change") {
+    return unreadPlanChangeIo(invocation, cwd);
+  }
+  if (invocation.command === "apply-change") {
+    return unreadApplyChangeIo(invocation, cwd);
+  }
+  if (invocation.command === "verify-artifact") {
+    return unreadVerifyArtifactIo(invocation, cwd);
+  }
+  return unreadR1ProjectIo(invocation, cwd);
 }
 
 function resolveUnopenedPath(cwd, requestedPath) {

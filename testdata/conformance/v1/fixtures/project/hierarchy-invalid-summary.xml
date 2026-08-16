@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Project xmlns="http://schemas.microsoft.com/project">
+  <Name>Invalid Hierarchy Summary</Name>
+  <ScheduleFromStart>1</ScheduleFromStart>
+  <StartDate>2026-03-16T09:00:00</StartDate>
+  <FinishDate>2026-03-21T18:00:00</FinishDate>
+  <CalendarUID>1</CalendarUID>
+  <CurrentDate>2026-03-16T09:00:00</CurrentDate>
+  <Calendars><Calendar><UID>1</UID><Name>Standard</Name><IsBaseCalendar>1</IsBaseCalendar></Calendar></Calendars>
+  <Tasks>
+    <Task>
+      <UID>1</UID><ID>1</ID><Name>Plan</Name><OutlineLevel>1</OutlineLevel><OutlineNumber>1</OutlineNumber>
+      <Start>2026-03-16T09:00:00</Start><Finish>2026-03-19T18:00:00</Finish><Duration>PT32H0M0S</Duration>
+      <Milestone>0</Milestone><Summary>0</Summary><PercentComplete>0</PercentComplete>
+    </Task>
+    <Task>
+      <UID>2</UID><ID>2</ID><Name>Prepare</Name><OutlineLevel>2</OutlineLevel><OutlineNumber>1.1</OutlineNumber>
+      <Start>2026-03-16T09:00:00</Start><Finish>2026-03-17T18:00:00</Finish><Duration>PT16H0M0S</Duration>
+      <Milestone>0</Milestone><Summary>0</Summary><PercentComplete>0</PercentComplete>
+    </Task>
+  </Tasks>
+</Project>

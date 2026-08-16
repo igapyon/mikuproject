@@ -2,6 +2,7 @@ import fsPromises from "node:fs/promises";
 import path from "node:path";
 
 import { sha256RawBytes, sha256SemanticState } from "./cli-v1-canonical-json.mjs";
+import { readV1CommittedArtifactSetProject } from "./cli-v1-artifact-verifier.mjs";
 import { planV1SetTaskPercentComplete } from "./cli-v1-change.mjs";
 import { preflightV1NewDestination } from "./cli-v1-destination.mjs";
 import { createV1IoError, createV1RejectedError, createV1RuntimeError, isCliV1Error } from "./cli-v1-errors.mjs";
@@ -298,8 +299,9 @@ export async function prepareV1ExternalProjectInput(projectOption, { cwd, stdin,
 }
 
 /**
- * Reads only an external XML direct entry.  Project artifact-set directories
- * are intentionally deferred until their P4 publication verifier exists.
+ * Reads an external XML direct entry or, for a directory, only a project.xml
+ * member that the artifact verifier has confirmed belongs to a committed set.
+ * Both sources return the same raw-byte input to the sole semantic pipeline.
  */
 export async function readV1ExternalProjectInput(projectOption, { cwd = process.cwd(), stdin = process.stdin, fileSystem = fsPromises } = {}) {
   if (projectOption === "-") {
@@ -371,8 +373,11 @@ export async function readV1ExternalProjectInput(projectOption, { cwd = process.
       })
     };
   }
+  if (entry.isDirectory()) {
+    return readV1CommittedArtifactSetProject(projectOption, { cwd, fileSystem });
+  }
   if (!entry.isFile()) {
-    const source = entry.isDirectory() ? "directory" : "file";
+    const source = "file";
     let canonicalPath = candidatePath;
     try {
       canonicalPath = await fileSystem.realpath(candidatePath);
@@ -386,10 +391,10 @@ export async function readV1ExternalProjectInput(projectOption, { cwd = process.
       error: createV1IoError({
         code: "io.input-type-invalid",
         status: "rejected",
-        message: "R1 currently accepts an external XML regular file or stdin, not this project input type.",
+        message: "A v1 project input must be an external XML regular file, a committed artifact-set directory, or stdin.",
         path: canonicalPath,
         option: "--project",
-        details: { requested_path: projectOption, observed_type: entry.isDirectory() ? "directory" : "other" }
+        details: { requested_path: projectOption, observed_type: "other" }
       })
     };
   }

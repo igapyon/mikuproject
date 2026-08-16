@@ -16,6 +16,10 @@ import {
   sha256RawBytes,
   sha256SemanticState
 } from "../scripts/lib/v1/cli-v1-canonical-json.mjs";
+import { validateV1ApplyResultBindings } from "../scripts/lib/v1/cli-v1-apply.mjs";
+import { validateV1ApplyPreparationBindings, validateV1PlanChangeBindings } from "../scripts/lib/v1/cli-v1-change.mjs";
+import { validateV1TaskChangeContextBinding } from "../scripts/lib/v1/cli-v1-projection.mjs";
+import { validateV1VerifyArtifactResultBindings } from "../scripts/lib/v1/cli-v1-verify-artifact.mjs";
 import {
   checkCliV1SchemaValidators,
   writeCliV1SchemaValidators
@@ -38,6 +42,14 @@ const goldenSemanticPaths = [
   [
     "testdata/conformance/v1/golden/semantic/dependency-percent-50.state.json",
     "1c72d70cc114853b2a61f1c4798794093e46419f16b6cc49819a9d050cb67a08"
+  ],
+  [
+    "testdata/conformance/v1/golden/semantic/hierarchy.state.json",
+    "def14cb546dd7b6f943e97479218dc8400807c398e08b7683dcc855d3d680685"
+  ],
+  [
+    "testdata/conformance/v1/golden/semantic/hierarchy-percent-50.state.json",
+    "8863620f806a268e583260617d5684ff179739eb87797098a292958b0c8a8424"
   ]
 ];
 
@@ -46,7 +58,11 @@ describe("v1 generated schema validators", () => {
     const artifactPaths = [
       "testdata/conformance/v1/golden/semantic/dependency.state.json",
       "testdata/conformance/v1/golden/semantic/dependency-percent-50.state.json",
+      "testdata/conformance/v1/golden/semantic/hierarchy.state.json",
+      "testdata/conformance/v1/golden/semantic/hierarchy-percent-50.state.json",
       "testdata/conformance/v1/golden/projection/dependency.project-overview.json",
+      "testdata/conformance/v1/golden/projection/hierarchy.project-overview.json",
+      "testdata/conformance/v1/golden/projection/hierarchy.task-2-change-context.json",
       "docs/examples/artifacts-v1/change-approval.example.json",
       "docs/examples/artifacts-v1/change-request.example.json",
       "docs/examples/artifacts-v1/provenance.example.json",
@@ -102,6 +118,23 @@ describe("v1 generated schema validators", () => {
       }
       const actualValid = validateDocumentByRole(documents.get("result"), "result");
       expect(actualValid, testCase.id).toBe(testCase.expected_valid);
+    }
+  });
+
+  it("connects every cross-artifact corpus case to its shared RB validator", () => {
+    const contractCases = readJson("testdata/conformance/v1/contract-cases.json");
+    const bindingCases = contractCases.cases.filter((testCase) => testCase.validation_layer === "cross-artifact-binding");
+    expect(bindingCases).toHaveLength(13);
+
+    for (const testCase of bindingCases) {
+      const documents = new Map(testCase.inputs.map((input) => [
+        input.role,
+        readJsonFromPath(path.resolve(path.dirname(contractCasesPath), input.path))
+      ]));
+      for (const mutation of testCase.mutations) {
+        applyJsonPointerMutation(documents.get(mutation.input_role), mutation);
+      }
+      expect(validateCrossArtifactCase(testCase.id, documents), testCase.id).toBe(testCase.expected_valid);
     }
   });
 
@@ -182,7 +215,7 @@ describe("v1 canonical JSON and semantic digest", () => {
     }
   });
 
-  it("preserves task preorder, sorts the declared semantic collections, and matches the two fixed digests", () => {
+  it("preserves task preorder, sorts the declared semantic collections, and matches the four fixed digests", () => {
     for (const [relativePath, expectedDigest] of goldenSemanticPaths) {
       const semanticState = readJson(relativePath);
       expect(sha256CanonicalJson(semanticState)).toEqual({ algorithm: "sha-256", value: expectedDigest });
@@ -213,6 +246,64 @@ describe("v1 canonical JSON and semantic digest", () => {
   });
 });
 
+describe("v1 hierarchy C1 corpus", () => {
+  it("keeps every S-V002 workflow case bound to its canonical fixture and approved comparison modes", () => {
+    const suiteIndex = readJson("testdata/conformance/v1/suite-index.json");
+    const hierarchyCases = suiteIndex.cases.filter((testCase) => testCase.semantic_fixture_ids.includes("S-V002"));
+    const positiveHierarchyCases = hierarchyCases.filter((testCase) => testCase.golden_semantic_state !== null);
+    const negativeHierarchyCases = hierarchyCases.filter((testCase) => testCase.golden_semantic_state === null);
+
+    expect(hierarchyCases.map((testCase) => testCase.id)).toEqual([
+      "CV-HIERARCHY-VALID-001",
+      "CI-HIERARCHY-OVERVIEW-001",
+      "CI-HIERARCHY-CONTEXT-001",
+      "CP-HIERARCHY-CHANGE-001",
+      "CA-HIERARCHY-CHANGE-001",
+      "CV-HIERARCHY-INVALID-PREORDER-001",
+      "CV-HIERARCHY-INVALID-SUMMARY-001",
+      "CP-HIERARCHY-SUMMARY-REJECT-001"
+    ]);
+    for (const testCase of positiveHierarchyCases) {
+      expect(testCase.input).toBe("fixtures/project/hierarchy-canonical.xml");
+      expect(testCase.materialization_phase).toBe("P4/P5");
+      expect(testCase.comparison_modes).toEqual(expect.arrayContaining(["schema", "byte-same-runtime"]));
+    }
+    expect(positiveHierarchyCases[0].golden_semantic_state).toBe("golden/semantic/hierarchy.state.json");
+    expect(positiveHierarchyCases.slice(1).map((testCase) => testCase.golden_semantic_state)).toEqual([
+      "golden/semantic/hierarchy.state.json",
+      "golden/semantic/hierarchy.state.json",
+      "golden/semantic/hierarchy-percent-50.state.json",
+      "golden/semantic/hierarchy-percent-50.state.json"
+    ]);
+    expect(positiveHierarchyCases.slice(1).every((testCase) => testCase.comparison_modes.includes("cross-artifact-binding"))).toBe(true);
+    expect(negativeHierarchyCases.map((testCase) => ({
+      id: testCase.id,
+      diagnostic_codes: testCase.expected_diagnostic_codes,
+      rule_ids: testCase.expected_rule_ids,
+      diagnostic_paths: testCase.expected_diagnostic_paths
+    }))).toEqual([
+      {
+        id: "CV-HIERARCHY-INVALID-PREORDER-001",
+        diagnostic_codes: ["semantic.invalid", "semantic.invalid"],
+        rule_ids: ["S-I003", "S-I003"],
+        diagnostic_paths: ["tasks[uid=2]", "tasks[uid=2].outline_number"]
+      },
+      {
+        id: "CV-HIERARCHY-INVALID-SUMMARY-001",
+        diagnostic_codes: ["semantic.invalid"],
+        rule_ids: ["S-I004"],
+        diagnostic_paths: ["tasks[uid=1].summary"]
+      },
+      {
+        id: "CP-HIERARCHY-SUMMARY-REJECT-001",
+        diagnostic_codes: ["change.operation-unsupported"],
+        rule_ids: ["S-I022"],
+        diagnostic_paths: ["tasks[uid=1].summary"]
+      }
+    ]);
+  });
+});
+
 function readJson(relativePath) {
   return readJsonFromPath(path.join(repoRoot, relativePath));
 }
@@ -232,6 +323,51 @@ function validateDocumentByRole(document, role) {
     default:
       return validateArtifact(document);
   }
+}
+
+function validateCrossArtifactCase(caseId, documents) {
+  const result = documents.get("result");
+  if ([
+    "BC-RUNTIME-DIVERGENCE-001",
+    "BC-REQUEST-DIVERGENCE-001",
+    "BC-DIFF-DIGEST-DIVERGENCE-001",
+    "BC-DESTINATION-DIVERGENCE-001"
+  ].includes(caseId)) {
+    return validateV1PlanChangeBindings({
+      changeRequest: documents.get("change_request"),
+      semanticDiff: result.data?.semantic_diff,
+      outputPlan: result.data?.output_plan,
+      runtime: result.runtime,
+      destination: result.io?.destination
+    });
+  }
+  if (["BC-APPROVAL-DIVERGENCE-001", "BC-PLAN-BINDINGS-VALID-001"].includes(caseId)) {
+    return validateV1ApplyPreparationBindings({
+      changeRequest: documents.get("change_request"),
+      planResult: result,
+      approval: documents.get("approval"),
+      runtime: result.runtime,
+      destination: result.io?.destination
+    });
+  }
+  if (caseId === "BC-APPLY-PATH-DIVERGENCE-001") {
+    return validateV1ApplyResultBindings({ applyResult: result, planResult: documents.get("plan_result") });
+  }
+  if (["BC-VERIFY-PATH-DIVERGENCE-001", "BC-VERIFY-STATE-DIVERGENCE-001"].includes(caseId)) {
+    return validateV1VerifyArtifactResultBindings({ result });
+  }
+  if ([
+    "BC-PROJECTION-TARGET-DIVERGENCE-001",
+    "BC-PROJECTION-BINDING-VALID-001",
+    "BC-PROJECTION-DIGEST-DIVERGENCE-001",
+    "BC-PROJECTION-CONTENT-DIVERGENCE-001"
+  ].includes(caseId)) {
+    return validateV1TaskChangeContextBinding({
+      projection: documents.get("projection"),
+      state: documents.get("semantic_state")
+    });
+  }
+  throw new Error(`no cross-artifact validator is registered for ${caseId}`);
 }
 
 function applyJsonPointerMutation(document, mutation) {

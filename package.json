@@ -1,6 +1,6 @@
 {
   "name": "miku-project",
-  "version": "1.0.2",
+  "version": "1.0.4",
   "private": true,
   "description": "Local HTML tool for MS Project XML round-trip experiments.",
   "license": "Apache-2.0",
@@ -14,6 +14,8 @@
     "build:core": "node scripts/build-core.mjs",
     "build:browser-runtime": "node scripts/build-browser-runtime.mjs",
     "build:cli-bundle": "node scripts/build-cli-bundle.mjs",
+    "build:cli-v1-runtime": "node scripts/build-cli-v1-runtime.mjs",
+    "verify:cli-v1-release-candidate": "node scripts/verify-cli-v1-release-candidate.mjs",
     "generate:cli-v1-schema-validators": "node scripts/generate-cli-v1-schema-validators.mjs",
     "check:cli-v1-schema-validators": "node scripts/check-cli-v1-schema-validators.mjs",
     "cli": "node scripts/miku-project-cli.mjs",

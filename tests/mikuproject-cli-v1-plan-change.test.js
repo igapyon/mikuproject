@@ -9,6 +9,7 @@ import { describe, expect, it } from "vitest";
 import { parseV1Invocation } from "../scripts/lib/v1/cli-v1-argv.mjs";
 import { planV1SetTaskPercentComplete, validateV1PlanChangeBindings } from "../scripts/lib/v1/cli-v1-change.mjs";
 import { sha256RawBytes } from "../scripts/lib/v1/cli-v1-canonical-json.mjs";
+import { isCliV1Error } from "../scripts/lib/v1/cli-v1-errors.mjs";
 import { reserveV1ResultTransport } from "../scripts/lib/v1/cli-v1-io.mjs";
 import { runV1PlanChange } from "../scripts/lib/v1/cli-v1-r1-commands.mjs";
 import { serializeV1Result } from "../scripts/lib/v1/cli-v1-result.mjs";
@@ -20,7 +21,12 @@ const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), ".."
 const fixturePath = path.join(repoRoot, "testdata/conformance/v1/fixtures/project/dependency-canonical.xml");
 const requestTemplatePath = path.join(repoRoot, "testdata/conformance/v1/fixtures/change/set-task-2-percent-0-to-50.template.json");
 const semanticGolden = readJson("testdata/conformance/v1/golden/semantic/dependency-percent-50.state.json");
+const hierarchyFixturePath = path.join(repoRoot, "testdata/conformance/v1/fixtures/project/hierarchy-canonical.xml");
+const hierarchyRequestTemplatePath = path.join(repoRoot, "testdata/conformance/v1/fixtures/change/set-hierarchy-task-2-percent-0-to-50.template.json");
+const hierarchySummaryRequestTemplatePath = path.join(repoRoot, "testdata/conformance/v1/fixtures/change/set-hierarchy-summary-task-1-percent-0-to-50.template.json");
+const hierarchySemanticGolden = readJson("testdata/conformance/v1/golden/semantic/hierarchy-percent-50.state.json");
 const semanticDiffGolden = readJson("docs/examples/cli-v1/plan-change-succeeded.result.json").data.semantic_diff;
+const suiteCases = new Map(readJson("testdata/conformance/v1/suite-index.json").cases.map((item) => [item.id, item]));
 const testRuntime = Object.freeze({
   binding_status: "verified",
   family: "node",
@@ -117,6 +123,83 @@ describe("v1 C1 task-change context and plan-change service", () => {
     expect(redecoded.state).toEqual(semanticGolden);
     expect(plan.semantic_diff).toEqual(semanticDiffGolden);
     expect(repeated).toEqual(plan);
+  });
+
+  it("plans CP-HIERARCHY-CHANGE-001 for a nested leaf without changing its ancestor or other collection meaning", async () => {
+    const decoded = decodeMsProjectXmlSubset(fs.readFileSync(hierarchyFixturePath));
+    const request = JSON.parse((await readFile(hierarchyRequestTemplatePath, "utf8")).replace(
+      "${BASE_STATE_DIGEST}", "def14cb546dd7b6f943e97479218dc8400807c398e08b7683dcc855d3d680685"
+    ));
+    const plan = planV1SetTaskPercentComplete({
+      state: decoded.state,
+      changeRequest: request,
+      runtime: testRuntime,
+      destination: { path: "/tmp/miku-project-v1-hierarchy-plan-change-golden" }
+    });
+    const redecoded = decodeMsProjectXmlSubset(plan.preflight_project_xml);
+
+    expect(plan.planned_state).toEqual(hierarchySemanticGolden);
+    expect(redecoded.state).toEqual(hierarchySemanticGolden);
+    expect(plan.semantic_diff).toMatchObject({
+      base_state_digest: { value: "def14cb546dd7b6f943e97479218dc8400807c398e08b7683dcc855d3d680685" },
+      proposed_state_digest: { value: "8863620f806a268e583260617d5684ff179739eb87797098a292958b0c8a8424" },
+      changes: [{ task_uid: "2", before: 0, after: 50 }],
+      preservation: { semantic_equivalent_except_changes: true }
+    });
+    expect(plan.planned_state.tasks.filter((task) => task.uid !== "2")).toEqual(decoded.state.tasks.filter((task) => task.uid !== "2"));
+    expect(plan.planned_state.dependencies).toEqual(decoded.state.dependencies);
+    expect(plan.planned_state.resources).toEqual(decoded.state.resources);
+    expect(plan.planned_state.assignments).toEqual(decoded.state.assignments);
+    expect(plan.planned_state.calendars).toEqual(decoded.state.calendars);
+
+    const summaryRequest = JSON.parse((await readFile(hierarchySummaryRequestTemplatePath, "utf8")).replace(
+      "${BASE_STATE_DIGEST}", "def14cb546dd7b6f943e97479218dc8400807c398e08b7683dcc855d3d680685"
+    ));
+    try {
+      planV1SetTaskPercentComplete({
+        state: decoded.state,
+        changeRequest: summaryRequest,
+        runtime: testRuntime,
+        destination: { path: "/tmp/miku-project-v1-hierarchy-summary-reject" }
+      });
+      throw new Error("summary task change must be rejected");
+    } catch (error) {
+      expect(isCliV1Error(error)).toBe(true);
+      expect(error).toMatchObject({
+        code: "change.operation-unsupported",
+        status: "rejected",
+        location: { rule_id: "S-I022" }
+      });
+    }
+  });
+
+  it("runs CP-HIERARCHY-SUMMARY-REJECT-001 before destination creation with its stable S-I022 rule", async () => {
+    const directory = await mkdtemp(path.join(os.tmpdir(), "miku-project-v1-hierarchy-summary-reject-"));
+    const requestPath = path.join(directory, "summary-request.json");
+    const destination = path.join(directory, "must-not-exist");
+    const expected = suiteCases.get("CP-HIERARCHY-SUMMARY-REJECT-001");
+    await writeFile(requestPath, (await readFile(hierarchySummaryRequestTemplatePath, "utf8")).replace(
+      "${BASE_STATE_DIGEST}", "def14cb546dd7b6f943e97479218dc8400807c398e08b7683dcc855d3d680685"
+    ), "utf8");
+
+    const { result, output } = await invokePlanChange([
+      "plan-change", "--project", hierarchyFixturePath, "--request", requestPath, "--destination", destination
+    ], { cwd: directory });
+
+    expect(validateCliResult(result)).toBe(true);
+    expect(result).toMatchObject({
+      command: "plan-change",
+      status: expected.expected_status,
+      exit_code: expected.expected_exit_code,
+      next_action: expected.expected_next_action,
+      effects: { project_input_modified: false, project_artifact: null, cleanup: { status: "not-needed", path: null } },
+      data: null
+    });
+    expect(result.diagnostics.map((item) => item.code)).toEqual(expected.expected_diagnostic_codes);
+    expect(result.diagnostics.map((item) => item.location.rule_id)).toEqual(expected.expected_rule_ids);
+    expect(result.diagnostics.map((item) => item.location.path)).toEqual(expected.expected_diagnostic_paths);
+    expect(output).toEqual([serializeV1Result(result)]);
+    await expect(access(destination)).rejects.toMatchObject({ code: "ENOENT" });
   });
 
   it("rejects stale preconditions, duplicate request keys, and an existing destination without creating output", async () => {

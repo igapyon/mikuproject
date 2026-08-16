@@ -65,11 +65,11 @@ npm test
 
 `workplace/` は外部リポジトリの一時 clone、展開物、検証成果物などを置くローカル作業領域として扱い、`workplace/.gitkeep` 以外は Git 管理しません。
 
-`src/js/` は core runtime の Git 管理する生成物です。手編集はせず、対応する `src/ts/` を更新して `npm run build:core` で再生成します。`node_modules/`、`.npm-cache/`、`coverage/`、`bundle/`、`local-data/`、`workplace/` と個人用の `.vscode/mcp.json` はローカル作業用であり、Git 管理しません。
+`src/js/` は core runtime の Git 管理する生成物です。手編集はせず、対応する `src/ts/` を更新して `npm run build:core` で再生成します。`node_modules/`、`.npm-cache/`、`coverage/`、`bundle/`、`runtime/`、`local-data/`、`workplace/` と個人用の `.vscode/mcp.json` はローカル作業用であり、Git 管理しません。
 
 miku-soft の共有標準と、このリポジトリの追従状況は [docs/miku-soft-reference.md](docs/miku-soft-reference.md) と [docs/migration-worklog.md](docs/migration-worklog.md) を参照してください。
 
-CLI、Java CLI、Agent Skillsを中心にしたゼロベース再設計は、[2026-08-09版仕様](docs/miku-project-zero-base-spec-v20260809.md)、[2026-08-10版実施計画](docs/miku-project-zero-base-implementation-plan-v20260810.md)、[semantic contract v1](docs/miku-project-semantic-contract-v1.md)、[format and loss contract v1](docs/miku-project-format-and-loss-contract-v1.md)、[change contract v1](docs/miku-project-change-contract-v1.md)、[CLI contract v1](docs/miku-project-cli-contract-v1.md)、[CLI result and diagnostics contract v1](docs/miku-project-cli-result-contract-v1.md)、[runtime capability contract v1](docs/miku-project-runtime-capability-contract-v1.md)、[runtime manifest contract v1](docs/miku-project-runtime-manifest-contract-v1.md)、[conformance corpus v1](docs/miku-project-conformance-corpus-v1.md)、[human gate and next action contract v1](docs/miku-project-human-gate-and-next-action-contract-v1.md) を参照してください。WebとMCPは、この初期計画では後続検討です。
+CLI、Java CLI、Agent Skillsを中心にしたゼロベース再設計は、[2026-08-09版仕様](docs/miku-project-zero-base-spec-v20260809.md)、[2026-08-10版実施計画](docs/miku-project-zero-base-implementation-plan-v20260810.md)、[Gate G4 readiness](docs/miku-project-gate-g4-readiness-v20260814.md)、[Java contract handoff v1.0.3](docs/miku-project-java-contract-handoff-v1.0.3.md)、[semantic contract v1](docs/miku-project-semantic-contract-v1.md)、[format and loss contract v1](docs/miku-project-format-and-loss-contract-v1.md)、[change contract v1](docs/miku-project-change-contract-v1.md)、[CLI contract v1](docs/miku-project-cli-contract-v1.md)、[CLI result and diagnostics contract v1](docs/miku-project-cli-result-contract-v1.md)、[runtime capability contract v1](docs/miku-project-runtime-capability-contract-v1.md)、[runtime manifest contract v1](docs/miku-project-runtime-manifest-contract-v1.md)、[conformance corpus v1](docs/miku-project-conformance-corpus-v1.md)、[human gate and next action contract v1](docs/miku-project-human-gate-and-next-action-contract-v1.md) を参照してください。WebとMCPは、この初期計画では後続検討です。
 
 ## 再利用 API
 
@@ -221,6 +221,26 @@ node bundle/miku-project.mjs export xml --in workbook.json --out project.xml
 
 生成時は repo root の `node_modules/@xmldom/xmldom` から XML DOM 実装を artifact 内へ埋め込む。そのため、artifact 生成前には一度 `npm install` 済みであることを前提とする。生成後の実行時には、`@xmldom/xmldom` や `jsdom` の `node_modules` は不要である。
 
+## Versioned v1 Node runtime（Gate G4承認済み内部reference candidate）
+
+v1 workflowを実行できるversioned runtimeは、通常の開発bundleとは別に生成する。
+
+```bash
+npm run build:cli-v1-runtime
+```
+
+このcommandはclean working treeかつ`v<package.version>`がHEADを指す場合だけ、`runtime/node/`へsingle `.mjs`、source archive、`runtime-manifest.json`をfreshに生成する。既存runtime directoryは置換しない。artifactは各workflow前に隣接manifest、executable、source archive、capability、fixture corpus digestを自己検証する。
+
+Gate G4の`v1.0.3` actual candidateは、Git管理外の`workplace/gate-g4/v1.0.3/runtime/`へ三memberのまま保持する。Git管理する外側trust anchorは[`docs/miku-project-node-reference-runtime-lock-v1.0.3.json`](docs/miku-project-node-reference-runtime-lock-v1.0.3.json)であり、source revision/tag、build toolchain、package-lock / corpus、三memberのsize / SHA-256を固定する。次のcommandはlockを先に検証し、runtime三memberだけを隔離consumerへcopyして五workflowとresult / output plan / provenance bindingを再実行する。
+
+```bash
+npm run verify:cli-v1-release-candidate -- \
+  --runtime-dir workplace/gate-g4/v1.0.3/runtime \
+  --lock docs/miku-project-node-reference-runtime-lock-v1.0.3.json
+```
+
+このcandidateとlockは`distribution_status = internal-reference-only`であり、公開Release checksumやSkills lockではない。現行の`.github/workflows/release-runtime-bundles.yml`はこのv1三memberをbuild / uploadしないため、`v1.0.3`を現行workflowから新v1 runtimeの公開Releaseとして扱わない。公開経路は`ZB-P7.10`で別途整備する。
+
 ## 関連ドキュメント
 
 - [docs/miku-project-zero-base-spec-v20260809.md](docs/miku-project-zero-base-spec-v20260809.md)
@@ -236,8 +256,10 @@ node bundle/miku-project.mjs export xml --in workbook.json --out project.xml
 - [docs/schemas/miku-project-cli-diagnostic-v1.schema.json](docs/schemas/miku-project-cli-diagnostic-v1.schema.json)
 - [docs/miku-project-runtime-capability-contract-v1.md](docs/miku-project-runtime-capability-contract-v1.md)
 - [docs/miku-project-runtime-manifest-contract-v1.md](docs/miku-project-runtime-manifest-contract-v1.md)
+- [docs/miku-project-node-reference-runtime-lock-v1.0.3.json](docs/miku-project-node-reference-runtime-lock-v1.0.3.json)
 - [docs/miku-project-conformance-corpus-v1.md](docs/miku-project-conformance-corpus-v1.md)
 - [docs/miku-project-human-gate-and-next-action-contract-v1.md](docs/miku-project-human-gate-and-next-action-contract-v1.md)
+- [docs/miku-project-gate-g4-readiness-v20260814.md](docs/miku-project-gate-g4-readiness-v20260814.md)
 - [docs/architecture.md](docs/architecture.md)
 - [docs/import-export-workflows.md](docs/import-export-workflows.md)
 - [docs/core-api-import-export-notes.md](docs/core-api-import-export-notes.md)

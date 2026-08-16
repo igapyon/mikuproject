@@ -15,7 +15,7 @@ audience:
   - developer
   - agent
 created: 2026-08-10
-updated: 2026-08-12
+updated: 2026-08-16
 sources:
   - type: local-file
     role: primary
@@ -302,7 +302,7 @@ v1はNode CLIを最初の実行可能な参照実装とする。`G3`で製品契
 - [conformance corpus v1](miku-project-conformance-corpus-v1.md)（authority、canonical digest、比較mode、unknown outcome recovery）
 - [runtime manifest contract v1](miku-project-runtime-manifest-contract-v1.md)と`docs/schemas/miku-project-runtime-manifest-v1.schema.json`
 - [human gate and next action contract v1](miku-project-human-gate-and-next-action-contract-v1.md)
-- `testdata/conformance/v1/` の21 workflow / harness case、31 schema / binding adversarial case、seed fixtures、semantic golden。command別I/O/effect、artifact path、Projection scope/content/source-state bindingを含む
+- `testdata/conformance/v1/` のP3完了時の21 workflow / harness case、31 schema / binding adversarial case、seed fixtures、semantic golden。command別I/O/effect、artifact path、Projection scope/content/source-state bindingを含む。現行case数はconformance corpus v1を正本とする
 
 ### Gate G3
 
@@ -314,7 +314,7 @@ CLI examplesとProjection/request/diff/plan/approval/provenanceの全体がschem
 
 依存: `G3`  
 主担当: Node CLI
-状態: 進行中（`ZB-P4.6.5`完了、次は`ZB-P4.6.6`）
+状態: `ZB-P4.8`、`ZB-P4.9`承認済み（2026-08-13）。`ZB-P4.10`とGate G4は2026-08-14承認済み。次は固定済みNode contract releaseを入力として`ZB-P5` Java CLI適合へ進む
 
 ### 作業
 
@@ -332,12 +332,14 @@ CLI examplesとProjection/request/diff/plan/approval/provenanceの全体がschem
 - [x] `ZB-P4.5` C1のhuman gate直前までを実装する
   - `task_change_context`、strict change request、dry-run、pre/post semantic validation、semantic diff、XML encode/redecode preflight、read-only destination preflightを同じplanning operationへ接続する
   - 実際のapply、destination directoryの作成、`project.xml` / `provenance.json` / `COMMITTED`の公開は`ZB-P4.6`だけが担当する
-- [ ] `ZB-P4.6` approvalで束縛したC1 apply、exclusive artifact publication、read-only verification、committed artifact set入力を実装する
+- [x] `ZB-P4.6` approvalで束縛したC1 apply、exclusive artifact publication、read-only verification、committed artifact set入力を実装する
   - 実行計画は下記「P4.6の実行計画」を正本とする。read-only verifierをpublisherより先に完成させ、marker前後の状態判定に同じ検証primitiveを使う
-- [ ] `ZB-P4.7` 既存coreの再利用部分を新conformance fixturesで検証する
-- [ ] `ZB-P4.8` 選択scopeの残りを一sliceずつ追加し、capability matrixを更新する
-- [ ] `ZB-P4.9` versioned single `.mjs`、sources、runtime manifest、SHA-256を生成する
-- [ ] `ZB-P4.10` repository外のclean temporary directoryでbundle smokeを実行する
+- [x] `ZB-P4.7` 既存coreの再利用部分を新conformance fixturesで検証する
+  - 実行計画は下記「P4.7の実行計画」を正本とする。旧coreをv1へ取り込むこと自体を目的にせず、v1のsemantic / artifact / CLI契約を満たす責務だけを採用する
+- [x] `ZB-P4.8` 階層C1 sliceを追加し、v1 capability matrixを更新する
+  - 実行計画は下記「P4.8の実行計画」を正本とする。承認済み`S-V002`とその階層不変条件だけをmaterializeし、新format、new CLI command、許可change operationは増やさない
+- [x] `ZB-P4.9` versioned single `.mjs`、sources、runtime manifest、SHA-256を生成する（2026-08-13承認）
+- [x] `ZB-P4.10` repository外のclean temporary directoryで、外側manifest pinを持つ配布runtime smokeを実行する（2026-08-14承認。第3回reviewのCLI result runtime binding完全一致補正、補正後full regression、`git diff --check`を確認）
 
 ### 実装上の境界
 
@@ -628,12 +630,16 @@ P4.6は、P4.5で承認待ちにしたC1 planを、明示的なapprovalと再計
 - artifact set由来XMLも外部XMLと同じprofile decode / semantic validationを通し、directory sourceとcanonical pathをI/O metadataへ正しく記録する。publication verificationとproject semantic validationの責務は混同せず、前者を通過してから後者を実行する
 - external XMLとcommitted setから得た同一semantic stateが、契約で同値とするProjection、diff、output XMLを生むことをfixtureで確認する。入力set、marker、provenanceを変更しない
 
+結果: 2026-08-12に完了。`readV1CommittedArtifactSetProject`はP4.6.3 verifierが`committed`を返した後だけ`project.xml`を読む共通boundaryとなり、raw digestをdescriptorと再照合してverification後のmember差替えも`publication.artifact-corrupt`で拒否する。markerなし・余分member・schema/XML/provenance/digest不整合・I/O判定不能はbytesを返さず、`--project`に対応するstructured diagnosticへ写像する。`readV1ExternalProjectInput`はdirect regular XML、explicit stdin、committed directoryの三入力を同じdecode / semantic validationへ渡すため、`inspect / validate / plan-change / apply-change`に別のdirectory用semantic pathを作らない。directory入力はcanonical artifact-set path、`source = directory`、実際に読んだ`project.xml`のraw digestをI/O metadataに残す。real publicationを使うdirect testでexternal XMLとcommitted directoryのProjection、semantic diff、preflight output XML digest、実際にpublishした`project.xml` bytesが一致し、入力artifactの`project.xml`、`provenance.json`、markerが不変であることを固定した。
+
 #### `ZB-P4.6.7` failure matrix、conformance、bundle回帰を完了する
 
-- workflow corpusの`CVF-ABSENT-001`、`CVF-INCOMPLETE-001`、`CVF-CORRUPT-001`、`CVF-COMMITTED-001`、`CVF-EXPECTED-PLAN-MISMATCH-001`、`CA-CLEANUP-AGGREGATE-001`をmaterializeする。`CU-UNKNOWN-OUTCOME-001`ではcommit後のresultを破棄し、再applyせずverifyでcommitted outcomeを回収する
+- workflow corpusの`CVF-ABSENT-001`、`CVF-INCOMPLETE-001`、`CVF-CORRUPT-001`、`CVF-COMMITTED-001`、`CVF-EXPECTED-PLAN-MISMATCH-001`、`CVF-EXPECTED-PLAN-INVALID-001`、`CA-CLEANUP-AGGREGATE-001`をmaterializeする。`CU-UNKNOWN-OUTCOME-001`ではcommit後のresultを破棄し、再applyせずverifyでcommitted outcomeを回収する
 - binding corpusの`BC-APPROVAL-DIVERGENCE-001`、`BC-PLAN-BINDINGS-VALID-001`、`BC-APPLY-PATH-DIVERGENCE-001`、`BC-VERIFY-PATH-DIVERGENCE-001`、`BC-VERIFY-STATE-DIVERGENCE-001`を共通validatorへ接続する。diagnostic集約順、effect/cleanup state、result schema、artifact topologyをexactに固定する
 - same-runtime反復で`project.xml`と`provenance.json`のbytes/digestが決定的であること、結果file/stdout、四入力のうち一つだけのstdin、usage時未読、既存destination/input不変、repository外bundleへのmodule包含を検証する
 - public source CLI / development bundleのfail-closedを維持し、direct test、fixed-binding integration、legacy compatibility、`npm run test:fast`、`npm run test:full`、`npm run build:full`、`git diff --check`を通す。runtime manifest、release asset、公開workflow smokeはP4.9/P4.10の完了として数えない
+
+結果: 2026-08-12に完了。`cli-v1-verify-artifact.mjs`を追加し、fixed verified binding harnessで`verify-artifact`を正式に実行できるようにした。artifact setはまずread-only verifierで観測し、optional `--expect-plan-result`はstrict JSON / schema-valid successful `plan-change` resultとして読んだ後にRB-008を再検証する。`absent / incomplete / corrupt`、committed+expected-plan mismatch、committed観測後のI/O・JSON・envelope/schema不正expected plan、I/O判定不能、result channel preflightを、`verification`・effect・I/O metadata・next actionの契約どおり区別し、repairや再applyを行わない。expected plan自体が不正ならRB-008を評価せず`committed / matches_expected_plan = null / actual bindings`とし、schema-valid planとの不一致だけを`false / publication.expected-plan-mismatch`とする。result schemaはverifyのresult channel予約失敗のようにartifact観測前のrejected resultを`data = null / project_artifact = null`として許可し、観測済みverificationを持つrejected resultだけにはstate/effect bindingを要求するよう補強した。`CA-CHANGE-001`、destination race、binding divergence、cleanup aggregate、全`CVF-*`、expected plan mismatch、`CU-UNKNOWN-OUTCOME-001`をdirect/fixed-binding testでmaterializeし、result deliveryを失ったapplyを再試行せずverifyで回復することを固定した。same canonical destinationでrunnerだけがfresh output directoryを再構成する二回実行では`project.xml`と`provenance.json`のbytesが一致する。13件すべてのcross-artifact contract caseをRB-001〜RB-006、RB-011、RB-012のpure validatorへ接続し、new verifier/apply bindingもbundle/source archiveに含めた。public source CLI/development bundleはP4.9までmanifest未検証runtimeとしてfail-closedのままである。
 
 #### `ZB-P4.6` 完了判定
 
@@ -645,6 +651,164 @@ P4.6は、P4.5で承認待ちにしたC1 planを、明示的なapprovalと再計
 - listed workflow / binding case、failure injection、determinism、legacy回帰、full buildが成功し、partial runtimeをNode reference releaseとして公開していない
 - 完了後の次作業は`ZB-P4.7`で、現行coreの再利用候補をv1 conformance fixturesに照らして採否判定する
 
+### P4.7の実行計画
+
+目的は、`ZB-P0.3`の仮分類をR1/C1で実証済みのv1契約に照らして更新することである。旧coreを再利用することは目的ではない。新しいsemantic state、structured result、human gate、committed artifact setのいずれかを曖昧にする候補は、互換性の証拠として残してもv1の実行経路へは採用しない。
+
+- [x] `ZB-P4.7.1` 現行候補とv1実行経路を対応付ける
+  - XML codec / normalizer / validator、AI view / Patch、core API loader、bundle builder、旧Agent workflow例、旧fixture / regression test、workbook / report / browser runtimeを候補単位に分ける
+  - 各候補について、現在のv1実装箇所、使用するconformance case、採用しない場合の保持先、次の再評価gateを明記する。P0の仮分類を黙って上書きせず、判断記録から参照可能にする
+- [x] `ZB-P4.7.2` v1 fixtureが要求する差を検証する
+  - `S-V001`のexact semantic golden / raw provenance、`S-I012`のstable invalid rule、`S-I020`のunsupported分離、`CI-OVERVIEW-001` / `CI-CONTEXT-001`のProjection、`CP-CHANGE-001`とC1 apply / verificationを、候補の責務と照合する
+  - legacy `dependency.xml`とv1 canonical XMLは同名入力の単純コピーとして扱わない。raw bytes、field order、lag representationを含め、v1 fixture / goldenが契約正本であることを確認する
+  - legacy XML round-trip / core API loader testも実行し、旧経路を削らずに保守できることと、v1 conformanceを代替できないことの両方を確認する
+- [x] `ZB-P4.7.3` 採否と後続条件を判断記録へ固定する
+  - outcomeは少なくとも `v1実行経路へ採用`、`互換性の証拠として保持`、`後続scopeまでdefer` を区別する。候補を保留するだけの場合も、理由と再評価gateを記録する
+  - v1 semantic pathがlegacy `ProjectModel`、global core API loader、旧Patch / AI view schemaへ暗黙依存しないことを確認する。配布builderの再利用はsemantic reuseと数えず、P4.9のmanifest / asset binding条件を残す
+  - この項目では旧形式・旧command・名称を削除または改名せず、public CLIのmanifest未検証fail-closed境界も変えない
+- [x] `ZB-P4.7.4` 判断記録と回帰結果をレビューし、人が承認した（2026-08-13）
+
+成果物: [v1 core再利用採否 v20260812](miku-project-zero-base-reuse-verdict-v20260812.md)。
+
+完了条件:
+
+- すべてのP0 reuse候補が、R1/C1に対する現在の役割、根拠fixture / test、採否、再評価gateを持つ
+- v1 semantic / projection / change / artifactの各境界で、旧coreをactive dependencyにしない根拠がある。また採用する非semantic build資産にはP4.9で満たすべき条件が残る
+- v1 conformanceとlegacy compatibilityの双方が成功し、fixtureの役割と正本性が文書化される
+- 人の承認前には、この採否をJava移植、Skills runtime選択、旧API削除の根拠にしない
+
+### P4.8の実行計画
+
+P4.8の最初のsliceは、承認済みsemantic fixture catalogの`S-V002`を用いた**階層C1 slice**とする。summary task配下のleaf taskをR1で観測し、ancestorを含む`task_change_context`から、既存の`set_task_percent_complete`だけをplan / approval / apply / verifyまで往復させる。
+
+このsliceを先に選ぶ理由は、v1の中心であるWBS階層、限定Projection、leaf-only C1、canonical XML encode/redecode、committed artifact入力を、追加の製品契約なしに同時に検証できるためである。workbook/XLSX、新しいProjection purpose、dependency / resource / calendar編集、actual / baseline / timephased / extended dataは、このsliceに含めない。これらはformatまたはchange contractの改訂と別承認が必要になる。
+
+旧`testdata/hierarchy.xml`はP4.8のv1入力に使わない。空の`Resources` / `Assignments` containerと`Notes`を含むため、v1 XML profileではそのまま成功入力にできない。現行互換fixtureとしては残し、P4.8では`S-V002`のrequired field、canonical child order、resource / assignment / calendar参照を明示した新しいv1 canonical fixtureを作る。
+
+- [x] `ZB-P4.8.1` hierarchy corpusとcapability scopeを固定する
+  - `testdata/conformance/v1/fixtures/project/`へ`S-V002`のcanonical XML、`golden/semantic/`へbefore / after state、`golden/projection/`へoverview / nested-leaf contextを追加する。対象leafはUID `2`、summary ancestorはUID `1`、C1は`0 → 50`とする
+  - `suite-index.json`へ成功経路の`CV-HIERARCHY-VALID-001`、`CI-HIERARCHY-OVERVIEW-001`、`CI-HIERARCHY-CONTEXT-001`、`CP-HIERARCHY-CHANGE-001`、`CA-HIERARCHY-CHANGE-001`と、拒否経路の`CV-HIERARCHY-INVALID-PREORDER-001`、`CV-HIERARCHY-INVALID-SUMMARY-001`、`CP-HIERARCHY-SUMMARY-REJECT-001`を追加する。各caseは既存のschema / semantic-state / exact-json / cross-artifact-binding / artifact-topology / byte-same-runtime規則を使い、新しい比較modeを導入しない
+  - `docs/miku-project-v1-capability-matrix-v20260813.md`を新設し、階層read / nested-leaf C1を`Node reference: implemented`、resource / assignment / calendarの編集、workbook/XLSX、new formatを`deferred`として記録する
+- [x] `ZB-P4.8.2` hierarchy decode・semantic validationをfixtureで閉じる
+  - canonical XMLからpreorder `1, 2, 3, 4`、parent relation、summary / child整合性、root / sibling order、既存dependency / assignment / calendar参照をexact semantic goldenへdecodeする
+  - `S-I003`の不正parent / preorder、`S-I004`のsummary不整合を個別fixtureとしてmaterializeし、suite caseでも`semantic.invalid`、rule ID、diagnostic `location.path`を固定する。legacy coreのnormalizerやvalidatorをv1 pathへ呼び込まない
+  - v1 encoderのoutline level / outline number導出後に再decodeし、canonical stateとsemantic equivalentであること、task順が変わらないことを確認する
+- [x] `ZB-P4.8.3` R1のhierarchy Projectionを固定する
+  - `project_overview`が全taskをpreorderの`order`、`parent_uid`、`summary`とともに返すことをexact goldenで確認する
+  - UID `2`の`task_change_context`がancestor UID `1`を一件だけ含み、target、dependency、target assignmentとresourceを過不足なく返すことを`RB-012`で検証する
+  - summary UID `1`または不存在UIDへの`task_change_context`をrejectし、read-only commandがproject / artifact / result既存pathを変更しないことを維持する
+- [x] `ZB-P4.8.4` nested-leaf C1のplan / apply / verifyを接続する
+  - UID `2`だけを`0 → 50`に変更するstrict request、semantic diff、output plan、approval、provenance、committed artifact setを既存のC1 schema / bindingで生成・照合する
+  - apply後のXMLを再decodeし、UID `2`以外のtask field、parent relation、task order、dependency、resource、assignment、calendarがbefore stateとsemantic equivalentであることを確認する
+  - summary UID `1`へのchange requestを`CP-HIERARCHY-SUMMARY-REJECT-001`で`S-I022` / `change.operation-unsupported`としてhuman gate前にrejectし、destinationを作らない。apply後のartifact set入力と直接`project.xml`入力へ同じC1 request / destinationを渡し、hierarchy Projection、semantic diff、output plan（preflight XML digestを含む）、RB-001〜005 bindingが一致することを確認する
+- [x] `ZB-P4.8.5` regression、capability記録、承認資料を完成する
+  - hierarchy direct tests、fixed-binding subprocess integration、existing flat R1/C1、legacy XML / core API / CLI / workbook/XLSX regression、bundle/source archive、`npm run build:full`、`git diff --check`を通す
+  - P4.8でmaterializeしたfixture ID、Node capability、defer項目、public runtimeがP4.9までfail-closedであることを`docs/miku-project-v1-capability-matrix-v20260813.md`とTODOへ記録する
+  - P4.8のscope外を実装済みと記さず、P4.9 manifest / asset binding、P4.10 clean runtime smoke、Java / Skills / Web/MCPの開始条件を変更しない
+- [x] `ZB-P4.8.6` hierarchy C1 sliceを再レビューし、人が承認した（2026-08-13）
+
+結果: `S-V002`のcanonical XML、before / after semantic golden、overview / nested-leaf context golden、成功経路の`CV/CI/CP/CA-HIERARCHY-*`五caseと、拒否経路の`CV-HIERARCHY-INVALID-PREORDER-001`、`CV-HIERARCHY-INVALID-SUMMARY-001`、`CP-HIERARCHY-SUMMARY-REJECT-001`を追加した。Node reference pathはordered forestをcanonical stateへdecodeし、encoderのoutline導出後も同じstateへredecodeする。`S-I003` / `S-I004`はmachine-readableなvalidate caseでcode、rule ID、diagnostic `location.path`まで固定し、`S-I022`はsummary change requestの拒否診断へ同じlocation規則で記録する。UID `2`のcontextだけがancestor UID `1`を含み、summary UID `1`と不存在UIDはread-only contextを受け取れない。nested leafの`0 → 50`はplan / approval / apply / verifyを通り、committed artifact setを入力にした次の`50 → 75` planも成功する。artifact set入力とその`project.xml`直接入力は、同じhierarchy Projection、semantic diff、output plan（preflight XML digestを含む）、RB-001〜005 bindingを返す。source archiveにはhierarchy corpusを含め、public source CLI / development bundleはP4.9までmanifest未検証のままfail closedである。2026-08-13に`npm run build:full`（29 files / 288 tests）と`git diff --check`が成功し、同日にP4.8.6は人が承認した。次はP4.9である。
+
+完了条件:
+
+- `S-V002`、`S-I003`、`S-I004`、`S-I022`がv1 corpus / testへmaterializeされ、拒否diagnosticのcode / rule ID / location pathを含めてflat fixtureだけでは検証できない階層契約を証明する
+- nested leafのR1 Projection、C1 plan / approval / apply / verifyが、artifact set入力を含めて既存v1 contractに適合する
+- summary編集、壊れたforest、unsafe outputでartifactを公開しない
+- 新format、new command、新purpose、new change operation、legacy core dependency、public runtime有効化を導入しない
+- 既存のflat R1/C1とlegacy compatibilityが回帰せず、人の承認を得る
+
+### P4.9の実行計画
+
+P4.9は、P4.8で実証したNode reference pathを**実行可能なversioned runtime artifact**へ束縛する工程である。ここでpublic v1 workflowを有効化できるのは、single `.mjs`、対応source archive、固定名`runtime-manifest.json`が同じdirectoryにあり、runtime自身が毎workflow開始前にmanifest / executable / sourcesの整合性を検証できる場合だけとする。release checksumまたはSkills lockによるmanifest digestの外側pin、repository外のclean smoke、公開ReleaseはP4.10以後であり、P4.9だけで配布元authenticityを主張しない。
+
+現在のworking treeがdirty、または`package.json`のversionに対応する`v<version>` tagがHEADを指さない場合、release runtime builderはartifactを生成しない。この拒否は開発を止めるためでなく、source revision/tagがartifact内容を偽装しないためのpreflightである。テスト用の一時runtimeは明示的なtest-only source identityで作れても、release assetやmanifest digest pinとして扱わない。
+
+- [x] `ZB-P4.9.1` versioned Node runtime builderを固定する
+  - clean working tree、`git rev-parse HEAD`、`v<package.version>`のexact tagをrelease source preflightとして検証する。いずれかが満たされなければ、runtime directoryやassetを作成せずに失敗する
+  - fresh output directoryだけに`miku-project-node-<runtime.version>.mjs`、`miku-project-node-<runtime.version>-sources.tgz`、`runtime-manifest.json`を生成する。既存directoryや既存assetを置換しない
+  - bundle/source archiveは既存の決定論的builderを再利用するが、runtime artifactにはbundle時点のproduct/runtime version、contract descriptor、capability profile、fixture corpus digestを埋め込む。development bundleはこのmetadataを持たない
+- [x] `ZB-P4.9.2` manifestとcorpus bindingを生成・検証する
+  - `testdata/conformance/v1/`の通常fileだけをPOSIX relative path順にdigestし、契約のfive-step corpus digestを計算する。symlink/non-regular entryはrelease buildを拒否する
+  - executable/sourceのraw byte sizeとSHA-256、nine capabilityのcanonical順、product / contract / schema / fixture suite、source contract/runtime revision/tag、`reference_runtime = null`をcanonical JSON + LFのmanifestへ記録する
+  - runtime manifest JSON Schemaに加え、family/versionから導くbasename、artifact directory escape/symlink拒否、profileと九capabilityの完全一致、embedded metadataとの一致をrelease validationで検証する
+- [x] `ZB-P4.9.3` versioned bundleのself-validationとpublic routingを接続する
+  - versioned Node executableだけがadjacent manifestを通常fileとして読み、UTF-8/BOM/duplicate key/schema、manifest raw digest、basename/size/SHA-256、corpus/capability/versionを検証する。source archiveも各workflow前に必ず検証する
+  - 成功時はmanifest/executable digestを含む`binding_status = verified` runtimeをR1/C1 serviceへ渡す。manifest/asset/source/capability不正は`runtime-error / 3`でproject、request、approval、artifact set、destination、result pathを読まず/作らずに返す
+  - repository source CLIとmetadataを持たないdevelopment bundleは、P4.8までと同じ`runtime.capability-missing` fail-closedを維持する。manifest探索、glob、PATH fallback、別version fallbackを導入しない
+- [x] `ZB-P4.9.4` runtime-integrity conformanceをmaterializeする
+  - test-only temporary runtimeでvalid manifestを作り、`validate`をverified runtimeとして通す。result / output plan / provenanceのruntime bindingがmanifest/executable digest、profile、fixture suiteと一致することを確認する
+  - `CR-MANIFEST-INVALID-001`、`CR-ASSET-DIGEST-001`、`CR-CAPABILITY-MISSING-001`、`CR-SOURCE-MISSING-001`をmanifest/asset/source mutationとして実行し、expected code、project未読、destination/result未作成、legacy fallbackなしを固定する。direct filesystem guardでfailure時のproject / result pathに対する`lstat`・`realpath`・`readFile`も監視する
+  - 同じsource identityとoutput pathから二回作るruntime asset / source / manifestのbyte determinismを確認する。P4.10のrepository外のclean runtime smokeとは別のbuilder/service testとして扱う
+- [x] `ZB-P4.9.5` 記録と承認資料を完成し、人が承認した（2026-08-13）
+  - capability matrix、conformance corpus、TODOへNode reference runtimeの実装範囲と、manifest digestの外側pin・clean smoke・Releaseがまだ未完である境界を記録する
+  - targeted runtime test、existing R1/C1・legacy regression、`npm run build:full`、`git diff --check`を通す。P4.10/P5/P6/Web/MCPの開始条件を先取りせず、人のレビューと承認を得る
+
+完了条件:
+
+- clean/tagged sourceだけから、固定layoutのversioned Node executable、sources、manifestを安全に生成できる
+- five workflow commandはversioned bundleのmanifest / asset / source検証後だけにverified bindingで実行され、失敗時にdomain input/outputへ副作用を出さない
+- `CR-*` runtime-integrity caseがNodeでmaterializeされ、manifest、asset、source、capabilityの別々のfailureをstable diagnosticで区別する
+- source/development bundleのfail-closed境界、外側manifest pin、P4.10 clean smoke、Java/Skillsの後続条件が維持される
+
+実装記録（2026-08-13承認）: `scripts/build-cli-v1-runtime.mjs`はcleanかつexact tagのrelease sourceだけを受け、`runtime/node/`の既存directoryを置換せずにversioned Node runtimeを生成する。test-only builderはtemporary runtimeを用意し、`CR-*`を`suite-index.json`のmutation定義へ接続する。failure caseはsubprocessでのartifact未作成確認に加え、direct filesystem guardでproject / result pathへの`lstat`・`realpath`・`readFile`が一度も起きないことを固定する。さらにclean・exact-tagのtemporary source repositoryからrelease builderを実行し、生成runtimeがrepository外のworking directoryから`validate`をverified bindingで実行できることを確認する。このtestはproduction Release / external checksumを作らないため、P4.10の配布artifact smokeを代替しない。versioned executableはembedded product/runtime versionとconformance corpus digestを使ってadjacent manifestを検証し、five workflowへverified bindingを渡す。source CLI / development bundleはmetadataを持たないため従来どおりfail closedである。2026-08-13に`npm run build:full`（30 files / 297 tests）と`git diff --check`が成功し、人が承認した。これはP4.10のrepository外clean smoke、Release checksum、Skills lock、公開Releaseを完了したという意味ではない。
+
+### P4.10の実行計画
+
+P4.10は、P4.9で生成・自己検証できることを確認したruntimeを、**source checkoutから切り離し、外側のtrust anchorでmanifestをpinしたconsumer配布物**として実行する工程である。release sourceの一時cloneをcleanかつexact tagとしてbuilderへ渡し、生成された`runtime-manifest.json`、versioned executable、source archiveの三fileだけを別のconsumer directoryへコピーする。consumer directoryへproject / request / plan / approvalを置くことは許可するが、runtime実行中にsource checkout、`node_modules`、repositoryの相対moduleへ依存してはならない。
+
+2026-08-13に、外側manifest pinを追加する`ZB-P4.10.2`〜`ZB-P4.10.5`の補強計画を人が承認した。この承認は実装開始の承認であり、P4.10の完了・release・公開承認ではない。
+
+同日の第2回reviewで、manifest pin成功後にexecutable / sourcesのsize・SHA-256をconsumerが検証しないままNodeを起動している問題を検出した。runtime自身のself-validationはJavaScriptの実行開始後であるため、改ざんされたexecutableの起動前検証を代替できない。`ZB-P4.10.2`〜`ZB-P4.10.4`を再度openにして再補強し、full regression・再review・人の承認を残す。この再補強はP4.10完了・release・公開承認ではない。
+
+2026-08-14の第3回reviewでは、consumerによるmanifest / executable / sourcesの起動前境界は妥当と判断した一方、`assertPinnedNodeRuntimeResultBinding`が既知fieldだけを比較し、testも部分一致を併用しているため、CLI result schemaが禁止する余分なruntime fieldやnested digest fieldを受理できる問題を検出した。runtime manifest contractが要求する「CLI resultのruntime binding全体が検証済みmanifestと完全一致する」を実証できていないため、`ZB-P4.10.4`と`.5`をopenに戻した。以下の最終補正は`validateCliResult`によるenvelope全体のschema検証後にcanonical JSONで`result.runtime`とverified preflight bindingを完全比較するものとし、schema不正を`consumer.result-invalid`、schema-validな値不一致を`consumer.result-binding-mismatch`として区別する。これはP4.10完了・release・公開承認を意味しない。
+
+P4.10では、`buildReleaseNodeRuntime`がmanifest生成直後に返したraw SHA-256を、配布runtime directoryや配布manifestから再導出しないtest-owned trust anchorとして保持する。consumerはruntime起動前にその値と配布manifest raw bytesを照合し、pin成功後だけmanifestをparseしてlauncherを解決する。これにより、manifest・executable・sourcesをまとめて書き換え、内部digestを合わせた改変も外側pinで拒否する。
+
+これはproduction Releaseのpublish自体ではない。P4.10はRelease checksumと同じ二層trust modelをsmoke内で実証するが、公開checksum fileの発行、署名、network download、Skills lock、Java / Agent Skills integration、公開Releaseは後続scopeに保つ。また、検証完了後からprocess spawnまでの同時書換えを防ぐTOCTOU対策、file descriptorからの直接実行、配布directoryの権限設計はP4.10のtest-owned smokeへ広げず、production Skills/runtime配布設計でimmutableまたは管理下directoryを要求する後続論点として残す。
+
+- [x] `ZB-P4.10.1` external consumer smokeをmaterializeする
+  - clean / exact-tag temporary sourceから`buildReleaseNodeRuntime`でruntimeを生成し、manifest、versioned `.mjs`、sourcesだけをrepository外のconsumer runtime directoryへcopyする。配布memberがこの三fileだけであることを確認し、source checkoutを削除してから実行する
+  - consumerが所有するcanonical project、materialized change request、plan result、approval、artifact destinationを使い、`validate`、`inspect`、`plan-change`、`apply-change`、`verify-artifact`を全て実行する。各resultの`binding_status = verified`、runtime digest / manifest digest / capability profile / fixture suiteが配布manifestと一致することを確認する
+- [x] `ZB-P4.10.2` test-owned consumer preflightをmanifestと両assetの起動前検証として固定する
+  - `buildReleaseNodeRuntime`がcopy前に返した`manifestDigest`をruntime directory外の明示引数としてconsumer verifierへ渡す。期待値は`sha-256` / 64 lowercase hexだけを受け、配布manifestやそのfilenameから生成しない
+  - fixed `runtime-manifest.json`を`lstat`し、通常fileかつ非symlinkであることを確認してraw bytesを読む。raw SHA-256がtrust anchorと一致するまでJSON parse、artifact path解決、launcher構築、runtime spawnを行わない
+  - pin成功後にstrict UTF-8 / BOM / duplicate key / schema / canonical JSON、Node reference identity、core capability、corpus、fixed basenameを検証する。既存のruntime自己検証primitiveを再利用しても、外側pin照合を省略または後置しない
+  - pin済みmanifestのcanonical pathの親を唯一のruntime directoryとし、固定basenameのexecutable / sourcesをそこから解決する。両entryを`lstat`して通常file / 非symlinkを要求し、`realpath`後も同じcanonical directoryの直接memberであることを確認する。directory scan、glob、PATH、別version、alternate filenameを使わない
+  - executable / sourcesのraw bytesを読み、manifest descriptorの`size_bytes`と`sha-256`へ一致させる。両方の検証が完了するまでverified bindingとlauncher descriptorを返さず、runtime self-validationは起動後の二重検証として維持する
+  - test-owned helper内に同じ検証を重複実装する場合でも、`cli-v1-runtime-manifest.mjs`のfile descriptor / digest規則と一つの共通primitiveへ寄せる。既存self-verifierの検証順を外側pinより前へ移動しない
+- [x] `ZB-P4.10.3` coordinated tamperとsingle-asset tamperをpre-launchで拒否する
+  - versioned executableへ実行可能なcommentをappendし、その新size / SHA-256をmanifestへ反映してcanonical JSONで再serializeする。これによりbundle内部のmanifest / executable整合は成立しても、original trust anchorとのmanifest raw digestは不一致になるcaseを作る
+  - consumer verifierがpin mismatchとして失敗し、注入したlauncher callbackが0回、project / request / plan / approval / result / destinationのfilesystem accessが0回、result / artifact setが未作成であることをassertする。legacy、PATH、別versionへfallbackしない
+  - missing / malformed expected digestと、manifest missing / symlinkもruntime起動前に拒否する。これはCLI result diagnostic catalogへ新codeを追加せず、P4.10 consumer preflightのtest outcomeとして区別する
+  - original manifest bytesと外側pinを変更せず、executableだけへcontentを追加するcaseを作る。manifest pinは成功してもexecutable size / digest不一致で拒否し、launcher callbackが0回であることを確認する。改ざんcode自身へ検証を委ねない
+  - original manifest bytesと外側pinを変更せず、sourcesだけへcontentを追加するcaseも同じ境界で拒否する。必要に応じてexecutable / sourcesのmissing、symlink、size mismatchもtable-driven caseにし、どのcaseでもdomain I/Oとfallbackがないことを共通assertする
+- [x] `ZB-P4.10.4` successful five-workflow smokeを完全なpinned consumer preflightと、schema-validかつ完全一致するconsumer result bindingへ接続する
+  - [x] `ZB-P4.10.4a` operationごとにmanifest pin、manifest identity、executable / sourcesの通常file・非symlink・canonical path・size・SHA-256を再検証する。全検証後の`runtime.launcher = node`、検証済みcanonical executable path、固定`process.execPath`だけからcommandを組み立て、hard-coded artifact path、glob、directory scan、PATH、mtime、newest / alternate version fallbackを使わない。`validate`、`inspect`、`plan-change`、`apply-change`、`verify-artifact`の成功経路と、plan / provenanceのexact runtime bindingは維持する
+  - [x] `ZB-P4.10.4b` `tests/helpers/mikuproject-v1-pinned-runtime-consumer.mjs`が受け取るCLI result envelopeを、既存の生成済み`validateCliResult`で最初に検証する。schema不正はtest-owned `consumer.result-invalid`としてfail closedにし、Ajvの可変なmessageを公開contractへ持ち込まず、CLI diagnostic catalogへ新codeを追加しない
+  - [x] `ZB-P4.10.4c` schema検証後の`result.runtime`とconsumer preflightが返す`runtime`をdeep exact比較する。top-level key集合、`artifact_digest` / `manifest_digest`のnested key集合と値をすべて対象にし、schema-validだが期待bindingと異なる場合は既存のtest-owned `consumer.result-binding-mismatch`で拒否する。known fieldだけの列挙比較、`toMatchObject`、部分一致は受理判定に使わない
+  - [x] `ZB-P4.10.4d` 成功resultのcopyを用いたtable-driven direct testで、required runtime field欠落、余分なtop-level runtime field、余分なnested digest field、schema-validなversionまたはdigest値不一致を固定する。前3件は`consumer.result-invalid`、値不一致は`consumer.result-binding-mismatch`となり、成功五workflowも同じschema validatorとexact比較を必ず通ることを確認した（P4.10 consumer対象13 cases、runtime manifest test file全22 tests）
+  - [x] `ZB-P4.10.4e` result以外のplan runtime binding、approvalが束縛するoutput plan digest、apply provenance、verify resultの既存exact比較を維持し、source checkout削除、consumer `node_modules`なし、runtime三memberだけの条件を再確認した
+- [x] `ZB-P4.10.5` 記録と承認資料を完成する（2026-08-14承認）
+  - TODO、capability matrix、README、developmentへexternal pin成功、両assetの起動前検証、coordinated / single-asset tamper拒否と、公開Release checksum、署名、Skills lock、公開Releaseが未完である境界を記録する
+  - exact result-binding negative testとtargeted smokeで、成功五workflow、executable-only tamper、sources-only tamper、coordinated tamper、anchor / manifest / asset entry failureを確認した。existing R1/C1・legacy regressionを含む`npm run build:full`は2026-08-14に30 test files / 310 testsで成功し、同じ補正後差分に対する`git diff --check`も成功した。P5/P6/Web/MCPの開始条件を先取りせず、同日に人の再reviewと承認を得た
+  - manifest-pin-only baselineとして2026-08-13に`npm run build:full`（30 files / 303 tests）と`git diff --check`が成功したが、起動前asset検証不足により承認証拠には数えない。再補強後にtest数を含む全証拠を再取得する
+
+manifest-pin-only実装記録（第2回reviewで差戻し）: test-owned consumer preflightは、copy前にrelease builderが返したraw `manifestDigest`だけを外側trust anchorとして受け、fixed `runtime-manifest.json`のregular-file / non-symlink確認とraw SHA-256照合をparse、artifact path解決、launcher構築、runtime spawnより先に行う。pin成功後にstrict JSON、schema、canonical serialization、Node reference identity、canonical capability、corpus、fixed basenameを検証し、manifestの`runtime.launcher = node`と`artifacts.executable.path`から固定`process.execPath`によるcommandを構成した。five workflow、coordinated tamper、anchor / manifest failureは通り、2026-08-13に`npm run build:full`（30 files / 303 tests）と`git diff --check`が成功した。しかしconsumerはexecutable / sourcesのsize・SHA-256を起動前に検証しておらず、改ざん済みJavaScriptをNodeが実行してからruntime自身にself-validationさせる境界だったため承認しない。
+
+起動前asset再補強の実装記録（第3回reviewでresult bindingを差戻し）: consumer preflightはpin済みmanifestのcanonical parentを唯一のruntime directoryとして、固定basenameのexecutable / sourcesを同じregular-file descriptor primitiveで読む。各assetについてnon-symlink regular entry、canonical directoryの直接member、manifest記載size、raw SHA-256を検証し、すべて成功するまでverified bindingとlauncher descriptorを返さない。runtime自己検証は起動後の二重検証として残す。外側pinを変更しないexecutable-only / sources-onlyのsize改変とsame-size digest改変、missing executable、symlinked sourcesはすべてlauncher 0回かつdomain I/O / result / artifactなしで拒否する。coordinated manifest/executable tamper、anchor / manifest failure、source checkout削除・consumer `node_modules`なしの五workflow成功も維持する。第3回reviewの補正として、consumer helperはCLI result envelope全体を生成済みschemaで検証してからruntime bindingをcanonical JSONで完全比較するよう変更した。runtime field欠落、runtime余分field、nested digest余分fieldは`consumer.result-invalid`、schema-validな値不一致は`consumer.result-binding-mismatch`で拒否し、成功五workflowも同じ経路を通す。2026-08-14にP4.10 consumer対象13 cases（runtime manifest test file全22 tests）、`npm run build:full`（30 files / 310 tests）、補正後差分の`git diff --check`が成功し、再reviewと人の承認を得た。補正前の2026-08-13 P4.10 target 12 tests、`npm run build:full`（30 files / 309 tests）、`git diff --check`はbaselineとして保持する。これは公開Release checksum、署名、Skills lock、公開Releaseを意味しない。
+
+完了条件:
+
+- clean / exact-tag sourceで生成したruntimeの三配布memberだけが、source checkoutを削除したconsumer directoryで、外側pin成功後にfive workflowをverified bindingとして実行できる
+- consumerのproject / request / plan / approval / artifact setはすべてconsumer側にあり、source checkout、runtime build dependency、`node_modules`への実行時依存がない
+- coordinated manifest / executable改変を、runtime起動とdomain I/Oより前に外側pinで拒否できる
+- manifest pinが成功するexecutable-only / sources-only改変も、consumerによるsize・SHA-256検証でruntime起動とdomain I/Oより前に拒否できる
+- verified bindingとlauncher descriptorは、manifest pin、manifest identity、executable / sourcesのentry・size・digest検証がすべて成功した後だけ得られる
+- 成功CLI resultは生成済みv1 result schemaに適合し、`result.runtime`の全keyとnested digestがconsumer preflightのverified bindingへ完全一致する。schema不正とschema-validなbinding不一致をtest-owned errorで区別し、余分なfieldも拒否する
+- P4.10で二層trust modelを実証するが、公開Release checksumの発行、署名、Skills lock、公開Release、Java / Agent Skills integrationの完了とは取り違えない
+
+補強前実装記録（reviewで差戻し）: clean / exact-tag temporary sourceから生成したP4.9 runtimeをconsumer directoryへ三fileだけ配布し、source checkoutを削除した後にconsumer側のflat canonical projectとC1 artifactsだけで五workflowを実行するtestを追加した。consumer側には`node_modules`を置かず、五resultはすべて`binding_status = verified`だった。しかし期待manifest digestを配布manifest自身から導出しており、coordinated tamperを検出する外側trust anchorになっていなかった。2026-08-13のtargeted test（10 tests）と`npm run build:full`（30 files / 298 tests）、`git diff --check`は補強前baselineとして保持し、P4.10の承認証拠には数えない。
+
 ### Gate G4
 
 - v1 scenarioがclean directoryで完結する
@@ -654,20 +818,51 @@ P4.6は、P4.5で承認待ちにしたC1 planを、明示的なapprovalと再計
 - relevant tests、contract suite、`npm run build:full` が成功する
 - Node contract releaseとartifact manifestが固定される
 
+2026-08-14にsource freeze commit `693b4ecd7d4328d77f3b2eada9c4965a9c9b15f5`へ`v1.0.3` tagを付与し、exact-tag clean sourceからactual Node runtimeを生成した。actual三memberは`distribution_status = internal-reference-only`のcandidateとして`workplace/gate-g4/v1.0.3/runtime/`へ保持する。Git管理する[miku-project Node reference runtime lock v1.0.3](miku-project-node-reference-runtime-lock-v1.0.3.json)がsource/tag、build toolchain、package-lock / corpus、三memberのsize / SHA-256を固定し、lock SHA-256は`95cd11cc4460348fa066908994430adba5983384c06c75679855120e5c5ea3d5`である。`verify:cli-v1-release-candidate`はlockを外側pinとしてactual三memberを隔離consumerへcopyし、五workflowとresult / output plan / provenance bindingを再検証する。runtime manifest test file全25 testsと`npm run build:full`（30 files / 313 tests）は成功し、Gate G4は2026-08-14に人が承認した。現行GitHub Release workflowはこの三memberをbuild / uploadしないため、`v1.0.3`を新v1 runtimeの公開Releaseとして扱わない。詳細は[Gate G4 readiness v20260814](miku-project-gate-g4-readiness-v20260814.md)を正本とする。
+
 ## ZB-P5 Java CLI適合
 
 依存: `G4`  
 主担当: Java CLI
+状態: Gate G4承認により開始済み。2026-08-14に[Java contract handoff v1.0.3](miku-project-java-contract-handoff-v1.0.3.md)をmain側の実装入力として固定し、P5-AのJava repositoryへのsnapshot取り込みは完了・承認済み。P5-B harnessは、2026-08-15の再reviewで見つけたsemantic collection canonicalizationとRB-012 leaf制約を補正し、focused test、全体test、snapshot post-verification、両repo diff checkを通した再技術reviewを完了し、同日に人が承認した。P5-C1の`validate` vertical sliceは初回・再reviewのJava側指摘を修正し、`CU-USAGE-001`の現行Node/Java source挙動もcorpusどおり一致させ、全体回帰まで完了した。frozen Node `v1.0.3` release identityは修正前なので、corrective releaseと新snapshot前にcross-runtime / Gate G5の適合は主張しない。現在は再技術reviewと人の承認待ちである。承認前に`inspect`以降を開始しない
 
 ### 作業
 
-- [ ] `ZB-P5.1` moving Node subtree追随を止め、固定されたcontract release単位の入力へ切り替える
-- [ ] `ZB-P5.2` 共通fixture、golden、result/diagnostics schemaをJava testから利用する
+- [x] `ZB-P5.1` moving Node subtree追随を止め、固定されたcontract release単位の入力へ切り替えた
+  - [x] `ZB-P5.1.1` Node `v1.0.3` / revision `693b4ecd7d4328d77f3b2eada9c4965a9c9b15f5`、contract version `1`、fixture suite `1`、corpus digest、snapshot allowlist、Java側配置、受入条件をhandoff文書へ固定する
+  - [x] `ZB-P5.1.2` Java repositoryにimmutable `vendor/miku-project-contract/v1.0.3/` snapshot importerとcanonical `SOURCE.json` generatorを追加した。Git tagでidentityを確認した後はfull revisionだけを読み、Node source working treeをcopyしない。expected manifestと全memberが完全一致する既存snapshotだけを無変更no-opにし、その他はhard errorにする。exclusive directory creationとrepository外・symlink親の拒否、ownership確認済みfailure cleanupにより既存treeを上書きしない
+  - [x] `ZB-P5.1.3` snapshotのmember set、exact directory topology、regular/non-symlink、size、SHA-256、source tag/revision、corpus digest、`SOURCE.json` raw SHA-256外側pinを検証するJava testと、synthetic Git repositoryでimporter boundaryを検証するNode testを追加した。extra / missing / tampered / symlink / fractional size / rewritten manifest、異なる既存tree / empty directory、tag / revision、working tree、確認後tag移動、出力path、marker / member / manifest failure、unknown file / empty directoryを検証し、Node 12 testsとfocused Java verifier 8 testsが成功した
+  - [x] `ZB-P5.1.4` Java README / upstream docsで、新v1 authorityをcontract snapshot、既存`vendor/mikuproject/`をlegacy referenceとして区別した。repository-wide `sh scripts/test-all.sh`をRelease workflowへ接続し、Node 12 testsとJava 140 tests（failures 0、errors 0、skipped 4）が成功した
+- [x] `ZB-P5.2` 共通fixture、golden、result/diagnostics schemaをJava testから利用する
+  - [x] `ZB-P5.2.1` `suite-index.json` / `contract-cases.json` loaderをJava test-side harnessとして実装した。public entrypointはP5-A snapshot verifier後のimmutable treeだけを読み、30 workflow caseと31 contract/binding caseを型付きで読み出す。root / case / known parameter / input / mutationのunknown field、workflowとcontract indexを通じたcase ID重複、snapshot外escape、allowlist外・symlink参照、未知role、不正JSON Pointerをfail-closedにする。実snapshotとcopied mutationを用いたfocused 8 tests、repository-wide `sh scripts/test-all.sh`（Node 12 tests + Java 148 tests、failures 0、errors 0、skipped 4）が成功した
+  - [x] `ZB-P5.2.2` result / diagnostic / artifact / runtime manifestの四Schemaを同一registryで検証するJava 8 test-side方式を実装した。外部依存、Node呼出し、networkなしで、pinned draft 2020-12の`$ref`（localと登録URNのみ）、type / const / enum / object / array / combinator / conditional / contains / URI formatを評価する。未対応語彙、外部schema refはregistry生成時にfail-closedにする。全checked-in positive example、四Schemaの代表negative example、`contract-cases.json`のJSON Schema layer 18 caseのexpected valid/invalidが成功した
+  - [x] `ZB-P5.2.3` canonical JSON / SHA-256とcase materializerをtest-sideへ分離し、semantic collectionの正規化はdependency 4-field tuple、resource / assignment / calendar UID、Unicode scalar比較を用いる共通domain-aware canonicalizerへ集約する。`cross-artifact-binding` 13 caseで`RB-001`〜`RB-006`、`RB-011`、`RB-012`を実入力から検証する。`exact-json`、`semantic-state`、明示抽出済み値の`semantic-cross-runtime`、`byte-same-runtime`、`artifact-topology`、`runtime-integrity`を別assertion boundaryとして実装し、Node live outputを呼ばない。`RB-007`〜`RB-010`の実行時I/O・provenance・diagnostic集約はP5-C command runnerで初めて評価する
+  - [x] `ZB-P5.2.4` mutationはmaterialize後のtest-side copyだけへ適用し、Java固有goldenやNode live outputをoracleにしない。repository-wide `sh scripts/test-all.sh`は全Java test後にsnapshot verifierを再実行し、immutable原本がtest後も無傷であることを確認する（Node 12 tests、Java 161 tests、failures 0、errors 0、skipped 4）
 - [ ] `ZB-P5.3` required command、option、I/O、exit状態、exclusive createとcommit markerによるlogical publicationを実装する
+- [ ] `ZB-P5.3.1` `validate`を最初のvertical sliceとして実装し、初回・再reviewのJava側指摘を修正した。再技術reviewと人の承認を待つ。`CU-USAGE-001`の現行Node/Java source挙動は一致したが、frozen Node `v1.0.3` release identityは修正前なのでcross-runtime / Gate G5適合は未達である
+  - 2026-08-15にJava側へlegacy CLIと分離したcommand serviceを追加した。strict `validate --project <path|-> [--result <path|->]`、direct regular XML / stdin、UTF-8、MS Project XML subset、semantic validation、structured JSON result / diagnostics、canonical semantic digest、exclusive-create resultを実装した
+  - runtime manifest / public launcherはP5-Eのため、verified Java runtime bindingが無ければproject inputを読む前に`runtime.manifest-invalid` / exit 3でfail closedにする。artifact-set directoryもP5-C5まで未対応と明示してrejectする
+  - 初回reviewで見つかった不正lexical integer / boolean / resource typeのfalse success、dependency cycle未検出、欠落start milestoneのinternal error、assignment rule ID差分、`CU-USAGE-001`未実行を修正した。再reviewでは`CU-USAGE-001`をwhole CLI argvとして直接実行し、option scope / location、percent欠落とdependency endpointのrule境界、Node `Number.isSafeInteger`範囲、resource / assignment / calendarのUID付きdiagnostic pathを固定した。巨大outline levelはdecode済みmember数を上限にしてallocationをfail-safeにする
+  - fixed corpusの`command = cli`、`arguments = ["--unknown-option"]`、`cli.unknown-option`を正本とし、現行Node parserも先頭unknown long optionをoption scope / option location付き`cli.unknown-option`に修正した。Java serviceと現行Node sourceの挙動は一致する。immutable `v1.0.3` snapshotは改変せず、後続Node corrective releaseと新snapshotでreference identityを更新する
+  - fixed corpusのvalid / invalid / unsupported / hierarchy、`CU-USAGE-001`、runtime failure、malformed XML、result overwrite拒否を初回・再review回帰とともにJava focused 12 testsで検証した。Nodeのargv / XML adapter / R1 integration関連20 testsと全体`npm test`、`sh scripts/test-all.sh`のNode importer 12、Java 176（failure/error 0、skip 4）、snapshot post-verification 8 testsが成功した。これは人のP5-C1承認またはcorrective release identityを含むcross-runtime適合を代替しない
+  - [ ] `ZB-P5.3.2` `inspect project_overview`と`task_change_context`を追加する
+  - [ ] `ZB-P5.3.3` `plan-change set_task_percent_complete`とhuman gate bindingを追加する
+  - [ ] `ZB-P5.3.4` `apply-change`のexclusive directory reservation、三member、empty `COMMITTED`、unknown outcome回復を追加する
+  - [ ] `ZB-P5.3.5` read-only `verify-artifact`とexpected-plan bindingを追加する
 - [ ] `ZB-P5.4` JSON/textは必要箇所でexact比較し、XML/XLSXは契約に応じてsemantic比較する
 - [ ] `ZB-P5.5` Node-only、Java-only、未対応差分をcapability matrixに記録する
 - [ ] `ZB-P5.6` fat JAR、sources、runtime manifest、SHA-256を生成する
 - [ ] `ZB-P5.7` standalone `java -jar` smokeをclean directoryで実行する
+
+### 実行順とreview gate
+
+1. `P5-A`: `ZB-P5.1.2`〜`P5.1.4`だけを実装し、snapshot authorityをreviewする。domain commandを変更しない。完了・承認済み（2026-08-14）。
+2. `P5-B`: `ZB-P5.2.1`〜`P5.2.4`でharnessを完成し、未実装caseをpass扱いにしない。2026-08-15の再reviewで見つけたwhole-object JSON textによるcollection整列とRB-012 leaf判定を補正した。Node参照実装と同じdependency tuple / UID / Unicode scalar順をdigestと三comparison modeで共有し、summary taskと非summary parentのschema-valid ProjectionをRB-012で拒否するfocused testを追加した。focused test、`sh scripts/test-all.sh`（Node importer 12 tests、Java 164 tests、failure/error 0、skip 4）、snapshot post-verification（8 tests）、両repo diff checkを終えた再技術reviewを完了し、同日に人が承認した。
+3. `P5-C`: `ZB-P5.3.1`からcommandを一つずつ実装し、各sliceでshared caseとlegacy Java regressionを通す。P5-C1は初回・再reviewのJava側指摘を修正し、`CU-USAGE-001`の現行Node/Java source挙動も一致済みで再review/承認待ちである。承認されるまでは次commandを開始しない。frozen Node `v1.0.3`との差分はcorrective releaseの明示的な入力とする。
+4. `P5-D`: command coverage後に`P5.4/P5.5`のcross-runtime比較と差分承認を行う。Node corrective release、新snapshot、Javaとの再比較が完了するまでrelease identityを含むcross-runtime適合を主張しない。
+5. `P5-E`: 最後に`P5.6/P5.7`のartifact、manifest、standalone smokeを実施する。
+
+各review単位で、Java repositoryの`mvn test`、対象focused test、`git diff --check`、snapshot原本不変を確認する。旧subtree更新、命名変更、Java-only extension整理を同じ差分へ混ぜない。
 
 ### Gate G5
 
@@ -711,6 +906,7 @@ P4.6は、P4.5で承認待ちにしたC1 planを、明示的なapprovalと再計
 - [ ] `ZB-P7.7` Node → Java → Skills のrelease順とcompatibility matrixを確定する
 - [ ] `ZB-P7.8` browser runtimeを互換artifactとして維持するか、Main Applicationの既定buildから外すかをdownstreamと調整する
 - [ ] `ZB-P7.9` clean install、`.mjs`、`.jar`、Skill bundle、provenanceのrelease acceptanceを実行する
+- [ ] `ZB-P7.10` `.github/workflows/release-runtime-bundles.yml`をversioned v1 Node runtimeのclean exact-tag build、Gate/Release lock照合、三member＋公開SHA256SUMSのuploadへ対応させる。対応前の`v1.0.3`内部reference tagを新v1 runtimeの公開Releaseとして扱わない
 
 ### Gate G7
 
@@ -770,7 +966,7 @@ P4へ渡す承認済みの前提は次の五つである。
 4. C1をleaf task一件の`set_task_percent_complete`だけに限定し、whole-state replacement/mergeを拒否する判断
 5. current state、request、dry-run diff、output plan、approvalをdigestで束縛し、directoryを排他的に予約して`project.xml + provenance.json`を検証後、空の`COMMITTED`を排他的に作成して論理publishする判断。incomplete/corrupt setを利用せず、既存pathを置換しない
 
-`ZB-P3.1`〜`ZB-P3.12`は[CLI contract v1](miku-project-cli-contract-v1.md)、[CLI result and diagnostics contract v1](miku-project-cli-result-contract-v1.md)、[runtime capability contract v1](miku-project-runtime-capability-contract-v1.md)、[runtime manifest contract v1](miku-project-runtime-manifest-contract-v1.md)、[conformance corpus v1](miku-project-conformance-corpus-v1.md)、[human gate and next action contract v1](miku-project-human-gate-and-next-action-contract-v1.md)として2026-08-11に承認された。`ZB-P4.1`〜`ZB-P4.5`と`ZB-P4.6.1`〜`ZB-P4.6.5`は完了し、次の作業は`ZB-P4.6.6`のcommitted artifact set入力接続である。P4.9のmanifest整備まではpublic source/bundleのv1 workflowを適合runtimeとして有効化しない。
+`ZB-P3.1`〜`ZB-P3.12`は[CLI contract v1](miku-project-cli-contract-v1.md)、[CLI result and diagnostics contract v1](miku-project-cli-result-contract-v1.md)、[runtime capability contract v1](miku-project-runtime-capability-contract-v1.md)、[runtime manifest contract v1](miku-project-runtime-manifest-contract-v1.md)、[conformance corpus v1](miku-project-conformance-corpus-v1.md)、[human gate and next action contract v1](miku-project-human-gate-and-next-action-contract-v1.md)として2026-08-11に承認された。`ZB-P4.1`〜`ZB-P4.6`は完了し、`ZB-P4.7`の再利用採否、`ZB-P4.8`の階層C1 slice、`ZB-P4.9`のversioned runtime manifest / asset bindingは2026-08-13に承認された。source CLI / development bundleは、承認後もversioned artifactではないためv1 workflowを適合runtimeとして有効化しない。`ZB-P4.10`は三回のreview差戻しを補強し、2026-08-14に承認された。Gate G4ではactual `v1.0.3`を内部reference candidateとして固定し、Git管理する外側lockと再実行可能なverifier、追加後full regressionを完成し、2026-08-14に人が承認した。次は`ZB-P5` Java CLI適合である。
 
 ## 計画の更新方法
 

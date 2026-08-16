@@ -63,6 +63,14 @@ export function parseV1Invocation(argv) {
   }
 
   const command = argv[0];
+  if (typeof command === "string" && command.startsWith("--") && command !== "--") {
+    throw createV1UsageError({
+      code: "cli.unknown-option",
+      message: `Unsupported v1 option: ${command}`,
+      option: command,
+      details: { received: command }
+    });
+  }
   if (!isV1WorkflowCommand(command)) {
     throw createV1UsageError({
       code: "cli.unknown-command",

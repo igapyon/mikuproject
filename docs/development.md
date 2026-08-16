@@ -20,6 +20,9 @@ npm test
 - `npm run build:core` transpiles the core TypeScript files to their tracked `src/js/` runtime modules.
 - `npm run build:browser-runtime` creates the browser-compatible downstream artifact at `bundle/miku-project-runtime.mjs`.
 - `npm run build:cli-bundle` creates the Node.js CLI artifact at `bundle/miku-project.mjs` and a source archive.
+- `npm run build:cli-v1-runtime` creates the versioned v1 Node runtime under `runtime/node/` only from a clean source tree whose HEAD has the exact `v<package.version>` tag. It refuses existing output and is not a Release command. P4.10's test/audit-owned consumer pins the raw `runtime-manifest.json` SHA-256 supplied outside the runtime, verifies the canonical executable/source entries, sizes, and SHA-256 digests before launching Node, and validates the complete result/runtime binding.
+- `npm run verify:cli-v1-release-candidate -- --runtime-dir <directory> --lock <lock.json>` verifies an already-built internal reference candidate against a Git-tracked external lock, copies only the three locked members to an isolated consumer, and replays `validate` / `inspect` / `plan-change` / `apply-change` / `verify-artifact`. The Gate G4 `v1.0.3` lock is `docs/miku-project-node-reference-runtime-lock-v1.0.3.json`; its local retained candidate is expected at `workplace/gate-g4/v1.0.3/runtime/` and is intentionally ignored by Git.
+- The Gate G4 lock is an internal approval trust anchor, not a public Release checksum or Skills lock. The current `.github/workflows/release-runtime-bundles.yml` does not build or upload this v1 three-member runtime; do not publish `v1.0.3` as that public artifact through the current workflow.
 - `npm run build:full` runs the core build, both bundles, and the complete Main Application suite.
 - `npm run build:xlsx-sample` writes optional sample XLSX and Markdown output under `local-data/`.
 

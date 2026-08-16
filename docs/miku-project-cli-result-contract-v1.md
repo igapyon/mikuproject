@@ -108,7 +108,7 @@ fieldの追加、削除、型変更、status/exit codeの再解釈はschema vers
 | `apply-change / succeeded` | committed `artifact_set` descriptor | incomplete/corrupt setを`data.artifact_set`へ入れない |
 | `apply-change / rejected/runtime-error` | 原則`null` | 残ったpath/stateは`effects.project_artifact`へ記録する |
 | `verify-artifact / succeeded` | `verification.publication_state = committed` | digest検証前にcommittedとしない |
-| `verify-artifact / rejected` | 通常は`verification`に`absent / incomplete / corrupt`と`matches_expected_plan / bindings = null`。committedだがexpected plan不一致の場合だけ`committed / false / 実測bindings` | 利用可能artifact descriptorを返さない。不一致をsuccessにしない |
+| `verify-artifact / rejected` | 通常は`verification`に`absent / incomplete / corrupt`と`matches_expected_plan / bindings = null`。committedだがschema-validなexpected planとのRB-008不一致の場合は`committed / false / 実測bindings`。committed観測後に`--expect-plan-result`自体のI/O・JSON・envelope/schema検証に失敗した場合は、入力diagnosticと`committed / null / 実測bindings`を併記する | 利用可能artifact descriptorを返さない。不一致をsuccessにしない |
 | `verify-artifact / runtime-error` | 判定不能なら`publication_state = null` | 第五のpublication stateを推測しない |
 | `usage-error` | `null` | domain payloadを返さない |
 
@@ -129,7 +129,7 @@ JSON Schemaで表現できない別object間の同値関係は、次のbinding r
 | `RB-005` | `io.destination.path = output_plan.output.destination.path`。`requested_path`は比較対象にしない |
 | `RB-006` | approvalのbase/request/diff/plan digestが、承認時に提示したrequest、semantic diff、output planのcanonical digestと一致する |
 | `RB-007` | provenanceのruntime、input/change/output digest、target/before/afterが、承認済みplan、実際の入力、生成artifact、再decode後semantic stateと一致する |
-| `RB-008` | `verify-artifact --expect-plan-result`指定時は、committed artifactのprovenance bindingがexpected planと完全一致した場合だけ`succeeded / matches_expected_plan = true`とする。不一致は`rejected / false / publication.expected-plan-mismatch` |
+| `RB-008` | `verify-artifact --expect-plan-result`は、まずexpected inputをschema-validなsuccessful `plan-change` result envelopeとして検証する。I/O・JSON・envelope/schema検証失敗時はRB-008を評価せず、committed観測を`rejected / matches_expected_plan = null`で残す。検証済みexpected planに対しcommitted artifactのprovenance bindingが完全一致した場合だけ`succeeded / true`、不一致は`rejected / false / publication.expected-plan-mismatch`とする |
 | `RB-009` | result status、diagnostic code、retryability、集約`next_action`をschemaどおり一致させる。result直下にdiagnostic件数summaryを複製しない |
 | `RB-010` | usage error以外ではcommandごとの入力role、option、source、順序、件数とdestination有無をschemaの固定matrixに一致させる。stdinは一入力だけ、`stdin_option`はそのoption、stdinのpathは`null`、file/directory/path入力とfile result/destinationはcanonical absolute pathでなければならない。`apply-change`だけはsuccessful plan resultを検証してdestinationを取得する前のnon-successで`io.destination = null`を許す。successで実際に読んだartifact-set path以外の入力digestは非nullとする |
 | `RB-011` | plan resultでは`io.destination.path = output_plan.output.destination.path`。apply successではそのpath、承認済みplanのdestination、`effects.project_artifact.path`、`data.artifact_set.path`を一致させる。verifyではartifact-set入力path、`verification.path`、観測した`effects.project_artifact.path`と、verification/effect双方のpublication stateを一致させる。cleanup pathが非nullなら同じartifact pathでなければならない |

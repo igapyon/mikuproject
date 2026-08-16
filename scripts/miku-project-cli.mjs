@@ -11,7 +11,11 @@ import { writeOutput } from "./lib/cli-io.mjs";
 import { buildErrorDiagnostics, writeDiagnostics } from "./lib/cli-diagnostics.mjs";
 import { writeHelp } from "./lib/cli-presentation.mjs";
 import { runLegacyCommand } from "./lib/cli-legacy-router.mjs";
-import { recognizesV1Workflow, rejectUnreleasedV1Workflow } from "./lib/v1/cli-v1-router.mjs";
+import {
+  recognizesV1Workflow,
+  rejectUnreleasedV1Workflow,
+  runV1VersionedRuntime
+} from "./lib/v1/cli-v1-router.mjs";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -20,6 +24,19 @@ const repoRoot = path.resolve(__dirname, "..");
 async function main() {
   const rawArgv = process.argv.slice(2);
   if (recognizesV1Workflow(rawArgv)) {
+    if (typeof BUNDLED_V1_RUNTIME_VERSION === "string" && BUNDLED_V1_RUNTIME_VERSION.length > 0) {
+      const result = await runV1VersionedRuntime(rawArgv, {
+        entryPath: __filename,
+        runtimeVersion: BUNDLED_V1_RUNTIME_VERSION,
+        productVersion: getCliVersion(),
+        conformanceCorpusDigest: BUNDLED_V1_CONFORMANCE_CORPUS_DIGEST,
+        cwd: process.cwd(),
+        stdin: process.stdin,
+        stdout: process.stdout
+      });
+      process.exitCode = result.exit_code;
+      return;
+    }
     const result = rejectUnreleasedV1Workflow(rawArgv, {
       version: getCliVersion(),
       stdout: process.stdout

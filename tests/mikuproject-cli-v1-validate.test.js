@@ -125,6 +125,33 @@ describe("v1 R1 validate service", () => {
     expect(output).toEqual([serializeV1Result(result)]);
   });
 
+  it("runs the hierarchy forest and summary negative cases with their stable rule IDs and no side effects", async () => {
+    for (const { caseId, fixtureName } of [
+      { caseId: "CV-HIERARCHY-INVALID-PREORDER-001", fixtureName: "hierarchy-invalid-preorder.xml" },
+      { caseId: "CV-HIERARCHY-INVALID-SUMMARY-001", fixtureName: "hierarchy-invalid-summary.xml" }
+    ]) {
+      const expected = suiteCases.get(caseId);
+      const fixturePath = path.join(fixtureRoot, fixtureName);
+      const before = await readFile(fixturePath);
+      const { result, output } = await invokeValidate(["validate", "--project", fixturePath]);
+
+      expect(validateCliResult(result)).toBe(true);
+      expect(result).toMatchObject({
+        command: "validate",
+        status: expected.expected_status,
+        exit_code: expected.expected_exit_code,
+        next_action: expected.expected_next_action,
+        effects: { project_input_modified: false, project_artifact: null, cleanup: { status: "not-needed", path: null } },
+        data: { validation: { valid: false, format_profile: "miku-project-ms-project-xml-subset/v1", state_digest: null } }
+      });
+      expect(result.diagnostics.map((item) => item.code)).toEqual(expected.expected_diagnostic_codes);
+      expect(result.diagnostics.map((item) => item.location.rule_id)).toEqual(expected.expected_rule_ids);
+      expect(result.diagnostics.map((item) => item.location.path)).toEqual(expected.expected_diagnostic_paths);
+      expect(output).toEqual([serializeV1Result(result)]);
+      expect(await readFile(fixturePath)).toEqual(before);
+    }
+  });
+
   it("produces byte-identical stdout result documents for the same runtime, file input, and path token", async () => {
     const fixturePath = path.join(fixtureRoot, "dependency-canonical.xml");
     const first = await invokeValidate(["validate", "--project", fixturePath]);
@@ -134,7 +161,7 @@ describe("v1 R1 validate service", () => {
     expect(first.output).toEqual(second.output);
   });
 
-  it("rejects missing, symlink, and directory direct entries before XML decoding", async () => {
+  it("rejects missing, symlink, and incomplete artifact-set directory entries before XML decoding", async () => {
     const temporaryDirectory = await mkdtemp(path.join(os.tmpdir(), "miku-project-v1-validate-input-"));
     const missing = await invokeValidate([
       "validate", "--project", "missing.xml"
@@ -162,9 +189,10 @@ describe("v1 R1 validate service", () => {
     const directory = await invokeValidate([
       "validate", "--project", temporaryDirectory
     ], { cwd: temporaryDirectory });
+    expect(validateCliResult(directory.result)).toBe(true);
     expect(directory.result).toMatchObject({
       status: "rejected",
-      diagnostics: [{ code: "io.input-type-invalid" }],
+      diagnostics: [{ code: "publication.artifact-incomplete" }],
       data: { validation: { valid: false, format_profile: null, state_digest: null } }
     });
   });

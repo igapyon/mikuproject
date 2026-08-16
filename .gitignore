@@ -6,6 +6,7 @@ dist/
 coverage/
 *.log
 bundle/
+runtime/
 .vscode/mcp.json
 workplace/*
 !workplace/.gitkeep

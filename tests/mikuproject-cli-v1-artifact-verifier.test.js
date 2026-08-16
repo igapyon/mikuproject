@@ -1,4 +1,4 @@
-import { mkdtemp, mkdir, readFile, writeFile } from "node:fs/promises";
+import { mkdtemp, mkdir, readFile, realpath, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
@@ -7,6 +7,7 @@ import { describe, expect, it } from "vitest";
 
 import { prepareV1ApplyChange } from "../scripts/lib/v1/cli-v1-apply.mjs";
 import {
+  readV1CommittedArtifactSetProject,
   validateV1ExpectedPlanResultBinding,
   verifyV1ArtifactSet
 } from "../scripts/lib/v1/cli-v1-artifact-verifier.mjs";
@@ -80,6 +81,18 @@ describe("v1 artifact-set verifier", () => {
     expect(incomplete.verification).toMatchObject({ publication_state: "incomplete", matches_expected_plan: null, bindings: null });
     expect(incomplete.error).toMatchObject({ code: "publication.artifact-incomplete" });
     expect(await readFile(path.join(incompletePath, "unexpected.tmp"), "utf8")).toBe("partial");
+    const incompleteProject = await readV1CommittedArtifactSetProject(incompletePath);
+    expect(incompleteProject).toMatchObject({
+      input: {
+        role: "project",
+        option: "--project",
+        source: "directory",
+        path: await realpath(incompletePath),
+        digest: null
+      },
+      error: { code: "publication.artifact-incomplete" }
+    });
+    expect(incompleteProject).not.toHaveProperty("bytes");
 
     const malformed = await createCommittedArtifact();
     await writeFile(path.join(malformed.destination, "unexpected.tmp"), "do not repair", "utf8");
@@ -87,6 +100,18 @@ describe("v1 artifact-set verifier", () => {
     expect(corrupt.verification).toMatchObject({ publication_state: "corrupt", matches_expected_plan: null, bindings: null });
     expect(corrupt.error).toMatchObject({ code: "publication.artifact-corrupt" });
     expect(await readFile(path.join(malformed.destination, "unexpected.tmp"), "utf8")).toBe("do not repair");
+    const corruptProject = await readV1CommittedArtifactSetProject(malformed.destination);
+    expect(corruptProject).toMatchObject({
+      input: {
+        role: "project",
+        option: "--project",
+        source: "directory",
+        path: malformed.destination,
+        digest: null
+      },
+      error: { code: "publication.artifact-corrupt" }
+    });
+    expect(corruptProject).not.toHaveProperty("bytes");
   });
 
   it("rejects noncanonical/tampered members, distinguishes an indeterminate read, and detects RB-008 mismatch", async () => {

@@ -15,6 +15,7 @@ import { createV1C1Provenance } from "./cli-v1-provenance.mjs";
 import { prepareV1ExternalProjectInput } from "./cli-v1-r1-commands.mjs";
 import { createV1DiagnosticFromError, createV1Result } from "./cli-v1-result.mjs";
 import { semanticIssuesToV1Errors, validateV1SemanticState } from "./cli-v1-semantic-validator.mjs";
+import { validateCliResult } from "../../generated/cli-v1-schema-validators.mjs";
 
 /**
  * Reads and revalidates every apply-change input, then recomputes the C1 plan.
@@ -289,6 +290,38 @@ export async function runV1ApplyChange({
   });
   await resultTransport.writeResult(result);
   return result;
+}
+
+/**
+ * Implements the result-level RB-011 check shared by conformance runners.
+ * Publication already enforces these facts before a success result is emitted;
+ * keeping the pure checker public lets Node and downstream ports validate a
+ * received plan/result pair without rerunning or modifying an apply.
+ */
+export function validateV1ApplyResultBindings({ applyResult, planResult } = {}) {
+  try {
+    if (!validateCliResult(applyResult)
+      || !validateCliResult(planResult)
+      || applyResult.command !== "apply-change"
+      || applyResult.status !== "succeeded"
+      || planResult.command !== "plan-change"
+      || planResult.status !== "succeeded") return false;
+    const destinationPath = planResult.data?.output_plan?.output?.destination?.path;
+    const effect = applyResult.effects?.project_artifact;
+    const descriptor = applyResult.data?.artifact_set;
+    return Boolean(destinationPath
+      && applyResult.io?.destination?.path === destinationPath
+      && planResult.io?.destination?.path === destinationPath
+      && effect?.path === destinationPath
+      && effect.publication_state === "committed"
+      && effect.created_by_invocation === true
+      && applyResult.effects?.cleanup?.status === "prohibited-after-commit"
+      && applyResult.effects?.cleanup?.path === null
+      && descriptor?.path === destinationPath
+      && descriptor.publication_state === "committed");
+  } catch {
+    return false;
+  }
 }
 
 function materializeV1ApprovedApply({ preparation, runtime }) {

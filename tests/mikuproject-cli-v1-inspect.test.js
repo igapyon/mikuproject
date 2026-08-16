@@ -22,6 +22,9 @@ const fixtureRoot = path.join(repoRoot, "testdata/conformance/v1/fixtures/projec
 const projectionGolden = readJson("testdata/conformance/v1/golden/projection/dependency.project-overview.json");
 const taskChangeContextGolden = readJson("testdata/conformance/v1/golden/projection/dependency.task-change-context.json");
 const semanticGolden = readJson("testdata/conformance/v1/golden/semantic/dependency.state.json");
+const hierarchyOverviewGolden = readJson("testdata/conformance/v1/golden/projection/hierarchy.project-overview.json");
+const hierarchyContextGolden = readJson("testdata/conformance/v1/golden/projection/hierarchy.task-2-change-context.json");
+const hierarchySemanticGolden = readJson("testdata/conformance/v1/golden/semantic/hierarchy.state.json");
 const suiteCases = new Map(readJson("testdata/conformance/v1/suite-index.json").cases.map((item) => [item.id, item]));
 const testRuntime = Object.freeze({
   binding_status: "verified",
@@ -133,6 +136,53 @@ describe("v1 R1 inspect project_overview service", () => {
     const changedContent = structuredClone(taskChangeContextGolden);
     changedContent.resources.push({ uid: "not-a-context-resource" });
     expect(validateV1TaskChangeContextBinding({ state: semanticGolden, projection: changedContent })).toBe(false);
+  });
+
+  it("runs hierarchy overview and nested-leaf context with exact preorder and one required ancestor", async () => {
+    const fixturePath = path.join(fixtureRoot, "hierarchy-canonical.xml");
+    const overviewExpected = suiteCases.get("CI-HIERARCHY-OVERVIEW-001");
+    const contextExpected = suiteCases.get("CI-HIERARCHY-CONTEXT-001");
+    const overview = await invokeInspect([
+      "inspect", "--project", fixturePath, "--purpose", "project_overview"
+    ]);
+    const context = await invokeInspect([
+      "inspect", "--project", fixturePath, "--purpose", "task_change_context", "--task-uid", "2"
+    ]);
+
+    expect(overview.result).toMatchObject({
+      status: overviewExpected.expected_status,
+      exit_code: overviewExpected.expected_exit_code,
+      next_action: overviewExpected.expected_next_action,
+      diagnostics: []
+    });
+    expect(overview.result.data).toEqual({ projection: hierarchyOverviewGolden });
+    expect(validateV1ProjectOverviewBinding({ state: hierarchySemanticGolden, projection: overview.result.data.projection })).toBe(true);
+    expect(context.result).toMatchObject({
+      status: contextExpected.expected_status,
+      exit_code: contextExpected.expected_exit_code,
+      next_action: contextExpected.expected_next_action,
+      diagnostics: []
+    });
+    expect(context.result.data).toEqual({ projection: hierarchyContextGolden });
+    expect(context.result.data.projection.ancestors.map((task) => task.uid)).toEqual(["1"]);
+    expect(validateV1TaskChangeContextBinding({ state: hierarchySemanticGolden, projection: context.result.data.projection })).toBe(true);
+
+    const summary = await invokeInspect([
+      "inspect", "--project", fixturePath, "--purpose", "task_change_context", "--task-uid", "1"
+    ]);
+    const missing = await invokeInspect([
+      "inspect", "--project", fixturePath, "--purpose", "task_change_context", "--task-uid", "999"
+    ]);
+    expect(summary.result).toMatchObject({
+      status: "rejected",
+      data: null,
+      diagnostics: [{ code: "change.operation-unsupported", location: { option: "--task-uid" } }]
+    });
+    expect(missing.result).toMatchObject({
+      status: "rejected",
+      data: null,
+      diagnostics: [{ code: "change.request-invalid", location: { option: "--task-uid" } }]
+    });
   });
 
   it("fails closed when task_change_context is requested for no task or a non-leaf task", async () => {

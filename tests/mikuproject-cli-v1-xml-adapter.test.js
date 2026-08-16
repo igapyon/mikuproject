@@ -12,6 +12,10 @@ import {
   validateV1SemanticState
 } from "../scripts/lib/v1/cli-v1-semantic-validator.mjs";
 import {
+  encodeMsProjectXmlSubset,
+  isV1XmlSemanticRoundTripEquivalent
+} from "../scripts/lib/v1/cli-v1-xml-encoder.mjs";
+import {
   MS_PROJECT_XML_ADAPTER,
   MS_PROJECT_XML_SUBSET_PROFILE,
   decodeMsProjectXmlSubset
@@ -24,6 +28,7 @@ import {
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const projectFixtureRoot = path.join(repoRoot, "testdata/conformance/v1/fixtures/project");
 const goldenSemanticState = readJson("testdata/conformance/v1/golden/semantic/dependency.state.json");
+const hierarchyGoldenSemanticState = readJson("testdata/conformance/v1/golden/semantic/hierarchy.state.json");
 
 describe("v1 MS Project XML subset adapter", () => {
   it("decodes canonical S-V001 XML into the exact semantic golden without mutating raw provenance", () => {
@@ -42,6 +47,30 @@ describe("v1 MS Project XML subset adapter", () => {
       valid: true,
       issues: []
     });
+  });
+
+  it("decodes S-V002 as an ordered forest and canonically re-encodes it without changing hierarchy meaning", () => {
+    const rawXml = readFixture("hierarchy-canonical.xml");
+    const decoded = decodeMsProjectXmlSubset(rawXml);
+    const encoded = encodeMsProjectXmlSubset(decoded.state);
+    const redecoded = decodeMsProjectXmlSubset(encoded.bytes);
+
+    expect(decoded.adapter_issues).toEqual([]);
+    expect(decoded.state).toEqual(hierarchyGoldenSemanticState);
+    expect(decoded.state.tasks.map((task) => [task.uid, task.parent_uid, task.summary])).toEqual([
+      ["1", null, true],
+      ["2", "1", false],
+      ["3", "1", false],
+      ["4", null, false]
+    ]);
+    expect(validateV1SemanticState(decoded.state, { adapterIssues: decoded.adapter_issues })).toEqual({
+      status: "valid",
+      valid: true,
+      issues: []
+    });
+    expect(encoded.bytes).toEqual(rawXml);
+    expect(redecoded.state).toEqual(hierarchyGoldenSemanticState);
+    expect(isV1XmlSemanticRoundTripEquivalent(decoded.state, encoded.bytes)).toBe(true);
   });
 
   it("keeps S-I012 as semantic.invalid with its stable rule and semantic location", () => {
@@ -81,6 +110,22 @@ describe("v1 MS Project XML subset adapter", () => {
         path: "tasks[uid=2].actual_start"
       }]
     });
+  });
+
+  it("keeps S-I003 forest failures and S-I004 summary failures distinct and machine-addressable", () => {
+    const invalidPreorder = decodeMsProjectXmlSubset(readFixture("hierarchy-invalid-preorder.xml"));
+    const invalidSummary = decodeMsProjectXmlSubset(readFixture("hierarchy-invalid-summary.xml"));
+
+    const preorderValidation = validateV1SemanticState(invalidPreorder.state, { adapterIssues: invalidPreorder.adapter_issues });
+    const summaryValidation = validateV1SemanticState(invalidSummary.state, { adapterIssues: invalidSummary.adapter_issues });
+    expect(preorderValidation.status).toBe("invalid");
+    expect(preorderValidation.issues).toEqual(expect.arrayContaining([
+      expect.objectContaining({ code: "semantic.invalid", rule_id: "S-I003", path: "tasks[uid=2]" })
+    ]));
+    expect(summaryValidation.status).toBe("invalid");
+    expect(summaryValidation.issues).toEqual(expect.arrayContaining([
+      expect.objectContaining({ code: "semantic.invalid", rule_id: "S-I004", path: "tasks[uid=1].summary" })
+    ]));
   });
 
   it("records only a leading UTF-8 BOM normalization and rejects invalid text/encoding/profile inputs", () => {

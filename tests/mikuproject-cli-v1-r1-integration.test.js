@@ -8,6 +8,8 @@ import { gunzipSync } from "node:zlib";
 import { afterEach, describe, expect, it } from "vitest";
 
 import { canonicalJsonText, sha256CanonicalJson } from "../scripts/lib/v1/cli-v1-canonical-json.mjs";
+import { validateV1PlanChangeBindings } from "../scripts/lib/v1/cli-v1-change.mjs";
+import { decodeMsProjectXmlSubset } from "../scripts/lib/v1/cli-v1-xml-adapter.mjs";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const sourceCliPath = path.join(repoRoot, "scripts/miku-project-cli.mjs");
@@ -15,6 +17,21 @@ const r1HarnessPath = path.join(repoRoot, "tests/helpers/mikuproject-cli-v1-r1-h
 const cliBundleBuildPath = path.join(repoRoot, "scripts/build-cli-bundle.mjs");
 const canonicalFixturePath = path.join(repoRoot, "testdata/conformance/v1/fixtures/project/dependency-canonical.xml");
 const changeRequestTemplatePath = path.join(repoRoot, "testdata/conformance/v1/fixtures/change/set-task-2-percent-0-to-50.template.json");
+const hierarchyFixturePath = path.join(repoRoot, "testdata/conformance/v1/fixtures/project/hierarchy-canonical.xml");
+const hierarchyChangeRequestTemplatePath = path.join(repoRoot, "testdata/conformance/v1/fixtures/change/set-hierarchy-task-2-percent-0-to-50.template.json");
+const hierarchySummaryRequestTemplatePath = path.join(repoRoot, "testdata/conformance/v1/fixtures/change/set-hierarchy-summary-task-1-percent-0-to-50.template.json");
+const hierarchySemanticGoldenPath = path.join(repoRoot, "testdata/conformance/v1/golden/semantic/hierarchy-percent-50.state.json");
+const hierarchyOverviewGoldenPath = path.join(repoRoot, "testdata/conformance/v1/golden/projection/hierarchy.project-overview.json");
+const hierarchyContextGoldenPath = path.join(repoRoot, "testdata/conformance/v1/golden/projection/hierarchy.task-2-change-context.json");
+const verifiedR1Runtime = Object.freeze({
+  binding_status: "verified",
+  family: "node",
+  version: "1.0.2",
+  artifact_digest: digest("0".repeat(64)),
+  manifest_digest: digest("1".repeat(64)),
+  capability_profile: "miku-project-cli-core/v1",
+  fixture_suite_version: "1"
+});
 const temporaryDirectories = [];
 
 afterEach(() => {
@@ -119,6 +136,20 @@ describe("v1 R1 subprocess integration and provisional public boundary", () => {
       command: "cli",
       status: "usage-error",
       diagnostics: [{ code: "cli.unknown-option" }],
+      io: { inputs: [], result: { target: "stdout", path: null } }
+    });
+
+    const corpusUsage = runR1Harness(["--unknown-option"]);
+    expect(corpusUsage.status).toBe(2);
+    expect(corpusUsage.stderr).toBe("");
+    expect(readJsonText(corpusUsage.stdout)).toMatchObject({
+      command: "cli",
+      status: "usage-error",
+      exit_code: 2,
+      diagnostics: [{
+        code: "cli.unknown-option",
+        location: { scope: "option", option: "--unknown-option" }
+      }],
       io: { inputs: [], result: { target: "stdout", path: null } }
     });
   });
@@ -233,6 +264,179 @@ describe("v1 R1 subprocess integration and provisional public boundary", () => {
     });
   });
 
+  it("materializes the hierarchy C1 slice through validate, read-only projections, approval, apply, verify, and artifact-set replan", () => {
+    const directory = createTemporaryDirectory("miku-project-v1-hierarchy-c1-subprocess-");
+    const requestPath = path.join(directory, "hierarchy-request.json");
+    const planResultPath = path.join(directory, "hierarchy-plan.result.json");
+    const approvalPath = path.join(directory, "hierarchy-approval.json");
+    const applyResultPath = path.join(directory, "hierarchy-apply.result.json");
+    const destination = path.join(directory, "hierarchy-next-project");
+    const sourceBefore = readFileSync(hierarchyFixturePath);
+    const expectedChangedState = readJson(hierarchySemanticGoldenPath);
+
+    const validated = runR1Harness(["validate", "--project", hierarchyFixturePath]);
+    expect(validated.status).toBe(0);
+    expect(readJsonText(validated.stdout)).toMatchObject({
+      command: "validate",
+      status: "succeeded",
+      data: { validation: { state_digest: { value: "def14cb546dd7b6f943e97479218dc8400807c398e08b7683dcc855d3d680685" } } }
+    });
+
+    const overview = runR1Harness([
+      "inspect", "--project", hierarchyFixturePath, "--purpose", "project_overview"
+    ]);
+    const context = runR1Harness([
+      "inspect", "--project", hierarchyFixturePath, "--purpose", "task_change_context", "--task-uid", "2"
+    ]);
+    expect(overview.status).toBe(0);
+    expect(context.status).toBe(0);
+    expect(readJsonText(overview.stdout).data).toEqual({ projection: readJson(hierarchyOverviewGoldenPath) });
+    expect(readJsonText(context.stdout).data).toEqual({ projection: readJson(hierarchyContextGoldenPath) });
+
+    const request = JSON.parse(readFileSync(hierarchyChangeRequestTemplatePath, "utf8").replace(
+      "${BASE_STATE_DIGEST}", "def14cb546dd7b6f943e97479218dc8400807c398e08b7683dcc855d3d680685"
+    ));
+    writeFileSync(requestPath, `${canonicalJsonText(request)}\n`, "utf8");
+    const plan = runR1Harness([
+      "plan-change", "--project", hierarchyFixturePath, "--request", requestPath,
+      "--destination", destination, "--result", planResultPath
+    ]);
+    expect(plan.status).toBe(0);
+    expect(existsSync(destination)).toBe(false);
+    const planResult = readJson(planResultPath);
+    expect(planResult).toMatchObject({
+      status: "succeeded",
+      next_action: { action: "request-human-approval" },
+      data: {
+        semantic_diff: {
+          changes: [{ kind: "set_task_percent_complete", task_uid: "2", before: 0, after: 50 }],
+          proposed_state_digest: { value: "8863620f806a268e583260617d5684ff179739eb87797098a292958b0c8a8424" }
+        }
+      }
+    });
+    const approval = approvalForPlan(request, planResult);
+    writeFileSync(approvalPath, `${canonicalJsonText(approval)}\n`, "utf8");
+
+    const applied = runR1Harness([
+      "apply-change", "--project", hierarchyFixturePath, "--request", requestPath,
+      "--plan-result", planResultPath, "--approval", approvalPath, "--result", applyResultPath
+    ]);
+    expect(applied.status).toBe(0);
+    const applyResult = readJson(applyResultPath);
+    const artifactSetPath = applyResult.data.artifact_set.path;
+    expect(applyResult).toMatchObject({
+      status: "succeeded",
+      data: { artifact_set: { path: artifactSetPath, publication_state: "committed" } },
+      next_action: { action: "verify-artifact", command: "verify-artifact" }
+    });
+    expect(decodeMsProjectXmlSubset(readFileSync(path.join(artifactSetPath, "project.xml"))).state).toEqual(expectedChangedState);
+    expect(readFileSync(hierarchyFixturePath)).toEqual(sourceBefore);
+
+    const artifactProjectPath = path.join(artifactSetPath, "project.xml");
+    const artifactOverview = runR1Harness([
+      "inspect", "--project", artifactSetPath, "--purpose", "project_overview"
+    ]);
+    const directOverview = runR1Harness([
+      "inspect", "--project", artifactProjectPath, "--purpose", "project_overview"
+    ]);
+    const artifactContext = runR1Harness([
+      "inspect", "--project", artifactSetPath, "--purpose", "task_change_context", "--task-uid", "2"
+    ]);
+    const directContext = runR1Harness([
+      "inspect", "--project", artifactProjectPath, "--purpose", "task_change_context", "--task-uid", "2"
+    ]);
+    for (const result of [artifactOverview, directOverview, artifactContext, directContext]) {
+      expect(result.status).toBe(0);
+      expect(result.stderr).toBe("");
+    }
+    const artifactOverviewResult = readJsonText(artifactOverview.stdout);
+    const artifactContextResult = readJsonText(artifactContext.stdout);
+    expect(artifactOverviewResult.data.projection).toEqual(readJsonText(directOverview.stdout).data.projection);
+    expect(artifactContextResult.data.projection).toEqual(readJsonText(directContext.stdout).data.projection);
+    expect(artifactOverviewResult.io.inputs[0]).toMatchObject({ source: "directory", path: artifactSetPath });
+    expect(artifactContextResult.io.inputs[0]).toMatchObject({ source: "directory", path: artifactSetPath });
+    expect(artifactOverviewResult.data.projection.tasks.find((task) => task.uid === "2")).toMatchObject({
+      parent_uid: "1",
+      percent_complete: 50
+    });
+    expect(artifactContextResult.data.projection).toMatchObject({
+      target_task: { uid: "2", parent_uid: "1", percent_complete: 50 },
+      ancestors: [{ uid: "1", summary: true, percent_complete: 0 }]
+    });
+
+    const verified = runR1Harness([
+      "verify-artifact", "--artifact-set", artifactSetPath, "--expect-plan-result", planResultPath
+    ]);
+    expect(verified.status).toBe(0);
+    expect(readJsonText(verified.stdout)).toMatchObject({
+      status: "succeeded",
+      data: { verification: { path: artifactSetPath, publication_state: "committed", matches_expected_plan: true } }
+    });
+
+    const summaryRequestPath = path.join(directory, "summary-request.json");
+    const summaryDestination = path.join(directory, "summary-must-not-exist");
+    writeFileSync(summaryRequestPath, readFileSync(hierarchySummaryRequestTemplatePath, "utf8").replace(
+      "${BASE_STATE_DIGEST}", "def14cb546dd7b6f943e97479218dc8400807c398e08b7683dcc855d3d680685"
+    ), "utf8");
+    const summaryRejected = runR1Harness([
+      "plan-change", "--project", hierarchyFixturePath, "--request", summaryRequestPath, "--destination", summaryDestination
+    ]);
+    expect(summaryRejected.status).toBe(1);
+    expect(readJsonText(summaryRejected.stdout)).toMatchObject({
+      status: "rejected",
+      diagnostics: [{ code: "change.operation-unsupported" }],
+      data: null
+    });
+    expect(existsSync(summaryDestination)).toBe(false);
+
+    const secondRequestPath = path.join(directory, "artifact-input-request.json");
+    const secondPlanPath = path.join(directory, "artifact-input-plan.result.json");
+    const directPlanPath = path.join(directory, "direct-project-plan.result.json");
+    const secondDestination = path.join(directory, "artifact-input-next-project");
+    const secondRequest = JSON.parse(readFileSync(hierarchyChangeRequestTemplatePath, "utf8").replace(
+      "${BASE_STATE_DIGEST}", "8863620f806a268e583260617d5684ff179739eb87797098a292958b0c8a8424"
+    ));
+    secondRequest.operations[0].preconditions.expected_percent_complete = 50;
+    secondRequest.operations[0].value.percent_complete = 75;
+    writeFileSync(secondRequestPath, `${canonicalJsonText(secondRequest)}\n`, "utf8");
+    const fromArtifact = runR1Harness([
+      "plan-change", "--project", artifactSetPath, "--request", secondRequestPath,
+      "--destination", secondDestination, "--result", secondPlanPath
+    ]);
+    expect(fromArtifact.status).toBe(0);
+    const artifactInputPlan = readJson(secondPlanPath);
+    expect(artifactInputPlan).toMatchObject({
+      status: "succeeded",
+      data: { semantic_diff: { changes: [{ task_uid: "2", before: 50, after: 75 }] } }
+    });
+    expect(artifactInputPlan.io.inputs[0]).toMatchObject({ source: "directory", path: artifactSetPath });
+    expect(existsSync(secondDestination)).toBe(false);
+
+    const fromDirectProject = runR1Harness([
+      "plan-change", "--project", artifactProjectPath, "--request", secondRequestPath,
+      "--destination", secondDestination, "--result", directPlanPath
+    ]);
+    expect(fromDirectProject.status).toBe(0);
+    expect(fromDirectProject.stderr).toBe("");
+    const directProjectPlan = readJson(directPlanPath);
+    expect(directProjectPlan.io.inputs[0]).toMatchObject({ source: "file", path: artifactProjectPath });
+    expect(directProjectPlan.data.semantic_diff).toEqual(artifactInputPlan.data.semantic_diff);
+    expect(directProjectPlan.data.output_plan).toEqual(artifactInputPlan.data.output_plan);
+    expect(directProjectPlan.data.output_plan.preflight.project_artifact_digest).toEqual(
+      artifactInputPlan.data.output_plan.preflight.project_artifact_digest
+    );
+    for (const planResult of [artifactInputPlan, directProjectPlan]) {
+      expect(validateV1PlanChangeBindings({
+        changeRequest: secondRequest,
+        semanticDiff: planResult.data.semantic_diff,
+        outputPlan: planResult.data.output_plan,
+        runtime: verifiedR1Runtime,
+        destination: planResult.io.destination
+      })).toBe(true);
+    }
+    expect(existsSync(secondDestination)).toBe(false);
+  });
+
   it("places v1 ahead of legacy routing while refusing an incomplete runtime, and bundles all R1 sources", () => {
     const directory = createTemporaryDirectory("miku-project-v1-r1-bundle-");
     const blockedResultPath = path.join(directory, "must-not-be-reserved.json");
@@ -267,16 +471,28 @@ describe("v1 R1 subprocess integration and provisional public boundary", () => {
     expect(sourceEntries).toEqual(expect.arrayContaining([
       "miku-project-sources/scripts/generated/cli-v1-schema-validators.mjs",
       "miku-project-sources/scripts/lib/v1/cli-v1-router.mjs",
+      "miku-project-sources/scripts/lib/v1/cli-v1-runtime-manifest.mjs",
       "miku-project-sources/scripts/lib/v1/cli-v1-r1-commands.mjs",
       "miku-project-sources/scripts/lib/v1/cli-v1-change.mjs",
       "miku-project-sources/scripts/lib/v1/cli-v1-apply.mjs",
       "miku-project-sources/scripts/lib/v1/cli-v1-provenance.mjs",
       "miku-project-sources/scripts/lib/v1/cli-v1-artifact-verifier.mjs",
+      "miku-project-sources/scripts/lib/v1/cli-v1-verify-artifact.mjs",
       "miku-project-sources/scripts/lib/v1/cli-v1-publisher.mjs",
       "miku-project-sources/scripts/lib/v1/cli-v1-xml-encoder.mjs",
       "miku-project-sources/testdata/conformance/v1/golden/projection/dependency.project-overview.json",
       "miku-project-sources/testdata/conformance/v1/golden/projection/dependency.task-change-context.json",
+      "miku-project-sources/testdata/conformance/v1/fixtures/project/hierarchy-canonical.xml",
+      "miku-project-sources/testdata/conformance/v1/fixtures/project/hierarchy-invalid-preorder.xml",
+      "miku-project-sources/testdata/conformance/v1/fixtures/project/hierarchy-invalid-summary.xml",
+      "miku-project-sources/testdata/conformance/v1/fixtures/change/set-hierarchy-task-2-percent-0-to-50.template.json",
+      "miku-project-sources/testdata/conformance/v1/fixtures/change/set-hierarchy-summary-task-1-percent-0-to-50.template.json",
+      "miku-project-sources/testdata/conformance/v1/golden/semantic/hierarchy.state.json",
+      "miku-project-sources/testdata/conformance/v1/golden/semantic/hierarchy-percent-50.state.json",
+      "miku-project-sources/testdata/conformance/v1/golden/projection/hierarchy.project-overview.json",
+      "miku-project-sources/testdata/conformance/v1/golden/projection/hierarchy.task-2-change-context.json",
       "miku-project-sources/tests/mikuproject-cli-v1-plan-change.test.js",
+      "miku-project-sources/tests/mikuproject-cli-v1-verify-artifact.test.js",
       "miku-project-sources/tests/mikuproject-cli-v1-r1-integration.test.js",
       "miku-project-sources/tests/helpers/mikuproject-cli-v1-r1-harness.mjs"
     ]));
@@ -307,6 +523,23 @@ function readJson(filePath) {
 
 function readJsonText(text) {
   return JSON.parse(text);
+}
+
+function digest(value) {
+  return { algorithm: "sha-256", value };
+}
+
+function approvalForPlan(request, planResult) {
+  return {
+    kind: "miku_project_change_approval",
+    schema_version: "1",
+    semantic_contract_version: "1",
+    approved: true,
+    base_state_digest: { ...planResult.data.semantic_diff.base_state_digest },
+    change_request_digest: sha256CanonicalJson(request),
+    semantic_diff_digest: sha256CanonicalJson(planResult.data.semantic_diff),
+    output_plan_digest: sha256CanonicalJson(planResult.data.output_plan)
+  };
 }
 
 function listTarGzEntries(filePath) {

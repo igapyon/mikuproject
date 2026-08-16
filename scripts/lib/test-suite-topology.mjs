@@ -20,6 +20,7 @@ export const FAST_SUITE = [
   "tests/mikuproject-cli-v1-apply-preparation.test.js",
   "tests/mikuproject-cli-v1-provenance.test.js",
   "tests/mikuproject-cli-v1-artifact-verifier.test.js",
+  "tests/mikuproject-cli-v1-verify-artifact.test.js",
   "tests/mikuproject-cli-v1-publisher.test.js",
   "tests/mikuproject-wbs-markdown.test.js",
   "tests/mikuproject-wbs-xlsx.test.js",
@@ -29,6 +30,7 @@ export const FAST_SUITE = [
 export const FULL_ONLY_SUITE = [
   "tests/miku-project-browser-runtime.test.js",
   "tests/mikuproject-cli-v1-r1-integration.test.js",
+  "tests/mikuproject-cli-v1-runtime-manifest.test.js",
   "tests/mikuproject-cli.test.js"
 ];
 
